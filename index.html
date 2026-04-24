@@ -545,7 +545,7 @@ body {
 </div>
 
 <script>
-/* GR Dashboard v8 FINAL - build: 2026-04-23T18:30 */
+/* GR Dashboard v9 FINAL - build: 2026-04-24T02:00 */
 // ============================================================
 // GR REVENUE INTELLIGENCE DASHBOARD
 // ============================================================
@@ -608,6 +608,7 @@ let TASKS = null;
 let currentTab = 'recap';
 let pipelineFilters = { prod: 'ALL', owner: 'ALL', excludeP: false };
 let pendientesFilters = { persona: 'Todos', urgency: 'ALL', scope: 'ALL', sort: 'urgency', stage: 'ALL' };
+let recapFilters = { persona: 'Todos', prodAct: 'ALL', prodCreado: 'ALL', prodMovido: 'ALL' };
 
 // --- Utilities ---
 const $ = (sel) => document.querySelector(sel);
@@ -717,11 +718,9 @@ function renderCurrentTab() {
 // --- RECAP ---
 function renderRecap() {
   const k = DATA.kpis;
-  const recap = DATA.recapSemanal || { ventanaDesde: '', ventanaHasta: '', tareasCompletadas: {total:0, porPersona:{}, detalle:{}}, dealsCreados: {total:0, montoTotal:0, porOwner:{}, detalle:{}}, dealsMovidos: {total:0, porOwner:{}, detalle:{}} };
-  const propuestas = DATA.deals
-    .filter(d => d.stage === 'presentationscheduled')
-    .sort((a, b) => new Date(a.closedate || '2099') - new Date(b.closedate || '2099'));
+  const recap = DATA.recapSemanal || { ventanaDesde: '', ventanaHasta: '', tareasCompletadas: {total:0, porPersona:{}, resumenPorPersona:{}, detalle:{}}, dealsCreados: {total:0, montoTotal:0, porOwner:{}, detalle:{}}, dealsMovidos: {total:0, porOwner:{}, detalle:{}} };
 
+  // KPIs superiores
   let html = `
     <div class="kpi-grid">
       <div class="kpi kpi-purple">
@@ -750,7 +749,10 @@ function renderRecap() {
         <div class="kpi-sub">${recap.ventanaDesde} → ${recap.ventanaHasta}</div>
       </div>
     </div>
+  `;
 
+  // === Tabla resumen actividad ===
+  html += `
     <div class="section">
       <div class="section-title">
         Actividad de la semana
@@ -793,73 +795,176 @@ function renderRecap() {
   </tr>`;
   html += `</tbody></table></div>`;
 
-  // Detalle de deals creados esta semana
-  if (recap.dealsCreados.total > 0) {
-    html += `<div class="section">
-      <div class="section-title">Deals creados esta semana <span class="section-count">${recap.dealsCreados.total}</span></div>
-      <table class="tbl">
-        <thead><tr><th>Deal</th><th>Owner</th><th>Stage</th><th>Creado</th><th class="num">Monto</th></tr></thead>
+  // === Detalle tareas completadas por persona ===
+  const filtroPersona = recapFilters.persona || 'Todos';
+  const personasActividad = Object.keys(recap.tareasCompletadas.detalle || {}).sort();
+  const resumenPorPersona = recap.tareasCompletadas.resumenPorPersona || {};
+
+  html += `<div class="section">
+    <div class="section-title">Detalle tareas completadas — por persona <span class="section-count">${recap.tareasCompletadas.total}</span></div>
+    <div class="filters">
+      <span class="filter-label">Ver detalle de:</span>
+      <button class="chip ${filtroPersona === 'Todos' ? 'active' : ''}" data-recapfilter="persona" data-rval="Todos">Todos</button>
+      ${personasActividad.map(p => {
+        const n = (recap.tareasCompletadas.porPersona[p] || 0);
+        return `<button class="chip ${filtroPersona === p ? 'active' : ''}" data-recapfilter="persona" data-rval="${p}">${p} (${n})</button>`;
+      }).join('')}
+    </div>`;
+
+  const personasAMostrar = filtroPersona === 'Todos' ? personasActividad : (personasActividad.includes(filtroPersona) ? [filtroPersona] : []);
+
+  personasAMostrar.forEach(p => {
+    const tareas = recap.tareasCompletadas.detalle[p] || [];
+    const summary = resumenPorPersona[p] || { total: tareas.length, porProd: {}, porAction: {} };
+
+    // Summary chips: breakdown por producto
+    const prodChips = Object.entries(summary.porProd).sort((a,b) => b[1] - a[1]).map(([prod, n]) =>
+      `<span class="tag tag-atraccion">${prod}: ${n}</span>`
+    ).join(' ');
+    const actChips = Object.entries(summary.porAction).sort((a,b) => b[1] - a[1]).map(([act, n]) =>
+      `<span class="tag tag-propuesta">${act}: ${n}</span>`
+    ).join(' ');
+
+    html += `
+      <div style="margin-top:16px;padding:12px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap;">
+          <strong style="font-size:14px;">${p}</strong>
+          <span style="color:var(--text-dim);">${summary.total} tareas</span>
+        </div>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">Por producto:</div>
+        <div style="margin-bottom:8px;">${prodChips || '<span style="color:var(--text-dim);">—</span>'}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">Por acción:</div>
+        <div style="margin-bottom:12px;">${actChips || '<span style="color:var(--text-dim);">—</span>'}</div>
+      </div>
+    `;
+
+    // Si hay filtro persona específica (no Todos), mostrar tabla detalle
+    if (filtroPersona !== 'Todos') {
+      html += `<table class="tbl" style="margin-top:8px;">
+        <thead><tr><th>Cliente</th><th>Producto</th><th>Acción</th><th>Tarea</th><th>Completada</th></tr></thead>
         <tbody>`;
-    Object.entries(recap.dealsCreados.detalle || {}).forEach(([owner, deals]) => {
-      deals.forEach(d => {
-        const display = d.cliente && d.cliente !== d.name
-          ? `<strong>${d.cliente}</strong><br><small style="color:var(--text-dim);">${d.name}</small>`
-          : d.name;
+      tareas.slice(0, 200).forEach(t => {
         html += `<tr>
-          <td>${display}</td>
-          <td>${owner}</td>
-          <td>${d.stage || '—'}</td>
-          <td>${d.createdate || '—'}</td>
-          <td class="num">${fmt(d.amount)}</td>
+          <td>${t.client || '—'}</td>
+          <td><span class="tag">${t.prod}</span></td>
+          <td><span class="tag tag-atraccion">${t.action}</span></td>
+          <td><small>${t.title}</small></td>
+          <td><small>${t.completedDate || '—'}</small></td>
         </tr>`;
       });
+      if (tareas.length > 200) {
+        html += `<tr><td colspan="5" class="empty">Mostrando 200 de ${tareas.length}</td></tr>`;
+      }
+      html += `</tbody></table>`;
+    }
+  });
+  html += `</div>`;
+
+  // === Deals creados con filtro por producto ===
+  if (recap.dealsCreados.total > 0) {
+    const prodsCreados = new Set();
+    Object.values(recap.dealsCreados.detalle || {}).forEach(list => list.forEach(d => prodsCreados.add(d.prod || 'Otro')));
+    const prodCreadoFilter = recapFilters.prodCreado || 'ALL';
+
+    html += `<div class="section">
+      <div class="section-title">Deals creados esta semana <span class="section-count">${recap.dealsCreados.total}</span> <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">${fmtK(recap.dealsCreados.montoTotal)}</span></div>
+      <div class="filters">
+        <span class="filter-label">Producto:</span>
+        <button class="chip ${prodCreadoFilter === 'ALL' ? 'active' : ''}" data-recapfilter="prodCreado" data-rval="ALL">Todos</button>
+        ${Array.from(prodsCreados).sort().map(pr => `<button class="chip ${prodCreadoFilter === pr ? 'active' : ''}" data-recapfilter="prodCreado" data-rval="${pr}">${pr}</button>`).join('')}
+      </div>
+      <table class="tbl">
+        <thead><tr><th>Cliente / Deal</th><th>Producto</th><th>Owner</th><th>Stage</th><th>Creado</th><th class="num">Monto</th></tr></thead>
+        <tbody>`;
+
+    const dealsCreadosList = [];
+    Object.entries(recap.dealsCreados.detalle || {}).forEach(([owner, deals]) => {
+      deals.forEach(d => dealsCreadosList.push({ ...d, owner }));
     });
+    const filteredCreados = prodCreadoFilter === 'ALL'
+      ? dealsCreadosList
+      : dealsCreadosList.filter(d => (d.prod || 'Otro') === prodCreadoFilter);
+
+    filteredCreados.forEach(d => {
+      const display = d.cliente && d.cliente !== d.name
+        ? `<strong>${d.cliente}</strong><br><small style="color:var(--text-dim);">${d.name}</small>`
+        : d.name;
+      html += `<tr>
+        <td>${display}</td>
+        <td><span class="tag">${d.prod || 'Otro'}</span></td>
+        <td>${d.owner}</td>
+        <td>${d.stage || '—'}</td>
+        <td>${d.createdate || '—'}</td>
+        <td class="num">${fmt(d.amount)}</td>
+      </tr>`;
+    });
+    if (filteredCreados.length === 0) {
+      html += `<tr><td colspan="6" class="empty">Sin deals creados para este filtro.</td></tr>`;
+    }
     html += `</tbody></table></div>`;
   }
 
-  // Detalle de deals movidos esta semana
+  // === Deals movidos con filtro por producto y stage actual ===
   if (recap.dealsMovidos.total > 0) {
+    const prodsMov = new Set();
+    Object.values(recap.dealsMovidos.detalle || {}).forEach(list => list.forEach(d => prodsMov.add(d.prod || 'Otro')));
+    const prodMovFilter = recapFilters.prodMovido || 'ALL';
+
     html += `<div class="section">
       <div class="section-title">Deals con movimiento esta semana <span class="section-count">${recap.dealsMovidos.total}</span></div>
+      <div class="filters">
+        <span class="filter-label">Producto:</span>
+        <button class="chip ${prodMovFilter === 'ALL' ? 'active' : ''}" data-recapfilter="prodMovido" data-rval="ALL">Todos</button>
+        ${Array.from(prodsMov).sort().map(pr => `<button class="chip ${prodMovFilter === pr ? 'active' : ''}" data-recapfilter="prodMovido" data-rval="${pr}">${pr}</button>`).join('')}
+      </div>
       <table class="tbl">
-        <thead><tr><th>Deal</th><th>Owner</th><th>Stage Actual</th><th>Última modificación</th><th class="num">Monto</th></tr></thead>
+        <thead><tr><th>Cliente / Deal</th><th>Producto</th><th>Owner</th><th>Stage Actual</th><th>Última modif.</th><th class="num">Monto</th></tr></thead>
         <tbody>`;
+
+    const dealsMovList = [];
     Object.entries(recap.dealsMovidos.detalle || {}).forEach(([owner, deals]) => {
-      deals.forEach(d => {
-        const display = d.cliente && d.cliente !== d.name
-          ? `<strong>${d.cliente}</strong><br><small style="color:var(--text-dim);">${d.name}</small>`
-          : d.name;
-        html += `<tr>
-          <td>${display}</td>
-          <td>${owner}</td>
-          <td>${d.stage || '—'}</td>
-          <td>${d.lastMod || '—'}</td>
-          <td class="num">${fmt(d.amount)}</td>
-        </tr>`;
-      });
+      deals.forEach(d => dealsMovList.push({ ...d, owner }));
     });
+    const filteredMov = prodMovFilter === 'ALL'
+      ? dealsMovList
+      : dealsMovList.filter(d => (d.prod || 'Otro') === prodMovFilter);
+
+    filteredMov.sort((a,b) => (b.lastMod||'').localeCompare(a.lastMod||''));
+
+    filteredMov.slice(0, 150).forEach(d => {
+      const display = d.cliente && d.cliente !== d.name
+        ? `<strong>${d.cliente}</strong><br><small style="color:var(--text-dim);">${d.name}</small>`
+        : d.name;
+      const stageTag = d.stageActual === 'Perdida' ? 'tag-perdida' : d.stageActual === 'Won' ? 'tag-propuesta' : 'tag-atraccion';
+      html += `<tr>
+        <td>${display}</td>
+        <td><span class="tag">${d.prod || 'Otro'}</span></td>
+        <td>${d.owner}</td>
+        <td><span class="tag ${stageTag}">${d.stageActual || '—'}</span></td>
+        <td>${d.lastMod || '—'}</td>
+        <td class="num">${fmt(d.amount)}</td>
+      </tr>`;
+    });
+    if (filteredMov.length > 150) {
+      html += `<tr><td colspan="6" class="empty">Mostrando 150 de ${filteredMov.length}</td></tr>`;
+    }
+    if (filteredMov.length === 0) {
+      html += `<tr><td colspan="6" class="empty">Sin deals movidos para este filtro.</td></tr>`;
+    }
     html += `</tbody></table></div>`;
   }
 
-  // Propuestas en vivo (se queda del recap anterior porque es útil)
-  html += `<div class="section">
-    <div class="section-title">Propuestas en vivo <span class="section-count">${propuestas.length}</span></div>
-    <table class="tbl">
-      <thead><tr><th>Deal</th><th>Owner</th><th>Close</th><th class="num">Monto</th></tr></thead>
-      <tbody>`;
-  if (propuestas.length === 0) {
-    html += `<tr><td colspan="4" class="empty">Sin propuestas en vivo.</td></tr>`;
-  }
-  propuestas.forEach(d => {
-    html += `<tr>
-      <td>${d.name}</td>
-      <td>${d.owner || '—'}</td>
-      <td>${d.closedate || '—'}</td>
-      <td class="num">${fmt(d.amount)}</td>
-    </tr>`;
-  });
-  html += `</tbody></table></div>`;
   $('#p-recap').innerHTML = html;
+
+  // Wire up filter buttons
+  document.querySelectorAll('[data-recapfilter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const f = btn.dataset.recapfilter;
+      const v = btn.dataset.rval;
+      recapFilters[f] = v;
+      renderRecap();
+    });
+  });
 }
 
 // --- OVERVIEW ---
