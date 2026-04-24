@@ -495,6 +495,174 @@ body {
   .kanban { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
 }
 
+/* WON BUCKETS v10 */
+.won-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.won-kpi {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  border-left: 3px solid var(--purple);
+}
+.won-kpi.renewal { border-left-color: var(--mint); }
+.won-kpi.recurring { border-left-color: var(--cyan); }
+.won-kpi.oneshot { border-left-color: var(--text-mute); }
+.won-kpi-label { font-size: 11px; color: var(--text-dim); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; }
+.won-kpi-value { font-size: 22px; font-weight: 800; color: var(--text); }
+.won-kpi-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+.won-bucket {
+  margin-bottom: 20px;
+}
+.won-bucket-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px 8px 0 0;
+  border-bottom: none;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+.won-bucket-icon { font-size: 16px; }
+.won-bucket-count {
+  background: var(--bg-3);
+  color: var(--text-dim);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.won-bucket-total {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.won-bucket-total strong { color: var(--text); font-weight: 700; }
+
+.won-renewal-row {
+  display: grid;
+  grid-template-columns: 1fr 100px 120px 80px 100px;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-top: none;
+  align-items: center;
+  font-size: 13px;
+}
+.won-renewal-row:nth-child(even) { background: var(--bg-3); }
+.won-renewal-row:last-child { border-radius: 0 0 8px 8px; }
+
+.urg-bar {
+  height: 6px;
+  background: var(--bg-3);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+  margin-top: 4px;
+}
+.urg-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.urg-bar-fill.vencida { background: var(--red); }
+.urg-bar-fill.critica { background: var(--red); }
+.urg-bar-fill.proxima { background: var(--yellow); }
+.urg-bar-fill.visible { background: var(--mint); }
+
+.urg-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.urg-badge.vencida { background: var(--red); color: white; }
+.urg-badge.critica { background: var(--red); color: white; }
+.urg-badge.proxima { background: var(--yellow); color: #78350F; }
+.urg-badge.visible { background: rgba(16,185,129,0.15); color: var(--mint); border: 1px solid var(--mint); }
+
+.won-deal-name { font-weight: 600; }
+.won-deal-prod { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+
+.won-recurring-row {
+  display: grid;
+  grid-template-columns: 1fr 120px 100px 120px 100px;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-top: none;
+  align-items: center;
+  font-size: 13px;
+}
+.won-recurring-row:last-child { border-radius: 0 0 8px 8px; }
+
+.dia-corte {
+  background: var(--cyan);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 12px;
+  text-align: center;
+  min-width: 40px;
+  display: inline-block;
+}
+.factura-status {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+.factura-status.vencida { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid var(--red); }
+.factura-status.proxima { background: rgba(245,158,11,0.15); color: var(--yellow); border: 1px solid var(--yellow); }
+.factura-status.ok { background: rgba(16,185,129,0.15); color: var(--mint); border: 1px solid var(--mint); }
+
+.btn-action {
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+  transition: all 0.15s;
+}
+.btn-action:hover { background: var(--purple); border-color: var(--purple); }
+
+.won-empty-bucket {
+  padding: 20px 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  color: var(--text-mute);
+  text-align: center;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.num-right { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.days-cell { font-size: 11px; color: var(--text-dim); text-align: center; }
+.days-cell strong { color: var(--text); font-size: 16px; display: block; }
+
 </style>
 </head>
 <body>
@@ -545,7 +713,7 @@ body {
 </div>
 
 <script>
-/* GR Dashboard v9 FINAL - build: 2026-04-24T02:00 */
+/* GR Dashboard v10 - build: 2026-04-24T17:30 - wonBuckets segmentation */
 // ============================================================
 // GR REVENUE INTELLIGENCE DASHBOARD
 // ============================================================
@@ -1135,6 +1303,202 @@ function renderPipeline() {
 
 // --- WON ---
 function renderWon() {
+  // v10: Consume wonBuckets si está disponible, fallback a won[] plano
+  const wb = DATA.wonBuckets || null;
+  const statsWon = DATA.statsWon || null;
+
+  // Fallback: si no hay wonBuckets (API v9 o antes), usar renderWon legacy
+  if (!wb || !statsWon) {
+    return renderWonLegacy();
+  }
+
+  const renovaciones = wb.renovacionesAnuales || [];
+  const consultorias = wb.consultoriasMensuales || [];
+  const historico = wb.historicoWon || [];
+
+  const recurrenteAnual = statsWon.renovacionesAnuales.montoTotal + statsWon.consultoriasMensuales.montoAnual;
+
+  // Día actual del mes para calcular status de factura
+  const today = new Date();
+  const diaHoy = today.getDate();
+
+  let html = '';
+
+  // === KPIs agregados arriba ===
+  html += `
+    <div class="won-kpis">
+      <div class="won-kpi renewal">
+        <div class="won-kpi-label">💰 Revenue Recurrente Anual</div>
+        <div class="won-kpi-value">${fmtK(recurrenteAnual)}</div>
+        <div class="won-kpi-sub">${fmtK(statsWon.renovacionesAnuales.montoTotal)} anuales + ${fmtK(statsWon.consultoriasMensuales.montoAnual)} consultorías</div>
+      </div>
+      <div class="won-kpi recurring">
+        <div class="won-kpi-label">📅 Renovaciones críticas</div>
+        <div class="won-kpi-value">${statsWon.renovacionesAnuales.vencidas + statsWon.renovacionesAnuales.criticas}</div>
+        <div class="won-kpi-sub">Vencen en ≤60 días · ${statsWon.renovacionesAnuales.proximas} próximas (≤90d)</div>
+      </div>
+      <div class="won-kpi oneshot">
+        <div class="won-kpi-label">💵 Monto mensual recurrente</div>
+        <div class="won-kpi-value">${fmtK(statsWon.consultoriasMensuales.montoMensual)}</div>
+        <div class="won-kpi-sub">${statsWon.consultoriasMensuales.count} consultorías activas</div>
+      </div>
+    </div>
+  `;
+
+  // === BUCKET 1: Renovaciones Anuales ===
+  html += `
+    <div class="won-bucket">
+      <div class="won-bucket-header">
+        <span class="won-bucket-icon">📅</span>
+        <span>Renovaciones Anuales</span>
+        <span class="won-bucket-count">${renovaciones.length}</span>
+        <span class="won-bucket-total">Total: <strong>${fmtK(statsWon.renovacionesAnuales.montoTotal)}</strong></span>
+      </div>
+  `;
+
+  if (renovaciones.length === 0) {
+    html += `<div class="won-empty-bucket">Sin renovaciones anuales activas</div>`;
+  } else {
+    // Calcular % barra (días restantes como % de 365)
+    renovaciones.forEach(d => {
+      const days = d.diasParaVencer;
+      // Barra: 100% cuando vencida/crítica, decrece conforme se aleja
+      let barPct;
+      if (days < 0) barPct = 100;
+      else if (days <= 60) barPct = 100 - (days / 60 * 20); // 100-80%
+      else if (days <= 90) barPct = 80 - ((days - 60) / 30 * 20); // 80-60%
+      else if (days <= 180) barPct = 60 - ((days - 90) / 90 * 30); // 60-30%
+      else barPct = Math.max(10, 30 - ((days - 180) / 180 * 20)); // 30-10%
+
+      const daysDisplay = days < 0 ? `${Math.abs(days)}d vencida` : `${days}d`;
+      const dealId = d.id || '';
+      const hsUrl = dealId ? `https://app.hubspot.com/contacts/49671716/record/0-3/${dealId}` : '#';
+
+      html += `
+        <div class="won-renewal-row">
+          <div>
+            <div class="won-deal-name">${d.name}</div>
+            <div class="won-deal-prod">${d.prod || ''} · ${d.owner || '—'} · Vence ${d.closedate || '—'}</div>
+            <div class="urg-bar"><div class="urg-bar-fill ${d.urgencia}" style="width:${barPct}%"></div></div>
+          </div>
+          <div class="days-cell">
+            <strong>${days < 0 ? Math.abs(days) : days}</strong>
+            <span>${days < 0 ? 'días venc' : 'días'}</span>
+          </div>
+          <div><span class="urg-badge ${d.urgencia}">${d.urgencia}</span></div>
+          <div class="num-right">${fmtK(d.amount)}</div>
+          <div style="text-align:center;">
+            <a class="btn-action" href="${hsUrl}" target="_blank">Ver deal →</a>
+          </div>
+        </div>
+      `;
+    });
+  }
+  html += `</div>`;
+
+  // === BUCKET 2: Consultorías Mensuales ===
+  html += `
+    <div class="won-bucket">
+      <div class="won-bucket-header">
+        <span class="won-bucket-icon">💰</span>
+        <span>Consultorías Mensuales</span>
+        <span class="won-bucket-count">${consultorias.length}</span>
+        <span class="won-bucket-total">${fmtK(statsWon.consultoriasMensuales.montoMensual)}/mes · <strong>${fmtK(statsWon.consultoriasMensuales.montoAnual)}/año</strong></span>
+      </div>
+  `;
+
+  if (consultorias.length === 0) {
+    html += `<div class="won-empty-bucket">Sin consultorías mensuales activas</div>`;
+  } else {
+    consultorias.forEach(d => {
+      const diaCorte = d.diaCorte || 1;
+      // Días hasta próximo corte
+      let diasProxCorte;
+      if (diaHoy <= diaCorte) {
+        diasProxCorte = diaCorte - diaHoy;
+      } else {
+        // ya pasó este mes, calcular días del próximo
+        const proxCorte = new Date(today.getFullYear(), today.getMonth() + 1, diaCorte);
+        diasProxCorte = Math.ceil((proxCorte - today) / (1000 * 60 * 60 * 24));
+      }
+
+      // Status factura del mes actual:
+      // - Si hoy >= diaCorte: factura debió emitirse (vencida si no se emitió)
+      // - Si hoy < diaCorte: OK pendiente
+      let facturaStatus, facturaText;
+      if (diaHoy >= diaCorte) {
+        const diasVencido = diaHoy - diaCorte;
+        facturaStatus = diasVencido > 0 ? 'vencida' : 'proxima';
+        facturaText = diasVencido === 0 ? 'Hoy' : `${diasVencido}d vencida`;
+      } else {
+        facturaStatus = 'ok';
+        facturaText = `Pendiente`;
+      }
+
+      const dealId = d.id || '';
+      const hsUrl = dealId ? `https://app.hubspot.com/contacts/49671716/record/0-3/${dealId}` : '#';
+
+      html += `
+        <div class="won-recurring-row">
+          <div>
+            <div class="won-deal-name">${d.name}</div>
+            <div class="won-deal-prod">${d.prod || '3V'} · ${d.owner || '—'} · Contrato hasta ${d.closedate || '—'}</div>
+          </div>
+          <div style="text-align:center;">
+            <span class="dia-corte">Día ${diaCorte}</span>
+            <div class="won-deal-prod" style="margin-top:4px;">próx corte en ${diasProxCorte}d</div>
+          </div>
+          <div style="text-align:center;">
+            <span class="factura-status ${facturaStatus}">${facturaText}</span>
+          </div>
+          <div class="num-right">
+            ${fmt(d.amount)}/mes
+            <div class="won-deal-prod" style="text-align:right;">${fmtK(d.amount * 12)}/año</div>
+          </div>
+          <div style="text-align:center;">
+            <a class="btn-action" href="${hsUrl}" target="_blank">Ver deal →</a>
+          </div>
+        </div>
+      `;
+    });
+  }
+  html += `</div>`;
+
+  // === BUCKET 3: Histórico Won (one-shot projects) ===
+  html += `
+    <div class="won-bucket">
+      <div class="won-bucket-header">
+        <span class="won-bucket-icon">📊</span>
+        <span>Histórico Won</span>
+        <span class="won-bucket-count">${historico.length}</span>
+        <span class="won-bucket-total">Proyectos one-shot · Total: <strong>${fmtK(statsWon.historicoWon.montoTotal)}</strong></span>
+      </div>
+  `;
+
+  if (historico.length === 0) {
+    html += `<div class="won-empty-bucket">Sin proyectos one-shot cerrados</div>`;
+  } else {
+    html += `<table class="tbl" style="border-radius:0 0 8px 8px;"><thead><tr><th>Deal</th><th>Producto</th><th>Owner</th><th>Cierre</th><th class="num">Monto</th></tr></thead><tbody>`;
+    historico.forEach(d => {
+      const dealId = d.id || '';
+      const hsUrl = dealId ? `https://app.hubspot.com/contacts/49671716/record/0-3/${dealId}` : '#';
+      html += `<tr>
+        <td><strong>${d.cliente || d.name}</strong><br><small style="color:var(--text-dim);">${d.name}</small></td>
+        <td>${d.prod || '—'}</td>
+        <td>${d.owner || '—'}</td>
+        <td>${d.closedate || '—'}</td>
+        <td class="num">${fmt(d.amount)}</td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+  html += `</div>`;
+
+  $('#p-won').innerHTML = html;
+}
+
+// Legacy fallback para v9 API
+function renderWonLegacy() {
   const won = DATA.won || [];
   const total = won.reduce((s, d) => s + (d.amount || 0), 0);
 
