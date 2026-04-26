@@ -2275,7 +2275,7 @@ function openClaudeChat(promptId) {
 
 // --- AMPLEMARKET ---
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Tab Amplemarket v3 — KPIs clickables con modal, detalle desplegado, fix scroll
+// Tab Amplemarket v4 — Drilldown INLINE (no modal), 45 replies completos
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const ACCION_STYLES = {
@@ -2300,6 +2300,7 @@ const REPLY_TAG_STYLES = {
   'introduction':              { color: 'var(--mint)',   label: '🤝 Introduction' },
   'asked_to_circle_back_later':{ color: 'var(--cyan)',   label: '🔁 Circle back' },
   'info_request':              { color: 'var(--cyan)',   label: 'ℹ️ Info request' },
+  'referral':                  { color: 'var(--cyan)',   label: '↗️ Referral' },
   'not_interested':            { color: 'var(--red)',    label: '❌ Not interested' },
   'not_the_right_person':      { color: 'var(--yellow)', label: '↪️ Not right person' },
   'do_not_contact':            { color: 'var(--red)',    label: '🚫 Do not contact' },
@@ -2308,7 +2309,8 @@ const REPLY_TAG_STYLES = {
 };
 
 let amFilters = { canal: 'todos', tipo: 'todos', producto: 'todos' };
-let amDetailView = 'sequences';  // 'sequences' | 'signals'
+let amDetailView = 'sequences';
+let amDrilldown = null;  // null | 'meetings' | 'replies' | 'openplus3' | 'duogenerated'
 
 function fmtPct(v) {
   if (v === null || v === undefined || isNaN(v)) return '—';
@@ -2328,7 +2330,6 @@ function freshness(iso) {
   if (days < 7) return `hace ${days} días`;
   return `hace ${Math.floor(days / 7)} sem`;
 }
-
 function fmtDate(iso) {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -2336,51 +2337,61 @@ function fmtDate(iso) {
   return `${d.getDate()} ${months[d.getMonth()]}`;
 }
 
-// === MODAL para mostrar detalle al clickear KPI ===
-function showAmModal(title, content) {
-  // Crear backdrop si no existe
-  let modal = document.getElementById('am-modal');
-  if (!modal) {
-    modal = document.createElement('div');
-    modal.id = 'am-modal';
-    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)';
-    modal.onclick = (e) => { if (e.target === modal) closeAmModal(); };
-    document.body.appendChild(modal);
+// === DRILLDOWN INLINE: toggle + render ===
+function toggleAmDrilldown(which) {
+  amDrilldown = (amDrilldown === which) ? null : which;
+  renderAmplemarketDrilldown();
+  // Si se abrió un nuevo drilldown, scroll suave para que sea visible
+  if (amDrilldown) {
+    setTimeout(() => {
+      const el = document.getElementById('am-drilldown');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 50);
   }
-  modal.innerHTML = `
-    <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:900px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.5)" onclick="event.stopPropagation()">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:12px">
-        <div style="font-size:18px;font-weight:700;color:var(--text)">${title}</div>
-        <button onclick="closeAmModal()" style="background:transparent;border:0;color:var(--text-dim);font-size:24px;cursor:pointer;padding:4px 12px;border-radius:6px" onmouseover="this.style.background='var(--bg-3)';this.style.color='var(--text)'" onmouseout="this.style.background='transparent';this.style.color='var(--text-dim)'">×</button>
-      </div>
-      ${content}
-    </div>
-  `;
-  modal.style.display = 'flex';
-  // Cerrar con Escape
-  document.addEventListener('keydown', amModalEsc);
 }
 
-function closeAmModal() {
-  const modal = document.getElementById('am-modal');
-  if (modal) modal.style.display = 'none';
-  document.removeEventListener('keydown', amModalEsc);
-}
-
-function amModalEsc(e) {
-  if (e.key === 'Escape') closeAmModal();
-}
-
-// === DRILLDOWNS por KPI ===
-function showMeetingsDetail() {
-  const am = AM_DATA;
-  const meetings = am.meetingsDetail || [];
-  if (meetings.length === 0) {
-    showAmModal('🎯 Reuniones agendadas', '<div style="padding:20px;color:var(--text-dim);text-align:center">No hay detalle disponible. Pide actualizar Amplemarket.</div>');
+function renderAmplemarketDrilldown() {
+  const container = document.getElementById('am-drilldown');
+  if (!container) return;
+  
+  if (!amDrilldown) {
+    container.innerHTML = '';
+    container.style.display = 'none';
     return;
   }
   
-  // Agrupar por producto + canal
+  container.style.display = 'block';
+  
+  if (amDrilldown === 'meetings') container.innerHTML = renderMeetingsDrilldown();
+  else if (amDrilldown === 'replies') container.innerHTML = renderRepliesDrilldown();
+  else if (amDrilldown === 'openplus3') container.innerHTML = renderOpenPlus3Drilldown();
+  else if (amDrilldown === 'duogenerated') container.innerHTML = renderDuoGeneratedDrilldown();
+  
+  // Update KPI active states
+  document.querySelectorAll('[data-am-kpi]').forEach(el => {
+    const isActive = el.dataset.amKpi === amDrilldown;
+    el.style.boxShadow = isActive ? '0 0 0 2px var(--purple)' : '';
+  });
+}
+
+function drilldownHeader(title, color) {
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+      <div style="font-size:16px;font-weight:700;color:${color || 'var(--text)'}">${title}</div>
+      <button onclick="toggleAmDrilldown(null)" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer" onmouseover="this.style.color='var(--text)';this.style.background='var(--bg-3)'" onmouseout="this.style.color='var(--text-dim)';this.style.background='transparent'">Cerrar ✕</button>
+    </div>
+  `;
+}
+
+function renderMeetingsDrilldown() {
+  const am = AM_DATA;
+  const meetings = am.meetingsDetail || [];
+  if (meetings.length === 0) {
+    return `<div class="section">${drilldownHeader('🎯 Reuniones agendadas', 'var(--mint)')}<div style="padding:20px;color:var(--text-dim);text-align:center">No hay detalle disponible.</div></div>`;
+  }
+  
   const byProducto = {};
   meetings.forEach(m => {
     const key = m.producto;
@@ -2388,193 +2399,141 @@ function showMeetingsDetail() {
     byProducto[key][m.canal]++;
   });
   
-  let summary = '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">';
+  let summary = '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">';
   Object.keys(byProducto).sort().forEach(prod => {
     const v = byProducto[prod];
     summary += `<span style="background:var(--bg-3);border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;color:var(--text)"><strong>${prod}</strong>: ${v.SEQ + v.DUO} <span style="color:var(--text-dim)">(${v.SEQ} SEQ · ${v.DUO} DUO)</span></span>`;
   });
   summary += '</div>';
   
-  let html = summary + `
-    <table class="tbl">
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Empresa</th>
-          <th>Contacto</th>
-          <th>Cargo</th>
-          <th>Producto</th>
-          <th>Canal</th>
-          <th>Secuencia</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
+  let html = `<div class="section" style="border-left:3px solid var(--mint)">${drilldownHeader(`🎯 Reuniones agendadas — ${meetings.length} en últimos 30 días`, 'var(--mint)')}` + summary;
+  html += `<div style="overflow-x:auto"><table class="tbl">
+    <thead>
+      <tr><th>Fecha</th><th>Empresa</th><th>Contacto</th><th>Cargo</th><th>Producto</th><th>Canal</th><th>Secuencia</th></tr>
+    </thead>
+    <tbody>`;
   meetings.forEach(m => {
     const canalColor = m.canal === 'SEQ' ? 'var(--mint)' : 'var(--purple)';
-    html += `
-      <tr>
-        <td style="color:var(--text-dim);font-size:12px;white-space:nowrap">${fmtDate(m.date)}</td>
-        <td style="font-weight:600;color:var(--text)">${m.company}</td>
-        <td style="color:var(--text)">${m.name}</td>
-        <td style="color:var(--text-dim);font-size:12px">${m.title}</td>
-        <td style="color:var(--text);font-weight:700">${m.producto}</td>
-        <td style="color:${canalColor};font-weight:600">${m.canal === 'SEQ' ? '📋 SEQ' : '🔮 DUO'}</td>
-        <td style="color:var(--text-dim);font-size:11px">${m.sequence.trim()}</td>
-      </tr>
-    `;
+    html += `<tr>
+      <td style="color:var(--text-dim);font-size:12px;white-space:nowrap">${fmtDate(m.date)}</td>
+      <td style="font-weight:600;color:var(--text)">${m.company}</td>
+      <td style="color:var(--text)">${m.name}</td>
+      <td style="color:var(--text-dim);font-size:12px">${m.title}</td>
+      <td style="color:var(--text);font-weight:700">${m.producto}</td>
+      <td style="color:${canalColor};font-weight:600">${m.canal === 'SEQ' ? '📋 SEQ' : '🔮 DUO'}</td>
+      <td style="color:var(--text-dim);font-size:11px">${(m.sequence || '').trim()}</td>
+    </tr>`;
   });
-  html += '</tbody></table>';
-  
-  showAmModal(`🎯 Reuniones agendadas — ${meetings.length} en últimos 30 días`, html);
+  html += '</tbody></table></div></div>';
+  return html;
 }
 
-function showRepliesDetail() {
+function renderRepliesDrilldown() {
   const am = AM_DATA;
   const replies = am.repliesDetail || [];
   if (replies.length === 0) {
-    showAmModal('💬 Respuestas', '<div style="padding:20px;color:var(--text-dim);text-align:center">No hay detalle disponible.</div>');
-    return;
+    return `<div class="section">${drilldownHeader('💬 Respuestas', 'var(--cyan)')}<div style="padding:20px;color:var(--text-dim);text-align:center">No hay detalle disponible.</div></div>`;
   }
   
-  // Agrupar por tag
   const byTag = {};
   replies.forEach(r => {
     const tag = r.tag || 'unknown';
     byTag[tag] = (byTag[tag] || 0) + 1;
   });
   
-  let summary = '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">';
+  let summary = '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">';
   Object.entries(byTag).sort((a,b) => b[1]-a[1]).forEach(([tag, cnt]) => {
     const st = REPLY_TAG_STYLES[tag] || REPLY_TAG_STYLES.unknown;
     summary += `<span style="background:var(--bg-3);border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;color:${st.color}"><strong>${cnt}</strong> ${st.label}</span>`;
   });
   summary += '</div>';
   
-  const noteHtml = replies.length < am.kpis.replies 
-    ? `<div style="background:var(--bg-3);border:1px solid var(--border);border-left:3px solid var(--cyan);padding:10px 14px;margin-bottom:16px;border-radius:6px;font-size:12px;color:var(--text-dim)">📋 Mostrando los <strong style="color:var(--text)">${replies.length}</strong> replies más recientes de un total de <strong style="color:var(--text)">${am.kpis.replies}</strong>.</div>`
-    : '';
+  const completeness = replies.length >= am.kpis.replies 
+    ? `<div style="background:var(--bg-3);border:1px solid var(--border);border-left:3px solid var(--mint);padding:8px 12px;margin-bottom:12px;border-radius:6px;font-size:12px;color:var(--text-dim)">✅ Mostrando los <strong style="color:var(--text)">${replies.length}</strong> replies completos del último mes.</div>`
+    : `<div style="background:var(--bg-3);border:1px solid var(--border);border-left:3px solid var(--yellow);padding:8px 12px;margin-bottom:12px;border-radius:6px;font-size:12px;color:var(--text-dim)">⚠️ Mostrando <strong style="color:var(--text)">${replies.length}</strong> de <strong style="color:var(--text)">${am.kpis.replies}</strong> replies. Pide actualizar Amplemarket para traer todos.</div>`;
   
-  let html = summary + noteHtml + `
-    <table class="tbl">
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Empresa</th>
-          <th>Contacto</th>
-          <th>Cargo</th>
-          <th>Producto</th>
-          <th>Canal</th>
-          <th>Clasificación</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
+  let html = `<div class="section" style="border-left:3px solid var(--cyan)">${drilldownHeader(`💬 Replies — ${replies.length} de ${am.kpis.replies}`, 'var(--cyan)')}` + summary + completeness;
+  html += `<div style="overflow-x:auto"><table class="tbl">
+    <thead>
+      <tr><th>Fecha</th><th>Empresa</th><th>Contacto</th><th>Cargo</th><th>Producto</th><th>Canal</th><th>Clasificación</th></tr>
+    </thead>
+    <tbody>`;
   replies.forEach(r => {
     const st = REPLY_TAG_STYLES[r.tag] || REPLY_TAG_STYLES.unknown;
     const canalColor = r.canal === 'SEQ' ? 'var(--mint)' : 'var(--purple)';
-    html += `
-      <tr>
-        <td style="color:var(--text-dim);font-size:12px;white-space:nowrap">${fmtDate(r.date)}</td>
-        <td style="font-weight:600;color:var(--text)">${r.company}</td>
-        <td style="color:var(--text)">${r.name}</td>
-        <td style="color:var(--text-dim);font-size:12px">${r.title}</td>
-        <td style="color:var(--text);font-weight:700">${r.producto}</td>
-        <td style="color:${canalColor};font-weight:600;font-size:12px">${r.canal === 'SEQ' ? '📋' : '🔮'} ${r.canal}</td>
-        <td style="color:${st.color};font-weight:600;font-size:12px">${st.label}</td>
-      </tr>
-    `;
+    html += `<tr>
+      <td style="color:var(--text-dim);font-size:12px;white-space:nowrap">${fmtDate(r.date)}</td>
+      <td style="font-weight:600;color:var(--text)">${r.company || '—'}</td>
+      <td style="color:var(--text)">${r.name || '—'}</td>
+      <td style="color:var(--text-dim);font-size:12px">${r.title || '—'}</td>
+      <td style="color:var(--text);font-weight:700">${r.producto}</td>
+      <td style="color:${canalColor};font-weight:600;font-size:12px">${r.canal === 'SEQ' ? '📋' : '🔮'} ${r.canal}</td>
+      <td style="color:${st.color};font-weight:600;font-size:12px">${st.label}</td>
+    </tr>`;
   });
-  html += '</tbody></table>';
-  
-  showAmModal(`💬 Replies — ${replies.length} de ${am.kpis.replies}`, html);
+  html += '</tbody></table></div></div>';
+  return html;
 }
 
-function showOpenPlus3Detail() {
+function renderOpenPlus3Drilldown() {
   const am = AM_DATA;
   const breakdown = am.openPlus3Breakdown || [];
-  
   if (breakdown.length === 0) {
-    showAmModal('📨 Open+3 (engaged)', '<div style="padding:20px;color:var(--text-dim);text-align:center">No hay detalle disponible.</div>');
-    return;
+    return `<div class="section">${drilldownHeader('📨 Open+3 (engaged)', 'var(--yellow)')}<div style="padding:20px;color:var(--text-dim);text-align:center">No hay detalle disponible.</div></div>`;
   }
   
-  let html = `
-    <div style="background:var(--bg-3);border:1px solid var(--border);border-left:3px solid var(--yellow);padding:10px 14px;margin-bottom:16px;border-radius:6px;font-size:12px;color:var(--text-dim)">
-      📨 <strong style="color:var(--text)">Open+3</strong> = leads en secuencias con tasa de apertura mayor a 60%. Estos son los leads más comprometidos: abrieron al menos 1 email y la secuencia tiene engagement alto. Top secuencias contribuyendo:
+  let html = `<div class="section" style="border-left:3px solid var(--yellow)">${drilldownHeader(`📨 Open+3 — ${am.kpis.openPlus3.toLocaleString()} leads engaged`, 'var(--yellow)')}
+    <div style="background:var(--bg-3);border:1px solid var(--border);padding:10px 14px;margin-bottom:14px;border-radius:6px;font-size:12px;color:var(--text-dim)">
+      📨 <strong style="color:var(--text)">Open+3</strong> = leads en secuencias con tasa de apertura mayor a 60%. Estos son los leads más comprometidos: abrieron al menos 1 email y la secuencia tiene engagement alto.
     </div>
-    <table class="tbl">
+    <div style="overflow-x:auto"><table class="tbl">
       <thead>
-        <tr>
-          <th>Producto</th>
-          <th>Secuencia</th>
-          <th class="num">Leads</th>
-          <th class="num">Opens</th>
-          <th class="num">Open Rate</th>
-        </tr>
+        <tr><th>Producto</th><th>Secuencia</th><th class="num">Leads</th><th class="num">Opens</th><th class="num">Open Rate</th></tr>
       </thead>
-      <tbody>
-  `;
+      <tbody>`;
   breakdown.forEach(b => {
-    html += `
-      <tr>
-        <td style="font-weight:700;color:var(--text)">${b.producto}</td>
-        <td style="color:var(--text-dim);font-size:12px">${b.secuencia.trim()}</td>
-        <td class="num">${fmtNum(b.leads)}</td>
-        <td class="num">${fmtNum(b.opens)}</td>
-        <td class="num" style="color:var(--mint);font-weight:600">${fmtPct(b.openRate)}</td>
-      </tr>
-    `;
+    html += `<tr>
+      <td style="font-weight:700;color:var(--text)">${b.producto}</td>
+      <td style="color:var(--text-dim);font-size:12px">${b.secuencia.trim()}</td>
+      <td class="num">${fmtNum(b.leads)}</td>
+      <td class="num">${fmtNum(b.opens)}</td>
+      <td class="num" style="color:var(--mint);font-weight:600">${fmtPct(b.openRate)}</td>
+    </tr>`;
   });
-  html += '</tbody></table>';
-  
-  showAmModal(`📨 Open+3 — ${am.kpis.openPlus3.toLocaleString()} leads engaged`, html);
+  html += '</tbody></table></div></div>';
+  return html;
 }
 
-function showDuoGeneratedDetail() {
+function renderDuoGeneratedDrilldown() {
   const am = AM_DATA;
   const breakdown = am.duoBreakdown || [];
-  
   if (breakdown.length === 0) {
-    showAmModal('🔮 DUO Generated', '<div style="padding:20px;color:var(--text-dim);text-align:center">No hay detalle disponible.</div>');
-    return;
+    return `<div class="section">${drilldownHeader('🔮 DUO Generated', 'var(--purple)')}<div style="padding:20px;color:var(--text-dim);text-align:center">No hay detalle disponible.</div></div>`;
   }
   
-  let html = `
-    <div style="background:var(--bg-3);border:1px solid var(--border);border-left:3px solid var(--purple);padding:10px 14px;margin-bottom:16px;border-radius:6px;font-size:12px;color:var(--text-dim)">
-      🔮 <strong style="color:var(--text)">DuoCopilot</strong> detecta señales (job changes, posts mentioning keywords, job openings, etc.) y las propone para secuenciar automáticamente. Funnel: Generated → Sequenced → Replies → Meetings.
+  let html = `<div class="section" style="border-left:3px solid var(--purple)">${drilldownHeader(`🔮 DUO Generated — ${am.kpis.duoGenerated.toLocaleString()} señales`, 'var(--purple)')}
+    <div style="background:var(--bg-3);border:1px solid var(--border);padding:10px 14px;margin-bottom:14px;border-radius:6px;font-size:12px;color:var(--text-dim)">
+      🔮 <strong style="color:var(--text)">DuoCopilot</strong> detecta señales (job changes, posts, job openings, etc.) y las propone para secuenciar automáticamente. Funnel: Generated → Sequenced → Replies → Meetings.
     </div>
-    <table class="tbl">
+    <div style="overflow-x:auto"><table class="tbl">
       <thead>
-        <tr>
-          <th>Producto</th>
-          <th>Señal</th>
-          <th class="num">Generated</th>
-          <th class="num">Sequenced</th>
-          <th class="num">Seq%</th>
-          <th class="num">Replies</th>
-          <th class="num">Mtgs</th>
-        </tr>
+        <tr><th>Producto</th><th>Señal</th><th class="num">Generated</th><th class="num">Sequenced</th><th class="num">Seq%</th><th class="num">Replies</th><th class="num">Mtgs</th></tr>
       </thead>
-      <tbody>
-  `;
+      <tbody>`;
   breakdown.forEach(b => {
     const seqRate = b.generated > 0 ? b.sequenced / b.generated : 0;
-    html += `
-      <tr>
-        <td style="font-weight:700;color:var(--text)">${b.producto}</td>
-        <td style="color:var(--text-dim);font-size:12px">${b.signal}</td>
-        <td class="num">${fmtNum(b.generated)}</td>
-        <td class="num">${fmtNum(b.sequenced)}</td>
-        <td class="num" style="${seqRate>=0.9?'color:var(--mint);font-weight:600':seqRate<0.5?'color:var(--red)':''}">${fmtPct(seqRate)}</td>
-        <td class="num">${b.replies || 0}</td>
-        <td class="num" style="${b.meetings>0?'color:var(--purple);font-weight:700':''}">${b.meetings || 0}</td>
-      </tr>
-    `;
+    html += `<tr>
+      <td style="font-weight:700;color:var(--text)">${b.producto}</td>
+      <td style="color:var(--text-dim);font-size:12px">${b.signal}</td>
+      <td class="num">${fmtNum(b.generated)}</td>
+      <td class="num">${fmtNum(b.sequenced)}</td>
+      <td class="num" style="${seqRate>=0.9?'color:var(--mint);font-weight:600':seqRate<0.5?'color:var(--red)':''}">${fmtPct(seqRate)}</td>
+      <td class="num">${b.replies || 0}</td>
+      <td class="num" style="${b.meetings>0?'color:var(--purple);font-weight:700':''}">${b.meetings || 0}</td>
+    </tr>`;
   });
-  html += '</tbody></table>';
-  
-  showAmModal(`🔮 DUO Generated — ${am.kpis.duoGenerated.toLocaleString()} señales`, html);
+  html += '</tbody></table></div></div>';
+  return html;
 }
 
 // === RENDER PRINCIPAL ===
@@ -2589,11 +2548,7 @@ function renderAmplemarket() {
           <div style="font-size:48px;margin-bottom:12px">⏳</div>
           <div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--text)">No hay snapshot disponible aún</div>
           <div style="color:var(--text-dim);margin-bottom:16px">El backend está activo pero el static data está vacío.</div>
-          <div style="background:var(--bg-2);padding:16px;border:1px solid var(--border);border-radius:6px;text-align:left;display:inline-block;max-width:480px">
-            <strong style="color:var(--purple)">¿Cómo actualizar?</strong><br>
-            <span style="color:var(--text-dim);font-size:13px">Pide a Claude en chat:</span><br>
-            <code style="background:var(--bg-3);padding:6px 12px;border-radius:4px;display:inline-block;margin-top:8px;color:var(--purple);border:1px solid var(--border)">"actualizar Amplemarket"</code>
-          </div>
+          <code style="background:var(--bg-3);padding:6px 12px;border-radius:4px;display:inline-block;color:var(--purple);border:1px solid var(--border)">"actualizar Amplemarket"</code>
         </div>
       </div>
     `;
@@ -2606,7 +2561,6 @@ function renderAmplemarket() {
   const totales = am.totales || {};
   const stats = am.stats || {};
 
-  // === KPI HEADER (clickables) ===
   let h = `
     <div class="section" style="margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px">
@@ -2615,8 +2569,7 @@ function renderAmplemarket() {
           <div style="font-size:12px;color:var(--text-dim);margin-top:2px">
             ${am.periodoDesde || '—'} → ${am.periodoHasta || '—'} · 
             Generado <strong style="color:var(--text)">${freshness(am.generadoEn)}</strong> · 
-            ${totales.seqSecuencias || 0} secuencias · ${totales.duoSignals || 0} señales DUO ·
-            <span style="color:var(--cyan)">💡 Click en cualquier KPI para ver detalle</span>
+            ${totales.seqSecuencias || 0} secuencias · ${totales.duoSignals || 0} señales DUO
           </div>
         </div>
         <button onclick="refreshAmplemarket()" style="background:linear-gradient(135deg,var(--purple),var(--pink));color:white;border:0;border-radius:8px;padding:8px 14px;font-weight:600;font-size:13px;cursor:pointer">
@@ -2625,28 +2578,31 @@ function renderAmplemarket() {
       </div>
 
       <div class="kpi-grid">
-        <div class="kpi kpi-mint" onclick="showMeetingsDetail()" style="cursor:pointer;transition:all 0.15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-          <div class="kpi-label">🎯 Reuniones agendadas <span style="color:var(--text-mute);font-size:10px">(click)</span></div>
+        <div class="kpi kpi-mint" data-am-kpi="meetings" onclick="toggleAmDrilldown('meetings')" style="cursor:pointer;transition:all 0.15s;${amDrilldown==='meetings'?'box-shadow:0 0 0 2px var(--mint)':''}" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+          <div class="kpi-label">🎯 Reuniones agendadas <span style="color:var(--text-mute);font-size:10px">${amDrilldown==='meetings'?'(abierto ▼)':'(click)'}</span></div>
           <div class="kpi-value">${k.meetings || 0}</div>
           <div class="kpi-sub">${totales.seqMeetings || 0} SEQ · ${totales.duoMeetings || 0} DUO</div>
         </div>
-        <div class="kpi kpi-cyan" onclick="showRepliesDetail()" style="cursor:pointer;transition:all 0.15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-          <div class="kpi-label">💬 Respuestas <span style="color:var(--text-mute);font-size:10px">(click)</span></div>
+        <div class="kpi kpi-cyan" data-am-kpi="replies" onclick="toggleAmDrilldown('replies')" style="cursor:pointer;transition:all 0.15s;${amDrilldown==='replies'?'box-shadow:0 0 0 2px var(--cyan)':''}" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+          <div class="kpi-label">💬 Respuestas <span style="color:var(--text-mute);font-size:10px">${amDrilldown==='replies'?'(abierto ▼)':'(click)'}</span></div>
           <div class="kpi-value">${k.replies || 0}</div>
           <div class="kpi-sub">${totales.seqReplies || 0} SEQ · ${totales.duoReplies || 0} DUO</div>
         </div>
-        <div class="kpi kpi-yellow" onclick="showOpenPlus3Detail()" style="cursor:pointer;transition:all 0.15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-          <div class="kpi-label">📨 Open+3 (engaged) <span style="color:var(--text-mute);font-size:10px">(click)</span></div>
+        <div class="kpi kpi-yellow" data-am-kpi="openplus3" onclick="toggleAmDrilldown('openplus3')" style="cursor:pointer;transition:all 0.15s;${amDrilldown==='openplus3'?'box-shadow:0 0 0 2px var(--yellow)':''}" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+          <div class="kpi-label">📨 Open+3 (engaged) <span style="color:var(--text-mute);font-size:10px">${amDrilldown==='openplus3'?'(abierto ▼)':'(click)'}</span></div>
           <div class="kpi-value">${fmtNum(k.openPlus3)}</div>
           <div class="kpi-sub">leads en seqs &gt;60% open rate</div>
         </div>
-        <div class="kpi kpi-purple" onclick="showDuoGeneratedDetail()" style="cursor:pointer;transition:all 0.15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-          <div class="kpi-label">🔮 DUO Generated <span style="color:var(--text-mute);font-size:10px">(click)</span></div>
+        <div class="kpi kpi-purple" data-am-kpi="duogenerated" onclick="toggleAmDrilldown('duogenerated')" style="cursor:pointer;transition:all 0.15s;${amDrilldown==='duogenerated'?'box-shadow:0 0 0 2px var(--purple)':''}" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+          <div class="kpi-label">🔮 DUO Generated <span style="color:var(--text-mute);font-size:10px">${amDrilldown==='duogenerated'?'(abierto ▼)':'(click)'}</span></div>
           <div class="kpi-value">${fmtNum(k.duoGenerated)}</div>
           <div class="kpi-sub">${totales.duoSequenced || 0} ya secuenciadas</div>
         </div>
       </div>
     </div>
+
+    <!-- Drilldown inline container -->
+    <div id="am-drilldown" style="display:none;margin-bottom:8px"></div>
   `;
 
   // === COMPARATIVO SEQ vs DUO POR PRODUCTO ===
@@ -2654,7 +2610,7 @@ function renderAmplemarket() {
     <div class="section">
       <div class="section-title">🥊 SEQ vs DUO — Comparativo por producto <span class="section-count">${productos.length}</span></div>
       <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px">Reply rate solo es comparable dentro del mismo canal. El ganador se define por reuniones agendadas.</div>
-      <table class="tbl">
+      <div style="overflow-x:auto"><table class="tbl">
         <thead>
           <tr>
             <th rowspan="2" style="vertical-align:bottom">Producto</th>
@@ -2663,45 +2619,32 @@ function renderAmplemarket() {
             <th rowspan="2" style="vertical-align:bottom;text-align:center">🏆 Ganador</th>
           </tr>
           <tr>
-            <th class="num" style="color:var(--mint)">Seqs</th>
-            <th class="num" style="color:var(--mint)">Leads</th>
-            <th class="num" style="color:var(--mint)">Open%</th>
-            <th class="num" style="color:var(--mint)">Reply%</th>
-            <th class="num" style="color:var(--mint)">Mtgs</th>
-            <th class="num" style="color:var(--purple)">Sigs</th>
-            <th class="num" style="color:var(--purple)">Gen</th>
-            <th class="num" style="color:var(--purple)">Seq%</th>
-            <th class="num" style="color:var(--purple)">Reply%</th>
-            <th class="num" style="color:var(--purple)">Mtgs</th>
+            <th class="num" style="color:var(--mint)">Seqs</th><th class="num" style="color:var(--mint)">Leads</th><th class="num" style="color:var(--mint)">Open%</th><th class="num" style="color:var(--mint)">Reply%</th><th class="num" style="color:var(--mint)">Mtgs</th>
+            <th class="num" style="color:var(--purple)">Sigs</th><th class="num" style="color:var(--purple)">Gen</th><th class="num" style="color:var(--purple)">Seq%</th><th class="num" style="color:var(--purple)">Reply%</th><th class="num" style="color:var(--purple)">Mtgs</th>
           </tr>
         </thead>
-        <tbody>
-  `;
+        <tbody>`;
 
   productos.forEach(p => {
     const s = p.seq, d = p.duo;
     const g = GANADOR_STYLES[p.ganador] || GANADOR_STYLES['inactivo'];
-    h += `
-      <tr>
-        <td style="font-weight:700;color:var(--text)">${p.codigo}</td>
-        <td class="num">${s.secuencias || 0}</td>
-        <td class="num">${fmtNum(s.leads)}</td>
-        <td class="num" style="${s.openRate>=0.5?'color:var(--mint);font-weight:600':''}">${s.leads>0?fmtPct(s.openRate):'—'}</td>
-        <td class="num" style="${s.replyRate>=0.02?'color:var(--mint);font-weight:600':s.replyRate<0.005&&s.leads>50?'color:var(--red)':''}">${s.leads>0?fmtPct(s.replyRate):'—'}</td>
-        <td class="num" style="${s.meetings>0?'color:var(--mint);font-weight:700':''}">${s.meetings || 0}</td>
-        <td class="num">${d.signals || 0}</td>
-        <td class="num">${fmtNum(d.generated)}</td>
-        <td class="num">${d.generated>0?fmtPct(d.sequenceRate):'—'}</td>
-        <td class="num" style="${d.replyRate>=0.02?'color:var(--purple);font-weight:600':''}">${d.sequenced>0?fmtPct(d.replyRate):'—'}</td>
-        <td class="num" style="${d.meetings>0?'color:var(--purple);font-weight:700':''}">${d.meetings || 0}</td>
-        <td style="text-align:center;color:${g.color};font-weight:600;font-size:12px;white-space:nowrap">
-          ${g.icon} ${g.label}
-        </td>
-      </tr>
-    `;
+    h += `<tr>
+      <td style="font-weight:700;color:var(--text)">${p.codigo}</td>
+      <td class="num">${s.secuencias || 0}</td>
+      <td class="num">${fmtNum(s.leads)}</td>
+      <td class="num" style="${s.openRate>=0.5?'color:var(--mint);font-weight:600':''}">${s.leads>0?fmtPct(s.openRate):'—'}</td>
+      <td class="num" style="${s.replyRate>=0.02?'color:var(--mint);font-weight:600':s.replyRate<0.005&&s.leads>50?'color:var(--red)':''}">${s.leads>0?fmtPct(s.replyRate):'—'}</td>
+      <td class="num" style="${s.meetings>0?'color:var(--mint);font-weight:700':''}">${s.meetings || 0}</td>
+      <td class="num">${d.signals || 0}</td>
+      <td class="num">${fmtNum(d.generated)}</td>
+      <td class="num">${d.generated>0?fmtPct(d.sequenceRate):'—'}</td>
+      <td class="num" style="${d.replyRate>=0.02?'color:var(--purple);font-weight:600':''}">${d.sequenced>0?fmtPct(d.replyRate):'—'}</td>
+      <td class="num" style="${d.meetings>0?'color:var(--purple);font-weight:700':''}">${d.meetings || 0}</td>
+      <td style="text-align:center;color:${g.color};font-weight:600;font-size:12px;white-space:nowrap">${g.icon} ${g.label}</td>
+    </tr>`;
   });
 
-  h += `</tbody></table></div>`;
+  h += `</tbody></table></div></div>`;
 
   // === ACCIONABLES ===
   const productosConDatos = [...new Set(accionables.map(a => a.producto))].sort();
@@ -2763,32 +2706,23 @@ function renderAmplemarket() {
   } else {
     h += `<table class="tbl">
       <thead>
-        <tr>
-          <th>Acción</th>
-          <th>Canal</th>
-          <th>Producto</th>
-          <th>Detalle</th>
-        </tr>
+        <tr><th>Acción</th><th>Canal</th><th>Producto</th><th>Detalle</th></tr>
       </thead>
-      <tbody>
-    `;
+      <tbody>`;
     filtrados.forEach(a => {
       const st = ACCION_STYLES[a.id] || ACCION_STYLES.optimizar;
-      h += `
-        <tr>
-          <td style="color:${st.color};font-weight:600;white-space:nowrap">${st.icon} ${st.cat}</td>
-          <td style="color:var(--text);font-weight:600">${a.canal === 'SEQ' ? '📋 SEQ' : '🔮 DUO'}</td>
-          <td style="color:var(--text);font-weight:700">${a.producto}</td>
-          <td style="color:var(--text-dim)">${a.detalle}</td>
-        </tr>
-      `;
+      h += `<tr>
+        <td style="color:${st.color};font-weight:600;white-space:nowrap">${st.icon} ${st.cat}</td>
+        <td style="color:var(--text);font-weight:600">${a.canal === 'SEQ' ? '📋 SEQ' : '🔮 DUO'}</td>
+        <td style="color:var(--text);font-weight:700">${a.producto}</td>
+        <td style="color:var(--text-dim)">${a.detalle}</td>
+      </tr>`;
     });
     h += `</tbody></table>`;
   }
   h += `</div>`;
 
-  // === DETALLE EXPANDIDO POR DEFAULT (no flecha) ===
-  // El usuario quería que ya esté desplegado y que cambiar tabs no haga scroll
+  // === DETALLE EXPANDIDO POR DEFAULT ===
   h += `
     <div class="section">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
@@ -2804,32 +2738,21 @@ function renderAmplemarket() {
       <div id="am-seq-detail" style="display:${amDetailView==='sequences'?'block':'none'}">
         <table class="tbl">
           <thead>
-            <tr>
-              <th>Producto</th>
-              <th>Secuencia</th>
-              <th class="num">Leads</th>
-              <th class="num">Open%</th>
-              <th class="num">Reply%</th>
-              <th class="num">Interesados</th>
-              <th class="num">Mtgs</th>
-            </tr>
+            <tr><th>Producto</th><th>Secuencia</th><th class="num">Leads</th><th class="num">Open%</th><th class="num">Reply%</th><th class="num">Interesados</th><th class="num">Mtgs</th></tr>
           </thead>
-          <tbody>
-  `;
+          <tbody>`;
 
   productos.forEach(p => {
     (p.seq.detalle || []).forEach(s => {
-      h += `
-        <tr>
-          <td style="font-weight:700;color:var(--text)">${p.codigo}</td>
-          <td style="font-size:12px;color:var(--text-dim)">${(s.nombre || '').trim()}</td>
-          <td class="num">${fmtNum(s.leads)}</td>
-          <td class="num" style="${s.openRate>=0.5?'color:var(--mint);font-weight:600':''}">${s.leads>0?fmtPct(s.openRate):'—'}</td>
-          <td class="num" style="${s.replyRate>=0.02?'color:var(--mint);font-weight:600':s.replyRate<0.005&&s.leads>50?'color:var(--red)':''}">${s.leads>0?fmtPct(s.replyRate):'—'}</td>
-          <td class="num">${s.interested || 0}</td>
-          <td class="num" style="${s.meetings>0?'color:var(--mint);font-weight:700':''}">${s.meetings || 0}</td>
-        </tr>
-      `;
+      h += `<tr>
+        <td style="font-weight:700;color:var(--text)">${p.codigo}</td>
+        <td style="font-size:12px;color:var(--text-dim)">${(s.nombre || '').trim()}</td>
+        <td class="num">${fmtNum(s.leads)}</td>
+        <td class="num" style="${s.openRate>=0.5?'color:var(--mint);font-weight:600':''}">${s.leads>0?fmtPct(s.openRate):'—'}</td>
+        <td class="num" style="${s.replyRate>=0.02?'color:var(--mint);font-weight:600':s.replyRate<0.005&&s.leads>50?'color:var(--red)':''}">${s.leads>0?fmtPct(s.replyRate):'—'}</td>
+        <td class="num">${s.interested || 0}</td>
+        <td class="num" style="${s.meetings>0?'color:var(--mint);font-weight:700':''}">${s.meetings || 0}</td>
+      </tr>`;
     });
   });
 
@@ -2838,34 +2761,22 @@ function renderAmplemarket() {
       <div id="am-duo-detail" style="display:${amDetailView==='signals'?'block':'none'}">
         <table class="tbl">
           <thead>
-            <tr>
-              <th>Producto</th>
-              <th>Señal DUO</th>
-              <th class="num">Generated</th>
-              <th class="num">Sequenced</th>
-              <th class="num">Seq%</th>
-              <th class="num">Replies</th>
-              <th class="num">Reply%</th>
-              <th class="num">Mtgs</th>
-            </tr>
+            <tr><th>Producto</th><th>Señal DUO</th><th class="num">Generated</th><th class="num">Sequenced</th><th class="num">Seq%</th><th class="num">Replies</th><th class="num">Reply%</th><th class="num">Mtgs</th></tr>
           </thead>
-          <tbody>
-  `;
+          <tbody>`;
 
   productos.forEach(p => {
     (p.duo.detalle || []).forEach(d => {
-      h += `
-        <tr>
-          <td style="font-weight:700;color:var(--text)">${p.codigo}</td>
-          <td style="font-size:12px;color:var(--text-dim)">${d.signal}</td>
-          <td class="num">${fmtNum(d.generated)}</td>
-          <td class="num">${fmtNum(d.sequenced)}</td>
-          <td class="num">${d.generated>0?fmtPct(d.sequenceRate):'—'}</td>
-          <td class="num">${d.replies || 0}</td>
-          <td class="num" style="${d.replyRate>=0.02?'color:var(--purple);font-weight:600':''}">${d.sequenced>0?fmtPct(d.replyRate):'—'}</td>
-          <td class="num" style="${d.meetings>0?'color:var(--purple);font-weight:700':''}">${d.meetings || 0}</td>
-        </tr>
-      `;
+      h += `<tr>
+        <td style="font-weight:700;color:var(--text)">${p.codigo}</td>
+        <td style="font-size:12px;color:var(--text-dim)">${d.signal}</td>
+        <td class="num">${fmtNum(d.generated)}</td>
+        <td class="num">${fmtNum(d.sequenced)}</td>
+        <td class="num">${d.generated>0?fmtPct(d.sequenceRate):'—'}</td>
+        <td class="num">${d.replies || 0}</td>
+        <td class="num" style="${d.replyRate>=0.02?'color:var(--purple);font-weight:600':''}">${d.sequenced>0?fmtPct(d.replyRate):'—'}</td>
+        <td class="num" style="${d.meetings>0?'color:var(--purple);font-weight:700':''}">${d.meetings || 0}</td>
+      </tr>`;
     });
   });
 
@@ -2874,6 +2785,9 @@ function renderAmplemarket() {
   `;
 
   $('#p-amplemarket').innerHTML = h;
+  
+  // Render drilldown if active
+  renderAmplemarketDrilldown();
 }
 
 function setAmFilter(dim, value) {
@@ -2881,16 +2795,12 @@ function setAmFilter(dim, value) {
   renderAmplemarket();
 }
 
-// FIX SCROLL BUG: cambiar tabs sin re-render completo
 function switchAmDetailViewInPlace(view) {
   amDetailView = view;
-  // Solo cambiar display de los 2 divs, NO re-render
   const seqDiv = document.getElementById('am-seq-detail');
   const duoDiv = document.getElementById('am-duo-detail');
   if (seqDiv) seqDiv.style.display = view === 'sequences' ? 'block' : 'none';
   if (duoDiv) duoDiv.style.display = view === 'signals' ? 'block' : 'none';
-  
-  // Actualizar estilo de botones sin re-render
   document.querySelectorAll('#p-amplemarket button[data-am-detail]').forEach(btn => {
     const isActive = btn.dataset.amDetail === view;
     btn.style.background = isActive ? 'var(--purple)' : '';
@@ -2900,7 +2810,7 @@ function switchAmDetailViewInPlace(view) {
 }
 
 function refreshAmplemarket() {
-  alert('🔄 Para actualizar Amplemarket:\n\n1. Abre el chat con Claude\n2. Escribe: "actualizar Amplemarket"\n3. Claude correrá las queries vía MCP (~1 min)\n4. Recarga este dashboard\n\nEl backend está activo y listo para recibir el snapshot.');
+  alert('🔄 Para actualizar Amplemarket:\n\n1. Abre el chat con Claude\n2. Escribe: "actualizar Amplemarket"\n3. Claude correrá las queries vía MCP (~1 min)\n4. Recarga este dashboard');
 }
 
 
