@@ -2275,9 +2275,7 @@ function openClaudeChat(promptId) {
 
 // --- AMPLEMARKET ---
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Tab Amplemarket v2.1 — Dark mode homologado al resto del dashboard
-// Usa SOLO variables CSS del dashboard: --bg, --bg-2, --bg-3, --text, etc.
-// Source: webhook /gr-amplemarket
+// Tab Amplemarket v3 — KPIs clickables con modal, detalle desplegado, fix scroll
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const ACCION_STYLES = {
@@ -2297,24 +2295,29 @@ const GANADOR_STYLES = {
   'inactivo':      { color: 'var(--text-mute)', icon: '💤', label: 'Inactivo' }
 };
 
-let amFilters = {
-  canal: 'todos',
-  tipo: 'todos',
-  producto: 'todos'
+const REPLY_TAG_STYLES = {
+  'interested':                { color: 'var(--mint)',   label: '✅ Interested' },
+  'introduction':              { color: 'var(--mint)',   label: '🤝 Introduction' },
+  'asked_to_circle_back_later':{ color: 'var(--cyan)',   label: '🔁 Circle back' },
+  'info_request':              { color: 'var(--cyan)',   label: 'ℹ️ Info request' },
+  'not_interested':            { color: 'var(--red)',    label: '❌ Not interested' },
+  'not_the_right_person':      { color: 'var(--yellow)', label: '↪️ Not right person' },
+  'do_not_contact':            { color: 'var(--red)',    label: '🚫 Do not contact' },
+  'ooo':                       { color: 'var(--text-mute)', label: '🌴 OOO' },
+  'unknown':                   { color: 'var(--text-mute)', label: '❓ Unknown' }
 };
 
-let amDetailView = 'sequences';
+let amFilters = { canal: 'todos', tipo: 'todos', producto: 'todos' };
+let amDetailView = 'sequences';  // 'sequences' | 'signals'
 
 function fmtPct(v) {
   if (v === null || v === undefined || isNaN(v)) return '—';
   return (Number(v) * 100).toFixed(1) + '%';
 }
-
 function fmtNum(v) {
   if (v === null || v === undefined) return '—';
   return Number(v).toLocaleString('en-US');
 }
-
 function freshness(iso) {
   if (!iso) return 'sin datos';
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
@@ -2323,10 +2326,258 @@ function freshness(iso) {
   if (hours < 24) return `hace ${hours}h`;
   if (days === 1) return 'hace 1 día';
   if (days < 7) return `hace ${days} días`;
-  if (days < 30) return `hace ${Math.floor(days / 7)} sem`;
-  return `hace ${Math.floor(days / 30)} meses`;
+  return `hace ${Math.floor(days / 7)} sem`;
 }
 
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  return `${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+// === MODAL para mostrar detalle al clickear KPI ===
+function showAmModal(title, content) {
+  // Crear backdrop si no existe
+  let modal = document.getElementById('am-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'am-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)';
+    modal.onclick = (e) => { if (e.target === modal) closeAmModal(); };
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `
+    <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:900px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.5)" onclick="event.stopPropagation()">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:12px">
+        <div style="font-size:18px;font-weight:700;color:var(--text)">${title}</div>
+        <button onclick="closeAmModal()" style="background:transparent;border:0;color:var(--text-dim);font-size:24px;cursor:pointer;padding:4px 12px;border-radius:6px" onmouseover="this.style.background='var(--bg-3)';this.style.color='var(--text)'" onmouseout="this.style.background='transparent';this.style.color='var(--text-dim)'">×</button>
+      </div>
+      ${content}
+    </div>
+  `;
+  modal.style.display = 'flex';
+  // Cerrar con Escape
+  document.addEventListener('keydown', amModalEsc);
+}
+
+function closeAmModal() {
+  const modal = document.getElementById('am-modal');
+  if (modal) modal.style.display = 'none';
+  document.removeEventListener('keydown', amModalEsc);
+}
+
+function amModalEsc(e) {
+  if (e.key === 'Escape') closeAmModal();
+}
+
+// === DRILLDOWNS por KPI ===
+function showMeetingsDetail() {
+  const am = AM_DATA;
+  const meetings = am.meetingsDetail || [];
+  if (meetings.length === 0) {
+    showAmModal('🎯 Reuniones agendadas', '<div style="padding:20px;color:var(--text-dim);text-align:center">No hay detalle disponible. Pide actualizar Amplemarket.</div>');
+    return;
+  }
+  
+  // Agrupar por producto + canal
+  const byProducto = {};
+  meetings.forEach(m => {
+    const key = m.producto;
+    if (!byProducto[key]) byProducto[key] = { SEQ: 0, DUO: 0 };
+    byProducto[key][m.canal]++;
+  });
+  
+  let summary = '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">';
+  Object.keys(byProducto).sort().forEach(prod => {
+    const v = byProducto[prod];
+    summary += `<span style="background:var(--bg-3);border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;color:var(--text)"><strong>${prod}</strong>: ${v.SEQ + v.DUO} <span style="color:var(--text-dim)">(${v.SEQ} SEQ · ${v.DUO} DUO)</span></span>`;
+  });
+  summary += '</div>';
+  
+  let html = summary + `
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Empresa</th>
+          <th>Contacto</th>
+          <th>Cargo</th>
+          <th>Producto</th>
+          <th>Canal</th>
+          <th>Secuencia</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  meetings.forEach(m => {
+    const canalColor = m.canal === 'SEQ' ? 'var(--mint)' : 'var(--purple)';
+    html += `
+      <tr>
+        <td style="color:var(--text-dim);font-size:12px;white-space:nowrap">${fmtDate(m.date)}</td>
+        <td style="font-weight:600;color:var(--text)">${m.company}</td>
+        <td style="color:var(--text)">${m.name}</td>
+        <td style="color:var(--text-dim);font-size:12px">${m.title}</td>
+        <td style="color:var(--text);font-weight:700">${m.producto}</td>
+        <td style="color:${canalColor};font-weight:600">${m.canal === 'SEQ' ? '📋 SEQ' : '🔮 DUO'}</td>
+        <td style="color:var(--text-dim);font-size:11px">${m.sequence.trim()}</td>
+      </tr>
+    `;
+  });
+  html += '</tbody></table>';
+  
+  showAmModal(`🎯 Reuniones agendadas — ${meetings.length} en últimos 30 días`, html);
+}
+
+function showRepliesDetail() {
+  const am = AM_DATA;
+  const replies = am.repliesDetail || [];
+  if (replies.length === 0) {
+    showAmModal('💬 Respuestas', '<div style="padding:20px;color:var(--text-dim);text-align:center">No hay detalle disponible.</div>');
+    return;
+  }
+  
+  // Agrupar por tag
+  const byTag = {};
+  replies.forEach(r => {
+    const tag = r.tag || 'unknown';
+    byTag[tag] = (byTag[tag] || 0) + 1;
+  });
+  
+  let summary = '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">';
+  Object.entries(byTag).sort((a,b) => b[1]-a[1]).forEach(([tag, cnt]) => {
+    const st = REPLY_TAG_STYLES[tag] || REPLY_TAG_STYLES.unknown;
+    summary += `<span style="background:var(--bg-3);border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;color:${st.color}"><strong>${cnt}</strong> ${st.label}</span>`;
+  });
+  summary += '</div>';
+  
+  const noteHtml = replies.length < am.kpis.replies 
+    ? `<div style="background:var(--bg-3);border:1px solid var(--border);border-left:3px solid var(--cyan);padding:10px 14px;margin-bottom:16px;border-radius:6px;font-size:12px;color:var(--text-dim)">📋 Mostrando los <strong style="color:var(--text)">${replies.length}</strong> replies más recientes de un total de <strong style="color:var(--text)">${am.kpis.replies}</strong>.</div>`
+    : '';
+  
+  let html = summary + noteHtml + `
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Empresa</th>
+          <th>Contacto</th>
+          <th>Cargo</th>
+          <th>Producto</th>
+          <th>Canal</th>
+          <th>Clasificación</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  replies.forEach(r => {
+    const st = REPLY_TAG_STYLES[r.tag] || REPLY_TAG_STYLES.unknown;
+    const canalColor = r.canal === 'SEQ' ? 'var(--mint)' : 'var(--purple)';
+    html += `
+      <tr>
+        <td style="color:var(--text-dim);font-size:12px;white-space:nowrap">${fmtDate(r.date)}</td>
+        <td style="font-weight:600;color:var(--text)">${r.company}</td>
+        <td style="color:var(--text)">${r.name}</td>
+        <td style="color:var(--text-dim);font-size:12px">${r.title}</td>
+        <td style="color:var(--text);font-weight:700">${r.producto}</td>
+        <td style="color:${canalColor};font-weight:600;font-size:12px">${r.canal === 'SEQ' ? '📋' : '🔮'} ${r.canal}</td>
+        <td style="color:${st.color};font-weight:600;font-size:12px">${st.label}</td>
+      </tr>
+    `;
+  });
+  html += '</tbody></table>';
+  
+  showAmModal(`💬 Replies — ${replies.length} de ${am.kpis.replies}`, html);
+}
+
+function showOpenPlus3Detail() {
+  const am = AM_DATA;
+  const breakdown = am.openPlus3Breakdown || [];
+  
+  if (breakdown.length === 0) {
+    showAmModal('📨 Open+3 (engaged)', '<div style="padding:20px;color:var(--text-dim);text-align:center">No hay detalle disponible.</div>');
+    return;
+  }
+  
+  let html = `
+    <div style="background:var(--bg-3);border:1px solid var(--border);border-left:3px solid var(--yellow);padding:10px 14px;margin-bottom:16px;border-radius:6px;font-size:12px;color:var(--text-dim)">
+      📨 <strong style="color:var(--text)">Open+3</strong> = leads en secuencias con tasa de apertura mayor a 60%. Estos son los leads más comprometidos: abrieron al menos 1 email y la secuencia tiene engagement alto. Top secuencias contribuyendo:
+    </div>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Secuencia</th>
+          <th class="num">Leads</th>
+          <th class="num">Opens</th>
+          <th class="num">Open Rate</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  breakdown.forEach(b => {
+    html += `
+      <tr>
+        <td style="font-weight:700;color:var(--text)">${b.producto}</td>
+        <td style="color:var(--text-dim);font-size:12px">${b.secuencia.trim()}</td>
+        <td class="num">${fmtNum(b.leads)}</td>
+        <td class="num">${fmtNum(b.opens)}</td>
+        <td class="num" style="color:var(--mint);font-weight:600">${fmtPct(b.openRate)}</td>
+      </tr>
+    `;
+  });
+  html += '</tbody></table>';
+  
+  showAmModal(`📨 Open+3 — ${am.kpis.openPlus3.toLocaleString()} leads engaged`, html);
+}
+
+function showDuoGeneratedDetail() {
+  const am = AM_DATA;
+  const breakdown = am.duoBreakdown || [];
+  
+  if (breakdown.length === 0) {
+    showAmModal('🔮 DUO Generated', '<div style="padding:20px;color:var(--text-dim);text-align:center">No hay detalle disponible.</div>');
+    return;
+  }
+  
+  let html = `
+    <div style="background:var(--bg-3);border:1px solid var(--border);border-left:3px solid var(--purple);padding:10px 14px;margin-bottom:16px;border-radius:6px;font-size:12px;color:var(--text-dim)">
+      🔮 <strong style="color:var(--text)">DuoCopilot</strong> detecta señales (job changes, posts mentioning keywords, job openings, etc.) y las propone para secuenciar automáticamente. Funnel: Generated → Sequenced → Replies → Meetings.
+    </div>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Señal</th>
+          <th class="num">Generated</th>
+          <th class="num">Sequenced</th>
+          <th class="num">Seq%</th>
+          <th class="num">Replies</th>
+          <th class="num">Mtgs</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  breakdown.forEach(b => {
+    const seqRate = b.generated > 0 ? b.sequenced / b.generated : 0;
+    html += `
+      <tr>
+        <td style="font-weight:700;color:var(--text)">${b.producto}</td>
+        <td style="color:var(--text-dim);font-size:12px">${b.signal}</td>
+        <td class="num">${fmtNum(b.generated)}</td>
+        <td class="num">${fmtNum(b.sequenced)}</td>
+        <td class="num" style="${seqRate>=0.9?'color:var(--mint);font-weight:600':seqRate<0.5?'color:var(--red)':''}">${fmtPct(seqRate)}</td>
+        <td class="num">${b.replies || 0}</td>
+        <td class="num" style="${b.meetings>0?'color:var(--purple);font-weight:700':''}">${b.meetings || 0}</td>
+      </tr>
+    `;
+  });
+  html += '</tbody></table>';
+  
+  showAmModal(`🔮 DUO Generated — ${am.kpis.duoGenerated.toLocaleString()} señales`, html);
+}
+
+// === RENDER PRINCIPAL ===
 function renderAmplemarket() {
   const am = AM_DATA;
   
@@ -2341,8 +2592,7 @@ function renderAmplemarket() {
           <div style="background:var(--bg-2);padding:16px;border:1px solid var(--border);border-radius:6px;text-align:left;display:inline-block;max-width:480px">
             <strong style="color:var(--purple)">¿Cómo actualizar?</strong><br>
             <span style="color:var(--text-dim);font-size:13px">Pide a Claude en chat:</span><br>
-            <code style="background:var(--bg-3);padding:6px 12px;border-radius:4px;display:inline-block;margin-top:8px;color:var(--purple);border:1px solid var(--border)">"actualizar Amplemarket"</code><br>
-            <span style="color:var(--text-mute);font-size:12px;margin-top:8px;display:block">Claude correrá las queries vía MCP de AM y posteará el snapshot en ~1 minuto.</span>
+            <code style="background:var(--bg-3);padding:6px 12px;border-radius:4px;display:inline-block;margin-top:8px;color:var(--purple);border:1px solid var(--border)">"actualizar Amplemarket"</code>
           </div>
         </div>
       </div>
@@ -2356,7 +2606,7 @@ function renderAmplemarket() {
   const totales = am.totales || {};
   const stats = am.stats || {};
 
-  // === KPI HEADER (usa clases nativas .kpi .kpi-mint etc) ===
+  // === KPI HEADER (clickables) ===
   let h = `
     <div class="section" style="margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px">
@@ -2365,7 +2615,8 @@ function renderAmplemarket() {
           <div style="font-size:12px;color:var(--text-dim);margin-top:2px">
             ${am.periodoDesde || '—'} → ${am.periodoHasta || '—'} · 
             Generado <strong style="color:var(--text)">${freshness(am.generadoEn)}</strong> · 
-            ${totales.seqSecuencias || 0} secuencias · ${totales.duoSignals || 0} señales DUO
+            ${totales.seqSecuencias || 0} secuencias · ${totales.duoSignals || 0} señales DUO ·
+            <span style="color:var(--cyan)">💡 Click en cualquier KPI para ver detalle</span>
           </div>
         </div>
         <button onclick="refreshAmplemarket()" style="background:linear-gradient(135deg,var(--purple),var(--pink));color:white;border:0;border-radius:8px;padding:8px 14px;font-weight:600;font-size:13px;cursor:pointer">
@@ -2374,23 +2625,23 @@ function renderAmplemarket() {
       </div>
 
       <div class="kpi-grid">
-        <div class="kpi kpi-mint">
-          <div class="kpi-label">🎯 Reuniones agendadas</div>
+        <div class="kpi kpi-mint" onclick="showMeetingsDetail()" style="cursor:pointer;transition:all 0.15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+          <div class="kpi-label">🎯 Reuniones agendadas <span style="color:var(--text-mute);font-size:10px">(click)</span></div>
           <div class="kpi-value">${k.meetings || 0}</div>
           <div class="kpi-sub">${totales.seqMeetings || 0} SEQ · ${totales.duoMeetings || 0} DUO</div>
         </div>
-        <div class="kpi kpi-cyan">
-          <div class="kpi-label">💬 Respuestas</div>
+        <div class="kpi kpi-cyan" onclick="showRepliesDetail()" style="cursor:pointer;transition:all 0.15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+          <div class="kpi-label">💬 Respuestas <span style="color:var(--text-mute);font-size:10px">(click)</span></div>
           <div class="kpi-value">${k.replies || 0}</div>
           <div class="kpi-sub">${totales.seqReplies || 0} SEQ · ${totales.duoReplies || 0} DUO</div>
         </div>
-        <div class="kpi kpi-yellow">
-          <div class="kpi-label">📨 Open+3 (engaged)</div>
+        <div class="kpi kpi-yellow" onclick="showOpenPlus3Detail()" style="cursor:pointer;transition:all 0.15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+          <div class="kpi-label">📨 Open+3 (engaged) <span style="color:var(--text-mute);font-size:10px">(click)</span></div>
           <div class="kpi-value">${fmtNum(k.openPlus3)}</div>
           <div class="kpi-sub">leads en seqs &gt;60% open rate</div>
         </div>
-        <div class="kpi kpi-purple">
-          <div class="kpi-label">🔮 DUO Generated</div>
+        <div class="kpi kpi-purple" onclick="showDuoGeneratedDetail()" style="cursor:pointer;transition:all 0.15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+          <div class="kpi-label">🔮 DUO Generated <span style="color:var(--text-mute);font-size:10px">(click)</span></div>
           <div class="kpi-value">${fmtNum(k.duoGenerated)}</div>
           <div class="kpi-sub">${totales.duoSequenced || 0} ya secuenciadas</div>
         </div>
@@ -2452,7 +2703,7 @@ function renderAmplemarket() {
 
   h += `</tbody></table></div>`;
 
-  // === ACCIONABLES con filtros ===
+  // === ACCIONABLES ===
   const productosConDatos = [...new Set(accionables.map(a => a.producto))].sort();
   
   const filtrados = accionables.filter(a => {
@@ -2469,7 +2720,6 @@ function renderAmplemarket() {
         Generadas automáticamente desde el comportamiento de cada secuencia y señal del último mes.
       </div>
 
-      <!-- KPI Acciones por tipo (clickable) -->
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px">
         ${['celebrar','reforzar','activar','optimizar','pausar'].map(tipo => {
           const cnt = stats.porTipo?.[tipo] || 0;
@@ -2485,7 +2735,6 @@ function renderAmplemarket() {
         }).join('')}
       </div>
 
-      <!-- Filtros canal/producto (chips estilo dashboard) -->
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
         <span style="font-size:12px;color:var(--text-dim);margin-right:4px">Canal:</span>
         ${['todos','SEQ','DUO'].map(c => `
@@ -2538,36 +2787,34 @@ function renderAmplemarket() {
   }
   h += `</div>`;
 
-  // === DETALLE EXPANDIBLE ===
+  // === DETALLE EXPANDIDO POR DEFAULT (no flecha) ===
+  // El usuario quería que ya esté desplegado y que cambiar tabs no haga scroll
   h += `
     <div class="section">
-      <div onclick="toggleAmDetail()" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:4px 0">
-        <span id="am-detail-arrow" style="font-size:14px;color:var(--text-dim)">▶</span>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <div class="section-title" style="margin:0">📊 Detalle por secuencia y señal <span class="section-count">${(totales.seqSecuencias || 0) + (totales.duoSignals || 0)}</span></div>
-      </div>
-
-      <div id="am-detail" style="display:none;margin-top:12px">
-        <div style="display:flex;gap:6px;margin-bottom:10px">
-          <button class="chip ${amDetailView==='sequences'?'chip-active':''}" data-am-detail="sequences" onclick="switchAmDetailView('sequences')"
+        <div style="display:flex;gap:6px">
+          <button class="chip" data-am-detail="sequences" onclick="switchAmDetailViewInPlace('sequences')"
                   style="${amDetailView==='sequences'?'background:var(--purple);color:white;border-color:var(--purple)':''}">📋 Secuencias (${totales.seqSecuencias || 0})</button>
-          <button class="chip ${amDetailView==='signals'?'chip-active':''}" data-am-detail="signals" onclick="switchAmDetailView('signals')"
+          <button class="chip" data-am-detail="signals" onclick="switchAmDetailViewInPlace('signals')"
                   style="${amDetailView==='signals'?'background:var(--purple);color:white;border-color:var(--purple)':''}">🔮 Señales DUO (${totales.duoSignals || 0})</button>
         </div>
+      </div>
 
-        <div id="am-seq-detail" style="display:${amDetailView==='sequences'?'block':'none'}">
-          <table class="tbl">
-            <thead>
-              <tr>
-                <th>Producto</th>
-                <th>Secuencia</th>
-                <th class="num">Leads</th>
-                <th class="num">Open%</th>
-                <th class="num">Reply%</th>
-                <th class="num">Interesados</th>
-                <th class="num">Mtgs</th>
-              </tr>
-            </thead>
-            <tbody>
+      <div id="am-seq-detail" style="display:${amDetailView==='sequences'?'block':'none'}">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Secuencia</th>
+              <th class="num">Leads</th>
+              <th class="num">Open%</th>
+              <th class="num">Reply%</th>
+              <th class="num">Interesados</th>
+              <th class="num">Mtgs</th>
+            </tr>
+          </thead>
+          <tbody>
   `;
 
   productos.forEach(p => {
@@ -2588,21 +2835,21 @@ function renderAmplemarket() {
 
   h += `</tbody></table></div>
 
-        <div id="am-duo-detail" style="display:${amDetailView==='signals'?'block':'none'}">
-          <table class="tbl">
-            <thead>
-              <tr>
-                <th>Producto</th>
-                <th>Señal DUO</th>
-                <th class="num">Generated</th>
-                <th class="num">Sequenced</th>
-                <th class="num">Seq%</th>
-                <th class="num">Replies</th>
-                <th class="num">Reply%</th>
-                <th class="num">Mtgs</th>
-              </tr>
-            </thead>
-            <tbody>
+      <div id="am-duo-detail" style="display:${amDetailView==='signals'?'block':'none'}">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Señal DUO</th>
+              <th class="num">Generated</th>
+              <th class="num">Sequenced</th>
+              <th class="num">Seq%</th>
+              <th class="num">Replies</th>
+              <th class="num">Reply%</th>
+              <th class="num">Mtgs</th>
+            </tr>
+          </thead>
+          <tbody>
   `;
 
   productos.forEach(p => {
@@ -2623,7 +2870,6 @@ function renderAmplemarket() {
   });
 
   h += `</tbody></table></div>
-      </div>
     </div>
   `;
 
@@ -2635,21 +2881,22 @@ function setAmFilter(dim, value) {
   renderAmplemarket();
 }
 
-function toggleAmDetail() {
-  const det = document.getElementById('am-detail');
-  const arrow = document.getElementById('am-detail-arrow');
-  if (det.style.display === 'none') {
-    det.style.display = 'block';
-    arrow.textContent = '▼';
-  } else {
-    det.style.display = 'none';
-    arrow.textContent = '▶';
-  }
-}
-
-function switchAmDetailView(view) {
+// FIX SCROLL BUG: cambiar tabs sin re-render completo
+function switchAmDetailViewInPlace(view) {
   amDetailView = view;
-  renderAmplemarket();
+  // Solo cambiar display de los 2 divs, NO re-render
+  const seqDiv = document.getElementById('am-seq-detail');
+  const duoDiv = document.getElementById('am-duo-detail');
+  if (seqDiv) seqDiv.style.display = view === 'sequences' ? 'block' : 'none';
+  if (duoDiv) duoDiv.style.display = view === 'signals' ? 'block' : 'none';
+  
+  // Actualizar estilo de botones sin re-render
+  document.querySelectorAll('#p-amplemarket button[data-am-detail]').forEach(btn => {
+    const isActive = btn.dataset.amDetail === view;
+    btn.style.background = isActive ? 'var(--purple)' : '';
+    btn.style.color = isActive ? 'white' : '';
+    btn.style.borderColor = isActive ? 'var(--purple)' : '';
+  });
 }
 
 function refreshAmplemarket() {
