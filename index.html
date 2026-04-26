@@ -801,6 +801,7 @@ let TASKS = null;
 let currentTab = 'recap';
 let pipelineFilters = { prod: 'ALL', owner: 'ALL', excludeP: false };
 let pendientesFilters = { persona: 'Todos', urgency: 'ALL', scope: 'ALL', sort: 'urgency', stage: 'ALL' };
+let alertasFilters = { accion: 'ALL', categoria: 'ALL', persona: 'Todos', producto: 'ALL', stage: 'ALL', minMonto: 0, sort: 'monto_desc' };
 let recapFilters = { persona: 'Todos', prodAct: 'ALL', prodCreado: 'ALL', prodMovido: 'ALL' };
 
 // --- Utilities ---
@@ -1636,33 +1637,22 @@ function renderPendientes() {
     filtered = filtered.filter(t => t.urgency === pendientesFilters.urgency);
   }
   if (pendientesFilters.scope === 'CLIENTE') {
-    filtered = filtered.filter(t => !t.internal);
-  } else if (pendientesFilters.scope === 'INTERNO') {
-    filtered = filtered.filter(t => t.internal);
+    filtered = filtered.filter(t => !t.isInternal);
+  } else if (pendientesFilters.scope === 'GR_INTERNO') {
+    filtered = filtered.filter(t => t.isInternal && /^(GR|INT)/i.test((t.title || '').toUpperCase().trim()));
+  } else if (pendientesFilters.scope === 'PT_INTERNO') {
+    filtered = filtered.filter(t => t.isInternal && /^PT/i.test((t.title || '').toUpperCase().trim()));
+  } else if (pendientesFilters.scope === 'INTERNO_TODO') {
+    filtered = filtered.filter(t => t.isInternal);
   }
 
-  // Construir mapa cliente → [stages] desde DATA.deals para filtro por stage
-  const clientStagesMap = {};
-  (DATA.deals || []).concat(DATA.won || []).forEach(d => {
-    const key = (d.cliente || d.name || '').toUpperCase();
-    if (!key) return;
-    if (!clientStagesMap[key]) clientStagesMap[key] = new Set();
-    clientStagesMap[key].add(d.stageLabel || d.stage || '—');
-  });
-
-  // Enriquecer cada tarea con los stages de sus deals asociados (por cliente)
-  filtered = filtered.map(t => {
-    const key = (t.client || '').toUpperCase();
-    const stages = clientStagesMap[key] ? Array.from(clientStagesMap[key]) : [];
-    return { ...t, dealStages: stages };
-  });
-
+  // dealStages viene precalculado del backend v15 (con aliases). No recalcular.
   // Aplicar filtro por stage si está activo
   if (pendientesFilters.stage && pendientesFilters.stage !== 'ALL') {
     if (pendientesFilters.stage === 'SIN_DEAL') {
-      filtered = filtered.filter(t => t.dealStages.length === 0);
+      filtered = filtered.filter(t => !t.dealStages || t.dealStages.length === 0);
     } else {
-      filtered = filtered.filter(t => t.dealStages.includes(pendientesFilters.stage));
+      filtered = filtered.filter(t => t.dealStages && t.dealStages.includes(pendientesFilters.stage));
     }
   }
 
@@ -1730,7 +1720,9 @@ function renderPendientes() {
       <span class="filter-label">Scope:</span>
       <button class="chip ${pendientesFilters.scope === 'ALL' ? 'active' : ''}" data-pendfilter="scope" data-pval="ALL">Todo</button>
       <button class="chip ${pendientesFilters.scope === 'CLIENTE' ? 'active' : ''}" data-pendfilter="scope" data-pval="CLIENTE">Solo Cliente</button>
-      <button class="chip ${pendientesFilters.scope === 'INTERNO' ? 'active' : ''}" data-pendfilter="scope" data-pval="INTERNO">Solo GR Interno</button>
+      <button class="chip ${pendientesFilters.scope === 'GR_INTERNO' ? 'active' : ''}" data-pendfilter="scope" data-pval="GR_INTERNO">Solo GR Interno</button>
+      <button class="chip ${pendientesFilters.scope === 'PT_INTERNO' ? 'active' : ''}" data-pendfilter="scope" data-pval="PT_INTERNO">Solo PT Interno</button>
+      <button class="chip ${pendientesFilters.scope === 'INTERNO_TODO' ? 'active' : ''}" data-pendfilter="scope" data-pval="INTERNO_TODO">Todo Interno</button>
     </div>
     <div class="filters">
       <span class="filter-label">Stage del deal:</span>
@@ -1778,7 +1770,11 @@ function renderPendientes() {
     const rowClass = t.urgency === 'vencida' ? 'urg-row' : (t.urgency === 'hoy' ? 'atn-row' : '');
     const prioTag = t.priority === 'HIGH' ? '<span class="tag tag-propuesta">HIGH</span>' :
                     t.priority === 'LOW' ? '<span class="tag tag-perdida">LOW</span>' : '';
-    const scopeTag = t.internal ? '<span class="tag tag-atraccion" style="margin-left:4px;">GR</span>' : '';
+    const scopeTag = t.isInternal
+      ? (/^PT/i.test((t.title || '').trim())
+          ? '<span class="tag tag-atraccion" style="margin-left:4px;background:rgba(99,102,241,.15);color:#A5B4FC;">PT</span>'
+          : '<span class="tag tag-atraccion" style="margin-left:4px;">GR</span>')
+      : '';
     const stageBadges = (t.dealStages || []).slice(0, 2).map(st =>
       `<span class="tag tag-atraccion" style="margin-left:4px;font-size:10px;">${st}</span>`
     ).join('');
@@ -1812,101 +1808,257 @@ function renderPendientes() {
   });
 }
 
-// --- ALERTAS ---
-// Genera alertas dinámicamente desde DATA.deals + TASKS
-// Lee los 3 grupos de alertas que el webhook ya computó en DATA.alertas
-function buildAlertsByGroup() {
-  const A = (DATA && DATA.alertas) || { sinAccion: [], renovaciones: [], prospeccionEstancada: [] };
+// --- ALERTAS v15 ---
+// 16 acciones agrupadas en 3 categorías (Cerrar / ReActivar / Higienizar)
+// Lista única filtrable + KPI header + 6 filtros (Acción, Categoría, Persona, Producto, Stage, Monto)
+// Default: ordenar por monto descendente
+// Source: DATA.alertas16 + DATA.statsAlertas16 (backend v15)
 
-  const sinAccion = (A.sinAccion || []).map(a => ({
-    deal: a.deal,
-    title: a.deal,
-    meta: `${a.stage || '—'} · ${a.owner || '—'} · ${fmtK(a.amount)}`,
-    body: a.motivo || 'Sin siguiente acción registrada.'
-  }));
+const ACCION_DEFS = [
+  // Cerrar
+  { id: 'empujarCierre',        label: 'Empujar al cierre',         icon: '🎯', cat: 'Cerrar' },
+  { id: 'tareaVencida',         label: 'Tarea pendiente vencida',   icon: '⏰', cat: 'Cerrar' },
+  { id: 'asignarPaso',          label: 'Asignar siguiente paso',    icon: '📌', cat: 'Cerrar' },
+  // ReActivar
+  { id: 'retomarConv',          label: 'Retomar conversación',      icon: '💬', cat: 'ReActivar' },
+  { id: 'agendarReunion',       label: 'Agendar reunión',           icon: '📞', cat: 'ReActivar' },
+  { id: 'reactivarCerrar',      label: 'Reactivar o cerrar',        icon: '🔄', cat: 'ReActivar' },
+  // Higienizar
+  { id: 'etiquetarProducto',    label: 'Etiquetar producto',        icon: '🏷️', cat: 'Higienizar' },
+  { id: 'definirMonto',         label: 'Definir monto',             icon: '💰', cat: 'Higienizar' },
+  { id: 'asignarOwner',         label: 'Asignar owner',             icon: '👤', cat: 'Higienizar' },
+  { id: 'vincularEmpresa',      label: 'Vincular empresa',          icon: '🏢', cat: 'Higienizar' },
+  { id: 'vincularContacto',     label: 'Vincular contacto',         icon: '📇', cat: 'Higienizar' },
+  { id: 'completarDescripcion', label: 'Completar descripción',     icon: '📝', cat: 'Higienizar' },
+  { id: 'setearDealtype',       label: 'Setear deal type',          icon: '🏗️', cat: 'Higienizar' },
+  { id: 'eliminarPrueba',       label: 'Eliminar deal de prueba',   icon: '🧹', cat: 'Higienizar' },
+  { id: 'definirCloseDate',     label: 'Definir fecha de cierre',   icon: '📅', cat: 'Higienizar' },
+  { id: 'resolverDuplicado',    label: 'Resolver duplicado',        icon: '🔁', cat: 'Higienizar' }
+];
 
-  const renovaciones = (A.renovaciones || []).map(a => ({
-    deal: a.deal,
-    title: a.deal,
-    meta: `${a.owner || '—'} · ${fmtK(a.amount)} · ${a.renewDate || 'sin fecha'}`,
-    body: a.diasParaVencer < 0
-      ? `Vencida hace ${Math.abs(a.diasParaVencer)} días. Iniciar conversación YA.`
-      : a.diasParaVencer === 0
-        ? 'Vence HOY. Contactar cliente de inmediato.'
-        : `${a.diasParaVencer} días para vencimiento. Preparar renovación.`
-  }));
+const CAT_STYLES = {
+  Cerrar:     { bg: 'rgba(239,68,68,.15)',  color: '#FCA5A5', icon: '🎯' },
+  ReActivar:  { bg: 'rgba(245,158,11,.15)', color: '#FCD34D', icon: '🤝' },
+  Higienizar: { bg: 'rgba(99,102,241,.15)', color: '#A5B4FC', icon: '🧰' }
+};
 
-  const prospeccionEstancada = (A.prospeccionEstancada || []).map(a => ({
-    deal: a.deal,
-    title: a.deal,
-    meta: `${a.stage || '—'} · ${a.owner || '—'} · ${fmtK(a.amount)}`,
-    body: a.motivo || 'Sin movimiento reciente.'
-  }));
+// Mapeo ownerId → persona (igual que en backend)
+function ownerIdToPersona(ownerId) {
+  if (ownerId === '82004391') return 'Martha';
+  if (ownerId === '77808624') return 'Migue';
+  return 'Otro';
+}
 
-  return { sinAccion, renovaciones, prospeccionEstancada };
+function applyAlertasFilters(alertas) {
+  let filtered = alertas.slice();
+
+  if (alertasFilters.accion !== 'ALL') {
+    filtered = filtered.filter(a => a.accion === alertasFilters.accion);
+  }
+  if (alertasFilters.categoria !== 'ALL') {
+    filtered = filtered.filter(a => a.categoria === alertasFilters.categoria);
+  }
+  if (alertasFilters.persona !== 'Todos') {
+    filtered = filtered.filter(a => {
+      const p = ownerIdToPersona(String(a.ownerId || ''));
+      return p === alertasFilters.persona || a.owner === alertasFilters.persona;
+    });
+  }
+  if (alertasFilters.producto !== 'ALL') {
+    filtered = filtered.filter(a => a.prod === alertasFilters.producto);
+  }
+  if (alertasFilters.stage !== 'ALL') {
+    filtered = filtered.filter(a => a.stage === alertasFilters.stage);
+  }
+  if (alertasFilters.minMonto > 0) {
+    filtered = filtered.filter(a => (a.amount || 0) >= alertasFilters.minMonto);
+  }
+
+  // Sort
+  const sortMode = alertasFilters.sort || 'monto_desc';
+  filtered.sort((a, b) => {
+    if (sortMode === 'monto_desc') return (b.amount || 0) - (a.amount || 0);
+    if (sortMode === 'dias_desc') return (b.days || 0) - (a.days || 0);
+    if (sortMode === 'urgencia') {
+      // Cerrar > ReActivar > Higienizar
+      const order = { Cerrar: 0, ReActivar: 1, Higienizar: 2 };
+      const c = (order[a.categoria] || 9) - (order[b.categoria] || 9);
+      if (c !== 0) return c;
+      return (b.amount || 0) - (a.amount || 0);
+    }
+    return 0;
+  });
+
+  return filtered;
 }
 
 function renderAlertas() {
-  const g = buildAlertsByGroup();
-  const total = g.sinAccion.length + g.renovaciones.length + g.prospeccionEstancada.length;
+  const allAlertas = (DATA && DATA.alertas16) || [];
+  const stats = (DATA && DATA.statsAlertas16) || { total: 0, revenueEnRiesgo: 0, porCategoria: {}, porAccion: {} };
 
   // Badge en la tab
   const badge = $('#alerts-count');
-  if (badge) badge.textContent = total;
+  if (badge) badge.textContent = stats.total || 0;
 
-  const groups = [
-    {
-      key: 'sinAccion',
-      title: 'SIN SIGUIENTE ACCIÓN',
-      subtitle: 'Deals activos sin task abierta ni close date válido',
-      level: 'crit',
-      items: g.sinAccion
-    },
-    {
-      key: 'renovaciones',
-      title: 'RENOVACIONES PRÓXIMAS',
-      subtitle: 'Won con renovación en los próximos 120 días',
-      level: 'imp',
-      items: g.renovaciones
-    },
-    {
-      key: 'prospeccionEstancada',
-      title: 'PROSPECCIÓN ESTANCADA',
-      subtitle: 'Deals P_ con close vencida o sin actividad',
-      level: 'op',
-      items: g.prospeccionEstancada
-    }
-  ];
+  // Cuántas son críticas (Cerrar) y de la semana (Cerrar + ReActivar)
+  const criticas = stats.porCategoria.Cerrar || 0;
+  const semana = (stats.porCategoria.Cerrar || 0) + (stats.porCategoria.ReActivar || 0);
 
-  let html = '';
-  groups.forEach(grp => {
-    if (grp.items.length === 0) return;
-    html += `<div class="section">
-      <div class="section-title">
-        ${grp.title} <span class="section-count">${grp.items.length}</span>
-        <span style="margin-left:auto;color:var(--text-dim);font-size:11px;font-weight:400;">${grp.subtitle}</span>
-      </div>`;
-    grp.items.forEach((a, i) => {
-      html += `<div class="alert alert-${grp.level}" data-alert="${grp.key}-${i}">
-        <div class="alert-header">
-          <div class="alert-title">${a.title}</div>
-          <div class="alert-badge alert-badge-${grp.level}">${grp.level.toUpperCase()}</div>
-        </div>
-        <div class="alert-meta">${a.meta}</div>
-        <div class="alert-body">${a.body}</div>
-      </div>`;
-    });
-    html += `</div>`;
+  // Aplicar filtros
+  const filtered = applyAlertasFilters(allAlertas);
+
+  // Counts por acción (en el dataset filtrado por categoria/persona/etc, excepto el filtro de acción mismo)
+  const accionCounts = {};
+  ACCION_DEFS.forEach(d => { accionCounts[d.id] = 0; });
+  let baseForAccion = allAlertas.slice();
+  if (alertasFilters.categoria !== 'ALL') baseForAccion = baseForAccion.filter(a => a.categoria === alertasFilters.categoria);
+  if (alertasFilters.persona !== 'Todos') baseForAccion = baseForAccion.filter(a => ownerIdToPersona(String(a.ownerId || '')) === alertasFilters.persona || a.owner === alertasFilters.persona);
+  if (alertasFilters.producto !== 'ALL') baseForAccion = baseForAccion.filter(a => a.prod === alertasFilters.producto);
+  baseForAccion.forEach(a => { accionCounts[a.accion] = (accionCounts[a.accion] || 0) + 1; });
+
+  // Productos disponibles
+  const productosDisponibles = Array.from(new Set(allAlertas.map(a => a.prod).filter(Boolean))).sort();
+
+  // KPI Header
+  let html = `
+    <div class="kpi-grid" style="margin-bottom:16px;">
+      <div class="kpi kpi-pink">
+        <div class="kpi-label">REVENUE EN JUEGO</div>
+        <div class="kpi-value">${fmtK(stats.revenueEnRiesgo || 0)}</div>
+        <div class="kpi-sub">en alertas activas</div>
+      </div>
+      <div class="kpi kpi-cyan">
+        <div class="kpi-label">TOTAL ALERTAS</div>
+        <div class="kpi-value">${stats.total || 0}</div>
+        <div class="kpi-sub">en HubSpot</div>
+      </div>
+      <div class="kpi kpi-purple">
+        <div class="kpi-label">CRÍTICAS</div>
+        <div class="kpi-value">${criticas}</div>
+        <div class="kpi-sub">cerrar urgente</div>
+      </div>
+      <div class="kpi kpi-yellow">
+        <div class="kpi-label">ACCIONES SEMANA</div>
+        <div class="kpi-value">${semana}</div>
+        <div class="kpi-sub">cerrar + reactivar</div>
+      </div>
+    </div>
+  `;
+
+  // Filtros
+  html += `<div class="filters">
+    <span class="filter-label">Acción:</span>
+    <button class="chip ${alertasFilters.accion === 'ALL' ? 'active' : ''}" data-alfilter="accion" data-aval="ALL">Todas (${stats.total || 0})</button>`;
+  ACCION_DEFS.forEach(d => {
+    const c = accionCounts[d.id] || 0;
+    if (c === 0 && alertasFilters.accion !== d.id) return; // ocultar acciones sin alertas (a menos que esté seleccionada)
+    html += `<button class="chip ${alertasFilters.accion === d.id ? 'active' : ''}" data-alfilter="accion" data-aval="${d.id}">${d.icon} ${d.label} (${c})</button>`;
   });
+  html += `</div>`;
 
-  if (total === 0) {
-    html = `<div class="section"><div class="empty">Sin alertas activas. Todo bajo control.</div></div>`;
+  html += `<div class="filters">
+    <span class="filter-label">Categoría:</span>
+    <button class="chip ${alertasFilters.categoria === 'ALL' ? 'active' : ''}" data-alfilter="categoria" data-aval="ALL">Todas</button>
+    <button class="chip ${alertasFilters.categoria === 'Cerrar' ? 'active' : ''}" data-alfilter="categoria" data-aval="Cerrar" style="color:#FCA5A5;">🎯 Cerrar (${stats.porCategoria.Cerrar || 0})</button>
+    <button class="chip ${alertasFilters.categoria === 'ReActivar' ? 'active' : ''}" data-alfilter="categoria" data-aval="ReActivar" style="color:#FCD34D;">🤝 ReActivar (${stats.porCategoria.ReActivar || 0})</button>
+    <button class="chip ${alertasFilters.categoria === 'Higienizar' ? 'active' : ''}" data-alfilter="categoria" data-aval="Higienizar" style="color:#A5B4FC;">🧰 Higienizar (${stats.porCategoria.Higienizar || 0})</button>
+  </div>`;
+
+  const personas = ['Todos', 'Mike', 'Migue', 'Martha', 'Fer', 'Otro'];
+  html += `<div class="filters">
+    <span class="filter-label">Persona:</span>`;
+  personas.forEach(p => {
+    html += `<button class="chip ${alertasFilters.persona === p ? 'active' : ''}" data-alfilter="persona" data-aval="${p}">${p}</button>`;
+  });
+  html += `</div>`;
+
+  html += `<div class="filters">
+    <span class="filter-label">Producto:</span>
+    <button class="chip ${alertasFilters.producto === 'ALL' ? 'active' : ''}" data-alfilter="producto" data-aval="ALL">Todos</button>`;
+  productosDisponibles.forEach(p => {
+    html += `<button class="chip ${alertasFilters.producto === p ? 'active' : ''}" data-alfilter="producto" data-aval="${p}">${p}</button>`;
+  });
+  html += `</div>`;
+
+  html += `<div class="filters">
+    <span class="filter-label">Stage:</span>
+    <button class="chip ${alertasFilters.stage === 'ALL' ? 'active' : ''}" data-alfilter="stage" data-aval="ALL">Todos</button>`;
+  ['Señal','Reply','Contactado','En Conv.','Atracción','Educación','Propuesta','Aprobación'].forEach(st => {
+    html += `<button class="chip ${alertasFilters.stage === st ? 'active' : ''}" data-alfilter="stage" data-aval="${st}">${st}</button>`;
+  });
+  html += `</div>`;
+
+  html += `<div class="filters">
+    <span class="filter-label">Monto mínimo:</span>
+    <button class="chip ${alertasFilters.minMonto === 0 ? 'active' : ''}" data-alfilter="minMonto" data-aval="0">Todos</button>
+    <button class="chip ${alertasFilters.minMonto === 10000 ? 'active' : ''}" data-alfilter="minMonto" data-aval="10000">≥ $10K</button>
+    <button class="chip ${alertasFilters.minMonto === 25000 ? 'active' : ''}" data-alfilter="minMonto" data-aval="25000">≥ $25K</button>
+    <button class="chip ${alertasFilters.minMonto === 50000 ? 'active' : ''}" data-alfilter="minMonto" data-aval="50000">≥ $50K</button>
+    <button class="chip ${alertasFilters.minMonto === 100000 ? 'active' : ''}" data-alfilter="minMonto" data-aval="100000">≥ $100K</button>
+  </div>`;
+
+  html += `<div class="filters">
+    <span class="filter-label">Ordenar por:</span>
+    <button class="chip ${alertasFilters.sort === 'monto_desc' ? 'active' : ''}" data-alfilter="sort" data-aval="monto_desc">💰 Monto ↓</button>
+    <button class="chip ${alertasFilters.sort === 'urgencia' ? 'active' : ''}" data-alfilter="sort" data-aval="urgencia">⚠️ Urgencia</button>
+    <button class="chip ${alertasFilters.sort === 'dias_desc' ? 'active' : ''}" data-alfilter="sort" data-aval="dias_desc">📅 Días estancado ↓</button>
+  </div>`;
+
+  // Lista
+  const revenueFiltered = filtered.reduce((s, a) => s + (a.amount || 0), 0);
+  html += `<div class="section-title" style="margin-top:16px;">
+    <span class="section-count">${filtered.length} alertas</span>
+    <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">${fmtK(revenueFiltered)} en juego · Ordenadas por ${alertasFilters.sort === 'monto_desc' ? 'monto descendente' : alertasFilters.sort === 'urgencia' ? 'urgencia' : 'días estancado'}</span>
+  </div>`;
+
+  if (filtered.length === 0) {
+    html += `<div class="empty">Sin alertas con estos filtros 🎉</div>`;
+  } else {
+    html += `<table class="tbl">
+      <thead><tr>
+        <th>Acción</th>
+        <th>Deal</th>
+        <th>Producto</th>
+        <th>Stage</th>
+        <th style="text-align:right;">Monto</th>
+        <th style="text-align:center;">Días</th>
+        <th>Owner</th>
+        <th>Motivo</th>
+      </tr></thead>
+      <tbody>`;
+    filtered.slice(0, 200).forEach(a => {
+      const cs = CAT_STYLES[a.categoria] || { bg: 'rgba(255,255,255,.1)', color: '#fff', icon: '•' };
+      const accDef = ACCION_DEFS.find(d => d.id === a.accion) || { icon: '•', label: a.accionLabel || a.accion };
+      const dealUrl = `https://app.hubspot.com/contacts/49671716/record/0-3/${a.dealId}`;
+      const diasTxt = a.days !== null && a.days !== undefined ? `${a.days}d` : '—';
+      const diasColor = a.days >= 7 ? '#FCA5A5' : a.days >= 3 ? '#FCD34D' : 'var(--text-dim)';
+      html += `<tr>
+        <td><span style="background:${cs.bg};color:${cs.color};padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;white-space:nowrap;">${accDef.icon} ${accDef.label}</span></td>
+        <td><a href="${dealUrl}" target="_blank" style="color:var(--accent);text-decoration:none;">${a.dealName}</a></td>
+        <td><span class="tag tag-atraccion">${a.prod || '—'}</span></td>
+        <td><span style="color:var(--text-dim);font-size:12px;">${a.stage || '—'}</span></td>
+        <td style="text-align:right;font-weight:600;">${fmtK(a.amount || 0)}</td>
+        <td style="text-align:center;color:${diasColor};font-weight:600;">${diasTxt}</td>
+        <td>${a.owner || '—'}</td>
+        <td style="color:var(--text-dim);font-size:12px;">${a.motivo || ''}</td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+    if (filtered.length > 200) {
+      html += `<div style="text-align:center;color:var(--text-dim);font-size:12px;margin-top:8px;">Mostrando primeras 200 de ${filtered.length} alertas. Aplica más filtros para ver todas.</div>`;
+    }
   }
 
   $('#p-alertas').innerHTML = html;
 
-  $$('[data-alert]').forEach(el => {
-    el.addEventListener('click', () => el.classList.toggle('open'));
+  $$('[data-alfilter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const f = btn.dataset.alfilter;
+      let v = btn.dataset.aval;
+      if (f === 'minMonto') v = parseInt(v, 10);
+      alertasFilters[f] = v;
+      renderAlertas();
+    });
   });
 }
 
