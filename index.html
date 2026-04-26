@@ -2067,8 +2067,8 @@ function renderAlertas() {
 
 // --- CHAT ---
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Tab Chat v1 — Bridge a Claude con prompts pre-cargados y contexto live
-// El botón abre claude.ai en pestaña nueva con el contexto del dashboard
+// Tab Chat v2 — Dark mode homologado al resto del dashboard
+// Bridge a Claude con prompts pre-cargados y contexto live
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const CHAT_PROMPTS = [
@@ -2077,9 +2077,7 @@ const CHAT_PROMPTS = [
     icon: '🧹',
     label: 'Higienizar deals',
     desc: 'Encuentra deals sin producto, sin monto, sin owner, sin contacto y propone arreglos batch.',
-    color: '#d97706',
-    bg: '#fef3c7',
-    requireContext: true,
+    cssVar: 'yellow',
     promptBuilder: (ctx) => {
       const total = ctx.alertasHigienizar || 0;
       return `Necesito higienizar deals en HubSpot.\n\nContexto del dashboard:\n- Tengo ${total} deals con problemas de higiene detectados\n- Categorías: sin producto, sin monto, sin owner, sin contacto, sin descripción, sin dealtype, fecha de cierre vencida, duplicados\n\nPor favor:\n1. Búscame los deals sin producto en el título (los que no empiezan con TW_, AM_, GenIA_, ITS_, LT_, AEO_, 360_, WB_, BD_, HS_, EX_, PT_)\n2. Para los primeros 10, dime qué producto sugieres basándote en la descripción y muéstrame una tabla\n3. Confirmamos batch antes de actualizar`;
@@ -2090,9 +2088,7 @@ const CHAT_PROMPTS = [
     icon: '🔄',
     label: 'Reactivar deals estancados',
     desc: 'Detecta deals sin actividad en 30+ días y propone mensaje de reactivación.',
-    color: '#7c3aed',
-    bg: '#ede9fe',
-    requireContext: true,
+    cssVar: 'purple',
     promptBuilder: (ctx) => {
       return `Necesito reactivar deals estancados en HubSpot.\n\nContexto del dashboard:\n- ${ctx.alertasReactivar || 0} deals identificados como "ReActivar" (sin actividad reciente, sin tarea futura)\n- Pipeline GR_ activo (excluye Pintaando)\n\nPor favor:\n1. Búscame los 5 deals con mayor monto que llevan más de 30 días sin actividad y están en stages activos (Atracción, En Conversación, Educación, Propuesta)\n2. Para cada uno, propón un mensaje corto de reactivación basándote en la última nota\n3. Espera mi aprobación antes de crear las tareas de seguimiento`;
     }
@@ -2102,9 +2098,7 @@ const CHAT_PROMPTS = [
     icon: '🎯',
     label: 'Empujar a cierre',
     desc: 'Deals con propuesta enviada o aprobación verbal — empujar al cierre.',
-    color: '#16a34a',
-    bg: '#dcfce7',
-    requireContext: true,
+    cssVar: 'mint',
     promptBuilder: (ctx) => {
       return `Necesito empujar al cierre los deals que están cerca.\n\nContexto del dashboard:\n- ${ctx.alertasCerrar || 0} deals identificados como "Cerrar" (Propuesta Enviada o Aprobación Verbal)\n- Revenue en juego: ${ctx.revenueEnJuego || '—'}\n\nPor favor:\n1. Lista los deals en stage "presentationscheduled" (Propuesta Enviada) ordenados por monto\n2. Para cada uno, dime cuándo fue el último contacto y qué tarea siguiente tiene\n3. Si no hay tarea siguiente, propón una con fecha para esta semana\n4. Confirmamos batch antes de crear las tareas`;
     }
@@ -2114,9 +2108,7 @@ const CHAT_PROMPTS = [
     icon: '📡',
     label: 'Actualizar Amplemarket',
     desc: 'Refresca el snapshot del dashboard con datos del último mes vía MCP.',
-    color: '#7c3aed',
-    bg: '#ede9fe',
-    requireContext: false,
+    cssVar: 'purple',
     promptBuilder: () => `actualizar Amplemarket`
   },
   {
@@ -2124,9 +2116,7 @@ const CHAT_PROMPTS = [
     icon: '📅',
     label: 'Agenda junta lunes',
     desc: 'Prepara los puntos críticos para la junta operativa del lunes.',
-    color: '#0ea5e9',
-    bg: '#e0f2fe',
-    requireContext: true,
+    cssVar: 'cyan',
     promptBuilder: (ctx) => {
       return `Prepara la agenda para la junta operativa del lunes.\n\nContexto del dashboard:\n- ${ctx.dealsActivos || 0} deals activos en pipeline\n- ${ctx.tareasVencidas || 0} tareas vencidas\n- ${ctx.alertasTotales || 0} alertas pendientes\n\nPor favor genera la agenda con esta estructura:\n1. **Wins de la semana** (deals movidos, won, reuniones agendadas)\n2. **Bloqueadores** (deals en riesgo de perderse)\n3. **Pendientes críticos** (tareas vencidas con monto alto)\n4. **Top 5 prospects** (cuentas con más actividad/interés esta semana)\n5. **Acción para cada miembro del equipo** (Migue, Martha, Fer, Mike) — qué hace cada uno esta semana`;
     }
@@ -2136,9 +2126,7 @@ const CHAT_PROMPTS = [
     icon: '🆕',
     label: 'Crear deal desde reunión',
     desc: 'Convierte un transcript o notas de reunión en deal + nota + tarea HubSpot.',
-    color: '#16a34a',
-    bg: '#dcfce7',
-    requireContext: false,
+    cssVar: 'mint',
     promptBuilder: () => {
       return `Necesito crear un deal en HubSpot desde una reunión que acabo de tener.\n\nVoy a pegarte el transcript o las notas. Por favor sigue el procedimiento Post-Reunión vB:\n\n1. Identifica empresa, contactos, producto discutido (TW/AM/GenIA/ITS/LT/AEO/360/WB)\n2. Detecta el stage correcto (Atracción/En Conversación/Educación/Propuesta)\n3. Aplica MEDDIC al transcript (M/E/D/D/I/C — cada uno ✅/🟡/❌)\n4. Identifica etapa Winning by Design (STATUS/ACTIVE/COMMITTED/SELECTED)\n5. Antes de crear:\n   - Búscame si ya existe la empresa o el deal en HubSpot\n   - Muéstrame en tabla qué vas a crear (deal + contactos + nota + tarea)\n6. Espera mi confirmación antes de ejecutar\n\n[Pega aquí el transcript o las notas]`;
     }
@@ -2148,9 +2136,7 @@ const CHAT_PROMPTS = [
     icon: '📊',
     label: 'Reporte semanal',
     desc: 'Genera el reporte semanal completo (Excel 7 tabs) cruzando HubSpot + Amplemarket.',
-    color: '#dc2626',
-    bg: '#fee2e2',
-    requireContext: false,
+    cssVar: 'red',
     promptBuilder: () => `genera el reporte semanal completo`
   },
   {
@@ -2158,9 +2144,7 @@ const CHAT_PROMPTS = [
     icon: '💬',
     label: 'Pregunta libre',
     desc: 'Cualquier consulta sobre el negocio: pipeline, clientes, secuencias, equipo.',
-    color: '#475569',
-    bg: '#f1f5f9',
-    requireContext: false,
+    cssVar: 'pink',
     promptBuilder: () => ''
   }
 ];
@@ -2173,7 +2157,6 @@ function buildChatContext() {
   const alertas16 = DATA.alertas16 || [];
   const stats = DATA.statsAlertas16 || {};
   
-  // Solo deals GR_ (no PT_)
   const grDeals = deals.filter(d => !d.name.startsWith('PT_'));
   
   return {
@@ -2198,31 +2181,31 @@ function renderChat() {
     <div class="section" style="margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px">
         <div>
-          <div style="font-size:18px;font-weight:700;color:#0f172a">💬 Chat con Claude</div>
-          <div style="font-size:12px;color:#64748b;margin-top:2px">
+          <div style="font-size:18px;font-weight:700;color:var(--text)">💬 Chat con Claude</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:2px">
             Claude tiene acceso a HubSpot, Amplemarket, Gmail, Calendar, Drive y n8n. Click en cualquier opción para abrir un chat con el contexto pre-cargado.
           </div>
         </div>
       </div>
       
-      <!-- Live context summary -->
-      <div style="background:linear-gradient(135deg,#f8fafc,#f1f5f9);border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:14px">
-        <div style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Contexto live del dashboard</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;font-size:13px">
-          <div><span style="color:#64748b">Deals activos:</span> <strong>${ctx.dealsActivos}</strong></div>
-          <div><span style="color:#64748b">Tareas vencidas:</span> <strong>${ctx.tareasVencidas}</strong></div>
-          <div><span style="color:#64748b">Total alertas:</span> <strong>${ctx.alertasTotales}</strong></div>
-          <div><span style="color:#64748b">A cerrar:</span> <strong style="color:#16a34a">${ctx.alertasCerrar}</strong></div>
-          <div><span style="color:#64748b">A reactivar:</span> <strong style="color:#7c3aed">${ctx.alertasReactivar}</strong></div>
-          <div><span style="color:#64748b">A higienizar:</span> <strong style="color:#d97706">${ctx.alertasHigienizar}</strong></div>
-          <div><span style="color:#64748b">Revenue en juego:</span> <strong>${ctx.revenueEnJuego}</strong></div>
+      <!-- Live context summary (using dark-mode KPI grid) -->
+      <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">📊 Contexto live del dashboard</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;font-size:13px">
+          <div><span style="color:var(--text-dim)">Deals activos:</span> <strong style="color:var(--text)">${ctx.dealsActivos}</strong></div>
+          <div><span style="color:var(--text-dim)">Tareas vencidas:</span> <strong style="color:var(--text)">${ctx.tareasVencidas}</strong></div>
+          <div><span style="color:var(--text-dim)">Total alertas:</span> <strong style="color:var(--text)">${ctx.alertasTotales}</strong></div>
+          <div><span style="color:var(--text-dim)">A cerrar:</span> <strong style="color:var(--mint)">${ctx.alertasCerrar}</strong></div>
+          <div><span style="color:var(--text-dim)">A reactivar:</span> <strong style="color:var(--purple)">${ctx.alertasReactivar}</strong></div>
+          <div><span style="color:var(--text-dim)">A higienizar:</span> <strong style="color:var(--yellow)">${ctx.alertasHigienizar}</strong></div>
+          <div><span style="color:var(--text-dim)">Revenue en juego:</span> <strong style="color:var(--text)">${ctx.revenueEnJuego}</strong></div>
         </div>
       </div>
     </div>
 
     <div class="section">
       <div class="section-title">⚡ Acciones rápidas</div>
-      <div style="font-size:12px;color:#64748b;margin-bottom:14px">
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:14px">
         Cada botón abre Claude con un prompt diseñado para esa tarea. El contexto del dashboard se incluye automáticamente.
       </div>
       
@@ -2232,14 +2215,14 @@ function renderChat() {
   CHAT_PROMPTS.forEach(p => {
     h += `
       <div onclick="openClaudeChat('${p.id}')" 
-           style="background:${p.bg};border:1px solid ${p.color}40;border-radius:10px;padding:14px;cursor:pointer;transition:all 0.15s"
-           onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px ${p.color}30'"
-           onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'">
+           style="background:var(--bg-3);border:1px solid var(--border);border-left:3px solid var(--${p.cssVar});border-radius:10px;padding:14px;cursor:pointer;transition:all 0.15s"
+           onmouseover="this.style.borderColor='var(--${p.cssVar})';this.style.transform='translateY(-2px)'"
+           onmouseout="this.style.borderColor='var(--border)';this.style.borderLeft='3px solid var(--${p.cssVar})';this.style.transform='translateY(0)'">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
           <div style="font-size:24px">${p.icon}</div>
-          <div style="font-weight:700;color:${p.color};font-size:15px">${p.label}</div>
+          <div style="font-weight:700;color:var(--${p.cssVar});font-size:15px">${p.label}</div>
         </div>
-        <div style="font-size:12px;color:#475569;line-height:1.4">${p.desc}</div>
+        <div style="font-size:12px;color:var(--text-dim);line-height:1.4">${p.desc}</div>
       </div>
     `;
   });
@@ -2250,13 +2233,13 @@ function renderChat() {
 
     <div class="section">
       <div class="section-title">📋 Cómo funciona</div>
-      <div style="background:#f8fafc;border-radius:8px;padding:16px;font-size:13px;line-height:1.6;color:#475569">
+      <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:13px;line-height:1.6;color:var(--text-dim)">
         <ol style="margin:0;padding-left:20px">
-          <li><strong>Click</strong> en cualquier botón arriba</li>
-          <li>Se abre <strong>Claude.ai</strong> en una pestaña nueva con el prompt pre-cargado</li>
+          <li><strong style="color:var(--text)">Click</strong> en cualquier botón arriba</li>
+          <li>Se abre <strong style="color:var(--text)">Claude.ai</strong> en una pestaña nueva con el prompt pre-cargado</li>
           <li>Claude ya conoce tu negocio (productos GR, owners HubSpot, convenciones, etc.)</li>
-          <li>Para <strong>lecturas y consultas</strong> Claude ejecuta directo</li>
-          <li>Para <strong>cambios en HubSpot</strong> (crear/modificar deals, tareas, contactos) Claude pide tu confirmación primero</li>
+          <li>Para <strong style="color:var(--mint)">lecturas y consultas</strong> Claude ejecuta directo</li>
+          <li>Para <strong style="color:var(--yellow)">cambios en HubSpot</strong> (crear/modificar deals, tareas, contactos) Claude pide tu confirmación primero</li>
           <li>Cuando termines, vuelve al dashboard y refresca para ver los cambios</li>
         </ol>
       </div>
@@ -2265,13 +2248,9 @@ function renderChat() {
     <div class="section">
       <div class="section-title">🔌 Conectores disponibles en Claude</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px">
-        <span style="background:#dcfce7;color:#15803d;padding:6px 12px;border-radius:16px;font-size:12px;font-weight:600">✅ HubSpot CRM</span>
-        <span style="background:#dcfce7;color:#15803d;padding:6px 12px;border-radius:16px;font-size:12px;font-weight:600">✅ Amplemarket</span>
-        <span style="background:#dcfce7;color:#15803d;padding:6px 12px;border-radius:16px;font-size:12px;font-weight:600">✅ Gmail</span>
-        <span style="background:#dcfce7;color:#15803d;padding:6px 12px;border-radius:16px;font-size:12px;font-weight:600">✅ Google Calendar</span>
-        <span style="background:#dcfce7;color:#15803d;padding:6px 12px;border-radius:16px;font-size:12px;font-weight:600">✅ Google Drive</span>
-        <span style="background:#dcfce7;color:#15803d;padding:6px 12px;border-radius:16px;font-size:12px;font-weight:600">✅ n8n MCP</span>
-        <span style="background:#dcfce7;color:#15803d;padding:6px 12px;border-radius:16px;font-size:12px;font-weight:600">✅ Canva</span>
+        ${['HubSpot CRM', 'Amplemarket', 'Gmail', 'Google Calendar', 'Google Drive', 'n8n MCP', 'Canva'].map(name => `
+          <span style="background:var(--bg-3);color:var(--mint);padding:6px 12px;border-radius:16px;font-size:12px;font-weight:600;border:1px solid var(--border)">✅ ${name}</span>
+        `).join('')}
       </div>
     </div>
   `;
@@ -2286,7 +2265,6 @@ function openClaudeChat(promptId) {
   const ctx = buildChatContext();
   const promptText = prompt.promptBuilder(ctx);
   
-  // claude.ai/new admite ?q= para pre-cargar el primer mensaje
   const url = promptText 
     ? `https://claude.ai/new?q=${encodeURIComponent(promptText)}`
     : `https://claude.ai/new`;
@@ -2297,35 +2275,35 @@ function openClaudeChat(promptId) {
 
 // --- AMPLEMARKET ---
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Tab Amplemarket v2 — Comparativo SEQ vs DUO + 5 accionables + detalle
-// Source: webhook /gr-amplemarket (GET = read snapshot, POST = write)
-// Snapshot lo genera Claude vía MCP cuando Mike pide "actualizar Amplemarket"
+// Tab Amplemarket v2.1 — Dark mode homologado al resto del dashboard
+// Usa SOLO variables CSS del dashboard: --bg, --bg-2, --bg-3, --text, etc.
+// Source: webhook /gr-amplemarket
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const ACCION_STYLES = {
-  celebrar:  { color: '#16a34a', bg: '#dcfce7', border: '#86efac', cat: '🎉 Celebrar' },
-  reforzar:  { color: '#0ea5e9', bg: '#e0f2fe', border: '#7dd3fc', cat: '⚡ Reforzar' },
-  pausar:    { color: '#dc2626', bg: '#fee2e2', border: '#fca5a5', cat: '🔄 Pausar' },
-  optimizar: { color: '#d97706', bg: '#fef3c7', border: '#fcd34d', cat: '📝 Optimizar copy' },
-  activar:   { color: '#7c3aed', bg: '#ede9fe', border: '#c4b5fd', cat: '⏸️ Activar' }
+  celebrar:  { color: 'var(--mint)',   cssVar: 'mint',   cat: 'Celebrar',        icon: '🎉' },
+  reforzar:  { color: 'var(--cyan)',   cssVar: 'cyan',   cat: 'Reforzar',        icon: '⚡' },
+  pausar:    { color: 'var(--red)',    cssVar: 'red',    cat: 'Pausar',          icon: '🔄' },
+  optimizar: { color: 'var(--yellow)', cssVar: 'yellow', cat: 'Optimizar copy',  icon: '📝' },
+  activar:   { color: 'var(--purple)', cssVar: 'purple', cat: 'Activar',         icon: '⏸️' }
 };
 
 const GANADOR_STYLES = {
-  'SEQ':           { color: '#16a34a', bg: '#dcfce7', icon: '🏆', label: 'SEQ gana' },
-  'DUO':           { color: '#7c3aed', bg: '#ede9fe', icon: '🏆', label: 'DUO gana' },
-  'ambos':         { color: '#0ea5e9', bg: '#e0f2fe', icon: '⚖️', label: 'Ambos rinden' },
-  'empate':        { color: '#0ea5e9', bg: '#e0f2fe', icon: '⚖️', label: 'Empate' },
-  'ambos_flojos':  { color: '#dc2626', bg: '#fee2e2', icon: '⚠️', label: 'Ambos flojos' },
-  'inactivo':      { color: '#6b7280', bg: '#f3f4f6', icon: '💤', label: 'Inactivo' }
+  'SEQ':           { color: 'var(--mint)',   icon: '🏆', label: 'SEQ gana' },
+  'DUO':           { color: 'var(--purple)', icon: '🏆', label: 'DUO gana' },
+  'ambos':         { color: 'var(--cyan)',   icon: '⚖️', label: 'Ambos rinden' },
+  'empate':        { color: 'var(--cyan)',   icon: '⚖️', label: 'Empate' },
+  'ambos_flojos':  { color: 'var(--red)',    icon: '⚠️', label: 'Ambos flojos' },
+  'inactivo':      { color: 'var(--text-mute)', icon: '💤', label: 'Inactivo' }
 };
 
 let amFilters = {
-  canal: 'todos',     // 'todos' | 'SEQ' | 'DUO'
-  tipo: 'todos',      // 'todos' | 'celebrar' | 'reforzar' | etc
-  producto: 'todos'   // 'todos' | 'AEO' | 'AM' | etc
+  canal: 'todos',
+  tipo: 'todos',
+  producto: 'todos'
 };
 
-let amDetailView = 'sequences';   // 'sequences' | 'signals'
+let amDetailView = 'sequences';
 
 function fmtPct(v) {
   if (v === null || v === undefined || isNaN(v)) return '—';
@@ -2352,20 +2330,19 @@ function freshness(iso) {
 function renderAmplemarket() {
   const am = AM_DATA;
   
-  // === EMPTY STATE ===
   if (!am || (!am.ok && !am.kpis)) {
     $('#p-amplemarket').innerHTML = `
       <div class="section">
         <div class="section-title">📡 Amplemarket — Snapshot pendiente</div>
-        <div class="empty" style="padding:32px;text-align:center;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px">
+        <div style="padding:32px;text-align:center;background:var(--bg-3);border:1px solid var(--border);border-radius:8px">
           <div style="font-size:48px;margin-bottom:12px">⏳</div>
-          <div style="font-size:16px;font-weight:600;margin-bottom:8px;color:#92400e">No hay snapshot disponible aún</div>
-          <div style="color:#78350f;margin-bottom:16px">El backend está activo pero el static data está vacío.</div>
-          <div style="background:white;padding:16px;border-radius:6px;text-align:left;display:inline-block;max-width:480px">
-            <strong style="color:#7c3aed">¿Cómo actualizar?</strong><br>
-            <span style="color:#475569;font-size:13px">Pide a Claude en chat:</span><br>
-            <code style="background:#f1f5f9;padding:6px 12px;border-radius:4px;display:inline-block;margin-top:8px;color:#7c3aed">"actualizar Amplemarket"</code><br>
-            <span style="color:#475569;font-size:12px;margin-top:8px;display:block">Claude correrá las queries vía MCP de AM y posteará el snapshot en ~1 minuto.</span>
+          <div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--text)">No hay snapshot disponible aún</div>
+          <div style="color:var(--text-dim);margin-bottom:16px">El backend está activo pero el static data está vacío.</div>
+          <div style="background:var(--bg-2);padding:16px;border:1px solid var(--border);border-radius:6px;text-align:left;display:inline-block;max-width:480px">
+            <strong style="color:var(--purple)">¿Cómo actualizar?</strong><br>
+            <span style="color:var(--text-dim);font-size:13px">Pide a Claude en chat:</span><br>
+            <code style="background:var(--bg-3);padding:6px 12px;border-radius:4px;display:inline-block;margin-top:8px;color:var(--purple);border:1px solid var(--border)">"actualizar Amplemarket"</code><br>
+            <span style="color:var(--text-mute);font-size:12px;margin-top:8px;display:block">Claude correrá las queries vía MCP de AM y posteará el snapshot en ~1 minuto.</span>
           </div>
         </div>
       </div>
@@ -2379,43 +2356,43 @@ function renderAmplemarket() {
   const totales = am.totales || {};
   const stats = am.stats || {};
 
-  // === KPI HEADER (números absolutos, sin %) ===
+  // === KPI HEADER (usa clases nativas .kpi .kpi-mint etc) ===
   let h = `
     <div class="section" style="margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px">
         <div>
-          <div style="font-size:18px;font-weight:700;color:#0f172a">📡 Amplemarket — Últimos 30 días</div>
-          <div style="font-size:12px;color:#64748b;margin-top:2px">
+          <div style="font-size:18px;font-weight:700;color:var(--text)">📡 Amplemarket — Últimos 30 días</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:2px">
             ${am.periodoDesde || '—'} → ${am.periodoHasta || '—'} · 
-            Generado <strong>${freshness(am.generadoEn)}</strong> · 
+            Generado <strong style="color:var(--text)">${freshness(am.generadoEn)}</strong> · 
             ${totales.seqSecuencias || 0} secuencias · ${totales.duoSignals || 0} señales DUO
           </div>
         </div>
-        <button onclick="refreshAmplemarket()" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;border:0;border-radius:8px;padding:8px 14px;font-weight:600;font-size:13px;cursor:pointer">
+        <button onclick="refreshAmplemarket()" style="background:linear-gradient(135deg,var(--purple),var(--pink));color:white;border:0;border-radius:8px;padding:8px 14px;font-weight:600;font-size:13px;cursor:pointer">
           🔄 Pedir actualización
         </button>
       </div>
 
-      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);gap:12px">
-        <div class="kpi" style="background:linear-gradient(135deg,#dcfce7,#bbf7d0);border-color:#86efac">
-          <div class="kpi-label" style="color:#15803d">🎯 Reuniones agendadas</div>
-          <div class="kpi-value" style="color:#14532d">${k.meetings || 0}</div>
-          <div style="font-size:11px;color:#16a34a;margin-top:2px">${totales.seqMeetings || 0} SEQ · ${totales.duoMeetings || 0} DUO</div>
+      <div class="kpi-grid">
+        <div class="kpi kpi-mint">
+          <div class="kpi-label">🎯 Reuniones agendadas</div>
+          <div class="kpi-value">${k.meetings || 0}</div>
+          <div class="kpi-sub">${totales.seqMeetings || 0} SEQ · ${totales.duoMeetings || 0} DUO</div>
         </div>
-        <div class="kpi" style="background:linear-gradient(135deg,#e0f2fe,#bae6fd);border-color:#7dd3fc">
-          <div class="kpi-label" style="color:#0369a1">💬 Respuestas</div>
-          <div class="kpi-value" style="color:#0c4a6e">${k.replies || 0}</div>
-          <div style="font-size:11px;color:#0284c7;margin-top:2px">${totales.seqReplies || 0} SEQ · ${totales.duoReplies || 0} DUO</div>
+        <div class="kpi kpi-cyan">
+          <div class="kpi-label">💬 Respuestas</div>
+          <div class="kpi-value">${k.replies || 0}</div>
+          <div class="kpi-sub">${totales.seqReplies || 0} SEQ · ${totales.duoReplies || 0} DUO</div>
         </div>
-        <div class="kpi" style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-color:#fcd34d">
-          <div class="kpi-label" style="color:#a16207">📨 Open+3 (engaged)</div>
-          <div class="kpi-value" style="color:#713f12">${fmtNum(k.openPlus3)}</div>
-          <div style="font-size:11px;color:#ca8a04;margin-top:2px">leads en seqs >60% open rate</div>
+        <div class="kpi kpi-yellow">
+          <div class="kpi-label">📨 Open+3 (engaged)</div>
+          <div class="kpi-value">${fmtNum(k.openPlus3)}</div>
+          <div class="kpi-sub">leads en seqs &gt;60% open rate</div>
         </div>
-        <div class="kpi" style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);border-color:#c4b5fd">
-          <div class="kpi-label" style="color:#6d28d9">🔮 DUO Generated</div>
-          <div class="kpi-value" style="color:#4c1d95">${fmtNum(k.duoGenerated)}</div>
-          <div style="font-size:11px;color:#7c3aed;margin-top:2px">${totales.duoSequenced || 0} ya secuenciadas</div>
+        <div class="kpi kpi-purple">
+          <div class="kpi-label">🔮 DUO Generated</div>
+          <div class="kpi-value">${fmtNum(k.duoGenerated)}</div>
+          <div class="kpi-sub">${totales.duoSequenced || 0} ya secuenciadas</div>
         </div>
       </div>
     </div>
@@ -2425,26 +2402,26 @@ function renderAmplemarket() {
   h += `
     <div class="section">
       <div class="section-title">🥊 SEQ vs DUO — Comparativo por producto <span class="section-count">${productos.length}</span></div>
-      <div style="font-size:12px;color:#64748b;margin-bottom:12px">Reply rate solo es comparable dentro del mismo canal. El ganador se define por reuniones agendadas.</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px">Reply rate solo es comparable dentro del mismo canal. El ganador se define por reuniones agendadas.</div>
       <table class="tbl">
         <thead>
           <tr>
             <th rowspan="2" style="vertical-align:bottom">Producto</th>
-            <th colspan="5" style="background:#dcfce7;text-align:center;color:#15803d">📋 SEQ — Secuencias outbound</th>
-            <th colspan="5" style="background:#ede9fe;text-align:center;color:#6d28d9">🔮 DUO — Señales DuoCopilot</th>
+            <th colspan="5" style="text-align:center;color:var(--mint);border-bottom:1px solid var(--border)">📋 SEQ — Secuencias outbound</th>
+            <th colspan="5" style="text-align:center;color:var(--purple);border-bottom:1px solid var(--border)">🔮 DUO — Señales DuoCopilot</th>
             <th rowspan="2" style="vertical-align:bottom;text-align:center">🏆 Ganador</th>
           </tr>
           <tr>
-            <th class="num" style="background:#dcfce7">Seqs</th>
-            <th class="num" style="background:#dcfce7">Leads</th>
-            <th class="num" style="background:#dcfce7">Open%</th>
-            <th class="num" style="background:#dcfce7">Reply%</th>
-            <th class="num" style="background:#dcfce7">Mtgs</th>
-            <th class="num" style="background:#ede9fe">Sigs</th>
-            <th class="num" style="background:#ede9fe">Gen</th>
-            <th class="num" style="background:#ede9fe">Seq%</th>
-            <th class="num" style="background:#ede9fe">Reply%</th>
-            <th class="num" style="background:#ede9fe">Mtgs</th>
+            <th class="num" style="color:var(--mint)">Seqs</th>
+            <th class="num" style="color:var(--mint)">Leads</th>
+            <th class="num" style="color:var(--mint)">Open%</th>
+            <th class="num" style="color:var(--mint)">Reply%</th>
+            <th class="num" style="color:var(--mint)">Mtgs</th>
+            <th class="num" style="color:var(--purple)">Sigs</th>
+            <th class="num" style="color:var(--purple)">Gen</th>
+            <th class="num" style="color:var(--purple)">Seq%</th>
+            <th class="num" style="color:var(--purple)">Reply%</th>
+            <th class="num" style="color:var(--purple)">Mtgs</th>
           </tr>
         </thead>
         <tbody>
@@ -2455,18 +2432,18 @@ function renderAmplemarket() {
     const g = GANADOR_STYLES[p.ganador] || GANADOR_STYLES['inactivo'];
     h += `
       <tr>
-        <td style="font-weight:700;color:#0f172a">${p.codigo}</td>
-        <td class="num" style="background:#f0fdf4">${s.secuencias || 0}</td>
-        <td class="num" style="background:#f0fdf4">${fmtNum(s.leads)}</td>
-        <td class="num" style="background:#f0fdf4;${s.openRate>=0.5?'color:#16a34a;font-weight:600':''}">${s.leads>0?fmtPct(s.openRate):'—'}</td>
-        <td class="num" style="background:#f0fdf4;${s.replyRate>=0.02?'color:#16a34a;font-weight:600':s.replyRate<0.005&&s.leads>50?'color:#dc2626':''}">${s.leads>0?fmtPct(s.replyRate):'—'}</td>
-        <td class="num" style="background:#f0fdf4;${s.meetings>0?'color:#16a34a;font-weight:700':''}">${s.meetings || 0}</td>
-        <td class="num" style="background:#faf5ff">${d.signals || 0}</td>
-        <td class="num" style="background:#faf5ff">${fmtNum(d.generated)}</td>
-        <td class="num" style="background:#faf5ff">${d.generated>0?fmtPct(d.sequenceRate):'—'}</td>
-        <td class="num" style="background:#faf5ff;${d.replyRate>=0.02?'color:#7c3aed;font-weight:600':''}">${d.sequenced>0?fmtPct(d.replyRate):'—'}</td>
-        <td class="num" style="background:#faf5ff;${d.meetings>0?'color:#7c3aed;font-weight:700':''}">${d.meetings || 0}</td>
-        <td style="text-align:center;background:${g.bg};color:${g.color};font-weight:600;font-size:12px;white-space:nowrap">
+        <td style="font-weight:700;color:var(--text)">${p.codigo}</td>
+        <td class="num">${s.secuencias || 0}</td>
+        <td class="num">${fmtNum(s.leads)}</td>
+        <td class="num" style="${s.openRate>=0.5?'color:var(--mint);font-weight:600':''}">${s.leads>0?fmtPct(s.openRate):'—'}</td>
+        <td class="num" style="${s.replyRate>=0.02?'color:var(--mint);font-weight:600':s.replyRate<0.005&&s.leads>50?'color:var(--red)':''}">${s.leads>0?fmtPct(s.replyRate):'—'}</td>
+        <td class="num" style="${s.meetings>0?'color:var(--mint);font-weight:700':''}">${s.meetings || 0}</td>
+        <td class="num">${d.signals || 0}</td>
+        <td class="num">${fmtNum(d.generated)}</td>
+        <td class="num">${d.generated>0?fmtPct(d.sequenceRate):'—'}</td>
+        <td class="num" style="${d.replyRate>=0.02?'color:var(--purple);font-weight:600':''}">${d.sequenced>0?fmtPct(d.replyRate):'—'}</td>
+        <td class="num" style="${d.meetings>0?'color:var(--purple);font-weight:700':''}">${d.meetings || 0}</td>
+        <td style="text-align:center;color:${g.color};font-weight:600;font-size:12px;white-space:nowrap">
           ${g.icon} ${g.label}
         </td>
       </tr>
@@ -2476,10 +2453,8 @@ function renderAmplemarket() {
   h += `</tbody></table></div>`;
 
   // === ACCIONABLES con filtros ===
-  // Calcular filtros disponibles
   const productosConDatos = [...new Set(accionables.map(a => a.producto))].sort();
   
-  // Aplicar filtros
   const filtrados = accionables.filter(a => {
     if (amFilters.canal !== 'todos' && a.canal !== amFilters.canal) return false;
     if (amFilters.tipo !== 'todos' && a.id !== amFilters.tipo) return false;
@@ -2490,43 +2465,44 @@ function renderAmplemarket() {
   h += `
     <div class="section">
       <div class="section-title">🎯 Acciones recomendadas <span class="section-count">${filtrados.length}/${accionables.length}</span></div>
-      <div style="font-size:12px;color:#64748b;margin-bottom:12px">
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px">
         Generadas automáticamente desde el comportamiento de cada secuencia y señal del último mes.
       </div>
 
-      <!-- KPI Acciones -->
+      <!-- KPI Acciones por tipo (clickable) -->
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px">
         ${['celebrar','reforzar','activar','optimizar','pausar'].map(tipo => {
           const cnt = stats.porTipo?.[tipo] || 0;
           const st = ACCION_STYLES[tipo];
+          const isActive = tipo === amFilters.tipo;
           return `
-            <div onclick="setAmFilter('tipo','${tipo === amFilters.tipo ? 'todos' : tipo}')" 
-                 style="background:${tipo === amFilters.tipo ? st.color : st.bg};color:${tipo === amFilters.tipo ? 'white' : st.color};border:1px solid ${st.border};border-radius:8px;padding:10px;cursor:pointer;text-align:center;transition:all 0.15s">
-              <div style="font-size:18px;font-weight:700">${cnt}</div>
-              <div style="font-size:11px;font-weight:600;margin-top:2px">${st.cat}</div>
+            <div onclick="setAmFilter('tipo','${isActive ? 'todos' : tipo}')" 
+                 style="background:var(--bg-3);border:1px solid ${isActive ? st.color : 'var(--border)'};border-radius:8px;padding:10px;cursor:pointer;text-align:center;transition:all 0.15s;${isActive ? 'box-shadow:0 0 0 1px ' + st.color : ''}">
+              <div style="font-size:18px;font-weight:700;color:${st.color}">${cnt}</div>
+              <div style="font-size:11px;font-weight:600;margin-top:2px;color:var(--text-dim)">${st.icon} ${st.cat}</div>
             </div>
           `;
         }).join('')}
       </div>
 
-      <!-- Filtros -->
+      <!-- Filtros canal/producto (chips estilo dashboard) -->
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
-        <span style="font-size:12px;color:#64748b;margin-right:4px">Canal:</span>
+        <span style="font-size:12px;color:var(--text-dim);margin-right:4px">Canal:</span>
         ${['todos','SEQ','DUO'].map(c => `
-          <button onclick="setAmFilter('canal','${c}')" 
-                  style="background:${c === amFilters.canal ? '#0f172a' : '#f1f5f9'};color:${c === amFilters.canal ? 'white' : '#475569'};border:0;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer">
+          <button onclick="setAmFilter('canal','${c}')" class="chip" 
+                  style="${c === amFilters.canal ? 'background:var(--purple);color:white;border-color:var(--purple)' : ''}">
             ${c === 'todos' ? 'Todos' : (c === 'SEQ' ? '📋 SEQ' : '🔮 DUO')}
             ${c !== 'todos' ? ` (${stats.porCanal?.[c] || 0})` : ` (${accionables.length})`}
           </button>
         `).join('')}
-        <span style="font-size:12px;color:#64748b;margin:0 4px 0 12px">Producto:</span>
-        <button onclick="setAmFilter('producto','todos')" 
-                style="background:${amFilters.producto === 'todos' ? '#0f172a' : '#f1f5f9'};color:${amFilters.producto === 'todos' ? 'white' : '#475569'};border:0;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer">
+        <span style="font-size:12px;color:var(--text-dim);margin:0 4px 0 12px">Producto:</span>
+        <button onclick="setAmFilter('producto','todos')" class="chip" 
+                style="${amFilters.producto === 'todos' ? 'background:var(--purple);color:white;border-color:var(--purple)' : ''}">
           Todos
         </button>
         ${productosConDatos.map(prod => `
-          <button onclick="setAmFilter('producto','${prod}')" 
-                  style="background:${prod === amFilters.producto ? '#0f172a' : '#f1f5f9'};color:${prod === amFilters.producto ? 'white' : '#475569'};border:0;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer">
+          <button onclick="setAmFilter('producto','${prod}')" class="chip" 
+                  style="${prod === amFilters.producto ? 'background:var(--purple);color:white;border-color:var(--purple)' : ''}">
             ${prod}
           </button>
         `).join('')}
@@ -2534,7 +2510,7 @@ function renderAmplemarket() {
   `;
 
   if (filtrados.length === 0) {
-    h += `<div class="empty" style="padding:24px;text-align:center;color:#64748b">Sin acciones que coincidan con los filtros.</div>`;
+    h += `<div style="padding:24px;text-align:center;color:var(--text-dim)">Sin acciones que coincidan con los filtros.</div>`;
   } else {
     h += `<table class="tbl">
       <thead>
@@ -2551,10 +2527,10 @@ function renderAmplemarket() {
       const st = ACCION_STYLES[a.id] || ACCION_STYLES.optimizar;
       h += `
         <tr>
-          <td style="background:${st.bg};color:${st.color};font-weight:600;white-space:nowrap">${a.icon} ${a.label}</td>
-          <td style="font-weight:600">${a.canal === 'SEQ' ? '📋 SEQ' : '🔮 DUO'}</td>
-          <td style="font-weight:700">${a.producto}</td>
-          <td>${a.detalle}</td>
+          <td style="color:${st.color};font-weight:600;white-space:nowrap">${st.icon} ${st.cat}</td>
+          <td style="color:var(--text);font-weight:600">${a.canal === 'SEQ' ? '📋 SEQ' : '🔮 DUO'}</td>
+          <td style="color:var(--text);font-weight:700">${a.producto}</td>
+          <td style="color:var(--text-dim)">${a.detalle}</td>
         </tr>
       `;
     });
@@ -2562,18 +2538,20 @@ function renderAmplemarket() {
   }
   h += `</div>`;
 
-  // === DETALLE EXPANDIBLE: secuencias + señales ===
+  // === DETALLE EXPANDIBLE ===
   h += `
     <div class="section">
       <div onclick="toggleAmDetail()" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:4px 0">
-        <span id="am-detail-arrow" style="font-size:14px;color:#64748b">▶</span>
+        <span id="am-detail-arrow" style="font-size:14px;color:var(--text-dim)">▶</span>
         <div class="section-title" style="margin:0">📊 Detalle por secuencia y señal <span class="section-count">${(totales.seqSecuencias || 0) + (totales.duoSignals || 0)}</span></div>
       </div>
 
       <div id="am-detail" style="display:none;margin-top:12px">
         <div style="display:flex;gap:6px;margin-bottom:10px">
-          <button class="am-tab ${amDetailView==='sequences'?'am-tab-active':''}" data-am-detail="sequences" onclick="switchAmDetailView('sequences')">📋 Secuencias (${totales.seqSecuencias || 0})</button>
-          <button class="am-tab ${amDetailView==='signals'?'am-tab-active':''}" data-am-detail="signals" onclick="switchAmDetailView('signals')">🔮 Señales DUO (${totales.duoSignals || 0})</button>
+          <button class="chip ${amDetailView==='sequences'?'chip-active':''}" data-am-detail="sequences" onclick="switchAmDetailView('sequences')"
+                  style="${amDetailView==='sequences'?'background:var(--purple);color:white;border-color:var(--purple)':''}">📋 Secuencias (${totales.seqSecuencias || 0})</button>
+          <button class="chip ${amDetailView==='signals'?'chip-active':''}" data-am-detail="signals" onclick="switchAmDetailView('signals')"
+                  style="${amDetailView==='signals'?'background:var(--purple);color:white;border-color:var(--purple)':''}">🔮 Señales DUO (${totales.duoSignals || 0})</button>
         </div>
 
         <div id="am-seq-detail" style="display:${amDetailView==='sequences'?'block':'none'}">
@@ -2596,13 +2574,13 @@ function renderAmplemarket() {
     (p.seq.detalle || []).forEach(s => {
       h += `
         <tr>
-          <td style="font-weight:700">${p.codigo}</td>
-          <td style="font-size:12px;color:#475569">${(s.nombre || '').trim()}</td>
+          <td style="font-weight:700;color:var(--text)">${p.codigo}</td>
+          <td style="font-size:12px;color:var(--text-dim)">${(s.nombre || '').trim()}</td>
           <td class="num">${fmtNum(s.leads)}</td>
-          <td class="num ${s.openRate>=0.5?'':s.openRate<0.3?'':''}" style="${s.openRate>=0.5?'color:#16a34a;font-weight:600':''}">${s.leads>0?fmtPct(s.openRate):'—'}</td>
-          <td class="num" style="${s.replyRate>=0.02?'color:#16a34a;font-weight:600':s.replyRate<0.005&&s.leads>50?'color:#dc2626':''}">${s.leads>0?fmtPct(s.replyRate):'—'}</td>
+          <td class="num" style="${s.openRate>=0.5?'color:var(--mint);font-weight:600':''}">${s.leads>0?fmtPct(s.openRate):'—'}</td>
+          <td class="num" style="${s.replyRate>=0.02?'color:var(--mint);font-weight:600':s.replyRate<0.005&&s.leads>50?'color:var(--red)':''}">${s.leads>0?fmtPct(s.replyRate):'—'}</td>
           <td class="num">${s.interested || 0}</td>
-          <td class="num" style="${s.meetings>0?'color:#16a34a;font-weight:700':''}">${s.meetings || 0}</td>
+          <td class="num" style="${s.meetings>0?'color:var(--mint);font-weight:700':''}">${s.meetings || 0}</td>
         </tr>
       `;
     });
@@ -2631,14 +2609,14 @@ function renderAmplemarket() {
     (p.duo.detalle || []).forEach(d => {
       h += `
         <tr>
-          <td style="font-weight:700">${p.codigo}</td>
-          <td style="font-size:12px;color:#475569">${d.signal}</td>
+          <td style="font-weight:700;color:var(--text)">${p.codigo}</td>
+          <td style="font-size:12px;color:var(--text-dim)">${d.signal}</td>
           <td class="num">${fmtNum(d.generated)}</td>
           <td class="num">${fmtNum(d.sequenced)}</td>
           <td class="num">${d.generated>0?fmtPct(d.sequenceRate):'—'}</td>
           <td class="num">${d.replies || 0}</td>
-          <td class="num" style="${d.replyRate>=0.02?'color:#7c3aed;font-weight:600':''}">${d.sequenced>0?fmtPct(d.replyRate):'—'}</td>
-          <td class="num" style="${d.meetings>0?'color:#7c3aed;font-weight:700':''}">${d.meetings || 0}</td>
+          <td class="num" style="${d.replyRate>=0.02?'color:var(--purple);font-weight:600':''}">${d.sequenced>0?fmtPct(d.replyRate):'—'}</td>
+          <td class="num" style="${d.meetings>0?'color:var(--purple);font-weight:700':''}">${d.meetings || 0}</td>
         </tr>
       `;
     });
@@ -2671,16 +2649,13 @@ function toggleAmDetail() {
 
 function switchAmDetailView(view) {
   amDetailView = view;
-  document.querySelectorAll('#p-amplemarket .am-tab').forEach(b => {
-    b.classList.toggle('am-tab-active', b.dataset.amDetail === view);
-  });
-  document.getElementById('am-seq-detail').style.display = view === 'sequences' ? 'block' : 'none';
-  document.getElementById('am-duo-detail').style.display = view === 'signals' ? 'block' : 'none';
+  renderAmplemarket();
 }
 
 function refreshAmplemarket() {
   alert('🔄 Para actualizar Amplemarket:\n\n1. Abre el chat con Claude\n2. Escribe: "actualizar Amplemarket"\n3. Claude correrá las queries vía MCP (~1 min)\n4. Recarga este dashboard\n\nEl backend está activo y listo para recibir el snapshot.');
 }
+
 
 // --- FORECAST ---
 function renderForecast() {
