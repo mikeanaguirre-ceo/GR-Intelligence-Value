@@ -751,6 +751,7 @@ body {
 const DATA_URL = 'https://mikea.app.n8n.cloud/webhook/gr-dashboard';
 const AM_URL = 'https://mikea.app.n8n.cloud/webhook/gr-amplemarket';
 let AM_DATA = null;
+let amPeriod = 30; // 7, 15, or 30
 
 // --- Operational knowledge (hardcoded, curated) ---
 
@@ -854,7 +855,7 @@ async function loadData() {
     // Fetch principal v10 + AM v1 en paralelo
     const [dealsRes, amRes] = await Promise.all([
       fetch(DATA_URL),
-      fetch(AM_URL).catch(e => { console.warn('AM endpoint failed:', e); return null; })
+      fetch(AM_URL + '?period=' + amPeriod).catch(e => { console.warn('AM endpoint failed:', e); return null; })
     ]);
 
     if (!dealsRes.ok) throw new Error('HTTP ' + dealsRes.status);
@@ -2314,6 +2315,8 @@ let amDrilldown = null;  // null | 'meetings' | 'replies' | 'openplus3' | 'duoge
 
 function fmtPct(v) {
   if (v === null || v === undefined || isNaN(v)) return '—';
+  // If rate > 100%, it means opens are from leads enrolled before the period — show — instead of misleading 200%+
+  if (Number(v) > 1.0) return '—';
   return (Number(v) * 100).toFixed(1) + '%';
 }
 function fmtNum(v) {
@@ -2540,14 +2543,24 @@ function renderDuoGeneratedDrilldown() {
 function renderAmplemarket() {
   const am = AM_DATA;
   
-  if (!am || (!am.ok && !am.kpis)) {
+  if (!am || (!am.ok && !am.kpis) || am.periodoNoDisponible) {
+    const isPeriodMissing = am && am.periodoNoDisponible;
+    const message = isPeriodMissing 
+      ? `Snapshot de ${amPeriod}d no disponible. Pide a Claude actualizar Amplemarket.`
+      : 'No hay snapshot disponible aún.';
     $('#p-amplemarket').innerHTML = `
-      <div class="section">
+      <div class="section" style="margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <span style="font-size:13px;color:var(--text-dim);font-weight:600">Periodo:</span>
+          <button onclick="setAmPeriod(7)" class="chip" style="${amPeriod===7?'background:var(--purple);color:white;border-color:var(--purple)':''}">7 días</button>
+          <button onclick="setAmPeriod(15)" class="chip" style="${amPeriod===15?'background:var(--purple);color:white;border-color:var(--purple)':''}">15 días</button>
+          <button onclick="setAmPeriod(30)" class="chip" style="${amPeriod===30?'background:var(--purple);color:white;border-color:var(--purple)':''}">30 días</button>
+        </div>
         <div class="section-title">📡 Amplemarket — Snapshot pendiente</div>
         <div style="padding:32px;text-align:center;background:var(--bg-3);border:1px solid var(--border);border-radius:8px">
           <div style="font-size:48px;margin-bottom:12px">⏳</div>
-          <div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--text)">No hay snapshot disponible aún</div>
-          <div style="color:var(--text-dim);margin-bottom:16px">El backend está activo pero el static data está vacío.</div>
+          <div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--text)">${message}</div>
+          <div style="color:var(--text-dim);margin-bottom:16px">${isPeriodMissing ? 'El backend funciona pero falta el snapshot de este periodo.' : 'El backend está activo pero el static data está vacío.'}</div>
           <code style="background:var(--bg-3);padding:6px 12px;border-radius:4px;display:inline-block;color:var(--purple);border:1px solid var(--border)">"actualizar Amplemarket"</code>
         </div>
       </div>
@@ -2563,9 +2576,15 @@ function renderAmplemarket() {
 
   let h = `
     <div class="section" style="margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <span style="font-size:13px;color:var(--text-dim);font-weight:600">Periodo:</span>
+        <button onclick="setAmPeriod(7)" class="chip" style="${amPeriod===7?'background:var(--purple);color:white;border-color:var(--purple)':''}">7 días</button>
+        <button onclick="setAmPeriod(15)" class="chip" style="${amPeriod===15?'background:var(--purple);color:white;border-color:var(--purple)':''}">15 días</button>
+        <button onclick="setAmPeriod(30)" class="chip" style="${amPeriod===30?'background:var(--purple);color:white;border-color:var(--purple)':''}">30 días</button>
+      </div>
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px">
         <div>
-          <div style="font-size:18px;font-weight:700;color:var(--text)">📡 Amplemarket — Últimos 30 días</div>
+          <div style="font-size:18px;font-weight:700;color:var(--text)">📡 Amplemarket — Últimos ${am.periodoDias || amPeriod} días</div>
           <div style="font-size:12px;color:var(--text-dim);margin-top:2px">
             ${am.periodoDesde || '—'} → ${am.periodoHasta || '—'} · 
             Generado <strong style="color:var(--text)">${freshness(am.generadoEn)}</strong> · 
@@ -2632,7 +2651,7 @@ function renderAmplemarket() {
       <td style="font-weight:700;color:var(--text)">${p.codigo}</td>
       <td class="num">${s.secuencias || 0}</td>
       <td class="num">${fmtNum(s.leads)}</td>
-      <td class="num" style="${s.openRate>=0.5?'color:var(--mint);font-weight:600':''}">${s.leads>0?fmtPct(s.openRate):'—'}</td>
+      <td class="num" style="${s.openRate>=0.5&&s.openRate<=1?'color:var(--mint);font-weight:600':''}">${s.leads>0?fmtPct(s.openRate):'—'}</td>
       <td class="num" style="${s.replyRate>=0.02?'color:var(--mint);font-weight:600':s.replyRate<0.005&&s.leads>50?'color:var(--red)':''}">${s.leads>0?fmtPct(s.replyRate):'—'}</td>
       <td class="num" style="${s.meetings>0?'color:var(--mint);font-weight:700':''}">${s.meetings || 0}</td>
       <td class="num">${d.signals || 0}</td>
@@ -2748,7 +2767,7 @@ function renderAmplemarket() {
         <td style="font-weight:700;color:var(--text)">${p.codigo}</td>
         <td style="font-size:12px;color:var(--text-dim)">${(s.nombre || '').trim()}</td>
         <td class="num">${fmtNum(s.leads)}</td>
-        <td class="num" style="${s.openRate>=0.5?'color:var(--mint);font-weight:600':''}">${s.leads>0?fmtPct(s.openRate):'—'}</td>
+        <td class="num" style="${s.openRate>=0.5&&s.openRate<=1?'color:var(--mint);font-weight:600':''}">${s.leads>0?fmtPct(s.openRate):'—'}</td>
         <td class="num" style="${s.replyRate>=0.02?'color:var(--mint);font-weight:600':s.replyRate<0.005&&s.leads>50?'color:var(--red)':''}">${s.leads>0?fmtPct(s.replyRate):'—'}</td>
         <td class="num">${s.interested || 0}</td>
         <td class="num" style="${s.meetings>0?'color:var(--mint);font-weight:700':''}">${s.meetings || 0}</td>
@@ -2811,6 +2830,38 @@ function switchAmDetailViewInPlace(view) {
 
 function refreshAmplemarket() {
   alert('🔄 Para actualizar Amplemarket:\n\n1. Abre el chat con Claude\n2. Escribe: "actualizar Amplemarket"\n3. Claude correrá las queries vía MCP (~1 min)\n4. Recarga este dashboard');
+}
+
+async function loadAmData(showLoading) {
+  if (showLoading) {
+    const container = document.getElementById('p-amplemarket');
+    if (container) {
+      container.style.opacity = '0.5';
+      container.style.pointerEvents = 'none';
+    }
+  }
+  try {
+    const r = await fetch(AM_URL + '?period=' + amPeriod);
+    if (r.ok) {
+      AM_DATA = await r.json();
+    }
+  } catch (e) {
+    console.warn('AM reload failed:', e);
+  }
+  // reset drilldown when period changes
+  amDrilldown = null;
+  renderAmplemarket();
+  const container = document.getElementById('p-amplemarket');
+  if (container) {
+    container.style.opacity = '1';
+    container.style.pointerEvents = 'auto';
+  }
+}
+
+function setAmPeriod(days) {
+  if (amPeriod === days) return;
+  amPeriod = days;
+  loadAmData(true);
 }
 
 
