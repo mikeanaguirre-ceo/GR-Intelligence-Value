@@ -715,6 +715,7 @@ body {
     <button class="tab" data-tab="alertas">Alertas <span class="badge-red" id="alerts-count">—</span></button>
     <button class="tab" data-tab="amplemarket">Amplemarket</button>
     <button class="tab" data-tab="forecast">Forecast</button>
+    <button class="tab" data-tab="chat">💬 Chat</button>
   </nav>
 
   <main id="panels">
@@ -727,6 +728,7 @@ body {
     <section class="panel" id="p-alertas"></section>
     <section class="panel" id="p-amplemarket"></section>
     <section class="panel" id="p-forecast"></section>
+    <section class="panel" id="p-chat"></section>
   </main>
 
   <footer class="ftr">
@@ -918,7 +920,8 @@ function renderCurrentTab() {
     pendientes: renderPendientes,
     alertas: renderAlertas,
     amplemarket: renderAmplemarket,
-    forecast: renderForecast
+    forecast: renderForecast,
+    chat: renderChat
   };
   const fn = renderers[currentTab];
   if (fn) fn();
@@ -2061,6 +2064,236 @@ function renderAlertas() {
     });
   });
 }
+
+// --- CHAT ---
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Tab Chat v1 — Bridge a Claude con prompts pre-cargados y contexto live
+// El botón abre claude.ai en pestaña nueva con el contexto del dashboard
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const CHAT_PROMPTS = [
+  {
+    id: 'higienizar',
+    icon: '🧹',
+    label: 'Higienizar deals',
+    desc: 'Encuentra deals sin producto, sin monto, sin owner, sin contacto y propone arreglos batch.',
+    color: '#d97706',
+    bg: '#fef3c7',
+    requireContext: true,
+    promptBuilder: (ctx) => {
+      const total = ctx.alertasHigienizar || 0;
+      return `Necesito higienizar deals en HubSpot.\n\nContexto del dashboard:\n- Tengo ${total} deals con problemas de higiene detectados\n- Categorías: sin producto, sin monto, sin owner, sin contacto, sin descripción, sin dealtype, fecha de cierre vencida, duplicados\n\nPor favor:\n1. Búscame los deals sin producto en el título (los que no empiezan con TW_, AM_, GenIA_, ITS_, LT_, AEO_, 360_, WB_, BD_, HS_, EX_, PT_)\n2. Para los primeros 10, dime qué producto sugieres basándote en la descripción y muéstrame una tabla\n3. Confirmamos batch antes de actualizar`;
+    }
+  },
+  {
+    id: 'reactivar',
+    icon: '🔄',
+    label: 'Reactivar deals estancados',
+    desc: 'Detecta deals sin actividad en 30+ días y propone mensaje de reactivación.',
+    color: '#7c3aed',
+    bg: '#ede9fe',
+    requireContext: true,
+    promptBuilder: (ctx) => {
+      return `Necesito reactivar deals estancados en HubSpot.\n\nContexto del dashboard:\n- ${ctx.alertasReactivar || 0} deals identificados como "ReActivar" (sin actividad reciente, sin tarea futura)\n- Pipeline GR_ activo (excluye Pintaando)\n\nPor favor:\n1. Búscame los 5 deals con mayor monto que llevan más de 30 días sin actividad y están en stages activos (Atracción, En Conversación, Educación, Propuesta)\n2. Para cada uno, propón un mensaje corto de reactivación basándote en la última nota\n3. Espera mi aprobación antes de crear las tareas de seguimiento`;
+    }
+  },
+  {
+    id: 'cerrar',
+    icon: '🎯',
+    label: 'Empujar a cierre',
+    desc: 'Deals con propuesta enviada o aprobación verbal — empujar al cierre.',
+    color: '#16a34a',
+    bg: '#dcfce7',
+    requireContext: true,
+    promptBuilder: (ctx) => {
+      return `Necesito empujar al cierre los deals que están cerca.\n\nContexto del dashboard:\n- ${ctx.alertasCerrar || 0} deals identificados como "Cerrar" (Propuesta Enviada o Aprobación Verbal)\n- Revenue en juego: ${ctx.revenueEnJuego || '—'}\n\nPor favor:\n1. Lista los deals en stage "presentationscheduled" (Propuesta Enviada) ordenados por monto\n2. Para cada uno, dime cuándo fue el último contacto y qué tarea siguiente tiene\n3. Si no hay tarea siguiente, propón una con fecha para esta semana\n4. Confirmamos batch antes de crear las tareas`;
+    }
+  },
+  {
+    id: 'amplemarket',
+    icon: '📡',
+    label: 'Actualizar Amplemarket',
+    desc: 'Refresca el snapshot del dashboard con datos del último mes vía MCP.',
+    color: '#7c3aed',
+    bg: '#ede9fe',
+    requireContext: false,
+    promptBuilder: () => `actualizar Amplemarket`
+  },
+  {
+    id: 'agenda-lunes',
+    icon: '📅',
+    label: 'Agenda junta lunes',
+    desc: 'Prepara los puntos críticos para la junta operativa del lunes.',
+    color: '#0ea5e9',
+    bg: '#e0f2fe',
+    requireContext: true,
+    promptBuilder: (ctx) => {
+      return `Prepara la agenda para la junta operativa del lunes.\n\nContexto del dashboard:\n- ${ctx.dealsActivos || 0} deals activos en pipeline\n- ${ctx.tareasVencidas || 0} tareas vencidas\n- ${ctx.alertasTotales || 0} alertas pendientes\n\nPor favor genera la agenda con esta estructura:\n1. **Wins de la semana** (deals movidos, won, reuniones agendadas)\n2. **Bloqueadores** (deals en riesgo de perderse)\n3. **Pendientes críticos** (tareas vencidas con monto alto)\n4. **Top 5 prospects** (cuentas con más actividad/interés esta semana)\n5. **Acción para cada miembro del equipo** (Migue, Martha, Fer, Mike) — qué hace cada uno esta semana`;
+    }
+  },
+  {
+    id: 'crear-deal',
+    icon: '🆕',
+    label: 'Crear deal desde reunión',
+    desc: 'Convierte un transcript o notas de reunión en deal + nota + tarea HubSpot.',
+    color: '#16a34a',
+    bg: '#dcfce7',
+    requireContext: false,
+    promptBuilder: () => {
+      return `Necesito crear un deal en HubSpot desde una reunión que acabo de tener.\n\nVoy a pegarte el transcript o las notas. Por favor sigue el procedimiento Post-Reunión vB:\n\n1. Identifica empresa, contactos, producto discutido (TW/AM/GenIA/ITS/LT/AEO/360/WB)\n2. Detecta el stage correcto (Atracción/En Conversación/Educación/Propuesta)\n3. Aplica MEDDIC al transcript (M/E/D/D/I/C — cada uno ✅/🟡/❌)\n4. Identifica etapa Winning by Design (STATUS/ACTIVE/COMMITTED/SELECTED)\n5. Antes de crear:\n   - Búscame si ya existe la empresa o el deal en HubSpot\n   - Muéstrame en tabla qué vas a crear (deal + contactos + nota + tarea)\n6. Espera mi confirmación antes de ejecutar\n\n[Pega aquí el transcript o las notas]`;
+    }
+  },
+  {
+    id: 'reporte-semanal',
+    icon: '📊',
+    label: 'Reporte semanal',
+    desc: 'Genera el reporte semanal completo (Excel 7 tabs) cruzando HubSpot + Amplemarket.',
+    color: '#dc2626',
+    bg: '#fee2e2',
+    requireContext: false,
+    promptBuilder: () => `genera el reporte semanal completo`
+  },
+  {
+    id: 'libre',
+    icon: '💬',
+    label: 'Pregunta libre',
+    desc: 'Cualquier consulta sobre el negocio: pipeline, clientes, secuencias, equipo.',
+    color: '#475569',
+    bg: '#f1f5f9',
+    requireContext: false,
+    promptBuilder: () => ''
+  }
+];
+
+function buildChatContext() {
+  if (!DATA) return {};
+  
+  const deals = DATA.deals || [];
+  const tareas = (DATA.tareas && DATA.tareas.tareas) || [];
+  const alertas16 = DATA.alertas16 || [];
+  const stats = DATA.statsAlertas16 || {};
+  
+  // Solo deals GR_ (no PT_)
+  const grDeals = deals.filter(d => !d.name.startsWith('PT_'));
+  
+  return {
+    dealsActivos: grDeals.filter(d => !['closedwon', '1092009814'].includes(d.stage)).length,
+    dealsTotal: grDeals.length,
+    tareasVencidas: tareas.filter(t => {
+      if (!t.dueDate) return false;
+      return new Date(t.dueDate) < new Date() && t.status !== 'COMPLETED';
+    }).length,
+    alertasTotales: alertas16.length,
+    alertasCerrar: (stats.porCategoria && stats.porCategoria.Cerrar) || 0,
+    alertasReactivar: (stats.porCategoria && stats.porCategoria.ReActivar) || 0,
+    alertasHigienizar: (stats.porCategoria && stats.porCategoria.Higienizar) || 0,
+    revenueEnJuego: stats.revenueEnRiesgo ? `$${stats.revenueEnRiesgo.toLocaleString('en-US')}` : '—'
+  };
+}
+
+function renderChat() {
+  const ctx = buildChatContext();
+  
+  let h = `
+    <div class="section" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+        <div>
+          <div style="font-size:18px;font-weight:700;color:#0f172a">💬 Chat con Claude</div>
+          <div style="font-size:12px;color:#64748b;margin-top:2px">
+            Claude tiene acceso a HubSpot, Amplemarket, Gmail, Calendar, Drive y n8n. Click en cualquier opción para abrir un chat con el contexto pre-cargado.
+          </div>
+        </div>
+      </div>
+      
+      <!-- Live context summary -->
+      <div style="background:linear-gradient(135deg,#f8fafc,#f1f5f9);border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Contexto live del dashboard</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;font-size:13px">
+          <div><span style="color:#64748b">Deals activos:</span> <strong>${ctx.dealsActivos}</strong></div>
+          <div><span style="color:#64748b">Tareas vencidas:</span> <strong>${ctx.tareasVencidas}</strong></div>
+          <div><span style="color:#64748b">Total alertas:</span> <strong>${ctx.alertasTotales}</strong></div>
+          <div><span style="color:#64748b">A cerrar:</span> <strong style="color:#16a34a">${ctx.alertasCerrar}</strong></div>
+          <div><span style="color:#64748b">A reactivar:</span> <strong style="color:#7c3aed">${ctx.alertasReactivar}</strong></div>
+          <div><span style="color:#64748b">A higienizar:</span> <strong style="color:#d97706">${ctx.alertasHigienizar}</strong></div>
+          <div><span style="color:#64748b">Revenue en juego:</span> <strong>${ctx.revenueEnJuego}</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">⚡ Acciones rápidas</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:14px">
+        Cada botón abre Claude con un prompt diseñado para esa tarea. El contexto del dashboard se incluye automáticamente.
+      </div>
+      
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">
+  `;
+
+  CHAT_PROMPTS.forEach(p => {
+    h += `
+      <div onclick="openClaudeChat('${p.id}')" 
+           style="background:${p.bg};border:1px solid ${p.color}40;border-radius:10px;padding:14px;cursor:pointer;transition:all 0.15s"
+           onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px ${p.color}30'"
+           onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <div style="font-size:24px">${p.icon}</div>
+          <div style="font-weight:700;color:${p.color};font-size:15px">${p.label}</div>
+        </div>
+        <div style="font-size:12px;color:#475569;line-height:1.4">${p.desc}</div>
+      </div>
+    `;
+  });
+
+  h += `
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📋 Cómo funciona</div>
+      <div style="background:#f8fafc;border-radius:8px;padding:16px;font-size:13px;line-height:1.6;color:#475569">
+        <ol style="margin:0;padding-left:20px">
+          <li><strong>Click</strong> en cualquier botón arriba</li>
+          <li>Se abre <strong>Claude.ai</strong> en una pestaña nueva con el prompt pre-cargado</li>
+          <li>Claude ya conoce tu negocio (productos GR, owners HubSpot, convenciones, etc.)</li>
+          <li>Para <strong>lecturas y consultas</strong> Claude ejecuta directo</li>
+          <li>Para <strong>cambios en HubSpot</strong> (crear/modificar deals, tareas, contactos) Claude pide tu confirmación primero</li>
+          <li>Cuando termines, vuelve al dashboard y refresca para ver los cambios</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🔌 Conectores disponibles en Claude</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <span style="background:#dcfce7;color:#15803d;padding:6px 12px;border-radius:16px;font-size:12px;font-weight:600">✅ HubSpot CRM</span>
+        <span style="background:#dcfce7;color:#15803d;padding:6px 12px;border-radius:16px;font-size:12px;font-weight:600">✅ Amplemarket</span>
+        <span style="background:#dcfce7;color:#15803d;padding:6px 12px;border-radius:16px;font-size:12px;font-weight:600">✅ Gmail</span>
+        <span style="background:#dcfce7;color:#15803d;padding:6px 12px;border-radius:16px;font-size:12px;font-weight:600">✅ Google Calendar</span>
+        <span style="background:#dcfce7;color:#15803d;padding:6px 12px;border-radius:16px;font-size:12px;font-weight:600">✅ Google Drive</span>
+        <span style="background:#dcfce7;color:#15803d;padding:6px 12px;border-radius:16px;font-size:12px;font-weight:600">✅ n8n MCP</span>
+        <span style="background:#dcfce7;color:#15803d;padding:6px 12px;border-radius:16px;font-size:12px;font-weight:600">✅ Canva</span>
+      </div>
+    </div>
+  `;
+
+  $('#p-chat').innerHTML = h;
+}
+
+function openClaudeChat(promptId) {
+  const prompt = CHAT_PROMPTS.find(p => p.id === promptId);
+  if (!prompt) return;
+  
+  const ctx = buildChatContext();
+  const promptText = prompt.promptBuilder(ctx);
+  
+  // claude.ai/new admite ?q= para pre-cargar el primer mensaje
+  const url = promptText 
+    ? `https://claude.ai/new?q=${encodeURIComponent(promptText)}`
+    : `https://claude.ai/new`;
+  
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
 
 // --- AMPLEMARKET ---
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
