@@ -747,7 +747,7 @@ body {
 // ============================================================
 
 const DATA_URL = 'https://mikea.app.n8n.cloud/webhook/gr-dashboard';
-const AM_URL = 'https://mikea.app.n8n.cloud/webhook/gr-dashboard-am';
+const AM_URL = 'https://mikea.app.n8n.cloud/webhook/gr-amplemarket';
 let AM_DATA = null;
 
 // --- Operational knowledge (hardcoded, curated) ---
@@ -2063,332 +2063,367 @@ function renderAlertas() {
 }
 
 // --- AMPLEMARKET ---
-// Tab Amplemarket v1: 4 secciones
-//   1. Semáforo semanal (placeholder hasta conectar live)
-//   2. Campañas activas SEQ vs DUO por producto
-//   3. 3 alertas accionables (Pausar/Reforzar/Celebrar)
-//   4. Detalle expandible (38 secuencias + 9 señales)
-//
-// Source: webhook /gr-dashboard-am (cron dominical 23:00 + fallback)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Tab Amplemarket v2 — Comparativo SEQ vs DUO + 5 accionables + detalle
+// Source: webhook /gr-amplemarket (GET = read snapshot, POST = write)
+// Snapshot lo genera Claude vía MCP cuando Mike pide "actualizar Amplemarket"
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function quadrantClass(label) {
-  if (label === 'Estrella') return 'qd-star';
-  if (label === 'Optimizar Copy') return 'qd-copy';
-  if (label === 'Mejorar Subject') return 'qd-subj';
-  if (label === 'Revisar Todo') return 'qd-bad';
-  return 'qd-none';
-}
+const ACCION_STYLES = {
+  celebrar:  { color: '#16a34a', bg: '#dcfce7', border: '#86efac', cat: '🎉 Celebrar' },
+  reforzar:  { color: '#0ea5e9', bg: '#e0f2fe', border: '#7dd3fc', cat: '⚡ Reforzar' },
+  pausar:    { color: '#dc2626', bg: '#fee2e2', border: '#fca5a5', cat: '🔄 Pausar' },
+  optimizar: { color: '#d97706', bg: '#fef3c7', border: '#fcd34d', cat: '📝 Optimizar copy' },
+  activar:   { color: '#7c3aed', bg: '#ede9fe', border: '#c4b5fd', cat: '⏸️ Activar' }
+};
+
+const GANADOR_STYLES = {
+  'SEQ':           { color: '#16a34a', bg: '#dcfce7', icon: '🏆', label: 'SEQ gana' },
+  'DUO':           { color: '#7c3aed', bg: '#ede9fe', icon: '🏆', label: 'DUO gana' },
+  'ambos':         { color: '#0ea5e9', bg: '#e0f2fe', icon: '⚖️', label: 'Ambos rinden' },
+  'empate':        { color: '#0ea5e9', bg: '#e0f2fe', icon: '⚖️', label: 'Empate' },
+  'ambos_flojos':  { color: '#dc2626', bg: '#fee2e2', icon: '⚠️', label: 'Ambos flojos' },
+  'inactivo':      { color: '#6b7280', bg: '#f3f4f6', icon: '💤', label: 'Inactivo' }
+};
+
+let amFilters = {
+  canal: 'todos',     // 'todos' | 'SEQ' | 'DUO'
+  tipo: 'todos',      // 'todos' | 'celebrar' | 'reforzar' | etc
+  producto: 'todos'   // 'todos' | 'AEO' | 'AM' | etc
+};
+
+let amDetailView = 'sequences';   // 'sequences' | 'signals'
 
 function fmtPct(v) {
+  if (v === null || v === undefined || isNaN(v)) return '—';
+  return (Number(v) * 100).toFixed(1) + '%';
+}
+
+function fmtNum(v) {
   if (v === null || v === undefined) return '—';
-  return Number(v).toFixed(1) + '%';
+  return Number(v).toLocaleString('en-US');
 }
 
 function freshness(iso) {
-  if (!iso) return 'desconocido';
+  if (!iso) return 'sin datos';
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
-  if (days === 0) return 'hoy';
+  const hours = Math.floor((Date.now() - new Date(iso).getTime()) / 3600000);
+  if (hours < 1) return 'hace minutos';
+  if (hours < 24) return `hace ${hours}h`;
   if (days === 1) return 'hace 1 día';
   if (days < 7) return `hace ${days} días`;
-  if (days < 30) return `hace ${Math.floor(days / 7)} semanas`;
+  if (days < 30) return `hace ${Math.floor(days / 7)} sem`;
   return `hace ${Math.floor(days / 30)} meses`;
 }
 
 function renderAmplemarket() {
   const am = AM_DATA;
-  const pDeals = DATA.deals.filter(d => d.name.startsWith('P_') || d.owner === 'Martha');
-  const pTotal = pDeals.reduce((s, d) => s + (d.amount || 0), 0);
-
-  // Si el endpoint AM no responde, fallback con info básica
-  if (!am || !am.ok) {
-    let h = `
+  
+  // === EMPTY STATE ===
+  if (!am || (!am.ok && !am.kpis)) {
+    $('#p-amplemarket').innerHTML = `
       <div class="section">
-        <div class="empty" style="padding:24px;text-align:center">
-          <strong>Endpoint Amplemarket no disponible</strong><br>
-          <small>El webhook /webhook/gr-dashboard-am no respondió o aún no fue desplegado.</small>
+        <div class="section-title">📡 Amplemarket — Snapshot pendiente</div>
+        <div class="empty" style="padding:32px;text-align:center;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px">
+          <div style="font-size:48px;margin-bottom:12px">⏳</div>
+          <div style="font-size:16px;font-weight:600;margin-bottom:8px;color:#92400e">No hay snapshot disponible aún</div>
+          <div style="color:#78350f;margin-bottom:16px">El backend está activo pero el static data está vacío.</div>
+          <div style="background:white;padding:16px;border-radius:6px;text-align:left;display:inline-block;max-width:480px">
+            <strong style="color:#7c3aed">¿Cómo actualizar?</strong><br>
+            <span style="color:#475569;font-size:13px">Pide a Claude en chat:</span><br>
+            <code style="background:#f1f5f9;padding:6px 12px;border-radius:4px;display:inline-block;margin-top:8px;color:#7c3aed">"actualizar Amplemarket"</code><br>
+            <span style="color:#475569;font-size:12px;margin-top:8px;display:block">Claude correrá las queries vía MCP de AM y posteará el snapshot en ~1 minuto.</span>
+          </div>
         </div>
       </div>
-      <div class="kpi-grid">
-        <div class="kpi kpi-purple"><div class="kpi-label">Deals AM/Martha</div><div class="kpi-value">${pDeals.length}</div></div>
-        <div class="kpi kpi-pink"><div class="kpi-label">Pipeline AM</div><div class="kpi-value">${fmtK(pTotal)}</div></div>
-      </div>
-      <div class="section">
-        <div class="section-title">Pipeline AM <span class="section-count">${pDeals.length}</span></div>
-        <table class="tbl">
-          <thead><tr><th>Deal</th><th>Stage</th><th>Close</th><th class="num">Monto</th></tr></thead>
-          <tbody>
     `;
-    pDeals.sort((a, b) => (b.amount || 0) - (a.amount || 0)).slice(0, 30).forEach(d => {
-      h += `<tr><td>${d.name}</td><td>${tagForStage(d.stage, d.stageLabel)}</td><td>${d.closedate || '—'}</td><td class="num">${fmt(d.amount)}</td></tr>`;
-    });
-    h += `</tbody></table></div>`;
-    $('#p-amplemarket').innerHTML = h;
     return;
   }
 
-  const seqSummary = am.sequences_summary || { total: {}, products: [] };
-  const duoSummary = am.duo_summary || { total: {}, products: [] };
-  const sequences = am.sequences_detail || [];
-  const signals = am.signals_detail || [];
-  const alerts = am.alerts || {};
+  const k = am.kpis || {};
+  const productos = am.productos || [];
+  const accionables = am.accionables || [];
+  const totales = am.totales || {};
   const stats = am.stats || {};
 
-  // ============================================================
-  // KPIs arriba — combinado SEQ + DUO
-  // ============================================================
-  const totalLeads = (seqSummary.total.leads || 0);
-  const totalGenerated = (duoSummary.total.generated || 0);
-  const totalMeetings = (seqSummary.total.meetings || 0) + (duoSummary.total.meetings || 0);
-  const totalInterested = (seqSummary.total.interested || 0) + (duoSummary.total.interested || 0);
+  // === KPI HEADER (números absolutos, sin %) ===
+  let h = `
+    <div class="section" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+        <div>
+          <div style="font-size:18px;font-weight:700;color:#0f172a">📡 Amplemarket — Últimos 30 días</div>
+          <div style="font-size:12px;color:#64748b;margin-top:2px">
+            ${am.periodoDesde || '—'} → ${am.periodoHasta || '—'} · 
+            Generado <strong>${freshness(am.generadoEn)}</strong> · 
+            ${totales.seqSecuencias || 0} secuencias · ${totales.duoSignals || 0} señales DUO
+          </div>
+        </div>
+        <button onclick="refreshAmplemarket()" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;border:0;border-radius:8px;padding:8px 14px;font-weight:600;font-size:13px;cursor:pointer">
+          🔄 Pedir actualización
+        </button>
+      </div>
 
-  let html = `
-    <div class="kpi-grid">
-      <div class="kpi kpi-purple">
-        <div class="kpi-label">Total Leads SEQ</div>
-        <div class="kpi-value">${totalLeads.toLocaleString()}</div>
-        <div class="kpi-sub">${(seqSummary.total.open_rate || 0).toFixed(1)}% OR · ${(seqSummary.total.reply_rate || 0).toFixed(2)}% RR</div>
-      </div>
-      <div class="kpi kpi-pink">
-        <div class="kpi-label">DUO Generated</div>
-        <div class="kpi-value">${totalGenerated.toLocaleString()}</div>
-        <div class="kpi-sub">${(duoSummary.total.open_rate || 0).toFixed(1)}% OR · ${(duoSummary.total.reply_rate || 0).toFixed(2)}% RR</div>
-      </div>
-      <div class="kpi kpi-mint">
-        <div class="kpi-label">Meetings totales</div>
-        <div class="kpi-value">${totalMeetings}</div>
-        <div class="kpi-sub">${stats.stars || 0} ⭐ · ${stats.sequences_with_meetings || 0} SEQ · ${stats.signals_with_meetings || 0} DUO</div>
-      </div>
-      <div class="kpi kpi-cyan">
-        <div class="kpi-label">Interested</div>
-        <div class="kpi-value">${totalInterested}</div>
-        <div class="kpi-sub">Periodo: ${am.period || '—'}</div>
-      </div>
-    </div>
-    <div class="section" style="padding:8px 14px;background:#fef3c7;border-left:3px solid #f59e0b;font-size:13px;color:#78350f">
-      📅 Última actualización: <strong>${freshness(am.lastSnapshotUpdate)}</strong> · Source: ${am.source === 'cron' ? '🤖 cron dominical' : '📦 fallback inicial'} · ${stats.total_sequences || 0} secuencias · ${stats.total_signals || 0} señales DUO
-    </div>
-  `;
-
-  // ============================================================
-  // SECCIÓN 1 — Semáforo semanal (placeholder)
-  // ============================================================
-  const weekly = am.weekly_snapshot || { meetings: [], replies: [], open_plus_3: [], interested: [] };
-  const wMtg = (weekly.meetings || []).length;
-  const wRpl = (weekly.replies || []).length;
-  const wOp3 = (weekly.open_plus_3 || []).length;
-  const wInt = (weekly.interested || []).length;
-
-  html += `
-    <div class="section">
-      <div class="section-title">📊 Semáforo semanal — últimos 7 días</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0">
-        <div style="padding:14px;background:#dcfce7;border-radius:8px;text-align:center">
-          <div style="font-size:11px;color:#166534;text-transform:uppercase;letter-spacing:.5px">🟢 Meetings</div>
-          <div style="font-size:28px;font-weight:700;color:#166534">${wMtg}</div>
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);gap:12px">
+        <div class="kpi" style="background:linear-gradient(135deg,#dcfce7,#bbf7d0);border-color:#86efac">
+          <div class="kpi-label" style="color:#15803d">🎯 Reuniones agendadas</div>
+          <div class="kpi-value" style="color:#14532d">${k.meetings || 0}</div>
+          <div style="font-size:11px;color:#16a34a;margin-top:2px">${totales.seqMeetings || 0} SEQ · ${totales.duoMeetings || 0} DUO</div>
         </div>
-        <div style="padding:14px;background:#dbeafe;border-radius:8px;text-align:center">
-          <div style="font-size:11px;color:#1e40af;text-transform:uppercase;letter-spacing:.5px">📬 Replies</div>
-          <div style="font-size:28px;font-weight:700;color:#1e40af">${wRpl}</div>
+        <div class="kpi" style="background:linear-gradient(135deg,#e0f2fe,#bae6fd);border-color:#7dd3fc">
+          <div class="kpi-label" style="color:#0369a1">💬 Respuestas</div>
+          <div class="kpi-value" style="color:#0c4a6e">${k.replies || 0}</div>
+          <div style="font-size:11px;color:#0284c7;margin-top:2px">${totales.seqReplies || 0} SEQ · ${totales.duoReplies || 0} DUO</div>
         </div>
-        <div style="padding:14px;background:#fef3c7;border-radius:8px;text-align:center">
-          <div style="font-size:11px;color:#92400e;text-transform:uppercase;letter-spacing:.5px">📨 Open +3</div>
-          <div style="font-size:28px;font-weight:700;color:#92400e">${wOp3}</div>
+        <div class="kpi" style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-color:#fcd34d">
+          <div class="kpi-label" style="color:#a16207">📨 Open+3 (engaged)</div>
+          <div class="kpi-value" style="color:#713f12">${fmtNum(k.openPlus3)}</div>
+          <div style="font-size:11px;color:#ca8a04;margin-top:2px">leads en seqs >60% open rate</div>
         </div>
-        <div style="padding:14px;background:#fce7f3;border-radius:8px;text-align:center">
-          <div style="font-size:11px;color:#9f1239;text-transform:uppercase;letter-spacing:.5px">🎯 Interested</div>
-          <div style="font-size:28px;font-weight:700;color:#9f1239">${wInt}</div>
+        <div class="kpi" style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);border-color:#c4b5fd">
+          <div class="kpi-label" style="color:#6d28d9">🔮 DUO Generated</div>
+          <div class="kpi-value" style="color:#4c1d95">${fmtNum(k.duoGenerated)}</div>
+          <div style="font-size:11px;color:#7c3aed;margin-top:2px">${totales.duoSequenced || 0} ya secuenciadas</div>
         </div>
       </div>
-      ${weekly.note ? `<div class="empty" style="font-size:13px;color:#6b7280;padding:12px;background:#f9fafb;border-radius:6px">⏳ ${weekly.note}</div>` : ''}
     </div>
   `;
 
-  // ============================================================
-  // SECCIÓN 2 — Campañas activas: SEQ vs DUO por producto
-  // ============================================================
-  const seqByProd = {};
-  (seqSummary.products || []).forEach(p => seqByProd[p.product] = p);
-  const duoByProd = {};
-  (duoSummary.products || []).forEach(p => duoByProd[p.product] = p);
-
-  const allProds = new Set([...Object.keys(seqByProd), ...Object.keys(duoByProd)]);
-  // Orden definido para asegurar consistencia
-  const prodOrder = ['TW', 'AM', 'GEN IA', 'LT', 'AEO+IO', 'ITS', 'PINTAANDO'];
-  const sortedProds = [...allProds].sort((a, b) => {
-    const ai = prodOrder.indexOf(a); const bi = prodOrder.indexOf(b);
-    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-  });
-
-  const verdict = (or, rr, mtg) => {
-    if ((or || 0) === 0 && (rr || 0) === 0) return '<span style="color:#9ca3af">—</span>';
-    if ((rr || 0) >= 3 && (mtg || 0) > 0) return '<span style="color:#16a34a;font-weight:600">⭐</span>';
-    if ((or || 0) >= 50 && (rr || 0) < 3) return '<span style="color:#ea580c;font-weight:600">🔧</span>';
-    if ((or || 0) < 50 && (rr || 0) >= 3) return '<span style="color:#2563eb;font-weight:600">📧</span>';
-    return '<span style="color:#dc2626;font-weight:600">❌</span>';
-  };
-
-  html += `
+  // === COMPARATIVO SEQ vs DUO POR PRODUCTO ===
+  h += `
     <div class="section">
-      <div class="section-title">📋 Campañas activas — SEQ vs DUO por producto</div>
+      <div class="section-title">🥊 SEQ vs DUO — Comparativo por producto <span class="section-count">${productos.length}</span></div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:12px">Reply rate solo es comparable dentro del mismo canal. El ganador se define por reuniones agendadas.</div>
       <table class="tbl">
         <thead>
           <tr>
             <th rowspan="2" style="vertical-align:bottom">Producto</th>
-            <th colspan="5" style="text-align:center;background:#ede9fe;color:#5b21b6">SECUENCIAS</th>
-            <th colspan="5" style="text-align:center;background:#fce7f3;color:#9f1239">SEÑALES DUO</th>
+            <th colspan="5" style="background:#dcfce7;text-align:center;color:#15803d">📋 SEQ — Secuencias outbound</th>
+            <th colspan="5" style="background:#ede9fe;text-align:center;color:#6d28d9">🔮 DUO — Señales DuoCopilot</th>
+            <th rowspan="2" style="vertical-align:bottom;text-align:center">🏆 Ganador</th>
           </tr>
           <tr>
-            <th class="num">Leads</th><th class="num">OR</th><th class="num">RR</th><th class="num">Mtg</th><th>Ver</th>
-            <th class="num">Gen</th><th class="num">OR</th><th class="num">RR</th><th class="num">Mtg</th><th>Ver</th>
+            <th class="num" style="background:#dcfce7">Seqs</th>
+            <th class="num" style="background:#dcfce7">Leads</th>
+            <th class="num" style="background:#dcfce7">Open%</th>
+            <th class="num" style="background:#dcfce7">Reply%</th>
+            <th class="num" style="background:#dcfce7">Mtgs</th>
+            <th class="num" style="background:#ede9fe">Sigs</th>
+            <th class="num" style="background:#ede9fe">Gen</th>
+            <th class="num" style="background:#ede9fe">Seq%</th>
+            <th class="num" style="background:#ede9fe">Reply%</th>
+            <th class="num" style="background:#ede9fe">Mtgs</th>
           </tr>
         </thead>
         <tbody>
   `;
 
-  sortedProds.forEach(prod => {
-    const s = seqByProd[prod] || {};
-    const d = duoByProd[prod] || {};
-    const sLeads = s.leads || 0;
-    const dGen = d.generated || 0;
-
-    html += `<tr>
-      <td><strong>${prod}</strong></td>
-      <td class="num" style="background:#faf5ff">${sLeads ? sLeads.toLocaleString() : '—'}</td>
-      <td class="num" style="background:#faf5ff">${sLeads ? fmtPct(s.open_rate) : '—'}</td>
-      <td class="num" style="background:#faf5ff">${sLeads ? fmtPct(s.reply_rate) : '—'}</td>
-      <td class="num" style="background:#faf5ff"><strong>${s.meetings || 0}</strong></td>
-      <td style="background:#faf5ff;text-align:center">${sLeads ? verdict(s.open_rate, s.reply_rate, s.meetings) : '—'}</td>
-      <td class="num" style="background:#fdf2f8">${dGen ? dGen.toLocaleString() : '—'}</td>
-      <td class="num" style="background:#fdf2f8">${dGen ? fmtPct(d.open_rate) : '—'}</td>
-      <td class="num" style="background:#fdf2f8">${dGen ? fmtPct(d.reply_rate) : '—'}</td>
-      <td class="num" style="background:#fdf2f8"><strong>${d.meetings || 0}</strong></td>
-      <td style="background:#fdf2f8;text-align:center">${dGen ? verdict(d.open_rate, d.reply_rate, d.meetings) : '—'}</td>
-    </tr>`;
-  });
-
-  html += `
-        </tbody>
-      </table>
-      <div style="font-size:12px;color:#6b7280;margin-top:8px">
-        <strong>Veredicto:</strong> ⭐ Estrella (RR≥3% + meetings) · 🔧 Optimizar Copy (OR alto, RR bajo) · 📧 Mejorar Subject (OR bajo, RR ok) · ❌ Revisar Todo
-      </div>
-    </div>
-  `;
-
-  // ============================================================
-  // SECCIÓN 3 — Alertas accionables
-  // ============================================================
-  html += `<div class="section"><div class="section-title">🚨 Alertas accionables — esta semana</div>`;
-
-  const alertCard = (kind, color, alert, label) => {
-    if (!alert) return '';
-    return `
-      <div style="padding:14px;border-left:4px solid ${color};background:${color}11;border-radius:6px;margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
-          <div style="flex:1">
-            <div style="font-size:11px;color:${color};font-weight:700;text-transform:uppercase;letter-spacing:.5px">${kind} ${label}</div>
-            <div style="font-size:15px;font-weight:600;color:#111827;margin-top:2px">
-              <span style="display:inline-block;padding:2px 8px;background:${alert.kind === 'SEQ' ? '#ede9fe' : '#fce7f3'};color:${alert.kind === 'SEQ' ? '#5b21b6' : '#9f1239'};border-radius:4px;font-size:11px;font-weight:700;margin-right:6px">${alert.kind}</span>
-              ${alert.name}
-            </div>
-            <div style="font-size:13px;color:#374151;margin-top:6px">
-              <strong>${alert.metric_main}</strong> · ${alert.metric_detail}
-            </div>
-            <div style="font-size:13px;color:#4b5563;margin-top:6px">
-              💡 ${alert.reason}
-            </div>
-            <div style="font-size:13px;color:#111827;margin-top:8px;padding:8px;background:white;border-radius:4px;border:1px solid #e5e7eb">
-              <strong>→ ${alert.owner}:</strong> ${alert.action}
-            </div>
-          </div>
-          <div style="font-size:13px;color:${color};font-weight:600;white-space:nowrap">
-            ${alert.product}
-          </div>
-        </div>
-      </div>
+  productos.forEach(p => {
+    const s = p.seq, d = p.duo;
+    const g = GANADOR_STYLES[p.ganador] || GANADOR_STYLES['inactivo'];
+    h += `
+      <tr>
+        <td style="font-weight:700;color:#0f172a">${p.codigo}</td>
+        <td class="num" style="background:#f0fdf4">${s.secuencias || 0}</td>
+        <td class="num" style="background:#f0fdf4">${fmtNum(s.leads)}</td>
+        <td class="num" style="background:#f0fdf4;${s.openRate>=0.5?'color:#16a34a;font-weight:600':''}">${s.leads>0?fmtPct(s.openRate):'—'}</td>
+        <td class="num" style="background:#f0fdf4;${s.replyRate>=0.02?'color:#16a34a;font-weight:600':s.replyRate<0.005&&s.leads>50?'color:#dc2626':''}">${s.leads>0?fmtPct(s.replyRate):'—'}</td>
+        <td class="num" style="background:#f0fdf4;${s.meetings>0?'color:#16a34a;font-weight:700':''}">${s.meetings || 0}</td>
+        <td class="num" style="background:#faf5ff">${d.signals || 0}</td>
+        <td class="num" style="background:#faf5ff">${fmtNum(d.generated)}</td>
+        <td class="num" style="background:#faf5ff">${d.generated>0?fmtPct(d.sequenceRate):'—'}</td>
+        <td class="num" style="background:#faf5ff;${d.replyRate>=0.02?'color:#7c3aed;font-weight:600':''}">${d.sequenced>0?fmtPct(d.replyRate):'—'}</td>
+        <td class="num" style="background:#faf5ff;${d.meetings>0?'color:#7c3aed;font-weight:700':''}">${d.meetings || 0}</td>
+        <td style="text-align:center;background:${g.bg};color:${g.color};font-weight:600;font-size:12px;white-space:nowrap">
+          ${g.icon} ${g.label}
+        </td>
+      </tr>
     `;
-  };
+  });
 
-  html += alertCard('🔴', '#dc2626', alerts.pausar, 'PAUSAR');
-  html += alertCard('🟡', '#ea580c', alerts.reforzar, 'REFORZAR');
-  html += alertCard('🟢', '#16a34a', alerts.celebrar, 'CELEBRAR');
+  h += `</tbody></table></div>`;
 
-  if (!alerts.pausar && !alerts.reforzar && !alerts.celebrar) {
-    html += `<div class="empty">Sin alertas — el cron aún no ha procesado data nueva.</div>`;
-  }
+  // === ACCIONABLES con filtros ===
+  // Calcular filtros disponibles
+  const productosConDatos = [...new Set(accionables.map(a => a.producto))].sort();
+  
+  // Aplicar filtros
+  const filtrados = accionables.filter(a => {
+    if (amFilters.canal !== 'todos' && a.canal !== amFilters.canal) return false;
+    if (amFilters.tipo !== 'todos' && a.id !== amFilters.tipo) return false;
+    if (amFilters.producto !== 'todos' && a.producto !== amFilters.producto) return false;
+    return true;
+  });
 
-  html += `</div>`;
-
-  // ============================================================
-  // SECCIÓN 4 — Detalle expandible (colapsado por default)
-  // ============================================================
-  html += `
+  h += `
     <div class="section">
-      <div class="section-title" style="cursor:pointer;user-select:none" onclick="toggleAmDetail()">
-        ▶ <span id="am-detail-arrow">▶</span> Ver detalle completo
-        <span class="section-count">${sequences.length} secuencias + ${signals.length} señales DUO</span>
+      <div class="section-title">🎯 Acciones recomendadas <span class="section-count">${filtrados.length}/${accionables.length}</span></div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:12px">
+        Generadas automáticamente desde el comportamiento de cada secuencia y señal del último mes.
       </div>
+
+      <!-- KPI Acciones -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px">
+        ${['celebrar','reforzar','activar','optimizar','pausar'].map(tipo => {
+          const cnt = stats.porTipo?.[tipo] || 0;
+          const st = ACCION_STYLES[tipo];
+          return `
+            <div onclick="setAmFilter('tipo','${tipo === amFilters.tipo ? 'todos' : tipo}')" 
+                 style="background:${tipo === amFilters.tipo ? st.color : st.bg};color:${tipo === amFilters.tipo ? 'white' : st.color};border:1px solid ${st.border};border-radius:8px;padding:10px;cursor:pointer;text-align:center;transition:all 0.15s">
+              <div style="font-size:18px;font-weight:700">${cnt}</div>
+              <div style="font-size:11px;font-weight:600;margin-top:2px">${st.cat}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <!-- Filtros -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
+        <span style="font-size:12px;color:#64748b;margin-right:4px">Canal:</span>
+        ${['todos','SEQ','DUO'].map(c => `
+          <button onclick="setAmFilter('canal','${c}')" 
+                  style="background:${c === amFilters.canal ? '#0f172a' : '#f1f5f9'};color:${c === amFilters.canal ? 'white' : '#475569'};border:0;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer">
+            ${c === 'todos' ? 'Todos' : (c === 'SEQ' ? '📋 SEQ' : '🔮 DUO')}
+            ${c !== 'todos' ? ` (${stats.porCanal?.[c] || 0})` : ` (${accionables.length})`}
+          </button>
+        `).join('')}
+        <span style="font-size:12px;color:#64748b;margin:0 4px 0 12px">Producto:</span>
+        <button onclick="setAmFilter('producto','todos')" 
+                style="background:${amFilters.producto === 'todos' ? '#0f172a' : '#f1f5f9'};color:${amFilters.producto === 'todos' ? 'white' : '#475569'};border:0;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer">
+          Todos
+        </button>
+        ${productosConDatos.map(prod => `
+          <button onclick="setAmFilter('producto','${prod}')" 
+                  style="background:${prod === amFilters.producto ? '#0f172a' : '#f1f5f9'};color:${prod === amFilters.producto ? 'white' : '#475569'};border:0;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer">
+            ${prod}
+          </button>
+        `).join('')}
+      </div>
+  `;
+
+  if (filtrados.length === 0) {
+    h += `<div class="empty" style="padding:24px;text-align:center;color:#64748b">Sin acciones que coincidan con los filtros.</div>`;
+  } else {
+    h += `<table class="tbl">
+      <thead>
+        <tr>
+          <th>Acción</th>
+          <th>Canal</th>
+          <th>Producto</th>
+          <th>Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+    `;
+    filtrados.forEach(a => {
+      const st = ACCION_STYLES[a.id] || ACCION_STYLES.optimizar;
+      h += `
+        <tr>
+          <td style="background:${st.bg};color:${st.color};font-weight:600;white-space:nowrap">${a.icon} ${a.label}</td>
+          <td style="font-weight:600">${a.canal === 'SEQ' ? '📋 SEQ' : '🔮 DUO'}</td>
+          <td style="font-weight:700">${a.producto}</td>
+          <td>${a.detalle}</td>
+        </tr>
+      `;
+    });
+    h += `</tbody></table>`;
+  }
+  h += `</div>`;
+
+  // === DETALLE EXPANDIBLE: secuencias + señales ===
+  h += `
+    <div class="section">
+      <div onclick="toggleAmDetail()" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:4px 0">
+        <span id="am-detail-arrow" style="font-size:14px;color:#64748b">▶</span>
+        <div class="section-title" style="margin:0">📊 Detalle por secuencia y señal <span class="section-count">${(totales.seqSecuencias || 0) + (totales.duoSignals || 0)}</span></div>
+      </div>
+
       <div id="am-detail" style="display:none;margin-top:12px">
-        <div style="display:flex;gap:8px;margin-bottom:12px">
-          <button class="am-tab am-tab-active" data-am-view="seq" onclick="switchAmView('seq')">📋 Secuencias (${sequences.length})</button>
-          <button class="am-tab" data-am-view="duo" onclick="switchAmView('duo')">🔔 Señales DUO (${signals.length})</button>
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <button class="am-tab ${amDetailView==='sequences'?'am-tab-active':''}" data-am-detail="sequences" onclick="switchAmDetailView('sequences')">📋 Secuencias (${totales.seqSecuencias || 0})</button>
+          <button class="am-tab ${amDetailView==='signals'?'am-tab-active':''}" data-am-detail="signals" onclick="switchAmDetailView('signals')">🔮 Señales DUO (${totales.duoSignals || 0})</button>
         </div>
-        <div id="am-seq-table">
+
+        <div id="am-seq-detail" style="display:${amDetailView==='sequences'?'block':'none'}">
           <table class="tbl">
-            <thead><tr>
-              <th>Secuencia</th><th>Producto</th><th>Señal</th>
-              <th class="num">Leads</th><th class="num">OR</th><th class="num">RR</th><th class="num">Int</th><th class="num">Mtg</th><th>Cuadrante</th>
-            </tr></thead>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Secuencia</th>
+                <th class="num">Leads</th>
+                <th class="num">Open%</th>
+                <th class="num">Reply%</th>
+                <th class="num">Interesados</th>
+                <th class="num">Mtgs</th>
+              </tr>
+            </thead>
             <tbody>
   `;
 
-  sequences.forEach(s => {
-    html += `<tr>
-      <td style="font-size:12px">${s.name}</td>
-      <td><span style="display:inline-block;padding:1px 6px;background:#ede9fe;color:#5b21b6;border-radius:3px;font-size:11px;font-weight:600">${s.product}</span></td>
-      <td style="font-size:12px;color:#6b7280">${s.signal || '—'}</td>
-      <td class="num">${(s.leads || 0).toLocaleString()}</td>
-      <td class="num">${fmtPct(s.open_rate)}</td>
-      <td class="num">${fmtPct(s.reply_rate)}</td>
-      <td class="num">${s.interested || 0}</td>
-      <td class="num"><strong>${s.meetings || 0}</strong></td>
-      <td><span class="${quadrantClass(s.quadrant?.label)}" style="font-size:11px">${s.quadrant?.emoji || '—'} ${s.quadrant?.label || ''}</span></td>
-    </tr>`;
+  productos.forEach(p => {
+    (p.seq.detalle || []).forEach(s => {
+      h += `
+        <tr>
+          <td style="font-weight:700">${p.codigo}</td>
+          <td style="font-size:12px;color:#475569">${(s.nombre || '').trim()}</td>
+          <td class="num">${fmtNum(s.leads)}</td>
+          <td class="num ${s.openRate>=0.5?'':s.openRate<0.3?'':''}" style="${s.openRate>=0.5?'color:#16a34a;font-weight:600':''}">${s.leads>0?fmtPct(s.openRate):'—'}</td>
+          <td class="num" style="${s.replyRate>=0.02?'color:#16a34a;font-weight:600':s.replyRate<0.005&&s.leads>50?'color:#dc2626':''}">${s.leads>0?fmtPct(s.replyRate):'—'}</td>
+          <td class="num">${s.interested || 0}</td>
+          <td class="num" style="${s.meetings>0?'color:#16a34a;font-weight:700':''}">${s.meetings || 0}</td>
+        </tr>
+      `;
+    });
   });
 
-  html += `</tbody></table></div>
-        <div id="am-duo-table" style="display:none">
+  h += `</tbody></table></div>
+
+        <div id="am-duo-detail" style="display:${amDetailView==='signals'?'block':'none'}">
           <table class="tbl">
-            <thead><tr>
-              <th>Señal DUO</th><th>Producto</th>
-              <th class="num">Generated</th><th class="num">Sequenced</th><th class="num">OR</th><th class="num">RR</th><th class="num">Int</th><th class="num">Mtg</th><th>Cuadrante</th>
-            </tr></thead>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Señal DUO</th>
+                <th class="num">Generated</th>
+                <th class="num">Sequenced</th>
+                <th class="num">Seq%</th>
+                <th class="num">Replies</th>
+                <th class="num">Reply%</th>
+                <th class="num">Mtgs</th>
+              </tr>
+            </thead>
             <tbody>
   `;
 
-  signals.forEach(s => {
-    html += `<tr>
-      <td style="font-weight:500">${s.name}</td>
-      <td><span style="display:inline-block;padding:1px 6px;background:#fce7f3;color:#9f1239;border-radius:3px;font-size:11px;font-weight:600">${s.product}</span></td>
-      <td class="num">${(s.generated || 0).toLocaleString()}</td>
-      <td class="num">${(s.sequenced || 0).toLocaleString()}</td>
-      <td class="num">${fmtPct(s.open_rate)}</td>
-      <td class="num">${fmtPct(s.reply_rate)}</td>
-      <td class="num">${s.interested || 0}</td>
-      <td class="num"><strong>${s.meetings || 0}</strong></td>
-      <td><span class="${quadrantClass(s.quadrant?.label)}" style="font-size:11px">${s.quadrant?.emoji || '—'} ${s.quadrant?.label || ''}</span></td>
-    </tr>`;
+  productos.forEach(p => {
+    (p.duo.detalle || []).forEach(d => {
+      h += `
+        <tr>
+          <td style="font-weight:700">${p.codigo}</td>
+          <td style="font-size:12px;color:#475569">${d.signal}</td>
+          <td class="num">${fmtNum(d.generated)}</td>
+          <td class="num">${fmtNum(d.sequenced)}</td>
+          <td class="num">${d.generated>0?fmtPct(d.sequenceRate):'—'}</td>
+          <td class="num">${d.replies || 0}</td>
+          <td class="num" style="${d.replyRate>=0.02?'color:#7c3aed;font-weight:600':''}">${d.sequenced>0?fmtPct(d.replyRate):'—'}</td>
+          <td class="num" style="${d.meetings>0?'color:#7c3aed;font-weight:700':''}">${d.meetings || 0}</td>
+        </tr>
+      `;
+    });
   });
 
-  html += `</tbody></table></div>
+  h += `</tbody></table></div>
       </div>
     </div>
   `;
 
-  $('#p-amplemarket').innerHTML = html;
+  $('#p-amplemarket').innerHTML = h;
 }
 
-// Toggle detalle expandible
+function setAmFilter(dim, value) {
+  amFilters[dim] = value;
+  renderAmplemarket();
+}
+
 function toggleAmDetail() {
   const det = document.getElementById('am-detail');
   const arrow = document.getElementById('am-detail-arrow');
@@ -2401,13 +2436,17 @@ function toggleAmDetail() {
   }
 }
 
-// Toggle SEQ / DUO views dentro del detalle
-function switchAmView(view) {
-  document.querySelectorAll('.am-tab').forEach(b => {
-    b.classList.toggle('am-tab-active', b.dataset.amView === view);
+function switchAmDetailView(view) {
+  amDetailView = view;
+  document.querySelectorAll('#p-amplemarket .am-tab').forEach(b => {
+    b.classList.toggle('am-tab-active', b.dataset.amDetail === view);
   });
-  document.getElementById('am-seq-table').style.display = view === 'seq' ? 'block' : 'none';
-  document.getElementById('am-duo-table').style.display = view === 'duo' ? 'block' : 'none';
+  document.getElementById('am-seq-detail').style.display = view === 'sequences' ? 'block' : 'none';
+  document.getElementById('am-duo-detail').style.display = view === 'signals' ? 'block' : 'none';
+}
+
+function refreshAmplemarket() {
+  alert('🔄 Para actualizar Amplemarket:\n\n1. Abre el chat con Claude\n2. Escribe: "actualizar Amplemarket"\n3. Claude correrá las queries vía MCP (~1 min)\n4. Recarga este dashboard\n\nEl backend está activo y listo para recibir el snapshot.');
 }
 
 // --- FORECAST ---
