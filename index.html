@@ -1133,7 +1133,7 @@ function renderRecap() {
 
     const prodsCreados = [...new Set(dealsCreadosList.map(d => d.prod || 'Otro'))].sort();
     const ownersCreados = [...new Set(dealsCreadosList.map(d => d.owner))].sort();
-    const stagesCreados = [...new Set(dealsCreadosList.map(d => d.stage || '—'))].sort();
+    const STAGES_PREDEF = ['Señal','Reply','Contactado','En Conv.','Atracción','Educación','Propuesta','Aprobación','Won'];
 
     const prodCreadoFilter = recapFilters.prodCreado || 'ALL';
     const ownerCreadoFilter = recapFilters.ownerCreado || 'ALL';
@@ -1150,20 +1150,20 @@ function renderRecap() {
 
     html += `<div class="section">
       <div class="section-title">Deals creados esta semana <span class="section-count">${filteredCreados.length}/${recap.dealsCreados.total}</span> <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">${fmtK(montoFiltrado)}</span></div>
-      <div class="filters" style="flex-wrap:wrap">
+      <div class="filters">
         <span class="filter-label">Producto:</span>
         <button class="chip ${prodCreadoFilter === 'ALL' ? 'active' : ''}" data-recapfilter="prodCreado" data-rval="ALL">Todos</button>
         ${prodsCreados.map(pr => `<button class="chip ${prodCreadoFilter === pr ? 'active' : ''}" data-recapfilter="prodCreado" data-rval="${pr}">${pr}</button>`).join('')}
       </div>
-      <div class="filters" style="flex-wrap:wrap;margin-top:6px">
+      <div class="filters" style="margin-top:6px">
         <span class="filter-label">Owner:</span>
         <button class="chip ${ownerCreadoFilter === 'ALL' ? 'active' : ''}" data-recapfilter="ownerCreado" data-rval="ALL">Todos</button>
         ${ownersCreados.map(ow => `<button class="chip ${ownerCreadoFilter === ow ? 'active' : ''}" data-recapfilter="ownerCreado" data-rval="${ow}">${ow}</button>`).join('')}
       </div>
-      <div class="filters" style="flex-wrap:wrap;margin-top:6px">
-        <span class="filter-label">Stage:</span>
+      <div class="filters" style="margin-top:6px">
+        <span class="filter-label">Stage del deal:</span>
         <button class="chip ${stageCreadoFilter === 'ALL' ? 'active' : ''}" data-recapfilter="stageCreado" data-rval="ALL">Todos</button>
-        ${stagesCreados.map(st => `<button class="chip ${stageCreadoFilter === st ? 'active' : ''}" data-recapfilter="stageCreado" data-rval="${st}">${st}</button>`).join('')}
+        ${STAGES_PREDEF.map(st => `<button class="chip ${stageCreadoFilter === st ? 'active' : ''}" data-recapfilter="stageCreado" data-rval="${st}">${st}</button>`).join('')}
       </div>
       <table class="tbl">
         <thead><tr><th>Cliente / Deal</th><th>Producto</th><th>Owner</th><th>Stage</th><th>Creado</th><th class="num">Monto</th></tr></thead>
@@ -1197,7 +1197,7 @@ function renderRecap() {
 
     const prodsMov = [...new Set(dealsMovList.map(d => d.prod || 'Otro'))].sort();
     const ownersMov = [...new Set(dealsMovList.map(d => d.owner))].sort();
-    const stagesMov = [...new Set(dealsMovList.map(d => d.stageActual || '—'))].sort();
+    const STAGES_MOV_PREDEF = ['Señal','Reply','Contactado','En Conv.','Atracción','Educación','Propuesta','Aprobación','Won','Perdida'];
 
     const prodMovFilter = recapFilters.prodMovido || 'ALL';
     const ownerMovFilter = recapFilters.ownerMovido || 'ALL';
@@ -1216,20 +1216,20 @@ function renderRecap() {
 
     html += `<div class="section">
       <div class="section-title">Deals con movimiento esta semana <span class="section-count">${filteredMov.length}/${recap.dealsMovidos.total}</span> <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">${fmtK(montoMovFiltrado)}</span></div>
-      <div class="filters" style="flex-wrap:wrap">
+      <div class="filters">
         <span class="filter-label">Producto:</span>
         <button class="chip ${prodMovFilter === 'ALL' ? 'active' : ''}" data-recapfilter="prodMovido" data-rval="ALL">Todos</button>
         ${prodsMov.map(pr => `<button class="chip ${prodMovFilter === pr ? 'active' : ''}" data-recapfilter="prodMovido" data-rval="${pr}">${pr}</button>`).join('')}
       </div>
-      <div class="filters" style="flex-wrap:wrap;margin-top:6px">
+      <div class="filters" style="margin-top:6px">
         <span class="filter-label">Owner:</span>
         <button class="chip ${ownerMovFilter === 'ALL' ? 'active' : ''}" data-recapfilter="ownerMovido" data-rval="ALL">Todos</button>
         ${ownersMov.map(ow => `<button class="chip ${ownerMovFilter === ow ? 'active' : ''}" data-recapfilter="ownerMovido" data-rval="${ow}">${ow}</button>`).join('')}
       </div>
-      <div class="filters" style="flex-wrap:wrap;margin-top:6px">
-        <span class="filter-label">Stage:</span>
+      <div class="filters" style="margin-top:6px">
+        <span class="filter-label">Stage del deal:</span>
         <button class="chip ${stageMovFilter === 'ALL' ? 'active' : ''}" data-recapfilter="stageMovido" data-rval="ALL">Todos</button>
-        ${stagesMov.map(st => `<button class="chip ${stageMovFilter === st ? 'active' : ''}" data-recapfilter="stageMovido" data-rval="${st}">${st}</button>`).join('')}
+        ${STAGES_MOV_PREDEF.map(st => `<button class="chip ${stageMovFilter === st ? 'active' : ''}" data-recapfilter="stageMovido" data-rval="${st}">${st}</button>`).join('')}
       </div>
       <table class="tbl">
         <thead><tr><th>Cliente / Deal</th><th>Producto</th><th>Owner</th><th>Stage Actual</th><th>Última modif.</th><th class="num">Monto</th></tr></thead>
