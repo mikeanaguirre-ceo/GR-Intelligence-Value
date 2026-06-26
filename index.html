@@ -713,6 +713,7 @@ body {
     <button class="tab" data-tab="clientes">Clientes</button>
     <button class="tab" data-tab="pendientes">Pendientes</button>
     <button class="tab" data-tab="alertas">Alertas <span class="badge-red" id="alerts-count">—</span></button>
+    <button class="tab" data-tab="prospeccion">Prospección</button>
     <button class="tab" data-tab="amplemarket">Amplemarket</button>
     <button class="tab" data-tab="forecast">Forecast</button>
     <button class="tab" data-tab="chat">💬 Chat</button>
@@ -726,6 +727,7 @@ body {
     <section class="panel" id="p-clientes"></section>
     <section class="panel" id="p-pendientes"></section>
     <section class="panel" id="p-alertas"></section>
+    <section class="panel" id="p-prospeccion"></section>
     <section class="panel" id="p-amplemarket"></section>
     <section class="panel" id="p-forecast"></section>
     <section class="panel" id="p-chat"></section>
@@ -750,6 +752,12 @@ body {
 
 const DATA_URL = 'https://mikea.app.n8n.cloud/webhook/gr-dashboard';
 const AM_URL = 'https://mikea.app.n8n.cloud/webhook/gr-amplemarket';
+// --- Acciones de tareas (workflow "GR — Acciones Tareas Dashboard") ---
+const TASK_UPDATE_URL = 'https://mikea.app.n8n.cloud/webhook/gr-task-update';
+const TASK_CLOSE_URL  = 'https://mikea.app.n8n.cloud/webhook/gr-task-close';
+const TASK_NEXT_URL   = 'https://mikea.app.n8n.cloud/webhook/gr-task-next';
+// Responsables conocidos (ownerId HubSpot -> nombre). Ampliable.
+const OWNERS = { '77808624': 'Migue', '82004391': 'Martha' };
 let AM_DATA = null;
 let amPeriod = 30; // 7, 15, or 30
 
@@ -971,6 +979,7 @@ function renderCurrentTab() {
     clientes: renderClientes,
     pendientes: renderPendientes,
     alertas: renderAlertas,
+    prospeccion: renderProspeccion,
     amplemarket: renderAmplemarket,
     forecast: renderForecast,
     chat: renderChat
@@ -1845,12 +1854,13 @@ function renderPendientes() {
         ${current === 'Todos' ? '<th>Persona</th>' : ''}
         <th>Tipo</th>
         <th>Fecha</th>
+        <th style="width:40px;text-align:center;">Acción</th>
       </tr></thead>
       <tbody>
   `;
 
   if (filtered.length === 0) {
-    html += `<tr><td colspan="${current === 'Todos' ? 6 : 5}" class="empty">Sin tareas con estos filtros 🎉</td></tr>`;
+    html += `<tr><td colspan="${current === 'Todos' ? 7 : 6}" class="empty">Sin tareas con estos filtros 🎉</td></tr>`;
   }
 
   filtered.slice(0, 150).forEach(t => {
@@ -1880,6 +1890,17 @@ function renderPendientes() {
       ${current === 'Todos' ? `<td><strong>${t.persona}</strong></td>` : ''}
       <td><small>${t.type || '—'}</small></td>
       <td><small>${t.date || '—'}</small></td>
+      <td style="text-align:center;"><button class="task-edit-btn" title="Editar / cerrar / siguiente"
+        data-tid="${t.id || ''}"
+        data-did="${(t.matchedDealIds && t.matchedDealIds[0]) || ''}"
+        data-oid="${t.ownerId || ''}"
+        data-title="${(t.title || '').replace(/"/g, '&quot;')}"
+        data-date="${t.date || ''}"
+        data-prod="${t.prod || ''}"
+        data-client="${(t.client || '').replace(/"/g, '&quot;')}"
+        data-persona="${t.persona || ''}"
+        data-internal="${t.isInternal ? '1' : ''}"
+        data-stages="${(t.dealStages || []).join('|')}">✏️</button></td>
     </tr>`;
   });
 
@@ -1901,6 +1922,275 @@ function renderPendientes() {
       renderPendientes();
     });
   });
+
+  $$('.task-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => openTaskEditor(btn.dataset));
+  });
+}
+
+// ====== EDITOR DE TAREAS v3 (campos controlados + calendario propio + nueva en blanco) ======
+const PERSONAS = ['Mike','Migue','Martha','Daniel','Fer','Mine','Manu','Diana','Sandra','Nico'];
+const PRODUCTOS = ['TW','HS','AEO','360','WB','AM','GenIA','ITS','LT','BD'];
+const EARLY_STAGES = ['Señal','Reply','Contactado','En Conv.'];
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MESES_CORTO = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+function taskToast(msg, ok) {
+  let t = document.getElementById('task-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'task-toast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:10001;padding:12px 18px;border-radius:10px;font-size:14px;font-weight:600;color:#fff;box-shadow:0 6px 24px rgba(0,0,0,.4);transition:opacity .3s;';
+    document.body.appendChild(t);
+  }
+  t.style.background = ok ? '#16A34A' : '#DC2626';
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._h);
+  t._h = setTimeout(() => { t.style.opacity = '0'; }, 3400);
+}
+
+function parseSubject(title) {
+  let base = (title || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+  let prefix = base, accion = '';
+  const idx = base.indexOf(' — ');
+  if (idx >= 0) { prefix = base.slice(0, idx).trim(); accion = base.slice(idx + 3).trim(); }
+  return { prefix, accion };
+}
+
+function buildSubject(ctx, prod, accion, responsable) {
+  let empresaPart;
+  if (ctx.prefix && ctx.prefix.indexOf('_') >= 0) empresaPart = ctx.prefix.slice(ctx.prefix.indexOf('_') + 1);
+  else if (ctx.prefix) empresaPart = ctx.prefix;
+  else empresaPart = (ctx.client || '').replace(/\s+/g, '');
+  const newPrefix = prod ? (prod + '_' + empresaPart) : empresaPart;
+  let s = newPrefix;
+  if (accion) s += ' — ' + accion;
+  if (responsable) s += ' (' + responsable + ')';
+  return s;
+}
+
+function computeOwner(ctx) {
+  if (ctx.internal) return '77808624';
+  const stages = (ctx.stages || []).filter(Boolean);
+  if (stages.some(s => EARLY_STAGES.includes(s))) return '82004391';
+  return ctx.oid || '77808624';
+}
+
+function selOptions(list, current) {
+  return list.map(v => '<option value="' + v + '"' + (v === current ? ' selected' : '') + '>' + v + '</option>').join('');
+}
+
+// ---------- Calendario propio ----------
+let _calState = { y: 2026, m: 0 };
+function fmtDisplay(iso) {
+  if (!iso) return '';
+  const p = iso.split('-').map(Number);
+  return p[2] + ' ' + MESES_CORTO[p[1] - 1] + ' ' + p[0];
+}
+function renderCalendar() {
+  const cal = document.getElementById('tm-cal');
+  if (!cal) return;
+  const y = _calState.y, m = _calState.m;
+  const startDow = (new Date(y, m, 1).getDay() + 6) % 7; // lunes=0
+  const days = new Date(y, m + 1, 0).getDate();
+  const sel = document.getElementById('tm-date').value;
+  const navBtn = 'background:none;border:1px solid var(--border,#2a2d35);border-radius:6px;color:var(--text,#e5e7eb);cursor:pointer;width:26px;height:26px;';
+  let html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+    '<button type="button" data-cal="prev" style="' + navBtn + '">‹</button>' +
+    '<span style="font-weight:600;font-size:13px;color:var(--text,#e5e7eb);">' + MESES[m] + ' ' + y + '</span>' +
+    '<button type="button" data-cal="next" style="' + navBtn + '">›</button></div>' +
+    '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">';
+  ['L','M','M','J','V','S','D'].forEach(d => html += '<div style="text-align:center;color:var(--text-dim,#9ca3af);font-size:10px;padding:2px;">' + d + '</div>');
+  for (let i = 0; i < startDow; i++) html += '<div></div>';
+  for (let d = 1; d <= days; d++) {
+    const iso = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    const isSel = iso === sel;
+    html += '<button type="button" data-day="' + iso + '" style="padding:6px 0;border:0;border-radius:6px;cursor:pointer;font-size:12px;' +
+      (isSel ? 'background:linear-gradient(135deg,var(--purple,#7c3aed),var(--pink,#db2777));color:#fff;font-weight:700;' : 'background:none;color:var(--text,#e5e7eb);') + '">' + d + '</button>';
+  }
+  html += '</div>';
+  cal.innerHTML = html;
+  cal.querySelector('[data-cal="prev"]').addEventListener('click', () => { _calState.m--; if (_calState.m < 0) { _calState.m = 11; _calState.y--; } renderCalendar(); });
+  cal.querySelector('[data-cal="next"]').addEventListener('click', () => { _calState.m++; if (_calState.m > 11) { _calState.m = 0; _calState.y++; } renderCalendar(); });
+  cal.querySelectorAll('[data-day]').forEach(b => b.addEventListener('click', () => {
+    document.getElementById('tm-date').value = b.dataset.day;
+    document.getElementById('tm-date-display').value = fmtDisplay(b.dataset.day);
+    cal.style.display = 'none';
+  }));
+}
+function openCalendar() {
+  const iso = document.getElementById('tm-date').value;
+  const d = iso ? new Date(iso + 'T00:00:00') : new Date();
+  _calState = { y: d.getFullYear(), m: d.getMonth() };
+  renderCalendar();
+  document.getElementById('tm-cal').style.display = 'block';
+}
+function setDateQuick(plusDays) {
+  const d = new Date();
+  if (plusDays) d.setDate(d.getDate() + plusDays);
+  const iso = d.toISOString().slice(0, 10);
+  document.getElementById('tm-date').value = iso;
+  document.getElementById('tm-date-display').value = fmtDisplay(iso);
+}
+
+// ---------- Modal ----------
+function ensureTaskModal() {
+  if (document.getElementById('task-modal')) return;
+  const m = document.createElement('div');
+  m.id = 'task-modal';
+  m.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);align-items:center;justify-content:center;padding:16px;';
+  const f = 'width:100%;padding:8px;border-radius:8px;border:1px solid var(--border,#2a2d35);background:var(--bg,#0e0f13);color:var(--text,#e5e7eb);font-size:14px;box-sizing:border-box;';
+  const lab = 'font-size:12px;color:var(--text-dim,#9ca3af);';
+  m.innerHTML =
+    '<div style="background:var(--card,#16181d);border:1px solid var(--border,#2a2d35);border-radius:14px;max-width:480px;width:100%;padding:20px;max-height:92vh;overflow:auto;">' +
+      '<div id="tm-heading" style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text,#e5e7eb);">Editar tarea</div>' +
+      '<div id="tm-oportunidad" style="font-size:12px;margin-bottom:14px;padding:8px 10px;border-radius:8px;background:rgba(99,102,241,.10);color:#A5B4FC;"></div>' +
+      '<div style="display:flex;gap:10px;margin-bottom:12px;">' +
+        '<div style="flex:1;"><label style="' + lab + '">Producto</label><select id="tm-prod" style="margin-top:6px;' + f + '"></select></div>' +
+        '<div style="flex:1;"><label style="' + lab + '">Empresa</label><input id="tm-client" disabled style="margin-top:6px;opacity:.7;' + f + '"></div>' +
+      '</div>' +
+      '<label style="' + lab + '">Qué hay que hacer</label>' +
+      '<textarea id="tm-accion" rows="2" placeholder="solo la acción de la tarea" style="margin:6px 0 12px;' + f + '"></textarea>' +
+      '<div style="display:flex;gap:10px;align-items:flex-start;">' +
+        '<div style="flex:1;"><label style="' + lab + '">Responsable</label>' +
+        '<select id="tm-resp" style="margin-top:6px;' + f + '"></select>' +
+        '<input id="tm-resp-otro" placeholder="nombre" style="display:none;margin-top:6px;' + f + '"></div>' +
+        '<div style="flex:1;position:relative;"><label style="' + lab + '">Fecha de cierre</label>' +
+        '<input id="tm-date-display" readonly placeholder="elegir fecha" style="margin-top:6px;cursor:pointer;' + f + '">' +
+        '<input id="tm-date" type="hidden">' +
+        '<div id="tm-cal" style="display:none;position:absolute;top:64px;left:0;right:0;z-index:5;background:var(--card,#16181d);border:1px solid var(--border,#2a2d35);border-radius:10px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.5);"></div>' +
+        '<div style="margin-top:6px;display:flex;gap:4px;">' +
+          '<button type="button" data-q="0" class="tm-quick" style="flex:1;font-size:11px;padding:4px;border-radius:6px;border:1px solid var(--border,#2a2d35);background:none;color:var(--text-dim,#9ca3af);cursor:pointer;">Hoy</button>' +
+          '<button type="button" data-q="15" class="tm-quick" style="flex:1;font-size:11px;padding:4px;border-radius:6px;border:1px solid var(--border,#2a2d35);background:none;color:var(--text-dim,#9ca3af);cursor:pointer;">+15d</button>' +
+        '</div></div>' +
+      '</div>' +
+      // Acciones modo EDITAR
+      '<div id="tm-edit-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;">' +
+        '<button id="tm-save" style="flex:1;min-width:130px;background:linear-gradient(135deg,var(--purple,#7c3aed),var(--pink,#db2777));color:#fff;border:0;border-radius:8px;padding:10px;font-weight:600;cursor:pointer;">Guardar cambios</button>' +
+        '<button id="tm-close" style="flex:1;min-width:120px;background:#16A34A;color:#fff;border:0;border-radius:8px;padding:10px;font-weight:600;cursor:pointer;">✓ Cerrar tarea</button>' +
+      '</div>' +
+      '<div id="tm-next-row" style="display:flex;gap:8px;margin-top:8px;">' +
+        '<button id="tm-next" style="flex:1;background:rgba(99,102,241,.15);color:#A5B4FC;border:1px solid var(--border,#2a2d35);border-radius:8px;padding:10px;font-weight:600;cursor:pointer;">+ Crear nueva tarea (en blanco, misma oportunidad)</button>' +
+      '</div>' +
+      // Acciones modo NUEVA
+      '<div id="tm-create-actions" style="display:none;gap:8px;margin-top:18px;flex-direction:column;">' +
+        '<button id="tm-create" style="background:linear-gradient(135deg,var(--purple,#7c3aed),var(--pink,#db2777));color:#fff;border:0;border-radius:8px;padding:10px;font-weight:600;cursor:pointer;">Crear tarea</button>' +
+        '<button id="tm-back" style="background:none;border:0;color:var(--text-dim,#9ca3af);font-size:13px;cursor:pointer;">← Volver a la tarea original</button>' +
+      '</div>' +
+      '<div style="text-align:center;margin-top:10px;"><button id="tm-cancel" style="background:none;border:0;color:var(--text-dim,#9ca3af);font-size:13px;cursor:pointer;">Cerrar</button></div>' +
+    '</div>';
+  document.body.appendChild(m);
+  document.getElementById('tm-prod').innerHTML = '<option value="">— sin producto —</option>' + selOptions(PRODUCTOS, '');
+  document.getElementById('tm-resp').innerHTML = selOptions(PERSONAS, '') + '<option value="__OTRO__">Otro…</option>';
+  document.getElementById('tm-resp').addEventListener('change', e => {
+    document.getElementById('tm-resp-otro').style.display = e.target.value === '__OTRO__' ? 'block' : 'none';
+  });
+  document.getElementById('tm-date-display').addEventListener('click', openCalendar);
+  m.querySelectorAll('.tm-quick').forEach(b => b.addEventListener('click', () => setDateQuick(parseInt(b.dataset.q, 10))));
+  m.addEventListener('click', e => { if (e.target === m) m.style.display = 'none'; });
+  document.getElementById('tm-cancel').addEventListener('click', () => m.style.display = 'none');
+  document.getElementById('tm-save').addEventListener('click', () => doTaskAction('update'));
+  document.getElementById('tm-close').addEventListener('click', () => doTaskAction('close'));
+  document.getElementById('tm-next').addEventListener('click', enterNewTaskMode);
+  document.getElementById('tm-create').addEventListener('click', () => doTaskAction('create'));
+  document.getElementById('tm-back').addEventListener('click', () => setMode('edit'));
+}
+
+function setMode(mode) {
+  _taskCtx.mode = mode;
+  const editing = mode === 'edit';
+  document.getElementById('tm-edit-actions').style.display = editing ? 'flex' : 'none';
+  document.getElementById('tm-next-row').style.display = editing ? 'flex' : 'none';
+  document.getElementById('tm-create-actions').style.display = editing ? 'none' : 'flex';
+  document.getElementById('tm-heading').textContent = editing ? 'Editar tarea' : 'Nueva tarea — misma oportunidad';
+}
+
+let _taskCtx = {};
+function getResponsable() {
+  const sel = document.getElementById('tm-resp').value;
+  return sel === '__OTRO__' ? document.getElementById('tm-resp-otro').value.trim() : sel;
+}
+
+function openTaskEditor(ds) {
+  ensureTaskModal();
+  const title = (ds.title || '').replace(/&quot;/g, '"');
+  const parsed = parseSubject(title);
+  _taskCtx = {
+    tid: ds.tid, did: ds.did, oid: ds.oid,
+    client: (ds.client || '').replace(/&quot;/g, '"'),
+    prefix: parsed.prefix,
+    internal: ds.internal === '1',
+    stages: (ds.stages || '').split('|').filter(Boolean)
+  };
+  const op = document.getElementById('tm-oportunidad');
+  if (ds.did) {
+    op.style.background = 'rgba(99,102,241,.10)'; op.style.color = '#A5B4FC';
+    op.innerHTML = 'Oportunidad: <strong>' + (_taskCtx.client || '—') + '</strong>' + (_taskCtx.stages.length ? ' · ' + _taskCtx.stages.join(', ') : '');
+  } else {
+    op.style.background = 'rgba(220,38,38,.12)'; op.style.color = '#FCA5A5';
+    op.innerHTML = '⚠️ Sin oportunidad asociada — el REA pide que toda tarea tenga deal. Asóciala en HubSpot.';
+  }
+  document.getElementById('tm-prod').value = ds.prod || '';
+  document.getElementById('tm-client').value = _taskCtx.client || '';
+  document.getElementById('tm-accion').value = parsed.accion;
+  const respSel = document.getElementById('tm-resp'), respOtro = document.getElementById('tm-resp-otro');
+  if (ds.persona && PERSONAS.includes(ds.persona)) { respSel.value = ds.persona; respOtro.style.display = 'none'; }
+  else if (ds.persona) { respSel.value = '__OTRO__'; respOtro.style.display = 'block'; respOtro.value = ds.persona; }
+  else { respSel.value = PERSONAS[0]; respOtro.style.display = 'none'; }
+  document.getElementById('tm-date').value = ds.date || '';
+  document.getElementById('tm-date-display').value = fmtDisplay(ds.date || '');
+  document.getElementById('tm-cal').style.display = 'none';
+  setMode('edit');
+  document.getElementById('task-modal').style.display = 'flex';
+}
+
+// Pasa a "nueva tarea": misma oportunidad, campos de acción/fecha EN BLANCO
+function enterNewTaskMode() {
+  if (!_taskCtx.did) { taskToast('Sin oportunidad asociada: no se puede crear una nueva tarea aquí', false); return; }
+  document.getElementById('tm-accion').value = '';
+  document.getElementById('tm-date').value = '';
+  document.getElementById('tm-date-display').value = '';
+  document.getElementById('tm-cal').style.display = 'none';
+  document.getElementById('tm-resp').value = PERSONAS[0];
+  document.getElementById('tm-resp-otro').style.display = 'none';
+  // producto y empresa se conservan (misma oportunidad), pero editables
+  setMode('new');
+}
+
+async function doTaskAction(kind) {
+  const prod = document.getElementById('tm-prod').value;
+  const accion = document.getElementById('tm-accion').value.trim();
+  const responsable = getResponsable();
+  const date = document.getElementById('tm-date').value;
+  let url, payload;
+
+  if (kind === 'close') {
+    url = TASK_CLOSE_URL;
+    payload = { taskId: _taskCtx.tid };
+  } else {
+    if (!responsable) { taskToast('Falta el responsable', false); return; }
+    if (!accion) { taskToast('Falta describir qué hay que hacer', false); return; }
+    const subject = buildSubject(_taskCtx, prod, accion, responsable);
+    const ownerId = computeOwner(_taskCtx);
+    if (kind === 'update') {
+      url = TASK_UPDATE_URL;
+      payload = { taskId: _taskCtx.tid, descripcion: subject, fechaCierre: date, ownerId };
+    } else { // create (nueva tarea)
+      if (!_taskCtx.did) { taskToast('Sin oportunidad asociada: no se puede crear', false); return; }
+      url = TASK_NEXT_URL;
+      payload = { dealId: _taskCtx.did, descripcion: subject, fechaCierre: date, ownerId };
+    }
+  }
+  try {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    document.getElementById('task-modal').style.display = 'none';
+    taskToast(kind === 'update' ? 'Tarea actualizada' : kind === 'close' ? 'Tarea cerrada' : 'Tarea nueva creada', true);
+    setTimeout(loadData, 700);
+  } catch (e) {
+    taskToast('Error: ' + e.message, false);
+  }
 }
 
 // --- ALERTAS v15 ---
@@ -2631,6 +2921,163 @@ function renderDuoGeneratedDrilldown() {
 }
 
 // === RENDER PRINCIPAL ===
+// ====== PESTAÑA PROSPECCIÓN (embudo + señales) ======
+const PROSPECT_STAGES = [
+  { id: '1332596061', label: 'Señal', prob: 5 },
+  { id: '1332596062', label: 'Reply', prob: 10 },
+  { id: '1332596063', label: 'Contactado', prob: 15 },
+  { id: '1332596064', label: 'En Conversación', prob: 20 }
+];
+const BENCH = { open: 0.50, reply: 0.03, duoSeq: 0.80 };
+
+function proAgeDays(ds) {
+  if (!ds) return null;
+  const t = new Date(String(ds).slice(0, 10) + 'T00:00:00');
+  if (isNaN(t.getTime())) return null;
+  return Math.floor((Date.now() - t.getTime()) / 86400000);
+}
+
+function pPct(x) { return ((x || 0) * 100).toFixed(1) + '%'; }
+function pNum(n) { return (n || 0).toLocaleString('es-MX'); }
+function pMoney(n) { return '$' + Math.round(n || 0).toLocaleString('es-MX'); }
+function semaforo(val, bench) { return val >= bench ? 'var(--mint,#34d399)' : (val >= bench * 0.6 ? 'var(--yellow,#fbbf24)' : 'var(--red,#f87171)'); }
+
+function funnelRow(steps) {
+  let h = '<div style="display:flex;gap:8px;align-items:stretch;overflow-x:auto;">';
+  steps.forEach((s, i) => {
+    if (i > 0) h += '<div style="display:flex;align-items:center;color:var(--text-mute);font-size:16px;padding:0 2px;">→</div>';
+    h += '<div style="flex:1;min-width:110px;background:var(--bg-3,#1a1d24);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;">' +
+      '<div style="font-size:11px;color:var(--text-dim);">' + s.label + '</div>' +
+      '<div style="font-size:24px;font-weight:700;color:' + (s.color || 'var(--text)') + ';">' + s.val + '</div>' +
+      (s.sub ? '<div style="font-size:11px;color:var(--text-mute);">' + s.sub + '</div>' : '') +
+      (s.bench ? '<div style="font-size:10px;color:var(--text-mute);">' + s.bench + '</div>' : '') +
+      '</div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+function renderProspeccion() {
+  const deals = (DATA && DATA.deals) || [];
+
+  // --- Embudo HubSpot (etapas tempranas) ---
+  const counts = {};
+  PROSPECT_STAGES.forEach(s => counts[s.id] = { n: 0, monto: 0 });
+  let atraccion = 0;
+  deals.forEach(d => {
+    if (counts[d.stage]) { counts[d.stage].n++; counts[d.stage].monto += (d.amount || 0); }
+    if (d.stage === 'appointmentscheduled') atraccion++;
+  });
+
+  // --- Generación reciente (HubSpot): señales y replies por ventana de tiempo ---
+  const gen = { senal: { hoy: 0, d7: 0, d30: 0 }, reply: { hoy: 0, d7: 0, d30: 0 } };
+  const genProd = { senal: {}, reply: {} };
+  deals.forEach(d => {
+    let b = null;
+    if (d.stage === '1332596061') b = 'senal';
+    else if (d.stage === '1332596062') b = 'reply';
+    if (!b) return;
+    const age = proAgeDays(d.createdate);
+    if (age === null) return;
+    if (age <= 0) gen[b].hoy++;
+    if (age <= 7) gen[b].d7++;
+    if (age <= 30) { gen[b].d30++; const p = d.prod || 'Otro'; genProd[b][p] = (genProd[b][p] || 0) + 1; }
+  });
+  let genHtml = '<div class="section"><div class="section-title">Lo que se ha generado (HubSpot)</div>' +
+    '<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Deals nuevos por ventana de tiempo, según su fecha de creación. Señales = Open+3 / DuoCopilot detectados; Replies = respuestas que entraron como deal.</div>' +
+    '<div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>Tipo</th><th class="num">Hoy</th><th class="num">7 días</th><th class="num">30 días</th></tr></thead><tbody>' +
+    '<tr><td style="font-weight:600;color:var(--yellow,#fbbf24)">Señales (Open+3 / DUO)</td><td class="num">' + gen.senal.hoy + '</td><td class="num">' + gen.senal.d7 + '</td><td class="num">' + gen.senal.d30 + '</td></tr>' +
+    '<tr><td style="font-weight:600;color:var(--cyan,#22d3ee)">Replies</td><td class="num">' + gen.reply.hoy + '</td><td class="num">' + gen.reply.d7 + '</td><td class="num">' + gen.reply.d30 + '</td></tr>' +
+    '</tbody></table></div>';
+  const prodsGen = [...new Set([...Object.keys(genProd.senal), ...Object.keys(genProd.reply)])].sort();
+  if (prodsGen.length) {
+    genHtml += '<div style="font-size:11px;color:var(--text-dim);margin:14px 0 6px;">Por producto (últimos 30 días)</div>' +
+      '<div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>Producto</th><th class="num">Señales</th><th class="num">Replies</th></tr></thead><tbody>';
+    prodsGen.forEach(p => { genHtml += '<tr><td style="font-weight:600;">' + p + '</td><td class="num">' + (genProd.senal[p] || 0) + '</td><td class="num">' + (genProd.reply[p] || 0) + '</td></tr>'; });
+    genHtml += '</tbody></table></div>';
+  }
+  genHtml += '</div>';
+
+  let html = genHtml + '<div class="section"><div class="section-title">Embudo de prospección (deals en HubSpot)</div>' +
+    '<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Dónde están parados los prospectos antes de la primera cita. El % es la probabilidad oficial del REA por etapa.</div>' +
+    '<div style="display:flex;gap:8px;align-items:stretch;overflow-x:auto;">';
+  PROSPECT_STAGES.forEach((s, i) => {
+    const c = counts[s.id];
+    const prev = i > 0 ? counts[PROSPECT_STAGES[i - 1].id].n : null;
+    const conv = (prev && prev > 0) ? Math.round(c.n / prev * 100) + '%' : '';
+    if (i > 0) html += '<div style="display:flex;flex-direction:column;justify-content:center;color:var(--text-mute);font-size:11px;text-align:center;min-width:40px;">→<br>' + conv + '</div>';
+    html += '<div style="flex:1;min-width:118px;background:var(--bg-3,#1a1d24);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;">' +
+      '<div style="font-size:11px;color:var(--text-dim);">' + s.label + ' · ' + s.prob + '%</div>' +
+      '<div style="font-size:26px;font-weight:700;color:var(--text);">' + c.n + '</div>' +
+      '<div style="font-size:11px;color:var(--text-mute);">' + pMoney(c.monto) + '</div></div>';
+  });
+  html += '<div style="display:flex;flex-direction:column;justify-content:center;color:var(--mint,#34d399);font-size:11px;text-align:center;min-width:40px;">⇒<br>grad.</div>' +
+    '<div style="flex:1;min-width:118px;background:rgba(52,211,153,.10);border:1px solid var(--mint,#34d399);border-radius:10px;padding:12px;text-align:center;">' +
+    '<div style="font-size:11px;color:var(--mint,#34d399);">Atracción (1ª cita)</div>' +
+    '<div style="font-size:26px;font-weight:700;color:var(--text);">' + atraccion + '</div>' +
+    '<div style="font-size:11px;color:var(--text-mute);">pasa a Venta</div></div>';
+  html += '</div></div>';
+
+  // --- Embudo Amplemarket ---
+  const am = AM_DATA;
+  if (!am || !am.productos) {
+    html += '<div class="section"><div class="section-title">Embudo Amplemarket</div><div class="empty">Snapshot de Amplemarket no disponible.<br><small>Pídele a Claude actualizar Amplemarket, o revisa la pestaña Amplemarket.</small></div></div>';
+  } else {
+    const prods = am.productos;
+    let seqLeads = 0, seqOpens = 0, seqReplies = 0, seqMtgs = 0, duoGen = 0, duoSeq = 0, duoMtgs = 0;
+    prods.forEach(p => {
+      const s = p.seq || {}, d = p.duo || {};
+      seqLeads += s.leads || 0;
+      seqOpens += (s.leads || 0) * (s.openRate || 0);
+      seqReplies += (s.leads || 0) * (s.replyRate || 0);
+      seqMtgs += s.meetings || 0;
+      duoGen += d.generated || 0;
+      duoSeq += d.sequenced || 0;
+      duoMtgs += d.meetings || 0;
+    });
+    const openR = seqLeads ? seqOpens / seqLeads : 0;
+    const replyR = seqLeads ? seqReplies / seqLeads : 0;
+    const duoSeqR = duoGen ? duoSeq / duoGen : 0;
+
+    html += '<div class="section"><div class="section-title">Embudo Amplemarket — Secuencias (SEQ)</div>' +
+      '<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Metas de tu reporte: abre 50%, responde 3%. El conteo de "Interesados" vive en tu Excel EjecutivoGlobal, no en el feed vivo.</div>' +
+      funnelRow([
+        { label: 'Leads', val: pNum(Math.round(seqLeads)) },
+        { label: 'Aperturas', val: pPct(openR), sub: pNum(Math.round(seqOpens)), color: semaforo(openR, BENCH.open), bench: 'meta 50%' },
+        { label: 'Respuestas', val: pPct(replyR), sub: pNum(Math.round(seqReplies)), color: semaforo(replyR, BENCH.reply), bench: 'meta 3%' },
+        { label: 'Reuniones', val: pNum(seqMtgs), color: 'var(--mint,#34d399)' }
+      ]) + '</div>';
+
+    html += '<div class="section"><div class="section-title">Embudo Amplemarket — Señales (DUO)</div>' +
+      '<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Meta de activación (secuenciar la señal): 80%. Si se generan señales y no se secuencian, se pierden ahí.</div>' +
+      funnelRow([
+        { label: 'Generadas', val: pNum(duoGen) },
+        { label: 'Secuenciadas', val: pPct(duoSeqR), sub: pNum(duoSeq), color: semaforo(duoSeqR, BENCH.duoSeq), bench: 'meta 80%' },
+        { label: 'Reuniones', val: pNum(duoMtgs), color: 'var(--purple,#a78bfa)' }
+      ]) + '</div>';
+
+    html += '<div class="section"><div class="section-title">Por producto — SEQ vs DUO</div>' +
+      '<div style="overflow-x:auto;"><table class="tbl"><thead><tr>' +
+      '<th>Producto</th><th class="num">Leads</th><th class="num">Open%</th><th class="num">Reply%</th><th class="num">Mtgs SEQ</th>' +
+      '<th class="num">Gen DUO</th><th class="num">Seq%</th><th class="num">Mtgs DUO</th></tr></thead><tbody>';
+    prods.forEach(p => {
+      const s = p.seq || {}, d = p.duo || {};
+      html += '<tr><td style="font-weight:700;">' + p.codigo + '</td>' +
+        '<td class="num">' + pNum(s.leads || 0) + '</td>' +
+        '<td class="num" style="color:' + (s.leads ? semaforo(s.openRate || 0, BENCH.open) : 'inherit') + '">' + (s.leads ? pPct(s.openRate || 0) : '—') + '</td>' +
+        '<td class="num" style="color:' + (s.leads ? semaforo(s.replyRate || 0, BENCH.reply) : 'inherit') + '">' + (s.leads ? pPct(s.replyRate || 0) : '—') + '</td>' +
+        '<td class="num">' + (s.meetings || 0) + '</td>' +
+        '<td class="num">' + pNum(d.generated || 0) + '</td>' +
+        '<td class="num" style="color:' + (d.generated ? semaforo(d.sequenceRate || 0, BENCH.duoSeq) : 'inherit') + '">' + (d.generated ? pPct(d.sequenceRate || 0) : '—') + '</td>' +
+        '<td class="num">' + (d.meetings || 0) + '</td></tr>';
+    });
+    html += '</tbody></table></div>' +
+      '<div style="margin-top:12px;font-size:11px;color:var(--text-mute);">El detalle por campaña individual y el análisis profundo viven en la pestaña Amplemarket y en tu Excel EjecutivoGlobal.</div></div>';
+  }
+
+  document.getElementById('p-prospeccion').innerHTML = html;
+}
+
 function renderAmplemarket() {
   const am = AM_DATA;
   
