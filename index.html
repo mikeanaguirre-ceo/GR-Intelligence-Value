@@ -2174,6 +2174,18 @@ function enterNewTaskMode() {
   setMode('new');
 }
 
+// Abre el editor desde una alerta, directo en modo "nueva acción" (en blanco) sobre esa oportunidad
+function openAlertAction(ds) {
+  openTaskEditor({ tid: '', did: ds.did, oid: ds.oid || '', client: ds.client || '', title: ds.client || '', prod: ds.prod || '', stages: ds.stages || '', persona: ds.persona || '', date: '' });
+  if (_taskCtx.did) {
+    enterNewTaskMode();
+    const h = document.getElementById('tm-heading');
+    if (h) h.textContent = 'Generar siguiente acción';
+  } else {
+    taskToast('Esta alerta no tiene oportunidad asociada en HubSpot', false);
+  }
+}
+
 async function doTaskAction(kind) {
   const prod = document.getElementById('tm-prod').value;
   const accion = document.getElementById('tm-accion').value.trim();
@@ -2425,6 +2437,7 @@ function renderAlertas() {
         <th style="text-align:center;">Días</th>
         <th>Owner</th>
         <th>Motivo</th>
+        <th>Resolver</th>
       </tr></thead>
       <tbody>`;
     filtered.slice(0, 200).forEach(a => {
@@ -2433,6 +2446,15 @@ function renderAlertas() {
       const dealUrl = `https://app.hubspot.com/contacts/49671716/record/0-3/${a.dealId}`;
       const diasTxt = a.days !== null && a.days !== undefined ? `${a.days}d` : '—';
       const diasColor = a.days >= 7 ? '#FCA5A5' : a.days >= 3 ? '#FCD34D' : 'var(--text-dim)';
+      const escA = (s) => String(s == null ? '' : s).replace(/"/g, '&quot;');
+      const puedeResolver = (a.categoria === 'Cerrar' || a.categoria === 'ReActivar');
+      let resolverCell;
+      if (puedeResolver && a.dealId) {
+        const personaA = (a.owner && PERSONAS.includes(a.owner)) ? a.owner : '';
+        resolverCell = `<td><button data-alertaction="1" data-did="${escA(a.dealId)}" data-oid="${escA(a.ownerId || '')}" data-client="${escA(a.dealName)}" data-prod="${escA(a.prod || '')}" data-stages="${escA(a.stage || '')}" data-persona="${escA(personaA)}" style="background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border:none;padding:6px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">Generar siguiente acción</button></td>`;
+      } else {
+        resolverCell = `<td><span style="color:var(--text-mute);font-size:11px;">—</span></td>`;
+      }
       html += `<tr>
         <td><span style="background:${cs.bg};color:${cs.color};padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;white-space:nowrap;">${accDef.icon} ${accDef.label}</span></td>
         <td><a href="${dealUrl}" target="_blank" style="color:var(--accent);text-decoration:none;">${a.dealName}</a></td>
@@ -2442,6 +2464,7 @@ function renderAlertas() {
         <td style="text-align:center;color:${diasColor};font-weight:600;">${diasTxt}</td>
         <td>${a.owner || '—'}</td>
         <td style="color:var(--text-dim);font-size:12px;">${a.motivo || ''}</td>
+        ${resolverCell}
       </tr>`;
     });
     html += `</tbody></table>`;
@@ -2451,6 +2474,10 @@ function renderAlertas() {
   }
 
   $('#p-alertas').innerHTML = html;
+
+  $$('[data-alertaction]').forEach(btn => {
+    btn.addEventListener('click', () => openAlertAction(btn.dataset));
+  });
 
   $$('[data-alfilter]').forEach(btn => {
     btn.addEventListener('click', () => {
