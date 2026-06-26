@@ -752,6 +752,7 @@ body {
 
 const DATA_URL = 'https://mikea.app.n8n.cloud/webhook/gr-dashboard';
 const AM_URL = 'https://mikea.app.n8n.cloud/webhook/gr-amplemarket';
+const PROSPECCION_URL = 'https://mikea.app.n8n.cloud/webhook/gr-prospeccion';
 // --- Acciones de tareas (workflow "GR — Acciones Tareas Dashboard") ---
 const TASK_UPDATE_URL = 'https://mikea.app.n8n.cloud/webhook/gr-task-update';
 const TASK_CLOSE_URL  = 'https://mikea.app.n8n.cloud/webhook/gr-task-close';
@@ -759,6 +760,7 @@ const TASK_NEXT_URL   = 'https://mikea.app.n8n.cloud/webhook/gr-task-next';
 // Responsables conocidos (ownerId HubSpot -> nombre). Ampliable.
 const OWNERS = { '77808624': 'Migue', '82004391': 'Martha' };
 let AM_DATA = null;
+let PROSPECCION_DATA = null;
 let amPeriod = 30; // 7, 15, or 30
 
 // --- Operational knowledge (hardcoded, curated) ---
@@ -868,9 +870,10 @@ function tagForStage(stage, stageLabel) {
 async function loadData() {
   try {
     // Fetch principal v10 + AM v1 en paralelo
-    const [dealsRes, amRes] = await Promise.all([
+    const [dealsRes, amRes, prospRes] = await Promise.all([
       fetch(DATA_URL),
-      fetch(AM_URL + '?period=' + amPeriod).catch(e => { console.warn('AM endpoint failed:', e); return null; })
+      fetch(AM_URL + '?period=' + amPeriod).catch(e => { console.warn('AM endpoint failed:', e); return null; }),
+      fetch(PROSPECCION_URL).catch(e => { console.warn('Prospeccion endpoint failed:', e); return null; })
     ]);
 
     if (!dealsRes.ok) throw new Error('HTTP ' + dealsRes.status);
@@ -906,6 +909,19 @@ async function loadData() {
       } catch (e) {
         console.warn('AM data parse failed:', e);
         AM_DATA = null;
+      }
+    }
+
+    // Prospección eventos (opcional) — si falla, el dashboard sigue
+    if (prospRes && prospRes.ok) {
+      try {
+        const pText = await prospRes.text();
+        if (pText && pText.trim() !== '' && !pText.trim().startsWith('<')) {
+          PROSPECCION_DATA = JSON.parse(pText);
+        }
+      } catch (e) {
+        console.warn('Prospeccion data parse failed:', e);
+        PROSPECCION_DATA = null;
       }
     }
 
@@ -2998,7 +3014,55 @@ function renderProspeccion() {
   }
   genHtml += '</div>';
 
-  let html = genHtml + '<div class="section"><div class="section-title">Embudo de prospección (deals en HubSpot)</div>' +
+  // --- Recap REAL desde gr_prospeccion_eventos (incluye replies SIN deal y los 3 tenants) ---
+  let realHtml = '';
+  const PEV = (PROSPECCION_DATA && Array.isArray(PROSPECCION_DATA.eventos)) ? PROSPECCION_DATA.eventos : null;
+  if (PEV && PEV.length) {
+    const nowP = new Date();
+    const ageP = (f) => { if (!f) return null; const d = new Date(f); if (isNaN(d)) return null; return Math.floor((nowP - d) / 86400000); };
+    const win = { open3: { hoy: 0, d7: 0, d30: 0 }, reply: { hoy: 0, d7: 0, d30: 0 } };
+    const porTenant = {}; const porClas = {};
+    let contestados = 0, pendientes = 0, replies = 0, senales = 0;
+    PEV.forEach(e => {
+      const tipo = (e.tipo === 'open3') ? 'open3' : 'reply';
+      const a = ageP(e.fecha);
+      if (a !== null) { if (a <= 0) win[tipo].hoy++; if (a <= 7) win[tipo].d7++; if (a <= 30) win[tipo].d30++; }
+      const ten = e.tenant || 'GR'; porTenant[ten] = porTenant[ten] || { reply: 0, open3: 0 }; porTenant[ten][tipo]++;
+      if (tipo === 'reply') { replies++; const c = (e.clasificacion || 'sin_clasificar'); porClas[c] = (porClas[c] || 0) + 1; } else { senales++; }
+      const est = (e.estado || '').toLowerCase();
+      if (est.indexOf('enviado') === 0) contestados++; else if (est === 'pendiente') pendientes++;
+    });
+    const cardP = (lbl, val, col) => '<div style="flex:1;min-width:120px;background:var(--bg-3,#1a1d24);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:22px;font-weight:700;color:' + col + '">' + val + '</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px;">' + lbl + '</div></div>';
+    realHtml = '<div class="section"><div class="section-title">Recap real de prospección (eventos en vivo)</div>' +
+      '<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Cada señal Open+3 y cada reply de los 3 tenants (GR, STIL, IMMMU), incluyendo los replies que NO crean deal. Fuente: tabla de eventos, no HubSpot.</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">' +
+        cardP('Señales (Open+3)', senales, 'var(--yellow,#fbbf24)') +
+        cardP('Replies', replies, 'var(--cyan,#22d3ee)') +
+        cardP('Contestados', contestados, 'var(--green,#34d399)') +
+        cardP('Pendientes', pendientes, 'var(--red,#f87171)') +
+      '</div>' +
+      '<div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>Tipo</th><th class="num">Hoy</th><th class="num">7 días</th><th class="num">30 días</th></tr></thead><tbody>' +
+      '<tr><td style="font-weight:600;color:var(--yellow,#fbbf24)">Señales Open+3</td><td class="num">' + win.open3.hoy + '</td><td class="num">' + win.open3.d7 + '</td><td class="num">' + win.open3.d30 + '</td></tr>' +
+      '<tr><td style="font-weight:600;color:var(--cyan,#22d3ee)">Replies</td><td class="num">' + win.reply.hoy + '</td><td class="num">' + win.reply.d7 + '</td><td class="num">' + win.reply.d30 + '</td></tr>' +
+      '</tbody></table></div>';
+    const tenantsP = Object.keys(porTenant).sort();
+    if (tenantsP.length) {
+      realHtml += '<div style="font-size:11px;color:var(--text-dim);margin:14px 0 6px;">Por tenant</div><div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>Tenant</th><th class="num">Señales</th><th class="num">Replies</th></tr></thead><tbody>';
+      tenantsP.forEach(t => { realHtml += '<tr><td style="font-weight:600;">' + t + '</td><td class="num">' + (porTenant[t].open3 || 0) + '</td><td class="num">' + (porTenant[t].reply || 0) + '</td></tr>'; });
+      realHtml += '</tbody></table></div>';
+    }
+    const clasesP = Object.keys(porClas).sort((a, b) => porClas[b] - porClas[a]);
+    if (clasesP.length) {
+      realHtml += '<div style="font-size:11px;color:var(--text-dim);margin:14px 0 6px;">Replies por clasificación</div><div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>Clasificación</th><th class="num">#</th></tr></thead><tbody>';
+      clasesP.forEach(c => { realHtml += '<tr><td style="font-weight:600;">' + c + '</td><td class="num">' + porClas[c] + '</td></tr>'; });
+      realHtml += '</tbody></table></div>';
+    }
+    realHtml += '</div>';
+  } else {
+    realHtml = '<div class="section"><div class="section-title">Recap real de prospección (eventos en vivo)</div><div style="font-size:12px;color:var(--text-dim);">Aún no hay eventos en la tabla. En cuanto entren señales/replies hoy (o corras el backfill) esta sección se llena sola desde gr_prospeccion_eventos.</div></div>';
+  }
+
+  let html = realHtml + genHtml + '<div class="section"><div class="section-title">Embudo de prospección (deals en HubSpot)</div>' +
     '<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Dónde están parados los prospectos antes de la primera cita. El % es la probabilidad oficial del REA por etapa.</div>' +
     '<div style="display:flex;gap:8px;align-items:stretch;overflow-x:auto;">';
   PROSPECT_STAGES.forEach((s, i) => {
