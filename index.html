@@ -3127,22 +3127,35 @@ function renderProspeccion() {
     { id: 'closedwon', l: 'Closed Won', venta: true }
   ];
   const dealsHS = deals.filter(d => prospProducto === 'ALL' || (d.prod || '') === prospProducto);
-  const stCount = {}; STAGES_REA.forEach(s => stCount[s.id] = { n: 0, m: 0 });
-  dealsHS.forEach(d => { const st = String(d.stage); if (stCount[st]) { stCount[st].n++; stCount[st].m += (d.amount || 0); } });
+  const nowH = new Date();
+  const winD = (arr) => {
+    const w = { hoy: 0, d7: 0, d30: 0, d90: 0, total: 0 };
+    arr.forEach(d => {
+      w.total++;
+      const f = new Date(d.createdate); if (isNaN(f)) return;
+      const age = Math.floor((nowH - f) / 86400000);
+      if (age <= 0) w.hoy++;
+      if (age <= 7) w.d7++;
+      if (age <= 30) w.d30++;
+      if (age <= 90) w.d90++;
+    });
+    return w;
+  };
   const cH = 'text-align:center;';
   const sdot = (c) => '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + c + ';margin-right:7px;vertical-align:middle;"></span>';
+  const wcell = (n, bold) => '<td style="' + cH + (bold ? 'font-weight:700;color:var(--text);' : '') + '">' + n + '</td>';
   let hsRowsHtml = '';
   let ventaShown = false;
   STAGES_REA.forEach(s => {
-    if (s.venta && !ventaShown) { ventaShown = true; hsRowsHtml += '<tr><td colspan="3" style="padding:5px 6px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--green,#34d399);border-top:1px dashed rgba(52,211,153,.45);">pasa a Venta</td></tr>'; }
-    const c = stCount[s.id];
+    if (s.venta && !ventaShown) { ventaShown = true; hsRowsHtml += '<tr><td colspan="6" style="padding:5px 6px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--green,#34d399);border-top:1px dashed rgba(52,211,153,.45);">pasa a Venta</td></tr>'; }
+    const w = winD(dealsHS.filter(d => String(d.stage) === s.id));
     const col = s.venta ? '#34d399' : '#9aa3b2';
-    hsRowsHtml += '<tr><td style="font-weight:600;' + (s.venta ? 'color:var(--green,#34d399);' : '') + '">' + sdot(col) + s.l + '</td><td style="' + cH + 'font-weight:700;">' + c.n + '</td><td style="' + cH + 'color:var(--text-dim);">' + (c.m ? pMoney(c.m) : '—') + '</td></tr>';
+    hsRowsHtml += '<tr><td style="font-weight:600;' + (s.venta ? 'color:var(--green,#34d399);' : '') + '">' + sdot(col) + s.l + '</td>' + wcell(w.hoy) + wcell(w.d7) + wcell(w.d30) + wcell(w.d90) + wcell(w.total, true) + '</tr>';
   });
   const prodLbl = prospProducto === 'ALL' ? 'todos los productos' : prospProducto;
   let hsHtml = '<div class="section"><div class="section-title">Oportunidades en HubSpot por etapa</div>' +
-    '<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Etapas reales del pipeline (REA). Filtra con los mismos chips de producto de arriba. Mostrando: <strong style="color:var(--text);">' + prodLbl + '</strong>. La línea verde marca dónde la prospección pasa a Venta.</div>' +
-    '<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;"><thead><tr><th style="width:50%;">Etapa</th><th style="text-align:center;width:25%;"># Oport.</th><th style="text-align:center;width:25%;">Monto</th></tr></thead><tbody>' +
+    '<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Etapas reales del pipeline (REA), por fecha de creación del deal. Filtra con los mismos chips de producto de arriba. Mostrando: <strong style="color:var(--text);">' + prodLbl + '</strong>. La línea verde marca dónde la prospección pasa a Venta.</div>' +
+    '<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;"><thead><tr><th style="width:34%;">Etapa</th><th style="text-align:center;width:13.2%;">Hoy</th><th style="text-align:center;width:13.2%;">7d</th><th style="text-align:center;width:13.2%;">30d</th><th style="text-align:center;width:13.2%;">90d</th><th style="text-align:center;width:13.2%;">Total</th></tr></thead><tbody>' +
     hsRowsHtml + '</tbody></table></div></div>';
 
   let html = realHtml + hsHtml + genHtml + '<div class="section"><div class="section-title">Embudo de prospección (deals en HubSpot)</div>' +
