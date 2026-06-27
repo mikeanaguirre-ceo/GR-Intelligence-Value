@@ -3064,7 +3064,7 @@ function renderProspeccion() {
     const matchProd = (e) => prodSel === 'ALL' || (e.producto || '') === prodSel;
     const repliesArr = PEV.filter(e => e.tipo !== 'open3' && matchProd(e));
     const senalesArr = PEV.filter(e => e.tipo === 'open3' && matchProd(e));
-    const prods = Array.from(new Set(PEV.map(e => e.producto).filter(Boolean))).sort();
+    const prods = Array.from(new Set([].concat(PEV.map(e => e.producto), deals.map(d => d.prod)).filter(Boolean))).sort();
     const CLAS = [
       { k: 'interested', l: 'Interested', c: '#34d399' },
       { k: 'meeting_booked', l: 'Meeting booked', c: '#60a5fa' },
@@ -3113,35 +3113,34 @@ function renderProspeccion() {
     realHtml = '<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);">Aún no hay eventos en la tabla. En cuanto entren señales/replies (o corras el backfill) esta sección se llena sola.</div></div>';
   }
 
-  // --- Oportunidades en HubSpot por producto (incluye las que ya fueron reunión) ---
-  const EARLY_ST = ['1332596061', '1332596062', '1332596063', '1332596064'];
-  const MEET_ST = ['appointmentscheduled', 'qualifiedtobuy', 'presentationscheduled', 'decisionmakerboughtin', 'contractsent', 'closedwon'];
-  const byProdHS = {};
-  let tEarly = 0, tMeet = 0;
-  deals.forEach(d => {
-    const st = String(d.stage);
-    let bucket = null;
-    if (EARLY_ST.includes(st)) bucket = 'early';
-    else if (MEET_ST.includes(st)) bucket = 'meet';
-    if (!bucket) return;
-    const p = d.prod || 'Sin producto';
-    byProdHS[p] = byProdHS[p] || { early: 0, meet: 0, total: 0 };
-    byProdHS[p][bucket]++; byProdHS[p].total++;
-    if (bucket === 'early') tEarly++; else tMeet++;
-  });
-  const hsRows = Object.keys(byProdHS).filter(p => byProdHS[p].total > 0).map(p => ({ p, ...byProdHS[p] })).sort((a, b) => b.total - a.total);
-  const cC = 'text-align:center;';
+  // --- Oportunidades en HubSpot por etapa real (REA), filtrado por el producto elegido arriba ---
+  const STAGES_REA = [
+    { id: '1332596061', l: 'Señal detectada', venta: false },
+    { id: '1332596062', l: 'Reply recibido', venta: false },
+    { id: '1332596063', l: 'Contactado', venta: false },
+    { id: '1332596064', l: 'En conversación', venta: false },
+    { id: 'appointmentscheduled', l: 'Atracción (1ª reunión)', venta: true },
+    { id: 'qualifiedtobuy', l: 'Educación', venta: true },
+    { id: 'presentationscheduled', l: 'Propuesta enviada', venta: true },
+    { id: 'decisionmakerboughtin', l: 'Aprobación verbal', venta: true },
+    { id: 'contractsent', l: 'Contrato enviado', venta: true },
+    { id: 'closedwon', l: 'Closed Won', venta: true }
+  ];
+  const dealsHS = deals.filter(d => prospProducto === 'ALL' || (d.prod || '') === prospProducto);
+  const stCount = {}; STAGES_REA.forEach(s => stCount[s.id] = { n: 0, m: 0 });
+  dealsHS.forEach(d => { const st = String(d.stage); if (stCount[st]) { stCount[st].n++; stCount[st].m += (d.amount || 0); } });
+  const cH = 'text-align:center;';
   let hsRowsHtml = '';
-  hsRows.forEach(r => {
-    hsRowsHtml += '<tr><td style="font-weight:600;">' + r.p + '</td>' +
-      '<td style="' + cC + '">' + r.early + '</td>' +
-      '<td style="' + cC + 'color:var(--green,#34d399);font-weight:600;">' + r.meet + '</td>' +
-      '<td style="' + cC + 'font-weight:700;color:var(--text);">' + r.total + '</td></tr>';
+  let ventaShown = false;
+  STAGES_REA.forEach(s => {
+    if (s.venta && !ventaShown) { ventaShown = true; hsRowsHtml += '<tr><td colspan="3" style="padding:6px;font-size:11px;font-weight:700;color:var(--green,#34d399);border-top:1px dashed var(--green,#34d399);background:rgba(52,211,153,.06);">pasa a Venta (1ª reunión hecha) desde aquí</td></tr>'; }
+    const c = stCount[s.id];
+    hsRowsHtml += '<tr><td style="font-weight:600;' + (s.venta ? 'color:var(--green,#34d399);' : '') + '">' + s.l + '</td><td style="' + cH + 'font-weight:700;">' + c.n + '</td><td style="' + cH + 'color:var(--text-dim);">' + (c.m ? pMoney(c.m) : '—') + '</td></tr>';
   });
-  hsRowsHtml += '<tr style="border-top:1px solid var(--border);"><td style="font-weight:700;color:var(--text);">TOTAL</td><td style="' + cC + 'font-weight:700;">' + tEarly + '</td><td style="' + cC + 'font-weight:700;color:var(--green,#34d399);">' + tMeet + '</td><td style="' + cC + 'font-weight:700;color:var(--text);">' + (tEarly + tMeet) + '</td></tr>';
-  let hsHtml = '<div class="section"><div class="section-title">Oportunidades en HubSpot por producto</div>' +
-    '<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">La fuente real de lo que se generó y convirtió. "Reunión+" = de Atracción en adelante (primera reunión ya hecha). Aquí aparecen los productos que sí tienen actividad, aunque la captura de eventos aún no los refleje.</div>' +
-    '<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;"><thead><tr><th style="width:40%;">Producto</th><th style="text-align:center;width:20%;">En prospección</th><th style="text-align:center;width:20%;">Reunión+</th><th style="text-align:center;width:20%;">Total</th></tr></thead><tbody>' +
+  const prodLbl = prospProducto === 'ALL' ? 'todos los productos' : prospProducto;
+  let hsHtml = '<div class="section"><div class="section-title">Oportunidades en HubSpot por etapa</div>' +
+    '<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Etapas reales del pipeline (REA). Filtra con los mismos chips de producto de arriba. Mostrando: <strong style="color:var(--text);">' + prodLbl + '</strong>. La línea verde marca dónde la prospección pasa a Venta.</div>' +
+    '<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;"><thead><tr><th style="width:50%;">Etapa</th><th style="text-align:center;width:25%;"># Oport.</th><th style="text-align:center;width:25%;">Monto</th></tr></thead><tbody>' +
     hsRowsHtml + '</tbody></table></div></div>';
 
   let html = realHtml + hsHtml + genHtml + '<div class="section"><div class="section-title">Embudo de prospección (deals en HubSpot)</div>' +
