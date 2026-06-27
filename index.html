@@ -3130,12 +3130,14 @@ function renderProspeccion() {
   const stCount = {}; STAGES_REA.forEach(s => stCount[s.id] = { n: 0, m: 0 });
   dealsHS.forEach(d => { const st = String(d.stage); if (stCount[st]) { stCount[st].n++; stCount[st].m += (d.amount || 0); } });
   const cH = 'text-align:center;';
+  const sdot = (c) => '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + c + ';margin-right:7px;vertical-align:middle;"></span>';
   let hsRowsHtml = '';
   let ventaShown = false;
   STAGES_REA.forEach(s => {
-    if (s.venta && !ventaShown) { ventaShown = true; hsRowsHtml += '<tr><td colspan="3" style="padding:6px;font-size:11px;font-weight:700;color:var(--green,#34d399);border-top:1px dashed var(--green,#34d399);background:rgba(52,211,153,.06);">pasa a Venta (1ª reunión hecha) desde aquí</td></tr>'; }
+    if (s.venta && !ventaShown) { ventaShown = true; hsRowsHtml += '<tr><td colspan="3" style="padding:5px 6px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--green,#34d399);border-top:1px dashed rgba(52,211,153,.45);">pasa a Venta</td></tr>'; }
     const c = stCount[s.id];
-    hsRowsHtml += '<tr><td style="font-weight:600;' + (s.venta ? 'color:var(--green,#34d399);' : '') + '">' + s.l + '</td><td style="' + cH + 'font-weight:700;">' + c.n + '</td><td style="' + cH + 'color:var(--text-dim);">' + (c.m ? pMoney(c.m) : '—') + '</td></tr>';
+    const col = s.venta ? '#34d399' : '#9aa3b2';
+    hsRowsHtml += '<tr><td style="font-weight:600;' + (s.venta ? 'color:var(--green,#34d399);' : '') + '">' + sdot(col) + s.l + '</td><td style="' + cH + 'font-weight:700;">' + c.n + '</td><td style="' + cH + 'color:var(--text-dim);">' + (c.m ? pMoney(c.m) : '—') + '</td></tr>';
   });
   const prodLbl = prospProducto === 'ALL' ? 'todos los productos' : prospProducto;
   let hsHtml = '<div class="section"><div class="section-title">Oportunidades en HubSpot por etapa</div>' +
