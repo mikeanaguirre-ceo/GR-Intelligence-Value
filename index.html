@@ -3276,7 +3276,10 @@ function renderProspDetalle(ptype, pval, pwin) {
     const et = e.etapa || '';
     const etCol = /Ganada/i.test(et) ? 'var(--green,#34d399)' : (/Perdida/i.test(et) ? 'var(--red,#f87171)' : 'var(--text-dim)');
     const portal = PORT[e.tenant] || '49671716';
-    const dealTag = e.deal_id ? '<a href="https://app.hubspot.com/contacts/' + portal + '/record/0-3/' + e.deal_id + '" target="_blank" style="text-decoration:none;padding:2px 8px;border-radius:12px;border:1px solid var(--green,#34d399);color:var(--green,#34d399);">Deal ↗</a>' : tag('Sin deal');
+    const liPers = 'https://www.linkedin.com/search/results/people/?keywords=' + encodeURIComponent((e.prospecto || '') + ' ' + (e.empresa || ''));
+    const liComp = 'https://www.linkedin.com/search/results/companies/?keywords=' + encodeURIComponent(e.empresa || '');
+    const liBtn = (href, label) => '<a href="' + href + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="text-decoration:none;padding:2px 8px;border-radius:12px;border:1px solid var(--cyan,#22d3ee);color:var(--cyan,#22d3ee);">' + label + '</a>';
+    const verBtn = '<button onclick="openProspModal(\'' + esc(e.event_key) + '\')" style="cursor:pointer;padding:2px 10px;border-radius:12px;border:1px solid var(--text-dim);background:none;color:var(--text);font-size:11px;font-weight:600;">Ver detalle</button>';
     h += '<div style="background:var(--bg-3,#1a1d24);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:8px;">' +
       '<div style="font-size:15px;font-weight:700;color:var(--text);line-height:1.2;">' + esc(e.empresa || '—') + '</div>' +
       '<div style="font-size:13px;color:var(--text);margin-top:2px;">' + esc(e.prospecto || '—') + '</div>' +
@@ -3287,12 +3290,56 @@ function renderProspDetalle(ptype, pval, pwin) {
         tag(esc(e.tenant || '')) +
         (e.producto && e.producto !== e.tenant ? tag(esc(e.producto)) : '') +
         (e.canal ? tag(esc(e.canal), 'var(--cyan,#22d3ee)') : '') +
-        dealTag +
+        (e.prospecto ? liBtn(liPers, 'in persona ↗') : '') +
+        (e.empresa ? liBtn(liComp, 'in empresa ↗') : '') +
+        verBtn +
         '<span style="color:var(--text-mute);">' + rel(e.fecha) + '</span>' +
       '</div></div>';
   });
   box.innerHTML = h + '</div>';
   box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closeProspModal(){ const ov=document.getElementById('prosp-modal'); if(ov) ov.remove(); }
+function openProspModal(ek){
+  const PEV = (PROSPECCION_DATA && Array.isArray(PROSPECCION_DATA.eventos)) ? PROSPECCION_DATA.eventos : [];
+  const e = PEV.find(x => String(x.event_key) === String(ek));
+  if(!e) return;
+  const PORT = {GR:'49671716',GR_PT:'49671716',STIL:'51496709',IMMMU:'51496709'};
+  const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const et = e.etapa || '';
+  const etCol = /Ganada/i.test(et) ? 'var(--green,#34d399)' : (/Perdida/i.test(et) ? 'var(--red,#f87171)' : 'var(--text)');
+  const portal = PORT[e.tenant] || '49671716';
+  const liPers = 'https://www.linkedin.com/search/results/people/?keywords=' + encodeURIComponent((e.prospecto||'') + ' ' + (e.empresa||''));
+  const liComp = 'https://www.linkedin.com/search/results/companies/?keywords=' + encodeURIComponent(e.empresa||'');
+  const fechaTxt = (function(){ const f=new Date(e.fecha); return isNaN(f) ? '—' : f.toLocaleDateString('es-MX',{year:'numeric',month:'long',day:'numeric'}); })();
+  const row = (k,v,col) => '<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text-dim);font-size:12px;">' + k + '</span><span style="color:' + (col||'var(--text)') + ';font-size:13px;font-weight:600;text-align:right;">' + esc(v||'—') + '</span></div>';
+  const abtn = (href,label,col) => '<a href="' + href + '" target="_blank" rel="noopener" style="flex:1;min-width:120px;text-align:center;text-decoration:none;padding:9px;border-radius:9px;border:1px solid ' + col + ';color:' + col + ';font-size:12px;font-weight:700;">' + label + '</a>';
+  const body = '<div style="font-size:18px;font-weight:800;color:var(--text);line-height:1.15;">' + esc(e.empresa||'—') + '</div>' +
+    '<div style="font-size:13px;color:var(--text);margin-top:3px;">' + esc(e.prospecto||'—') + '</div>' +
+    '<div style="font-size:12px;color:var(--text-dim);margin:1px 0 12px;">' + esc(e.puesto||'—') + '</div>' +
+    row('Etapa', et, etCol) +
+    row('Clasificación', e.clasificacion) +
+    row('Campaña', e.campana) +
+    row('Producto', e.producto) +
+    row('Tenant', e.tenant) +
+    row('Canal', e.canal) +
+    row('Fecha', fechaTxt) +
+    row('Deal', e.deal_id ? ('#' + e.deal_id) : 'Sin deal', e.deal_id ? 'var(--text)' : 'var(--text-mute)') +
+    '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">' +
+      abtn(liPers, 'in Persona ↗', 'var(--cyan,#22d3ee)') +
+      abtn(liComp, 'in Empresa ↗', 'var(--cyan,#22d3ee)') +
+      (e.deal_id ? abtn('https://app.hubspot.com/contacts/' + portal + '/record/0-3/' + e.deal_id, 'HubSpot ↗', 'var(--green,#34d399)') : '') +
+    '</div>' +
+    '<div style="margin-top:12px;font-size:11px;color:var(--text-mute);line-height:1.4;">Resumen solo lectura. Próximamente: número de contactos asociados y tareas abiertas del deal (requiere traer esos datos de HubSpot).</div>';
+  let ov = document.getElementById('prosp-modal');
+  if(!ov){ ov=document.createElement('div'); ov.id='prosp-modal'; document.body.appendChild(ov); }
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px;';
+  ov.innerHTML = '<div onclick="event.stopPropagation()" style="background:var(--bg-2,#13161c);border:1px solid var(--border);border-radius:14px;max-width:440px;width:100%;max-height:85vh;overflow:auto;padding:18px 18px 16px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5);">' +
+    '<button onclick="closeProspModal()" style="position:absolute;top:8px;right:12px;background:none;border:none;color:var(--text-dim);font-size:24px;cursor:pointer;line-height:1;">&times;</button>' +
+    body + '</div>';
+  ov.onclick = closeProspModal;
+  if(!window.__prospEsc){ window.__prospEsc=true; document.addEventListener('keydown', function(ev){ if(ev.key==='Escape') closeProspModal(); }); }
 }
 
 function renderAmplemarket() {
