@@ -3078,15 +3078,16 @@ function renderProspeccion() {
     ];
     const known = new Set(CLAS.map(x => x.k));
     const dot = (c) => '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + c + ';margin-right:7px;vertical-align:middle;"></span>';
-    const rowW = (lblHtml, w, bold) => { const fw = bold ? 'font-weight:700;' : ''; return '<tr><td style="font-weight:600;">' + lblHtml + '</td><td class="num" style="' + fw + '">' + w.hoy + '</td><td class="num" style="' + fw + '">' + w.d7 + '</td><td class="num" style="' + fw + '">' + w.d30 + '</td><td class="num" style="' + fw + '">' + w.d90 + '</td><td class="num" style="font-weight:700;color:var(--text);">' + w.total + '</td></tr>'; };
-    const headW = (c) => '<thead><tr><th>' + c + '</th><th class="num">Hoy</th><th class="num">7 días</th><th class="num">30 días</th><th class="num">90 días</th><th class="num">Total</th></tr></thead>';
+    const tdC = 'text-align:center;';
+    const rowW = (lblHtml, w, bold) => { const fw = bold ? 'font-weight:700;' : ''; return '<tr><td style="font-weight:600;">' + lblHtml + '</td><td style="' + tdC + fw + '">' + w.hoy + '</td><td style="' + tdC + fw + '">' + w.d7 + '</td><td style="' + tdC + fw + '">' + w.d30 + '</td><td style="' + tdC + fw + '">' + w.d90 + '</td><td style="' + tdC + 'font-weight:700;color:var(--text);">' + w.total + '</td></tr>'; };
+    const headW = (c) => '<thead><tr><th style="width:34%;">' + c + '</th><th style="text-align:center;width:13.2%;">Hoy</th><th style="text-align:center;width:13.2%;">7d</th><th style="text-align:center;width:13.2%;">30d</th><th style="text-align:center;width:13.2%;">90d</th><th style="text-align:center;width:13.2%;">Total</th></tr></thead>';
 
     let chips = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">';
     chips += '<button class="chip' + (prodSel === 'ALL' ? ' active' : '') + '" data-prospfilter="ALL" style="font-size:11px;padding:5px 11px;border-radius:18px;">Todos</button>';
     prods.forEach(p => { chips += '<button class="chip' + (prodSel === p ? ' active' : '') + '" data-prospfilter="' + p + '" style="font-size:11px;padding:5px 11px;border-radius:18px;">' + p + '</button>'; });
     chips += '</div>';
 
-    let t1 = '<div style="overflow-x:auto;"><table class="tbl">' + headW('Clasificación') + '<tbody>';
+    let t1 = '<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;">' + headW('Clasificación') + '<tbody>';
     CLAS.forEach(cd => { const sub = repliesArr.filter(e => (e.clasificacion || '') === cd.k); if (sub.length) t1 += rowW(dot(cd.c) + cd.l, winOf(sub)); });
     const otras = {};
     repliesArr.forEach(e => { const c = (e.clasificacion || 'sin_clasificar'); if (!known.has(c)) { (otras[c] = otras[c] || []).push(e); } });
@@ -3094,7 +3095,7 @@ function renderProspeccion() {
     t1 += rowW('<span style="color:var(--text);font-weight:700;">TOTAL replies</span>', winOf(repliesArr), true);
     t1 += '</tbody></table></div>';
 
-    let t2 = '<div style="overflow-x:auto;"><table class="tbl">' + headW('Producto') + '<tbody>';
+    let t2 = '<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;">' + headW('Producto') + '<tbody>';
     const prodsSen = Array.from(new Set(senalesArr.map(e => e.producto || '(sin producto)')));
     const prodRows = prodsSen.map(p => ({ p, w: winOf(senalesArr.filter(e => (e.producto || '(sin producto)') === p)) }));
     prodRows.sort((a, b) => b.w.total - a.w.total);
