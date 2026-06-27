@@ -3079,7 +3079,8 @@ function renderProspeccion() {
     const known = new Set(CLAS.map(x => x.k));
     const dot = (c) => '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + c + ';margin-right:7px;vertical-align:middle;"></span>';
     const tdC = 'text-align:center;';
-    const rowW = (lblHtml, w, bold) => { const fw = bold ? 'font-weight:700;' : ''; return '<tr><td style="font-weight:600;">' + lblHtml + '</td><td style="' + tdC + fw + '">' + w.hoy + '</td><td style="' + tdC + fw + '">' + w.d7 + '</td><td style="' + tdC + fw + '">' + w.d30 + '</td><td style="' + tdC + fw + '">' + w.d90 + '</td><td style="' + tdC + 'font-weight:700;color:var(--text);">' + w.total + '</td></tr>'; };
+    const winCell = (val, win, meta, bold) => { const fw = bold ? 'font-weight:700;' : ''; if (meta) { return '<td class="pcell" data-ptype="' + meta.type + '" data-pval="' + encodeURIComponent(meta.val) + '" data-pwin="' + win + '" style="' + tdC + fw + 'cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;">' + val + '</td>'; } return '<td style="' + tdC + fw + '">' + val + '</td>'; };
+    const rowW = (lblHtml, w, bold, meta) => { return '<tr><td style="font-weight:600;">' + lblHtml + '</td>' + winCell(w.hoy, 'hoy', meta, bold) + winCell(w.d7, 'd7', meta, bold) + winCell(w.d30, 'd30', meta, bold) + winCell(w.d90, 'd90', meta, bold) + winCell(w.total, 'total', meta, true) + '</tr>'; };
     const headW = (c) => '<thead><tr><th style="width:34%;">' + c + '</th><th style="text-align:center;width:13.2%;">Hoy</th><th style="text-align:center;width:13.2%;">7d</th><th style="text-align:center;width:13.2%;">30d</th><th style="text-align:center;width:13.2%;">90d</th><th style="text-align:center;width:13.2%;">Total</th></tr></thead>';
 
     let chips = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">';
@@ -3088,26 +3089,26 @@ function renderProspeccion() {
     chips += '</div>';
 
     let t1 = '<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;">' + headW('Clasificación') + '<tbody>';
-    CLAS.forEach(cd => { const sub = repliesArr.filter(e => (e.clasificacion || '') === cd.k); if (sub.length) t1 += rowW(dot(cd.c) + cd.l, winOf(sub)); });
+    CLAS.forEach(cd => { const sub = repliesArr.filter(e => (e.clasificacion || '') === cd.k); if (sub.length) t1 += rowW(dot(cd.c) + cd.l, winOf(sub), false, {type:'clas', val:cd.k}); });
     const otras = {};
     repliesArr.forEach(e => { const c = (e.clasificacion || 'sin_clasificar'); if (!known.has(c)) { (otras[c] = otras[c] || []).push(e); } });
-    Object.keys(otras).sort().forEach(c => { t1 += rowW(dot('#6b7280') + c, winOf(otras[c])); });
-    t1 += rowW('<span style="color:var(--text);font-weight:700;">TOTAL replies</span>', winOf(repliesArr), true);
+    Object.keys(otras).sort().forEach(c => { t1 += rowW(dot('#6b7280') + c, winOf(otras[c]), false, {type:'clas', val:c}); });
+    t1 += rowW('<span style="color:var(--text);font-weight:700;">TOTAL replies</span>', winOf(repliesArr), true, {type:'clas', val:'__ALL_REPLIES__'});
     t1 += '</tbody></table></div>';
 
     let t2 = '<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;">' + headW('Producto') + '<tbody>';
     const prodsSen = Array.from(new Set(senalesArr.map(e => e.producto || '(sin producto)')));
     const prodRows = prodsSen.map(p => ({ p, w: winOf(senalesArr.filter(e => (e.producto || '(sin producto)') === p)) }));
     prodRows.sort((a, b) => b.w.total - a.w.total);
-    prodRows.forEach(pr => { t2 += rowW(pr.p, pr.w); });
-    t2 += rowW('<span style="color:var(--text);font-weight:700;">TOTAL señales</span>', winOf(senalesArr), true);
+    prodRows.forEach(pr => { t2 += rowW(pr.p, pr.w, false, {type:'prodsenal', val:pr.p}); });
+    t2 += rowW('<span style="color:var(--text);font-weight:700;">TOTAL señales</span>', winOf(senalesArr), true, {type:'prodsenal', val:'__ALL_SENALES__'});
     t2 += '</tbody></table></div>';
 
     realHtml = '<div class="section"><div class="section-title">Inventario de prospección</div>' +
       '<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Cuántos han llegado, acumulado por ventana de tiempo. Los 30 días incluyen los de 7 y los de hoy. Fuente: tabla de eventos (los 3 tenants), no HubSpot.</div>' +
       chips +
       '<div style="font-size:12px;font-weight:700;color:var(--cyan,#22d3ee);margin:4px 0 8px;">Replies por clasificación</div>' + t1 +
-      '<div style="font-size:12px;font-weight:700;color:var(--yellow,#fbbf24);margin:18px 0 8px;">Open+3 (señales) por producto</div>' + t2 +
+      '<div style="font-size:12px;font-weight:700;color:var(--yellow,#fbbf24);margin:18px 0 8px;">Open+3 (señales) por producto</div>' + t2 + '<div id="prosp-detalle" style="margin-top:14px;"></div>' +
       '</div>';
   } else {
     realHtml = '<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);">Aún no hay eventos en la tabla. En cuanto entren señales/replies (o corras el backfill) esta sección se llena sola.</div></div>';
@@ -3239,6 +3240,59 @@ function renderProspeccion() {
   document.querySelectorAll('[data-prospfilter]').forEach(btn => {
     btn.addEventListener('click', () => { prospProducto = btn.dataset.prospfilter; renderProspeccion(); });
   });
+  document.querySelectorAll('#p-prospeccion .pcell').forEach(td => {
+    td.addEventListener('click', () => renderProspDetalle(td.dataset.ptype, decodeURIComponent(td.dataset.pval), td.dataset.pwin));
+  });
+}
+
+function renderProspDetalle(ptype, pval, pwin) {
+  const box = document.getElementById('prosp-detalle');
+  if (!box) return;
+  const PEV = (PROSPECCION_DATA && Array.isArray(PROSPECCION_DATA.eventos)) ? PROSPECCION_DATA.eventos : [];
+  const prodSel = prospProducto;
+  const matchProd = (e) => prodSel === 'ALL' || (e.producto || '') === prodSel;
+  const now = new Date();
+  const inWin = (e) => { const f = new Date(e.fecha); if (isNaN(f)) return pwin === 'total'; const age = Math.floor((now - f) / 86400000); if (pwin === 'hoy') return age <= 0; if (pwin === 'd7') return age <= 7; if (pwin === 'd30') return age <= 30; if (pwin === 'd90') return age <= 90; return true; };
+  let pool = PEV.filter(matchProd).filter(inWin);
+  let titulo = '';
+  if (ptype === 'clas') {
+    pool = pool.filter(e => e.tipo !== 'open3');
+    if (pval !== '__ALL_REPLIES__') pool = pool.filter(e => (e.clasificacion || '') === pval);
+    titulo = (pval === '__ALL_REPLIES__' ? 'Todos los replies' : pval);
+  } else {
+    pool = pool.filter(e => e.tipo === 'open3');
+    if (pval !== '__ALL_SENALES__') pool = pool.filter(e => (e.producto || '(sin producto)') === pval);
+    titulo = 'Open+3 · ' + (pval === '__ALL_SENALES__' ? 'todos los productos' : pval);
+  }
+  pool.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  const winLbl = { hoy: 'Hoy', d7: '7d', d30: '30d', d90: '90d', total: 'Total' }[pwin] || pwin;
+  const PORT = { GR: '49671716', GR_PT: '49671716', STIL: '51496709', IMMMU: '51496709' };
+  const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const rel = (iso) => { const f = new Date(iso); if (isNaN(f)) return ''; const a = Math.floor((now - f) / 86400000); if (a <= 0) return 'hoy'; if (a === 1) return 'ayer'; if (a < 30) return 'hace ' + a + 'd'; return f.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }); };
+  const tag = (inner, col) => '<span style="padding:2px 8px;border-radius:12px;border:1px solid ' + (col || 'var(--border)') + ';color:' + (col || 'var(--text-mute)') + ';">' + inner + '</span>';
+  let h = '<div class="section" style="margin-top:0;"><div class="section-title">Detalle — ' + esc(titulo) + ' · ' + winLbl + (prodSel !== 'ALL' ? ' · ' + esc(prodSel) : '') + ' <span style="color:var(--text-dim);font-weight:400;font-size:12px;">(' + pool.length + ')</span></div>';
+  if (!pool.length) { box.innerHTML = h + '<div style="font-size:12px;color:var(--text-dim);">Sin contactos en esta intersección.</div></div>'; box.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
+  pool.forEach(e => {
+    const et = e.etapa || '';
+    const etCol = /Ganada/i.test(et) ? 'var(--green,#34d399)' : (/Perdida/i.test(et) ? 'var(--red,#f87171)' : 'var(--text-dim)');
+    const portal = PORT[e.tenant] || '49671716';
+    const dealTag = e.deal_id ? '<a href="https://app.hubspot.com/contacts/' + portal + '/record/0-3/' + e.deal_id + '" target="_blank" style="text-decoration:none;padding:2px 8px;border-radius:12px;border:1px solid var(--green,#34d399);color:var(--green,#34d399);">Deal ↗</a>' : tag('Sin deal');
+    h += '<div style="background:var(--bg-3,#1a1d24);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:8px;">' +
+      '<div style="font-size:15px;font-weight:700;color:var(--text);line-height:1.2;">' + esc(e.empresa || '—') + '</div>' +
+      '<div style="font-size:13px;color:var(--text);margin-top:2px;">' + esc(e.prospecto || '—') + '</div>' +
+      '<div style="font-size:12px;color:var(--text-dim);margin:1px 0 9px;">' + esc(e.puesto || '—') + '</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11px;">' +
+        tag('Campaña: ' + esc(e.campana || '—')) +
+        tag('Etapa: ' + esc(et || '—'), etCol) +
+        tag(esc(e.tenant || '')) +
+        (e.producto ? tag(esc(e.producto)) : '') +
+        (e.canal ? tag(esc(e.canal), 'var(--cyan,#22d3ee)') : '') +
+        dealTag +
+        '<span style="color:var(--text-mute);">' + rel(e.fecha) + '</span>' +
+      '</div></div>';
+  });
+  box.innerHTML = h + '</div>';
+  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function renderAmplemarket() {
