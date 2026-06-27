@@ -3285,7 +3285,7 @@ function renderProspDetalle(ptype, pval, pwin) {
         tag('Campaña: ' + esc(e.campana || '—')) +
         tag('Etapa: ' + esc(et || '—'), etCol) +
         tag(esc(e.tenant || '')) +
-        (e.producto ? tag(esc(e.producto)) : '') +
+        (e.producto && e.producto !== e.tenant ? tag(esc(e.producto)) : '') +
         (e.canal ? tag(esc(e.canal), 'var(--cyan,#22d3ee)') : '') +
         dealTag +
         '<span style="color:var(--text-mute);">' + rel(e.fecha) + '</span>' +
