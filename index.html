@@ -2734,6 +2734,7 @@ const REPLY_TAG_STYLES = {
 };
 
 let amFilters = { canal: 'todos', tipo: 'todos', producto: 'todos' };
+let prospProducto = 'ALL';
 let amDetailView = 'sequences';
 let amDrilldown = null;  // null | 'meetings' | 'replies' | 'openplus3' | 'duogenerated'
 
@@ -3041,52 +3042,74 @@ function renderProspeccion() {
   }
   genHtml += '</div>';
 
-  // --- Recap REAL desde gr_prospeccion_eventos (incluye replies SIN deal y los 3 tenants) ---
+  // --- Inventario de prospección (acumulado por ventana) desde gr_prospeccion_eventos ---
   let realHtml = '';
   const PEV = (PROSPECCION_DATA && Array.isArray(PROSPECCION_DATA.eventos)) ? PROSPECCION_DATA.eventos : null;
   if (PEV && PEV.length) {
     const nowP = new Date();
-    const ageP = (f) => { if (!f) return null; const d = new Date(f); if (isNaN(d)) return null; return Math.floor((nowP - d) / 86400000); };
-    const win = { open3: { hoy: 0, d7: 0, d30: 0 }, reply: { hoy: 0, d7: 0, d30: 0 } };
-    const porTenant = {}; const porClas = {};
-    let contestados = 0, pendientes = 0, replies = 0, senales = 0;
-    PEV.forEach(e => {
-      const tipo = (e.tipo === 'open3') ? 'open3' : 'reply';
-      const a = ageP(e.fecha);
-      if (a !== null) { if (a <= 0) win[tipo].hoy++; if (a <= 7) win[tipo].d7++; if (a <= 30) win[tipo].d30++; }
-      const ten = e.tenant || 'GR'; porTenant[ten] = porTenant[ten] || { reply: 0, open3: 0 }; porTenant[ten][tipo]++;
-      if (tipo === 'reply') { replies++; const c = (e.clasificacion || 'sin_clasificar'); porClas[c] = (porClas[c] || 0) + 1; } else { senales++; }
-      const est = (e.estado || '').toLowerCase();
-      if (est.indexOf('enviado') === 0) contestados++; else if (est === 'pendiente') pendientes++;
-    });
-    const cardP = (lbl, val, col) => '<div style="flex:1;min-width:120px;background:var(--bg-3,#1a1d24);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:22px;font-weight:700;color:' + col + '">' + val + '</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px;">' + lbl + '</div></div>';
-    realHtml = '<div class="section"><div class="section-title">Recap real de prospección (eventos en vivo)</div>' +
-      '<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Cada señal Open+3 y cada reply de los 3 tenants (GR, STIL, IMMMU), incluyendo los replies que NO crean deal. Fuente: tabla de eventos, no HubSpot.</div>' +
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">' +
-        cardP('Señales (Open+3)', senales, 'var(--yellow,#fbbf24)') +
-        cardP('Replies', replies, 'var(--cyan,#22d3ee)') +
-        cardP('Contestados', contestados, 'var(--green,#34d399)') +
-        cardP('Pendientes', pendientes, 'var(--red,#f87171)') +
-      '</div>' +
-      '<div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>Tipo</th><th class="num">Hoy</th><th class="num">7 días</th><th class="num">30 días</th></tr></thead><tbody>' +
-      '<tr><td style="font-weight:600;color:var(--yellow,#fbbf24)">Señales Open+3</td><td class="num">' + win.open3.hoy + '</td><td class="num">' + win.open3.d7 + '</td><td class="num">' + win.open3.d30 + '</td></tr>' +
-      '<tr><td style="font-weight:600;color:var(--cyan,#22d3ee)">Replies</td><td class="num">' + win.reply.hoy + '</td><td class="num">' + win.reply.d7 + '</td><td class="num">' + win.reply.d30 + '</td></tr>' +
-      '</tbody></table></div>';
-    const tenantsP = Object.keys(porTenant).sort();
-    if (tenantsP.length) {
-      realHtml += '<div style="font-size:11px;color:var(--text-dim);margin:14px 0 6px;">Por tenant</div><div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>Tenant</th><th class="num">Señales</th><th class="num">Replies</th></tr></thead><tbody>';
-      tenantsP.forEach(t => { realHtml += '<tr><td style="font-weight:600;">' + t + '</td><td class="num">' + (porTenant[t].open3 || 0) + '</td><td class="num">' + (porTenant[t].reply || 0) + '</td></tr>'; });
-      realHtml += '</tbody></table></div>';
-    }
-    const clasesP = Object.keys(porClas).sort((a, b) => porClas[b] - porClas[a]);
-    if (clasesP.length) {
-      realHtml += '<div style="font-size:11px;color:var(--text-dim);margin:14px 0 6px;">Replies por clasificación</div><div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>Clasificación</th><th class="num">#</th></tr></thead><tbody>';
-      clasesP.forEach(c => { realHtml += '<tr><td style="font-weight:600;">' + c + '</td><td class="num">' + porClas[c] + '</td></tr>'; });
-      realHtml += '</tbody></table></div>';
-    }
-    realHtml += '</div>';
+    const winOf = (arr) => {
+      const w = { hoy: 0, d7: 0, d30: 0, d90: 0, total: 0 };
+      arr.forEach(e => {
+        w.total++;
+        const f = new Date(e.fecha); if (isNaN(f)) return;
+        const age = Math.floor((nowP - f) / 86400000);
+        if (age <= 0) w.hoy++;
+        if (age <= 7) w.d7++;
+        if (age <= 30) w.d30++;
+        if (age <= 90) w.d90++;
+      });
+      return w;
+    };
+    const prodSel = prospProducto;
+    const matchProd = (e) => prodSel === 'ALL' || (e.producto || '') === prodSel;
+    const repliesArr = PEV.filter(e => e.tipo !== 'open3' && matchProd(e));
+    const senalesArr = PEV.filter(e => e.tipo === 'open3' && matchProd(e));
+    const prods = Array.from(new Set(PEV.map(e => e.producto).filter(Boolean))).sort();
+    const CLAS = [
+      { k: 'interested', l: 'Interested', c: '#34d399' },
+      { k: 'meeting_booked', l: 'Meeting booked', c: '#60a5fa' },
+      { k: 'forwarded_to_the_right_person', l: 'Forwarded / right person', c: '#22d3ee' },
+      { k: 'introduction', l: 'Introduction', c: '#22d3ee' },
+      { k: 'asked_to_circle_back_later', l: 'Circle back later', c: '#fbbf24' },
+      { k: 'ooo', l: 'OOO (fuera de oficina)', c: '#9aa3b2' },
+      { k: 'not_the_right_person', l: 'Not the right person', c: '#f87171' },
+      { k: 'not_interested', l: 'Not interested', c: '#f87171' },
+      { k: 'hard_no', l: 'Hard no', c: '#f87171' }
+    ];
+    const known = new Set(CLAS.map(x => x.k));
+    const dot = (c) => '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + c + ';margin-right:7px;vertical-align:middle;"></span>';
+    const rowW = (lblHtml, w, bold) => { const fw = bold ? 'font-weight:700;' : ''; return '<tr><td style="font-weight:600;">' + lblHtml + '</td><td class="num" style="' + fw + '">' + w.hoy + '</td><td class="num" style="' + fw + '">' + w.d7 + '</td><td class="num" style="' + fw + '">' + w.d30 + '</td><td class="num" style="' + fw + '">' + w.d90 + '</td><td class="num" style="font-weight:700;color:var(--text);">' + w.total + '</td></tr>'; };
+    const headW = (c) => '<thead><tr><th>' + c + '</th><th class="num">Hoy</th><th class="num">7 días</th><th class="num">30 días</th><th class="num">90 días</th><th class="num">Total</th></tr></thead>';
+
+    let chips = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">';
+    chips += '<button class="chip' + (prodSel === 'ALL' ? ' active' : '') + '" data-prospfilter="ALL" style="font-size:11px;padding:5px 11px;border-radius:18px;">Todos</button>';
+    prods.forEach(p => { chips += '<button class="chip' + (prodSel === p ? ' active' : '') + '" data-prospfilter="' + p + '" style="font-size:11px;padding:5px 11px;border-radius:18px;">' + p + '</button>'; });
+    chips += '</div>';
+
+    let t1 = '<div style="overflow-x:auto;"><table class="tbl">' + headW('Clasificación') + '<tbody>';
+    CLAS.forEach(cd => { const sub = repliesArr.filter(e => (e.clasificacion || '') === cd.k); if (sub.length) t1 += rowW(dot(cd.c) + cd.l, winOf(sub)); });
+    const otras = {};
+    repliesArr.forEach(e => { const c = (e.clasificacion || 'sin_clasificar'); if (!known.has(c)) { (otras[c] = otras[c] || []).push(e); } });
+    Object.keys(otras).sort().forEach(c => { t1 += rowW(dot('#6b7280') + c, winOf(otras[c])); });
+    t1 += rowW('<span style="color:var(--text);font-weight:700;">TOTAL replies</span>', winOf(repliesArr), true);
+    t1 += '</tbody></table></div>';
+
+    let t2 = '<div style="overflow-x:auto;"><table class="tbl">' + headW('Producto') + '<tbody>';
+    const prodsSen = Array.from(new Set(senalesArr.map(e => e.producto || '(sin producto)')));
+    const prodRows = prodsSen.map(p => ({ p, w: winOf(senalesArr.filter(e => (e.producto || '(sin producto)') === p)) }));
+    prodRows.sort((a, b) => b.w.total - a.w.total);
+    prodRows.forEach(pr => { t2 += rowW(pr.p, pr.w); });
+    t2 += rowW('<span style="color:var(--text);font-weight:700;">TOTAL señales</span>', winOf(senalesArr), true);
+    t2 += '</tbody></table></div>';
+
+    realHtml = '<div class="section"><div class="section-title">Inventario de prospección</div>' +
+      '<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Cuántos han llegado, acumulado por ventana de tiempo. Los 30 días incluyen los de 7 y los de hoy. Fuente: tabla de eventos (los 3 tenants), no HubSpot.</div>' +
+      chips +
+      '<div style="font-size:12px;font-weight:700;color:var(--cyan,#22d3ee);margin:4px 0 8px;">Replies por clasificación</div>' + t1 +
+      '<div style="font-size:12px;font-weight:700;color:var(--yellow,#fbbf24);margin:18px 0 8px;">Open+3 (señales) por producto</div>' + t2 +
+      '</div>';
   } else {
-    realHtml = '<div class="section"><div class="section-title">Recap real de prospección (eventos en vivo)</div><div style="font-size:12px;color:var(--text-dim);">Aún no hay eventos en la tabla. En cuanto entren señales/replies hoy (o corras el backfill) esta sección se llena sola desde gr_prospeccion_eventos.</div></div>';
+    realHtml = '<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);">Aún no hay eventos en la tabla. En cuanto entren señales/replies (o corras el backfill) esta sección se llena sola.</div></div>';
   }
 
   let html = realHtml + genHtml + '<div class="section"><div class="section-title">Embudo de prospección (deals en HubSpot)</div>' +
@@ -3167,6 +3190,9 @@ function renderProspeccion() {
   }
 
   document.getElementById('p-prospeccion').innerHTML = html;
+  document.querySelectorAll('[data-prospfilter]').forEach(btn => {
+    btn.addEventListener('click', () => { prospProducto = btn.dataset.prospfilter; renderProspeccion(); });
+  });
 }
 
 function renderAmplemarket() {
