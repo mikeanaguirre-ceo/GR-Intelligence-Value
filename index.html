@@ -3004,176 +3004,74 @@ function funnelRow(steps) {
 }
 
 function renderProspeccion() {
-  const deals = (DATA && DATA.deals) || [];
-  const PEV = (PROSPECCION_DATA && Array.isArray(PROSPECCION_DATA.eventos)) ? PROSPECCION_DATA.eventos : null;
-  const cont = document.getElementById('p-prospeccion');
+  var deals = (DATA && DATA.deals) || [];
+  var PEV = (PROSPECCION_DATA && Array.isArray(PROSPECCION_DATA.eventos)) ? PROSPECCION_DATA.eventos : null;
+  var cont = document.getElementById('p-prospeccion');
   if (!cont) return;
-
   if (!PEV || !PEV.length) {
-    cont.innerHTML = '<div class="section"><div style="font-size:12px;color:var(--text-dim);">Aún no hay eventos. En cuanto entren señales/replies esta sección se llena sola.</div></div>';
+    cont.innerHTML = '<div class="section"><div style="font-size:12px;color:var(--text-dim);">Aún no hay eventos.</div></div>';
     return;
   }
-
-  const nowP = new Date();
-  const winOf = (arr) => {
-    const w = { hoy:0, d7:0, d30:0, d90:0, total:0 };
-    arr.forEach(e => {
-      w.total++;
-      const f = new Date(e.fecha); if (isNaN(f)) return;
-      const age = Math.floor((nowP - f) / 86400000);
-      if (age <= 0) w.hoy++;
-      if (age <= 7) w.d7++;
-      if (age <= 30) w.d30++;
-      if (age <= 90) w.d90++;
-    });
+  var fmtLbl = function(s) { return String(s||'').split('_').map(function(w){return w.charAt(0).toUpperCase()+w.slice(1);}).join(' '); };
+  var nowP = new Date();
+  var winOf = function(arr) {
+    var w={hoy:0,d7:0,d30:0,d90:0,total:0};
+    arr.forEach(function(e){ w.total++; var f=new Date(e.fecha); if(isNaN(f)) return; var age=Math.floor((nowP-f)/86400000); if(age<=0)w.hoy++; if(age<=7)w.d7++; if(age<=30)w.d30++; if(age<=90)w.d90++; });
     return w;
   };
-
-  const prodSel = prospProducto;
-
-  // Filtro: ALL = todo, GR = tenant GR, STIL/IMMMU = tenant, o producto especifico
-  const matchFilt = (e) => {
-    if (prodSel === 'ALL') return true;
-    if (prodSel === 'GR')    return e.tenant === 'GR';
-    if (prodSel === 'STIL')  return e.tenant === 'STIL';
-    if (prodSel === 'IMMMU') return e.tenant === 'IMMMU';
-    return (e.producto || '') === prodSel;
+  var prodSel = prospProducto;
+  var matchFilt = function(e) {
+    if(prodSel==='ALL')   return true;
+    if(prodSel==='GR')    return e.tenant==='GR';
+    if(prodSel==='STIL')  return e.tenant==='STIL';
+    if(prodSel==='IMMMU') return e.tenant==='IMMMU';
+    return (e.producto||'')===prodSel;
   };
-
-  const repliesArr = PEV.filter(e => e.tipo !== 'open3' && matchFilt(e));
-  const senalesArr = PEV.filter(e => e.tipo === 'open3'  && matchFilt(e));
-
-  // Chips — sin duplicar: primero tenants, luego productos GR unicamente
-  const GR_PRODS = ['AM','AEO','GENIA','ITS','LT','TW','HS','360','WB','BD','EX'];
-  const activeProd = GR_PRODS.filter(p => PEV.some(e => (e.producto||'')===p));
-
-  const chip = (val, lbl) => '<button class="chip' + (prodSel===val?' active':'') + '" data-prospfilter="'+val+'" style="font-size:11px;padding:5px 11px;border-radius:18px;">'+lbl+'</button>';
-  let chips = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">';
-  chips += chip('ALL','Todos');
-  chips += chip('GR','GR');
-  chips += chip('STIL','STIL');
-  chips += chip('IMMMU','IMMMU');
-  chips += '<span style="display:inline-block;width:1px;background:var(--border,#2A3142);margin:0 4px;"></span>';
-  activeProd.forEach(p => { chips += chip(p, p); });
-  chips += '</div>';
-
-  // Tabla replies agrupada
-  const dot = c => '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+c+';margin-right:7px;vertical-align:middle;"></span>';
-  const headW = '<thead><tr><th style="width:34%;">CLASIFICACIÓN</th><th style="text-align:center;width:13.2%;">HOY</th><th style="text-align:center;width:13.2%;">7D</th><th style="text-align:center;width:13.2%;">30D</th><th style="text-align:center;width:13.2%;">90D</th><th style="text-align:center;width:13.2%;">TOTAL</th></tr></thead>';
-
-  const winCell = (n, win, clas, bold) => {
-    const s = bold ? 'font-weight:700;' : '';
-    if (n > 0) return '<td class="pcell" data-ptype="clas" data-pval="'+encodeURIComponent(clas)+'" data-pwin="'+win+'" style="text-align:center;'+s+'cursor:pointer;">'+n+'</td>';
-    return '<td style="text-align:center;color:var(--text-mute,#6B7280);'+s+'">'+n+'</td>';
-  };
-  const rowC = (lbl, dotCol, clas) => {
-    const sub = repliesArr.filter(e => (e.clasificacion||'')===clas);
-    if (!sub.length) return '';
-    const w = winOf(sub);
-    return '<tr><td>'+dot(dotCol)+lbl+'</td>'+winCell(w.hoy,'hoy',clas,false)+winCell(w.d7,'d7',clas,false)+winCell(w.d30,'d30',clas,false)+winCell(w.d90,'d90',clas,false)+winCell(w.total,'total',clas,true)+'</tr>';
-  };
-  const secHead = (lbl, col, bg) => '<tr style="background:'+bg+';"><td colspan="6" style="font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:'+col+';padding:8px 12px;">'+dot(col)+lbl+'</td></tr>';
-
-  let t1 = '<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;">'+headW+'<tbody>';
-  t1 += secHead('ALTA PRIORIDAD — ATENDER YA','#10B981','rgba(16,185,129,.08)');
-  t1 += rowC('interested','#10B981','interested');
-  t1 += rowC('meeting_booked','#10B981','meeting_booked');
-  t1 += rowC('forwarded_to_the_right_person','#10B981','forwarded_to_the_right_person');
-  t1 += rowC('introduction','#10B981','introduction');
-  t1 += secHead('MEDIA — PENDIENTE / RETOMAR','#F59E0B','rgba(245,158,11,.08)');
-  t1 += rowC('asked_to_circle_back_later','#F59E0B','asked_to_circle_back_later');
-  t1 += rowC('circle_back','#F59E0B','circle_back');
-  t1 += rowC('ooo','#F59E0B','ooo');
-  t1 += secHead('DESCARTADO — YA NO INTERESA','#EF4444','rgba(239,68,68,.07)');
-  t1 += rowC('not_the_right_person','#EF4444','not_the_right_person');
-  t1 += rowC('not_interested','#EF4444','not_interested');
-  t1 += rowC('hard_no','#EF4444','hard_no');
-  // Otros no catalogados
-  const known = new Set(['interested','meeting_booked','forwarded_to_the_right_person','introduction','asked_to_circle_back_later','circle_back','ooo','not_the_right_person','not_interested','hard_no']);
-  const otros = [...new Set(repliesArr.map(e=>e.clasificacion||'').filter(c=>c&&!known.has(c)))];
-  if (otros.length) {
-    t1 += secHead('OTROS','#6B7280','rgba(107,114,128,.06)');
-    otros.forEach(c => { t1 += rowC(c,'#6B7280',c); });
-  }
-  // Total
-  const wTot = winOf(repliesArr);
-  t1 += '<tr style="border-top:2px solid var(--border,#2A3142);"><td style="font-weight:700;">TOTAL replies</td>'+winCell(wTot.hoy,'hoy','__ALL_REPLIES__',true)+winCell(wTot.d7,'d7','__ALL_REPLIES__',true)+winCell(wTot.d30,'d30','__ALL_REPLIES__',true)+winCell(wTot.d90,'d90','__ALL_REPLIES__',true)+winCell(wTot.total,'total','__ALL_REPLIES__',true)+'</tr>';
-  t1 += '</tbody></table></div>';
-
-  // Señales por producto
-  const headS = '<thead><tr><th style="width:34%;">PRODUCTO</th><th style="text-align:center;width:13.2%;">HOY</th><th style="text-align:center;width:13.2%;">7D</th><th style="text-align:center;width:13.2%;">30D</th><th style="text-align:center;width:13.2%;">90D</th><th style="text-align:center;width:13.2%;">TOTAL</th></tr></thead>';
-  const winCellP = (n, win, prod, bold) => {
-    const s = bold ? 'font-weight:700;' : '';
-    if (n > 0) return '<td class="pcell" data-ptype="prod" data-pval="'+encodeURIComponent(prod)+'" data-pwin="'+win+'" style="text-align:center;'+s+'cursor:pointer;">'+n+'</td>';
-    return '<td style="text-align:center;color:var(--text-mute,#6B7280);'+s+'">'+n+'</td>';
-  };
-  let t2 = '<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;">'+headS+'<tbody>';
-  const prodsSen = [...new Set(senalesArr.map(e=>e.producto||'(sin producto)'))].sort();
-  prodsSen.forEach(p => {
-    const sub = senalesArr.filter(e=>(e.producto||'(sin producto)')===p);
-    const w = winOf(sub);
-    t2 += '<tr><td style="font-weight:600;">'+p+'</td>'+winCellP(w.hoy,'hoy',p,false)+winCellP(w.d7,'d7',p,false)+winCellP(w.d30,'d30',p,false)+winCellP(w.d90,'d90',p,false)+winCellP(w.total,'total',p,true)+'</tr>';
-  });
-  const wS = winOf(senalesArr);
-  t2 += '<tr style="border-top:2px solid var(--border,#2A3142);"><td style="font-weight:700;">TOTAL señales</td>'+winCellP(wS.hoy,'hoy','__ALL_SENALES__',true)+winCellP(wS.d7,'d7','__ALL_SENALES__',true)+winCellP(wS.d30,'d30','__ALL_SENALES__',true)+winCellP(wS.d90,'d90','__ALL_SENALES__',true)+winCellP(wS.total,'total','__ALL_SENALES__',true)+'</tr>';
-  t2 += '</tbody></table></div>';
-
-  // Oportunidades HubSpot por etapa
-  const ETAPAS = [
-    {id:'1332596061',l:'Señal detectada',col:'#EF4444'},{id:'1332596062',l:'Reply recibido',col:'#EF4444'},
-    {id:'1332596063',l:'Contactado',col:'#EF4444'},{id:'1332596064',l:'En conversación',col:'#F59E0B'},
-    {id:'appointmentscheduled',l:'Atracción (1ª reunión)',col:'#10B981',venta:true},
-    {id:'qualifiedtobuy',l:'Educación',col:'#10B981',venta:true},
-    {id:'presentationscheduled',l:'Propuesta enviada',col:'#10B981',venta:true},
-    {id:'decisionmakerboughtin',l:'Aprobación verbal',col:'#10B981',venta:true},
-    {id:'contractsent',l:'Contrato enviado',col:'#10B981',venta:true},
-    {id:'closedwon',l:'Closed Won',col:'#10B981',venta:true}
-  ];
-  const stageCts = {};
-  deals.forEach(d => {
-    const st = d.stage||'';
-    if (!stageCts[st]) stageCts[st]={hoy:0,d7:0,d30:0,d90:0,total:0};
-    const w=stageCts[st]; w.total++;
-    const age=proAgeDays(d.createdate);
-    if(age!==null){if(age<=0)w.hoy++;if(age<=7)w.d7++;if(age<=30)w.d30++;if(age<=90)w.d90++;}
-  });
-  let dealHtml = '<div class="section"><div class="section-title">Oportunidades en HubSpot por etapa</div>'+
-    '<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;"><thead><tr><th style="width:34%;">ETAPA</th><th style="text-align:center;">HOY</th><th style="text-align:center;">7D</th><th style="text-align:center;">30D</th><th style="text-align:center;">90D</th><th style="text-align:center;">TOTAL</th></tr></thead><tbody>';
-  let venta=false;
-  ETAPAS.forEach(st=>{
-    if(st.venta&&!venta){dealHtml+='<tr><td colspan="6" style="font-size:10px;font-weight:800;letter-spacing:.1em;color:#10B981;padding:6px 12px;border-top:2px solid #10B981;">PASA A VENTA</td></tr>';venta=true;}
-    const w=stageCts[st.id]||{hoy:0,d7:0,d30:0,d90:0,total:0};
-    dealHtml+='<tr><td>'+dot(st.col)+(st.venta?'<span style="color:'+st.col+';font-weight:600;">'+st.l+'</span>':st.l)+'</td><td style="text-align:center;">'+w.hoy+'</td><td style="text-align:center;">'+w.d7+'</td><td style="text-align:center;">'+w.d30+'</td><td style="text-align:center;">'+w.d90+'</td><td style="text-align:center;font-weight:700;">'+w.total+'</td></tr>';
-  });
-  dealHtml+='</tbody></table></div></div>';
-
-  // Render final
-  const prodLbl = prodSel==='ALL'?'todos los productos':prodSel;
-  cont.innerHTML =
-    '<div class="section">'+
-      '<div class="section-title">Inventario de prospección</div>'+
-      '<div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Cuántos han llegado, acumulado por ventana de tiempo. Los 30 días incluyen los de 7 y los de hoy. Fuente: tabla de eventos (los 3 tenants), no HubSpot.</div>'+
-      chips+
-      '<div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad</div>'+
-      '<div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Ordenados por prioridad de atención: verde = atender ya, amarillo = pendiente/retomar, rojo = descartado. Toca un número para ver el detalle.</div>'+
-      t1+
-      '<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto</div>'+
-      t2+
-      '<div id="prosp-detalle" style="margin-top:16px;"></div>'+
-    '</div>'+
-    dealHtml;
-
-  // Event listeners
-  cont.querySelectorAll('[data-prospfilter]').forEach(btn=>{
-    btn.addEventListener('click',()=>{ prospProducto=btn.dataset.prospfilter; renderProspeccion(); });
-  });
-  cont.querySelectorAll('.pcell').forEach(td=>{
-    td.addEventListener('click',()=>{
-      renderProspDetalle(td.dataset.ptype, decodeURIComponent(td.dataset.pval), td.dataset.pwin);
-    });
-  });
+  var normClas = function(c) { return (c==='asked_to_circle_back_later') ? 'circle_back' : (c||''); };
+  var PEV_n = PEV.map(function(e){ return Object.assign({},e,{clasificacion:normClas(e.clasificacion||'')}); });
+  var repliesArr = PEV_n.filter(function(e){ return e.tipo!=='open3' && matchFilt(e); });
+  var senalesArr = PEV_n.filter(function(e){ return e.tipo==='open3' && matchFilt(e); });
+  var GR_PRODS=['AM','AEO','GENIA','ITS','LT','TW','HS','360','WB','BD','EX'];
+  var activeProd=GR_PRODS.filter(function(p){ return PEV.some(function(e){return (e.producto||'')===p;}); });
+  var chip=function(val,lbl){ return '<button class="chip'+(prodSel===val?' active':'')+'" data-prospfilter="'+val+'" style="font-size:11px;padding:5px 11px;border-radius:18px;">'+lbl+'</button>'; };
+  var chips='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">'+chip('ALL','Todos')+chip('GR','GR')+chip('STIL','STIL')+chip('IMMMU','IMMMU')+'<span style="display:inline-block;width:1px;background:var(--border,#2A3142);margin:0 6px;"></span>';
+  activeProd.forEach(function(p){ chips+=chip(p,p); });
+  chips+='</div>';
+  var dot=function(c){ return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+c+';margin-right:7px;vertical-align:middle;"></span>'; };
+  var H1='<thead><tr><th style="width:38%;">CLASIFICACIÓN</th><th style="text-align:center;">HOY</th><th style="text-align:center;">7D</th><th style="text-align:center;">30D</th><th style="text-align:center;">90D</th><th style="text-align:center;">TOTAL</th></tr></thead>';
+  var wc=function(n,win,clas,bold){ var s=bold?'font-weight:700;':''; return n>0?'<td class="pcell" data-ptype="clas" data-pval="'+encodeURIComponent(clas)+'" data-pwin="'+win+'" style="text-align:center;'+s+'cursor:pointer;">'+n+'</td>':'<td style="text-align:center;color:var(--text-mute);'+s+'">0</td>'; };
+  var rowC=function(clas,col){ var sub=repliesArr.filter(function(e){return (e.clasificacion||'')===clas;}); if(!sub.length)return ''; var w=winOf(sub); return '<tr><td>'+dot(col)+fmtLbl(clas)+'</td>'+wc(w.hoy,'hoy',clas,0)+wc(w.d7,'d7',clas,0)+wc(w.d30,'d30',clas,0)+wc(w.d90,'d90',clas,0)+wc(w.total,'total',clas,1)+'</tr>'; };
+  var secH=function(lbl,col,bg){ return '<tr style="background:'+bg+';"><td colspan="6" style="font-size:11px;font-weight:800;text-transform:uppercase;color:'+col+';padding:8px 12px;">'+dot(col)+lbl+'</td></tr>'; };
+  var t1='<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;">'+H1+'<tbody>';
+  t1+=secH('ALTA PRIORIDAD — ATENDER YA','#10B981','rgba(16,185,129,.08)');
+  t1+=rowC('interested','#10B981')+rowC('meeting_booked','#10B981')+rowC('forwarded_to_the_right_person','#10B981')+rowC('introduction','#10B981');
+  t1+=secH('MEDIA — PENDIENTE / RETOMAR','#F59E0B','rgba(245,158,11,.08)');
+  t1+=rowC('circle_back','#F59E0B')+rowC('ooo','#F59E0B');
+  t1+=secH('DESCARTADO — YA NO INTERESA','#EF4444','rgba(239,68,68,.07)');
+  t1+=rowC('not_the_right_person','#EF4444')+rowC('not_interested','#EF4444')+rowC('hard_no','#EF4444');
+  var known=new Set(['interested','meeting_booked','forwarded_to_the_right_person','introduction','circle_back','ooo','not_the_right_person','not_interested','hard_no']);
+  var seen={}; repliesArr.forEach(function(e){ var c=e.clasificacion||''; if(c&&!known.has(c)&&!seen[c]){seen[c]=true;t1+=rowC(c,'#6B7280');} });
+  if(!repliesArr.length) t1+='<tr><td colspan="6" style="font-size:12px;color:var(--text-mute);padding:12px;">Sin replies para este filtro.</td></tr>';
+  var wT=winOf(repliesArr);
+  t1+='<tr style="border-top:2px solid var(--border,#2A3142);"><td style="font-weight:700;">TOTAL replies</td>'+wc(wT.hoy,'hoy','__ALL_REPLIES__',1)+wc(wT.d7,'d7','__ALL_REPLIES__',1)+wc(wT.d30,'d30','__ALL_REPLIES__',1)+wc(wT.d90,'d90','__ALL_REPLIES__',1)+wc(wT.total,'total','__ALL_REPLIES__',1)+'</tr></tbody></table></div>';
+  var H2='<thead><tr><th style="width:38%;">PRODUCTO</th><th style="text-align:center;">HOY</th><th style="text-align:center;">7D</th><th style="text-align:center;">30D</th><th style="text-align:center;">90D</th><th style="text-align:center;">TOTAL</th></tr></thead>';
+  var wcp=function(n,win,prod,bold){ var s=bold?'font-weight:700;':''; return n>0?'<td class="pcell" data-ptype="prod" data-pval="'+encodeURIComponent(prod)+'" data-pwin="'+win+'" style="text-align:center;'+s+'cursor:pointer;">'+n+'</td>':'<td style="text-align:center;color:var(--text-mute);'+s+'">0</td>'; };
+  var t2='<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;">'+H2+'<tbody>';
+  var ps={}; senalesArr.forEach(function(e){ var p=e.producto||'(sin producto)'; ps[p]=(ps[p]||0)+1; });
+  Object.keys(ps).sort().forEach(function(p){ var sub=senalesArr.filter(function(e){return (e.producto||'(sin producto)')===p;}); var w=winOf(sub); t2+='<tr><td style="font-weight:600;">'+p+'</td>'+wcp(w.hoy,'hoy',p,0)+wcp(w.d7,'d7',p,0)+wcp(w.d30,'d30',p,0)+wcp(w.d90,'d90',p,0)+wcp(w.total,'total',p,1)+'</tr>'; });
+  if(!senalesArr.length) t2+='<tr><td colspan="6" style="font-size:12px;color:var(--text-mute);padding:12px;">Sin señales para este filtro.</td></tr>';
+  var wS=winOf(senalesArr);
+  t2+='<tr style="border-top:2px solid var(--border,#2A3142);"><td style="font-weight:700;">TOTAL señales</td>'+wcp(wS.hoy,'hoy','__ALL_SENALES__',1)+wcp(wS.d7,'d7','__ALL_SENALES__',1)+wcp(wS.d30,'d30','__ALL_SENALES__',1)+wcp(wS.d90,'d90','__ALL_SENALES__',1)+wcp(wS.total,'total','__ALL_SENALES__',1)+'</tr></tbody></table></div>';
+  var ETAPAS=[{id:'1332596061',l:'Señal detectada',col:'#EF4444'},{id:'1332596062',l:'Reply recibido',col:'#EF4444'},{id:'1332596063',l:'Contactado',col:'#EF4444'},{id:'1332596064',l:'En conversación',col:'#F59E0B'},{id:'appointmentscheduled',l:'Atracción (1ª reunión)',col:'#10B981',v:true},{id:'qualifiedtobuy',l:'Educación',col:'#10B981',v:true},{id:'presentationscheduled',l:'Propuesta enviada',col:'#10B981',v:true},{id:'decisionmakerboughtin',l:'Aprobación verbal',col:'#10B981',v:true},{id:'contractsent',l:'Contrato enviado',col:'#10B981',v:true},{id:'closedwon',l:'Closed Won',col:'#10B981',v:true}];
+  var sc={}; deals.forEach(function(d){ var st=d.stage||''; if(!sc[st])sc[st]={hoy:0,d7:0,d30:0,d90:0,total:0}; var w=sc[st]; w.total++; var age=proAgeDays(d.createdate); if(age!==null){if(age<=0)w.hoy++;if(age<=7)w.d7++;if(age<=30)w.d30++;if(age<=90)w.d90++;} });
+  var dh='<div class="section"><div class="section-title">Oportunidades en HubSpot por etapa</div><div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;"><thead><tr><th style="width:38%;">ETAPA</th><th style="text-align:center;">HOY</th><th style="text-align:center;">7D</th><th style="text-align:center;">30D</th><th style="text-align:center;">90D</th><th style="text-align:center;">TOTAL</th></tr></thead><tbody>';
+  var venta=false;
+  ETAPAS.forEach(function(st){ if(st.v&&!venta){dh+='<tr><td colspan="6" style="font-size:10px;font-weight:800;color:#10B981;padding:6px 12px;border-top:2px solid #10B981;">PASA A VENTA</td></tr>';venta=true;} var w=sc[st.id]||{hoy:0,d7:0,d30:0,d90:0,total:0}; dh+='<tr><td>'+dot(st.col)+(st.v?'<span style="color:'+st.col+';font-weight:600;">'+st.l+'</span>':st.l)+'</td><td style="text-align:center;">'+w.hoy+'</td><td style="text-align:center;">'+w.d7+'</td><td style="text-align:center;">'+w.d30+'</td><td style="text-align:center;">'+w.d90+'</td><td style="text-align:center;font-weight:700;">'+w.total+'</td></tr>'; });
+  dh+='</tbody></table></div></div>';
+  cont.innerHTML='<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Fuente: tabla de eventos (los 3 tenants), no HubSpot. Los 30d incluyen 7d y hoy.</div>'+chips+'<div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado. Toca un número para ver el detalle.</div>'+t1+'<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto</div>'+t2+'<div id="prosp-detalle" style="margin-top:16px;"></div></div>'+dh;
+  cont.querySelectorAll('[data-prospfilter]').forEach(function(btn){ btn.addEventListener('click',function(){ prospProducto=btn.dataset.prospfilter; renderProspeccion(); }); });
+  cont.querySelectorAll('.pcell').forEach(function(td){ td.addEventListener('click',function(){ renderProspDetalle(td.dataset.ptype,decodeURIComponent(td.dataset.pval),td.dataset.pwin); }); });
 }
-
 function renderAmplemarketDrilldown() {
   const container = document.getElementById('am-drilldown');
   if (!container) return;
