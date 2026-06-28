@@ -3045,7 +3045,7 @@ function renderProspeccion() {
     '</tbody></table></div></div>';
 
   if (!PEV || !PEV.length) {
-    const cont = document.getElementById('prospeccion-content');
+    const cont = document.getElementById('p-prospeccion');
     if (cont) cont.innerHTML = genHtml + '<div class="section"><div style="font-size:12px;color:var(--text-dim);">Aún no hay eventos en la tabla. En cuanto entren señales/replies (o corras el backfill) esta sección se llena sola.</div></div>';
     return;
   }
@@ -3212,7 +3212,7 @@ function renderProspeccion() {
   dealHtml += '</tbody></table></div></div>';
 
   // Render
-  const cont = document.getElementById('prospeccion-content');
+  const cont = document.getElementById('p-prospeccion');
   if (!cont) return;
 
   const invHtml = '<div class="section">' +
