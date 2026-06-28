@@ -3006,6 +3006,398 @@ function funnelRow(steps) {
 function renderProspeccion() {
   const deals = (DATA && DATA.deals) || [];
   const PEV = (PROSPECCION_DATA && Array.isArray(PROSPECCION_DATA.eventos)) ? PROSPECCION_DATA.eventos : null;
+  const cont = document.getElementById('p-prospeccion');
+  if (!cont) return;
+
+  if (!PEV || !PEV.length) {
+    cont.innerHTML = '<div class="section"><div style="font-size:12px;color:var(--text-dim);">Aún no hay eventos. En cuanto entren señales/replies esta sección se llena sola.</div></div>';
+    return;
+  }
+
+  const nowP = new Date();
+  const winOf = (arr) => {
+    const w = { hoy:0, d7:0, d30:0, d90:0, total:0 };
+    arr.forEach(e => {
+      w.total++;
+      const f = new Date(e.fecha); if (isNaN(f)) return;
+      const age = Math.floor((nowP - f) / 86400000);
+      if (age <= 0) w.hoy++;
+      if (age <= 7) w.d7++;
+      if (age <= 30) w.d30++;
+      if (age <= 90) w.d90++;
+    });
+    return w;
+  };
+
+  const prodSel = prospProducto;
+
+  // Filtro: ALL = todo, GR = tenant GR, STIL/IMMMU = tenant, o producto especifico
+  const matchFilt = (e) => {
+    if (prodSel === 'ALL') return true;
+    if (prodSel === 'GR')    return e.tenant === 'GR';
+    if (prodSel === 'STIL')  return e.tenant === 'STIL';
+    if (prodSel === 'IMMMU') return e.tenant === 'IMMMU';
+    return (e.producto || '') === prodSel;
+  };
+
+  const repliesArr = PEV.filter(e => e.tipo !== 'open3' && matchFilt(e));
+  const senalesArr = PEV.filter(e => e.tipo === 'open3'  && matchFilt(e));
+
+  // Chips — sin duplicar: primero tenants, luego productos GR unicamente
+  const GR_PRODS = ['AM','AEO','GENIA','ITS','LT','TW','HS','360','WB','BD','EX'];
+  const activeProd = GR_PRODS.filter(p => PEV.some(e => (e.producto||'')===p));
+
+  const chip = (val, lbl) => '<button class="chip' + (prodSel===val?' active':'') + '" data-prospfilter="'+val+'" style="font-size:11px;padding:5px 11px;border-radius:18px;">'+lbl+'</button>';
+  let chips = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">';
+  chips += chip('ALL','Todos');
+  chips += chip('GR','GR');
+  chips += chip('STIL','STIL');
+  chips += chip('IMMMU','IMMMU');
+  chips += '<span style="display:inline-block;width:1px;background:var(--border,#2A3142);margin:0 4px;"></span>';
+  activeProd.forEach(p => { chips += chip(p, p); });
+  chips += '</div>';
+
+  // Tabla replies agrupada
+  const dot = c => '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+c+';margin-right:7px;vertical-align:middle;"></span>';
+  const headW = '<thead><tr><th style="width:34%;">CLASIFICACIÓN</th><th style="text-align:center;width:13.2%;">HOY</th><th style="text-align:center;width:13.2%;">7D</th><th style="text-align:center;width:13.2%;">30D</th><th style="text-align:center;width:13.2%;">90D</th><th style="text-align:center;width:13.2%;">TOTAL</th></tr></thead>';
+
+  const winCell = (n, win, clas, bold) => {
+    const s = bold ? 'font-weight:700;' : '';
+    if (n > 0) return '<td class="pcell" data-ptype="clas" data-pval="'+encodeURIComponent(clas)+'" data-pwin="'+win+'" style="text-align:center;'+s+'cursor:pointer;">'+n+'</td>';
+    return '<td style="text-align:center;color:var(--text-mute,#6B7280);'+s+'">'+n+'</td>';
+  };
+  const rowC = (lbl, dotCol, clas) => {
+    const sub = repliesArr.filter(e => (e.clasificacion||'')===clas);
+    if (!sub.length) return '';
+    const w = winOf(sub);
+    return '<tr><td>'+dot(dotCol)+lbl+'</td>'+winCell(w.hoy,'hoy',clas,false)+winCell(w.d7,'d7',clas,false)+winCell(w.d30,'d30',clas,false)+winCell(w.d90,'d90',clas,false)+winCell(w.total,'total',clas,true)+'</tr>';
+  };
+  const secHead = (lbl, col, bg) => '<tr style="background:'+bg+';"><td colspan="6" style="font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:'+col+';padding:8px 12px;">'+dot(col)+lbl+'</td></tr>';
+
+  let t1 = '<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;">'+headW+'<tbody>';
+  t1 += secHead('ALTA PRIORIDAD — ATENDER YA','#10B981','rgba(16,185,129,.08)');
+  t1 += rowC('interested','#10B981','interested');
+  t1 += rowC('meeting_booked','#10B981','meeting_booked');
+  t1 += rowC('forwarded_to_the_right_person','#10B981','forwarded_to_the_right_person');
+  t1 += rowC('introduction','#10B981','introduction');
+  t1 += secHead('MEDIA — PENDIENTE / RETOMAR','#F59E0B','rgba(245,158,11,.08)');
+  t1 += rowC('asked_to_circle_back_later','#F59E0B','asked_to_circle_back_later');
+  t1 += rowC('circle_back','#F59E0B','circle_back');
+  t1 += rowC('ooo','#F59E0B','ooo');
+  t1 += secHead('DESCARTADO — YA NO INTERESA','#EF4444','rgba(239,68,68,.07)');
+  t1 += rowC('not_the_right_person','#EF4444','not_the_right_person');
+  t1 += rowC('not_interested','#EF4444','not_interested');
+  t1 += rowC('hard_no','#EF4444','hard_no');
+  // Otros no catalogados
+  const known = new Set(['interested','meeting_booked','forwarded_to_the_right_person','introduction','asked_to_circle_back_later','circle_back','ooo','not_the_right_person','not_interested','hard_no']);
+  const otros = [...new Set(repliesArr.map(e=>e.clasificacion||'').filter(c=>c&&!known.has(c)))];
+  if (otros.length) {
+    t1 += secHead('OTROS','#6B7280','rgba(107,114,128,.06)');
+    otros.forEach(c => { t1 += rowC(c,'#6B7280',c); });
+  }
+  // Total
+  const wTot = winOf(repliesArr);
+  t1 += '<tr style="border-top:2px solid var(--border,#2A3142);"><td style="font-weight:700;">TOTAL replies</td>'+winCell(wTot.hoy,'hoy','__ALL_REPLIES__',true)+winCell(wTot.d7,'d7','__ALL_REPLIES__',true)+winCell(wTot.d30,'d30','__ALL_REPLIES__',true)+winCell(wTot.d90,'d90','__ALL_REPLIES__',true)+winCell(wTot.total,'total','__ALL_REPLIES__',true)+'</tr>';
+  t1 += '</tbody></table></div>';
+
+  // Señales por producto
+  const headS = '<thead><tr><th style="width:34%;">PRODUCTO</th><th style="text-align:center;width:13.2%;">HOY</th><th style="text-align:center;width:13.2%;">7D</th><th style="text-align:center;width:13.2%;">30D</th><th style="text-align:center;width:13.2%;">90D</th><th style="text-align:center;width:13.2%;">TOTAL</th></tr></thead>';
+  const winCellP = (n, win, prod, bold) => {
+    const s = bold ? 'font-weight:700;' : '';
+    if (n > 0) return '<td class="pcell" data-ptype="prod" data-pval="'+encodeURIComponent(prod)+'" data-pwin="'+win+'" style="text-align:center;'+s+'cursor:pointer;">'+n+'</td>';
+    return '<td style="text-align:center;color:var(--text-mute,#6B7280);'+s+'">'+n+'</td>';
+  };
+  let t2 = '<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;">'+headS+'<tbody>';
+  const prodsSen = [...new Set(senalesArr.map(e=>e.producto||'(sin producto)'))].sort();
+  prodsSen.forEach(p => {
+    const sub = senalesArr.filter(e=>(e.producto||'(sin producto)')===p);
+    const w = winOf(sub);
+    t2 += '<tr><td style="font-weight:600;">'+p+'</td>'+winCellP(w.hoy,'hoy',p,false)+winCellP(w.d7,'d7',p,false)+winCellP(w.d30,'d30',p,false)+winCellP(w.d90,'d90',p,false)+winCellP(w.total,'total',p,true)+'</tr>';
+  });
+  const wS = winOf(senalesArr);
+  t2 += '<tr style="border-top:2px solid var(--border,#2A3142);"><td style="font-weight:700;">TOTAL señales</td>'+winCellP(wS.hoy,'hoy','__ALL_SENALES__',true)+winCellP(wS.d7,'d7','__ALL_SENALES__',true)+winCellP(wS.d30,'d30','__ALL_SENALES__',true)+winCellP(wS.d90,'d90','__ALL_SENALES__',true)+winCellP(wS.total,'total','__ALL_SENALES__',true)+'</tr>';
+  t2 += '</tbody></table></div>';
+
+  // Oportunidades HubSpot por etapa
+  const ETAPAS = [
+    {id:'1332596061',l:'Señal detectada',col:'#EF4444'},{id:'1332596062',l:'Reply recibido',col:'#EF4444'},
+    {id:'1332596063',l:'Contactado',col:'#EF4444'},{id:'1332596064',l:'En conversación',col:'#F59E0B'},
+    {id:'appointmentscheduled',l:'Atracción (1ª reunión)',col:'#10B981',venta:true},
+    {id:'qualifiedtobuy',l:'Educación',col:'#10B981',venta:true},
+    {id:'presentationscheduled',l:'Propuesta enviada',col:'#10B981',venta:true},
+    {id:'decisionmakerboughtin',l:'Aprobación verbal',col:'#10B981',venta:true},
+    {id:'contractsent',l:'Contrato enviado',col:'#10B981',venta:true},
+    {id:'closedwon',l:'Closed Won',col:'#10B981',venta:true}
+  ];
+  const stageCts = {};
+  deals.forEach(d => {
+    const st = d.stage||'';
+    if (!stageCts[st]) stageCts[st]={hoy:0,d7:0,d30:0,d90:0,total:0};
+    const w=stageCts[st]; w.total++;
+    const age=proAgeDays(d.createdate);
+    if(age!==null){if(age<=0)w.hoy++;if(age<=7)w.d7++;if(age<=30)w.d30++;if(age<=90)w.d90++;}
+  });
+  let dealHtml = '<div class="section"><div class="section-title">Oportunidades en HubSpot por etapa</div>'+
+    '<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;"><thead><tr><th style="width:34%;">ETAPA</th><th style="text-align:center;">HOY</th><th style="text-align:center;">7D</th><th style="text-align:center;">30D</th><th style="text-align:center;">90D</th><th style="text-align:center;">TOTAL</th></tr></thead><tbody>';
+  let venta=false;
+  ETAPAS.forEach(st=>{
+    if(st.venta&&!venta){dealHtml+='<tr><td colspan="6" style="font-size:10px;font-weight:800;letter-spacing:.1em;color:#10B981;padding:6px 12px;border-top:2px solid #10B981;">PASA A VENTA</td></tr>';venta=true;}
+    const w=stageCts[st.id]||{hoy:0,d7:0,d30:0,d90:0,total:0};
+    dealHtml+='<tr><td>'+dot(st.col)+(st.venta?'<span style="color:'+st.col+';font-weight:600;">'+st.l+'</span>':st.l)+'</td><td style="text-align:center;">'+w.hoy+'</td><td style="text-align:center;">'+w.d7+'</td><td style="text-align:center;">'+w.d30+'</td><td style="text-align:center;">'+w.d90+'</td><td style="text-align:center;font-weight:700;">'+w.total+'</td></tr>';
+  });
+  dealHtml+='</tbody></table></div></div>';
+
+  // Render final
+  const prodLbl = prodSel==='ALL'?'todos los productos':prodSel;
+  cont.innerHTML =
+    '<div class="section">'+
+      '<div class="section-title">Inventario de prospección</div>'+
+      '<div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Cuántos han llegado, acumulado por ventana de tiempo. Los 30 días incluyen los de 7 y los de hoy. Fuente: tabla de eventos (los 3 tenants), no HubSpot.</div>'+
+      chips+
+      '<div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad</div>'+
+      '<div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Ordenados por prioridad de atención: verde = atender ya, amarillo = pendiente/retomar, rojo = descartado. Toca un número para ver el detalle.</div>'+
+      t1+
+      '<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto</div>'+
+      t2+
+      '<div id="prosp-detalle" style="margin-top:16px;"></div>'+
+    '</div>'+
+    dealHtml;
+
+  // Event listeners
+  cont.querySelectorAll('[data-prospfilter]').forEach(btn=>{
+    btn.addEventListener('click',()=>{ prospProducto=btn.dataset.prospfilter; renderProspeccion(); });
+  });
+  cont.querySelectorAll('.pcell').forEach(td=>{
+    td.addEventListener('click',()=>{
+      renderProspDetalle(td.dataset.ptype, decodeURIComponent(td.dataset.pval), td.dataset.pwin);
+    });
+  });
+}
+
+function renderAmplemarketDrilldown() {
+  const container = document.getElementById('am-drilldown');
+  if (!container) return;
+  
+  if (!amDrilldown) {
+    container.innerHTML = '';
+    container.style.display = 'none';
+    return;
+  }
+  
+  container.style.display = 'block';
+  
+  if (amDrilldown === 'meetings') container.innerHTML = renderMeetingsDrilldown();
+  else if (amDrilldown === 'replies') container.innerHTML = renderRepliesDrilldown();
+  else if (amDrilldown === 'openplus3') container.innerHTML = renderOpenPlus3Drilldown();
+  else if (amDrilldown === 'duogenerated') container.innerHTML = renderDuoGeneratedDrilldown();
+  
+  // Update KPI active states
+  document.querySelectorAll('[data-am-kpi]').forEach(el => {
+    const isActive = el.dataset.amKpi === amDrilldown;
+    el.style.boxShadow = isActive ? '0 0 0 2px var(--purple)' : '';
+  });
+}
+
+function drilldownHeader(title, color) {
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+      <div style="font-size:16px;font-weight:700;color:${color || 'var(--text)'}">${title}</div>
+      <button onclick="toggleAmDrilldown(null)" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer" onmouseover="this.style.color='var(--text)';this.style.background='var(--bg-3)'" onmouseout="this.style.color='var(--text-dim)';this.style.background='transparent'">Cerrar ✕</button>
+    </div>
+  `;
+}
+
+function renderMeetingsDrilldown() {
+  const am = AM_DATA;
+  const meetings = am.meetingsDetail || [];
+  if (meetings.length === 0) {
+    return `<div class="section">${drilldownHeader('🎯 Reuniones agendadas', 'var(--mint)')}<div style="padding:20px;color:var(--text-dim);text-align:center">No hay detalle disponible.</div></div>`;
+  }
+  
+  const byProducto = {};
+  meetings.forEach(m => {
+    const key = m.producto;
+    if (!byProducto[key]) byProducto[key] = { SEQ: 0, DUO: 0 };
+    byProducto[key][m.canal]++;
+  });
+  
+  let summary = '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">';
+  Object.keys(byProducto).sort().forEach(prod => {
+    const v = byProducto[prod];
+    summary += `<span style="background:var(--bg-3);border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;color:var(--text)"><strong>${prod}</strong>: ${v.SEQ + v.DUO} <span style="color:var(--text-dim)">(${v.SEQ} SEQ · ${v.DUO} DUO)</span></span>`;
+  });
+  summary += '</div>';
+  
+  let html = `<div class="section" style="border-left:3px solid var(--mint)">${drilldownHeader(`🎯 Reuniones agendadas — ${meetings.length} en últimos 30 días`, 'var(--mint)')}` + summary;
+  html += `<div style="overflow-x:auto"><table class="tbl">
+    <thead>
+      <tr><th>Fecha</th><th>Empresa</th><th>Contacto</th><th>Cargo</th><th>Producto</th><th>Canal</th><th>Secuencia</th></tr>
+    </thead>
+    <tbody>`;
+  meetings.forEach(m => {
+    const canalColor = m.canal === 'SEQ' ? 'var(--mint)' : 'var(--purple)';
+    html += `<tr>
+      <td style="color:var(--text-dim);font-size:12px;white-space:nowrap">${fmtDate(m.date)}</td>
+      <td style="font-weight:600;color:var(--text)">${m.company}</td>
+      <td style="color:var(--text)">${m.name}</td>
+      <td style="color:var(--text-dim);font-size:12px">${m.title}</td>
+      <td style="color:var(--text);font-weight:700">${m.producto}</td>
+      <td style="color:${canalColor};font-weight:600">${m.canal === 'SEQ' ? '📋 SEQ' : '🔮 DUO'}</td>
+      <td style="color:var(--text-dim);font-size:11px">${(m.sequence || '').trim()}</td>
+    </tr>`;
+  });
+  html += '</tbody></table></div></div>';
+  return html;
+}
+
+function renderRepliesDrilldown() {
+  const am = AM_DATA;
+  const replies = am.repliesDetail || [];
+  if (replies.length === 0) {
+    return `<div class="section">${drilldownHeader('💬 Respuestas', 'var(--cyan)')}<div style="padding:20px;color:var(--text-dim);text-align:center">No hay detalle disponible.</div></div>`;
+  }
+  
+  const byTag = {};
+  replies.forEach(r => {
+    const tag = r.tag || 'unknown';
+    byTag[tag] = (byTag[tag] || 0) + 1;
+  });
+  
+  let summary = '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">';
+  Object.entries(byTag).sort((a,b) => b[1]-a[1]).forEach(([tag, cnt]) => {
+    const st = REPLY_TAG_STYLES[tag] || REPLY_TAG_STYLES.unknown;
+    summary += `<span style="background:var(--bg-3);border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;color:${st.color}"><strong>${cnt}</strong> ${st.label}</span>`;
+  });
+  summary += '</div>';
+  
+  const completeness = replies.length >= am.kpis.replies 
+    ? `<div style="background:var(--bg-3);border:1px solid var(--border);border-left:3px solid var(--mint);padding:8px 12px;margin-bottom:12px;border-radius:6px;font-size:12px;color:var(--text-dim)">✅ Mostrando los <strong style="color:var(--text)">${replies.length}</strong> replies completos del último mes.</div>`
+    : `<div style="background:var(--bg-3);border:1px solid var(--border);border-left:3px solid var(--yellow);padding:8px 12px;margin-bottom:12px;border-radius:6px;font-size:12px;color:var(--text-dim)">⚠️ Mostrando <strong style="color:var(--text)">${replies.length}</strong> de <strong style="color:var(--text)">${am.kpis.replies}</strong> replies. Pide actualizar Amplemarket para traer todos.</div>`;
+  
+  let html = `<div class="section" style="border-left:3px solid var(--cyan)">${drilldownHeader(`💬 Replies — ${replies.length} de ${am.kpis.replies}`, 'var(--cyan)')}` + summary + completeness;
+  html += `<div style="overflow-x:auto"><table class="tbl">
+    <thead>
+      <tr><th>Fecha</th><th>Empresa</th><th>Contacto</th><th>Cargo</th><th>Producto</th><th>Canal</th><th>Clasificación</th></tr>
+    </thead>
+    <tbody>`;
+  replies.forEach(r => {
+    const st = REPLY_TAG_STYLES[r.tag] || REPLY_TAG_STYLES.unknown;
+    const canalColor = r.canal === 'SEQ' ? 'var(--mint)' : 'var(--purple)';
+    html += `<tr>
+      <td style="color:var(--text-dim);font-size:12px;white-space:nowrap">${fmtDate(r.date)}</td>
+      <td style="font-weight:600;color:var(--text)">${r.company || '—'}</td>
+      <td style="color:var(--text)">${r.name || '—'}</td>
+      <td style="color:var(--text-dim);font-size:12px">${r.title || '—'}</td>
+      <td style="color:var(--text);font-weight:700">${r.producto}</td>
+      <td style="color:${canalColor};font-weight:600;font-size:12px">${r.canal === 'SEQ' ? '📋' : '🔮'} ${r.canal}</td>
+      <td style="color:${st.color};font-weight:600;font-size:12px">${st.label}</td>
+    </tr>`;
+  });
+  html += '</tbody></table></div></div>';
+  return html;
+}
+
+function renderOpenPlus3Drilldown() {
+  const am = AM_DATA;
+  const breakdown = am.openPlus3Breakdown || [];
+  if (breakdown.length === 0) {
+    return `<div class="section">${drilldownHeader('📨 Open+3 (engaged)', 'var(--yellow)')}<div style="padding:20px;color:var(--text-dim);text-align:center">No hay detalle disponible.</div></div>`;
+  }
+  
+  let html = `<div class="section" style="border-left:3px solid var(--yellow)">${drilldownHeader(`📨 Open+3 — ${am.kpis.openPlus3.toLocaleString()} leads engaged`, 'var(--yellow)')}
+    <div style="background:var(--bg-3);border:1px solid var(--border);padding:10px 14px;margin-bottom:14px;border-radius:6px;font-size:12px;color:var(--text-dim)">
+      📨 <strong style="color:var(--text)">Open+3</strong> = leads en secuencias con tasa de apertura mayor a 60%. Estos son los leads más comprometidos: abrieron al menos 1 email y la secuencia tiene engagement alto.
+    </div>
+    <div style="overflow-x:auto"><table class="tbl">
+      <thead>
+        <tr><th>Producto</th><th>Secuencia</th><th class="num">Leads</th><th class="num">Opens</th><th class="num">Open Rate</th></tr>
+      </thead>
+      <tbody>`;
+  breakdown.forEach(b => {
+    html += `<tr>
+      <td style="font-weight:700;color:var(--text)">${b.producto}</td>
+      <td style="color:var(--text-dim);font-size:12px">${b.secuencia.trim()}</td>
+      <td class="num">${fmtNum(b.leads)}</td>
+      <td class="num">${fmtNum(b.opens)}</td>
+      <td class="num" style="color:var(--mint);font-weight:600">${fmtPct(b.openRate)}</td>
+    </tr>`;
+  });
+  html += '</tbody></table></div></div>';
+  return html;
+}
+
+function renderDuoGeneratedDrilldown() {
+  const am = AM_DATA;
+  const breakdown = am.duoBreakdown || [];
+  if (breakdown.length === 0) {
+    return `<div class="section">${drilldownHeader('🔮 DUO Generated', 'var(--purple)')}<div style="padding:20px;color:var(--text-dim);text-align:center">No hay detalle disponible.</div></div>`;
+  }
+  
+  let html = `<div class="section" style="border-left:3px solid var(--purple)">${drilldownHeader(`🔮 DUO Generated — ${am.kpis.duoGenerated.toLocaleString()} señales`, 'var(--purple)')}
+    <div style="background:var(--bg-3);border:1px solid var(--border);padding:10px 14px;margin-bottom:14px;border-radius:6px;font-size:12px;color:var(--text-dim)">
+      🔮 <strong style="color:var(--text)">DuoCopilot</strong> detecta señales (job changes, posts, job openings, etc.) y las propone para secuenciar automáticamente. Funnel: Generated → Sequenced → Replies → Meetings.
+    </div>
+    <div style="overflow-x:auto"><table class="tbl">
+      <thead>
+        <tr><th>Producto</th><th>Señal</th><th class="num">Generated</th><th class="num">Sequenced</th><th class="num">Seq%</th><th class="num">Replies</th><th class="num">Mtgs</th></tr>
+      </thead>
+      <tbody>`;
+  breakdown.forEach(b => {
+    const seqRate = b.generated > 0 ? b.sequenced / b.generated : 0;
+    html += `<tr>
+      <td style="font-weight:700;color:var(--text)">${b.producto}</td>
+      <td style="color:var(--text-dim);font-size:12px">${b.signal}</td>
+      <td class="num">${fmtNum(b.generated)}</td>
+      <td class="num">${fmtNum(b.sequenced)}</td>
+      <td class="num" style="${seqRate>=0.9?'color:var(--mint);font-weight:600':seqRate<0.5?'color:var(--red)':''}">${fmtPct(seqRate)}</td>
+      <td class="num">${b.replies || 0}</td>
+      <td class="num" style="${b.meetings>0?'color:var(--purple);font-weight:700':''}">${b.meetings || 0}</td>
+    </tr>`;
+  });
+  html += '</tbody></table></div></div>';
+  return html;
+}
+
+// === RENDER PRINCIPAL ===
+// ====== PESTAÑA PROSPECCIÓN (embudo + señales) ======
+const PROSPECT_STAGES = [
+  { id: '1332596061', label: 'Señal', prob: 5 },
+  { id: '1332596062', label: 'Reply', prob: 10 },
+  { id: '1332596063', label: 'Contactado', prob: 15 },
+  { id: '1332596064', label: 'En Conversación', prob: 20 }
+];
+const BENCH = { open: 0.50, reply: 0.03, duoSeq: 0.80 };
+
+function proAgeDays(ds) {
+  if (!ds) return null;
+  const t = new Date(String(ds).slice(0, 10) + 'T00:00:00');
+  if (isNaN(t.getTime())) return null;
+  return Math.floor((Date.now() - t.getTime()) / 86400000);
+}
+
+function pPct(x) { return ((x || 0) * 100).toFixed(1) + '%'; }
+function pNum(n) { return (n || 0).toLocaleString('es-MX'); }
+function pMoney(n) { return '$' + Math.round(n || 0).toLocaleString('es-MX'); }
+function semaforo(val, bench) { return val >= bench ? 'var(--mint,#34d399)' : (val >= bench * 0.6 ? 'var(--yellow,#fbbf24)' : 'var(--red,#f87171)'); }
+
+function funnelRow(steps) {
+  let h = '<div style="display:flex;gap:8px;align-items:stretch;overflow-x:auto;">';
+  steps.forEach((s, i) => {
+    if (i > 0) h += '<div style="display:flex;align-items:center;color:var(--text-mute);font-size:16px;padding:0 2px;">→</div>';
+    h += '<div style="flex:1;min-width:110px;background:var(--bg-3,#1a1d24);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;">' +
+      '<div style="font-size:11px;color:var(--text-dim);">' + s.label + '</div>' +
+      '<div style="font-size:24px;font-weight:700;color:' + (s.color || 'var(--text)') + ';">' + s.val + '</div>' +
+      (s.sub ? '<div style="font-size:11px;color:var(--text-mute);">' + s.sub + '</div>' : '') +
+      (s.bench ? '<div style="font-size:10px;color:var(--text-mute);">' + s.bench + '</div>' : '') +
+      '</div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+function renderProspeccion() {
+  const deals = (DATA && DATA.deals) || [];
+  const PEV = (PROSPECCION_DATA && Array.isArray(PROSPECCION_DATA.eventos)) ? PROSPECCION_DATA.eventos : null;
 
   // --- Normalizacion de producto (REA Sec 3.1) ---
   function normProd(p) {
