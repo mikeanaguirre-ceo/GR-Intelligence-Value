@@ -3352,6 +3352,7 @@ function renderProspDetalle(ptype, pval, pwin) {
     return '<span class="pv4-badge" style="background:'+FB[f]+';color:'+FC[f]+';border:1px solid '+FR[f]+';">'+esc(et)+'</span>';
   }
   function liPerHref(e) {
+    if (e.linkedin_persona && e.linkedin_persona.startsWith('http')) return e.linkedin_persona;
     return 'https://www.linkedin.com/search/results/people/?keywords='+encodeURIComponent((e.prospecto||'')+' '+(e.empresa||''));
   }
   function liEmpHref(e) {
@@ -3438,7 +3439,7 @@ function openProspModal(ek){
     e.industria?e.industria.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()):'',
     e.empleados?e.empleados+' empleados':''
   ].filter(Boolean).join(' · ');
-  const liPerUrl = 'https://www.linkedin.com/search/results/people/?keywords='+encodeURIComponent((e.prospecto||'')+' '+(e.empresa||''));
+  const liPerUrl = (e.linkedin_persona && e.linkedin_persona.startsWith('http')) ? e.linkedin_persona : 'https://www.linkedin.com/search/results/people/?keywords='+encodeURIComponent((e.prospecto||'')+' '+(e.empresa||''));
   const liEmpUrl = e.linkedin_empresa || ('https://www.linkedin.com/search/results/companies/?keywords='+encodeURIComponent(e.empresa||''));
   const webUrl   = e.web || '';
   const msg      = e.mensaje || '';
