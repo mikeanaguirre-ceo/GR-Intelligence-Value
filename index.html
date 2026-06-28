@@ -870,11 +870,13 @@ function tagForStage(stage, stageLabel) {
 async function loadData() {
   try {
     // Fetch principal v10 + AM v1 en paralelo
-    const [dealsRes, amRes, prospRes] = await Promise.all([
+    // Prospección carga en paralelo pero NO bloquea el dashboard principal
+    const prospPromise = fetch(PROSPECCION_URL).catch(e => { console.warn('Prospeccion endpoint failed:', e); return null; });
+    const [dealsRes, amRes] = await Promise.all([
       fetch(DATA_URL),
-      fetch(AM_URL + '?period=' + amPeriod).catch(e => { console.warn('AM endpoint failed:', e); return null; }),
-      fetch(PROSPECCION_URL).catch(e => { console.warn('Prospeccion endpoint failed:', e); return null; })
+      fetch(AM_URL + '?period=' + amPeriod).catch(e => { console.warn('AM endpoint failed:', e); return null; })
     ]);
+    const prospRes = await prospPromise.catch(e => null);
 
     if (!dealsRes.ok) throw new Error('HTTP ' + dealsRes.status);
     
