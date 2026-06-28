@@ -3020,7 +3020,8 @@ function renderProspeccion() {
 
   // --- Lo que se ha generado (HubSpot) ---
   const counts = {};
-  (PROSPECT_STAGES || []).forEach(s => counts[s.id] = { n: 0, monto: 0 });
+  // conteos por etapa usando PROSPECT_STAGES global
+  (typeof PROSPECT_STAGES !== 'undefined' ? PROSPECT_STAGES : []).forEach(s => counts[s.id] = { n: 0, monto: 0 });
   deals.forEach(d => { if (counts[d.stage]) { counts[d.stage].n++; counts[d.stage].monto += (d.amount || 0); } });
 
   const gen = { senal: { hoy: 0, d7: 0, d30: 0 }, reply: { hoy: 0, d7: 0, d30: 0 } };
@@ -3188,7 +3189,7 @@ function renderProspeccion() {
     return (normProd(d.prod) || '') === prodSel;
   });
   // Etapas
-  const STAGE_GR = [
+  const STAGE_ETAPAS_GR = [
     {id:'1332596061',l:'Señal detectada',col:'#EF4444'},{id:'1332596062',l:'Reply recibido',col:'#EF4444'},
     {id:'1332596063',l:'Contactado',col:'#EF4444'},{id:'1332596064',l:'En conversación',col:'#F59E0B'},
     {id:'appointmentscheduled',l:'Atracción (1ª reunión)',col:'#10B981',venta:true},{id:'qualifiedtobuy',l:'Educación',col:'#10B981',venta:true},
@@ -3202,7 +3203,7 @@ function renderProspeccion() {
     '<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Etapas reales del pipeline (REA), por fecha de creación del deal. Mostrando: <strong style="color:var(--text);">' + prodLbl + '</strong>. La línea verde marca dónde la prospección pasa a Venta.</div>' +
     '<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;"><thead><tr><th style="width:34%;">ETAPA</th><th style="text-align:center;width:13.2%;">HOY</th><th style="text-align:center;width:13.2%;">7D</th><th style="text-align:center;width:13.2%;">30D</th><th style="text-align:center;width:13.2%;">90D</th><th style="text-align:center;width:13.2%;">TOTAL</th></tr></thead><tbody>';
   let pasaVenta = false;
-  STAGE_GR.forEach(st => {
+  STAGE_ETAPAS_GR.forEach(st => {
     if (st.venta && !pasaVenta) { dealHtml += '<tr><td colspan="6" style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#10B981;padding:7px 12px 3px;border-top:2px solid #10B981;">PASA A VENTA</td></tr>'; pasaVenta = true; }
     const w = stageCounts[st.id] || {hoy:0,d7:0,d30:0,d90:0,total:0};
     const lbl = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + st.col + ';margin-right:7px;vertical-align:middle;"></span><span style="' + (st.venta?'color:'+st.col+';font-weight:600;':'') + '">' + st.l + '</span>';
@@ -3426,24 +3427,6 @@ function renderDuoGeneratedDrilldown() {
   html += '</tbody></table></div></div>';
   return html;
 }
-
-// === RENDER PRINCIPAL ===
-// ====== PESTAÑA PROSPECCIÓN (embudo + señales) ======
-const PROSPECT_STAGES = [
-  { id: '1332596061', label: 'Señal', prob: 5 },
-  { id: '1332596062', label: 'Reply', prob: 10 },
-  { id: '1332596063', label: 'Contactado', prob: 15 },
-  { id: '1332596064', label: 'En Conversación', prob: 20 }
-];
-const BENCH = { open: 0.50, reply: 0.03, duoSeq: 0.80 };
-
-function proAgeDays(ds) {
-  if (!ds) return null;
-  const t = new Date(String(ds).slice(0, 10) + 'T00:00:00');
-  if (isNaN(t.getTime())) return null;
-  return Math.floor((Date.now() - t.getTime()) / 86400000);
-}
-
 function pPct(x) { return ((x || 0) * 100).toFixed(1) + '%'; }
 function pNum(n) { return (n || 0).toLocaleString('es-MX'); }
 function pMoney(n) { return '$' + Math.round(n || 0).toLocaleString('es-MX'); }
