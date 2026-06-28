@@ -3485,227 +3485,141 @@ function funnelRow(steps) {
 
 
 function renderProspDetalle(ptype, pval, pwin) {
-  /* CSS exacto del mockup v4 aprobado */
   if (!document.getElementById('pv4css')) {
-    const st = document.createElement('style');
-    st.id = 'pv4css';
-    st.textContent = `
-      .pv4-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:14px;}
-      .pv4-card{position:relative;background:#1E2433;border:1px solid #2A3142;border-radius:14px;padding:16px 16px 15px 18px;overflow:hidden;transition:border-color .15s;cursor:pointer;}
-      .pv4-card:hover{border-color:#3A4358;}
-      .pv4-accent{position:absolute;left:0;top:0;bottom:0;width:4px;}
-      .pv4-a-green{background:#10B981;} .pv4-a-yellow{background:#F59E0B;} .pv4-a-red{background:#EF4444;} .pv4-a-gray{background:#6B7280;}
-      .pv4-ctop{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
-      .pv4-co{font-size:17px;font-weight:800;line-height:1.15;color:#F3F4F6;}
-      .pv4-co a{color:inherit;text-decoration:none;border-bottom:1px dotted #6B7280;}
-      .pv4-sub{font-size:12px;color:#9CA3AF;margin-top:3px;}
-      .pv4-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;}
-      .pv4-b-green{background:rgba(16,185,129,.15);color:#10B981;border:1px solid rgba(16,185,129,.4);}
-      .pv4-b-yellow{background:rgba(245,158,11,.15);color:#F59E0B;border:1px solid rgba(245,158,11,.4);}
-      .pv4-b-red{background:rgba(239,68,68,.13);color:#EF4444;border:1px solid rgba(239,68,68,.4);}
-      .pv4-b-gray{background:#141827;color:#9CA3AF;border:1px solid #2A3142;}
-      .pv4-div{height:1px;background:#2A3142;margin:13px 0;}
-      .pv4-person{font-size:14.5px;font-weight:700;color:#F3F4F6;}
-      .pv4-role{font-size:12px;color:#9CA3AF;}
-      .pv4-quote{margin:12px 0;padding:9px 12px;border-left:3px solid #06B6D4;background:rgba(6,182,212,.06);border-radius:0 8px 8px 0;font-size:12.5px;color:#cbd5e1;font-style:italic;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-      .pv4-ql{display:block;font-style:normal;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#6B7280;margin-bottom:3px;}
-      .pv4-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:13px;}
-      .pv4-tg{font-size:11px;padding:2px 9px;border-radius:12px;border:1px solid #2A3142;color:#9CA3AF;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis;}
-      .pv4-tg.ch{border-color:#06B6D4;color:#06B6D4;}
-      .pv4-actions{display:flex;gap:7px;flex-wrap:wrap;}
-      .pv4-btn{flex:1;min-width:92px;text-align:center;text-decoration:none;padding:9px 8px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid #2A3142;background:transparent;color:#F3F4F6;display:inline-block;}
-      .pv4-btn.li{border-color:#06B6D4;color:#06B6D4;}
-      .pv4-btn.lic{border-color:#3b82f6;color:#93c5fd;}
-      .pv4-btn.det{border-color:#7C3AED;color:#c4b5fd;}
-      .pv4-funnel{display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid #2A3142;margin-bottom:16px;font-size:11px;}
-      .pv4-funnel div{flex:1;text-align:center;padding:8px 4px;font-weight:700;}
-      .pv4-f1{background:rgba(239,68,68,.16);color:#fca5a5;}
-      .pv4-f2{background:rgba(245,158,11,.16);color:#fcd34d;}
-      .pv4-f3{background:rgba(16,185,129,.16);color:#6ee7b7;}
-      .pv4-desc{font-size:12.5px;color:#cbd5e1;line-height:1.55;background:#1E2433;border:1px solid #2A3142;border-radius:10px;padding:11px 13px;margin:6px 0 14px;max-height:160px;overflow:auto;}
-      .pv4-mrow{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #2A3142;font-size:13px;}
-      .pv4-mrow .k{color:#9CA3AF;font-size:12px;}
-      .pv4-mrow .v{font-weight:600;text-align:right;}
-      .pv4-mrow .v a{color:#06B6D4;text-decoration:none;}
-    `;
+    var st=document.createElement('style'); st.id='pv4css';
+    st.textContent='.pv4-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;margin-top:12px;}.pv4-card{position:relative;background:#1E2433;border:1px solid #2A3142;border-radius:14px;padding:16px 16px 15px 18px;overflow:hidden;cursor:pointer;transition:border-color .15s;}.pv4-card:hover{border-color:#3A4358;}.pv4-accent{position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:14px 0 0 14px;}.pv4-co{font-size:17px;font-weight:800;color:#F3F4F6;line-height:1.15;}.pv4-sub{font-size:12px;color:#9CA3AF;margin-top:2px;}.pv4-div{height:1px;background:#2A3142;margin:12px 0;}.pv4-person{font-size:14px;font-weight:700;color:#F3F4F6;}.pv4-role{font-size:12px;color:#9CA3AF;}.pv4-quote{margin:10px 0;padding:9px 12px;border-left:3px solid #06B6D4;background:rgba(6,182,212,.06);border-radius:0 8px 8px 0;font-size:12px;color:#cbd5e1;font-style:italic;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}.pv4-ql{display:block;font-style:normal;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#6B7280;margin-bottom:3px;}.pv4-tags{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0 12px;}.pv4-tg{font-size:11px;padding:2px 8px;border-radius:12px;border:1px solid #2A3142;color:#9CA3AF;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;}.pv4-tg.ch{border-color:#06B6D4;color:#06B6D4;}.pv4-tg.prod{border-color:#7C3AED;color:#c4b5fd;}.pv4-actions{display:flex;gap:6px;flex-wrap:wrap;}.pv4-btn{flex:1;min-width:90px;text-align:center;text-decoration:none;padding:8px 6px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid #2A3142;background:transparent;color:#F3F4F6;display:inline-block;}.pv4-btn.li{border-color:#06B6D4;color:#06B6D4;}.pv4-btn.lc{border-color:#3b82f6;color:#93c5fd;}.pv4-btn.dt{border-color:#7C3AED;color:#c4b5fd;}.pv4-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;}.pv4-b-green{background:rgba(16,185,129,.15);color:#10B981;border:1px solid rgba(16,185,129,.4);}.pv4-b-yellow{background:rgba(245,158,11,.15);color:#F59E0B;border:1px solid rgba(245,158,11,.4);}.pv4-b-red{background:rgba(239,68,68,.13);color:#EF4444;border:1px solid rgba(239,68,68,.4);}.pv4-b-gray{background:#141827;color:#9CA3AF;border:1px solid #2A3142;}';
     document.head.appendChild(st);
   }
-
-  const box = document.getElementById('prosp-detalle');
-  if (!box) return;
-  const PEV = (PROSPECCION_DATA && Array.isArray(PROSPECCION_DATA.eventos)) ? PROSPECCION_DATA.eventos : [];
-  const prodSel = prospProducto;
-  const matchProd = (e) => prodSel === 'ALL' || (e.producto || '') === prodSel;
-  const now = new Date();
-  const inWin = (e) => {
-    const f = new Date(e.fecha || e.createdAt);
-    if (isNaN(f)) return pwin === 'total';
-    const age = Math.floor((now - f) / 86400000);
-    if (pwin === 'hoy') return age <= 0;
-    if (pwin === 'd7')  return age <= 7;
-    if (pwin === 'd30') return age <= 30;
-    if (pwin === 'd90') return age <= 90;
-    return true;
+  var box=document.getElementById('prosp-detalle'); if(!box) return;
+  var PEV=(PROSPECCION_DATA&&Array.isArray(PROSPECCION_DATA.eventos))?PROSPECCION_DATA.eventos:[];
+  var prodSel=prospProducto;
+  // matchFilt igual que renderProspeccion
+  var matchFilt=function(e){
+    if(prodSel==='ALL') return true;
+    if(prodSel==='GR')    return e.tenant==='GR';
+    if(prodSel==='STIL')  return e.tenant==='STIL';
+    if(prodSel==='IMMMU') return e.tenant==='IMMMU';
+    return (e.producto||'')===prodSel;
   };
-  let pool = PEV.filter(matchProd).filter(inWin);
-  let titulo = '';
-  if (ptype === 'clas') {
-    pool = pool.filter(e => e.tipo !== 'open3');
-    if (pval !== '__ALL_REPLIES__') pool = pool.filter(e => (e.clasificacion || '') === pval);
-    titulo = pval === '__ALL_REPLIES__' ? 'Todos los replies' : pval;
+  var normClas=function(c){ return c==='asked_to_circle_back_later'?'circle_back':(c||''); };
+  var fmtLbl=function(s){ return String(s||'').split('_').map(function(w){return w.charAt(0).toUpperCase()+w.slice(1);}).join(' '); };
+  var nowP=new Date();
+  var inWin=function(e){
+    var f=new Date(e.fecha); if(isNaN(f)) return pwin==='total';
+    var age=Math.floor((nowP-f)/86400000);
+    if(pwin==='hoy') return age<=0; if(pwin==='d7') return age<=7;
+    if(pwin==='d30') return age<=30; if(pwin==='d90') return age<=90; return true;
+  };
+  var rel=function(iso){ var f=new Date(iso); if(isNaN(f)) return ''; var a=Math.floor((nowP-f)/86400000); if(a<=0)return 'hoy'; if(a===1)return 'ayer'; if(a<30)return 'hace '+a+'d'; return f.toLocaleDateString('es-MX',{day:'2-digit',month:'short'}); };
+
+  var pool=PEV.map(function(e){return Object.assign({},e,{clasificacion:normClas(e.clasificacion||'')});}).filter(function(e){return matchFilt(e)&&inWin(e);});
+  if(ptype==='clas'){
+    pool=pool.filter(function(e){return e.tipo!=='open3';});
+    if(pval!=='__ALL_REPLIES__') pool=pool.filter(function(e){return (e.clasificacion||'')===pval;});
   } else {
-    pool = pool.filter(e => e.tipo === 'open3');
-    if (pval !== '__ALL_SENALES__') pool = pool.filter(e => (e.producto || '(sin producto)') === pval);
-    titulo = 'Open+3 · ' + (pval === '__ALL_SENALES__' ? 'todos los productos' : pval);
+    pool=pool.filter(function(e){return e.tipo==='open3';});
+    if(pval!=='__ALL_SENALES__') pool=pool.filter(function(e){return (e.producto||'(sin producto)')===pval;});
   }
-  pool.sort((a, b) => new Date(b.fecha || b.createdAt) - new Date(a.fecha || a.createdAt));
-  const winLbl = { hoy: 'Hoy', d7: '7d', d30: '30d', d90: '90d', total: 'Total' }[pwin] || pwin;
-  const PORT = { GR: '49671716', GR_PT: '49671716', STIL: '51496709', IMMMU: '51496709' };
-  const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const rel = (iso) => {
-    const f = new Date(iso); if (isNaN(f)) return '';
-    const a = Math.floor((now - f) / 86400000);
-    if (a <= 0) return 'hoy'; if (a === 1) return 'ayer';
-    if (a < 30) return 'hace ' + a + 'd';
-    return f.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
-  };
+  pool.sort(function(a,b){return new Date(b.fecha)-new Date(a.fecha);});
+  var winLbl={hoy:'Hoy',d7:'7d',d30:'30d',d90:'90d',total:'Total'}[pwin]||pwin;
+  var titulo=ptype==='clas'?(pval==='__ALL_REPLIES__'?'Todos los replies':fmtLbl(pval)):('Open+3 · '+(pval==='__ALL_SENALES__'?'todos':pval));
 
-  function fase(et) {
-    if (!et) return 'gray';
-    if (/Ganada/i.test(et)) return 'green';
-    if (/Perdida/i.test(et)) return 'gray';
-    if (/Atracci|Educaci|Propuesta|Aprobaci|Contract|Reunion|Renovaci/i.test(et)) return 'green';
-    if (/Conversaci/i.test(et)) return 'yellow';
-    return 'red';
-  }
-  function etBadge(et) { return '<span class="pv4-badge pv4-b-'+fase(et)+'">'+esc(et)+'</span>'; }
-  function liPerHref(e) {
-    if (e.linkedin_persona && e.linkedin_persona.startsWith('http')) return e.linkedin_persona;
-    return 'https://www.linkedin.com/search/results/people/?keywords='+encodeURIComponent((e.prospecto||'')+' '+(e.empresa||''));
-  }
+  var fase=function(et){if(!et)return'gray';if(/Ganada/i.test(et))return'green';if(/Perdida/i.test(et))return'gray';if(/Atracci|Educaci|Propuesta|Aprobaci|Contract|Reunion|Renovaci/i.test(et))return'green';if(/Conversaci/i.test(et))return'yellow';return'red';};
+  var FC={green:'#10B981',yellow:'#F59E0B',red:'#EF4444',gray:'#6B7280'};
+  var etBadge=function(et){var f=fase(et);return '<span class="pv4-badge pv4-b-'+f+'">'+et+'</span>';};
+  var liPerHref=function(e){return (e.linkedin_persona&&e.linkedin_persona.indexOf('http')===0)?e.linkedin_persona:'https://www.linkedin.com/search/results/people/?keywords='+encodeURIComponent((e.prospecto||'')+' '+(e.empresa||''));};
+  var liEmpHref=function(e){return (e.linkedin_empresa&&e.linkedin_empresa.indexOf('http')===0)?e.linkedin_empresa:'https://www.linkedin.com/search/results/companies/?keywords='+encodeURIComponent(e.empresa||'');};
+  var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');};
 
-  let h = '<div style="display:flex;align-items:baseline;gap:10px;margin:2px 0 16px;">'+
-    '<span style="font-size:14px;font-weight:800;">'+esc(titulo)+'</span>'+
-    '<span style="font-size:12px;color:#9CA3AF;">'+winLbl+(prodSel!=='ALL'?' · '+esc(prodSel):'')+' ('+pool.length+' contactos)</span>'+
-    '</div>';
-
-  h += '<div class="pv4-funnel"><div class="pv4-f1">Señal · Contactado</div><div class="pv4-f1">Reply recibido</div><div class="pv4-f2">En conversación</div><div class="pv4-f3">★ Cita hecha (Atracción)</div><div class="pv4-f3">Educación · Propuesta</div><div class="pv4-f3">Ganada</div></div>';
-
-  if (!pool.length) {
-    box.innerHTML = h + '<div style="font-size:12px;color:#9CA3AF;">Sin contactos en esta intersección.</div>';
-    box.scrollIntoView({behavior:'smooth',block:'nearest'}); return;
-  }
-
-  // Guardar pool global para modal
-  window.__pv4pool = pool;
-
-  h += '<div class="pv4-grid">';
-  pool.forEach((e, i) => {
-    const f = fase(e.etapa || '');
-    const sub = [
-      e.industria ? e.industria.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()) : '',
-      e.empleados ? e.empleados + ' empleados' : ''
-    ].filter(Boolean).join(' · ');
-    const coHtml = e.web
-      ? '<a href="'+esc(e.web)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+esc(e.empresa||'—')+'</a>'
-      : esc(e.empresa||'—');
-    const liEmp = e.linkedin_empresa || '';
-    const msg = e.mensaje || '';
-    const fecha = e.fecha || e.createdAt || '';
-
-    h += '<div class="pv4-card" onclick="openProspModal('+i+')">' +
-      '<div class="pv4-accent pv4-a-'+f+'"></div>' +
-      '<div class="pv4-ctop">'+
-        '<div><div class="pv4-co">'+coHtml+'</div>'+(sub?'<div class="pv4-sub">'+esc(sub)+'</div>':'')+'</div>'+
-        (e.etapa ? etBadge(e.etapa) : '') +
+  window.__pv4pool=pool;
+  var h='<div style="display:flex;align-items:baseline;gap:8px;margin:0 0 14px;"><span style="font-size:14px;font-weight:800;">'+esc(titulo)+'</span><span style="font-size:12px;color:#9CA3AF;">'+winLbl+(prodSel!=='ALL'?' · '+esc(prodSel):'')+' ('+pool.length+')</span></div>';
+  if(!pool.length){box.innerHTML=h+'<div style="font-size:12px;color:#9CA3AF;padding:12px 0;">Sin contactos en esta intersección para el filtro activo ('+esc(prodSel)+').</div>';box.scrollIntoView({behavior:'smooth',block:'nearest'});return;}
+  h+='<div class="pv4-grid">';
+  pool.forEach(function(e,i){
+    var f=fase(e.etapa||''); var acent=FC[f];
+    var msg=e.mensaje||'';
+    var fecha=e.fecha||'';
+    var sub=[e.industria?e.industria.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,function(c){return c.toUpperCase();}):'',(e.empleados?e.empleados+' emp.':'')].filter(Boolean).join(' · ');
+    h+='<div class="pv4-card" onclick="openProspModal('+i+')" style="">'+
+      '<div class="pv4-accent" style="background:'+acent+'"></div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'+
+        '<div><div class="pv4-co">'+esc(e.empresa||'—')+'</div>'+(sub?'<div class="pv4-sub">'+esc(sub)+'</div>':'')+'</div>'+
+        (e.etapa?etBadge(e.etapa):'')+
       '</div>'+
       '<div class="pv4-div"></div>'+
       '<div class="pv4-person">'+esc(e.prospecto||'—')+'</div>'+
       '<div class="pv4-role">'+esc(e.puesto||'—')+'</div>'+
-      (msg
-        ? '<div class="pv4-quote"><span class="pv4-ql">Último mensaje</span>'+esc(msg)+'</div>'
-        : '<div style="height:10px;"></div>')+
+      (msg?'<div class="pv4-quote"><span class="pv4-ql">Último mensaje</span>'+esc(msg)+'</div>':'<div style="height:8px;"></div>')+
       '<div class="pv4-tags">'+
         '<span class="pv4-tg">'+esc(e.tenant||'')+'</span>'+
-        (e.canal ? '<span class="pv4-tg ch">'+esc(e.canal)+'</span>' : '')+
-        (e.campana ? '<span class="pv4-tg" title="'+esc(e.campana)+'">'+esc(e.campana)+'</span>' : '')+
-        (fecha ? '<span class="pv4-tg">'+rel(fecha)+'</span>' : '')+
+        (e.canal?'<span class="pv4-tg ch">'+esc(e.canal)+'</span>':'')+
+        (e.producto?'<span class="pv4-tg prod">'+esc(e.producto)+'</span>':'')+
+        (e.campana?'<span class="pv4-tg" title="'+esc(e.campana)+'">'+esc(e.campana)+'</span>':'')+
+        (fecha?'<span class="pv4-tg">'+rel(fecha)+'</span>':'')+
       '</div>'+
       '<div class="pv4-actions">'+
         '<a class="pv4-btn li" href="'+liPerHref(e)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">in Persona ↗</a>'+
-        (liEmp ? '<a class="pv4-btn lic" href="'+esc(liEmp)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">in Empresa ↗</a>' : '')+
-        '<button class="pv4-btn det" onclick="event.stopPropagation();openProspModal('+i+')">Ver detalle</button>'+
+        '<a class="pv4-btn lc" href="'+liEmpHref(e)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">in Empresa ↗</a>'+
+        '<button class="pv4-btn dt" onclick="event.stopPropagation();openProspModal('+i+')">Ver detalle</button>'+
       '</div>'+
     '</div>';
   });
-  h += '</div>';
-  box.innerHTML = h;
-  box.scrollIntoView({behavior:'smooth',block:'nearest'});
+  h+='</div>';
+  box.innerHTML=h; box.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
 function closeProspModal(){ const ov=document.getElementById('prosp-modal'); if(ov) ov.remove(); }
 function openProspModal(i){
-  const pool = window.__pv4pool || [];
-  const e = (typeof i === 'number') ? pool[i] : pool.find(x=>String(x.event_key)===String(i));
+  var pool=window.__pv4pool||[];
+  var e=(typeof i==='number')?pool[i]:pool.find(function(x){return String(x.event_key)===String(i);});
   if(!e) return;
-  const PORT = {GR:'49671716',GR_PT:'49671716',STIL:'51496709',IMMMU:'51496709'};
-  const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  const portal = PORT[e.tenant]||'49671716';
-  const liPerUrl = (e.linkedin_persona&&e.linkedin_persona.startsWith('http')) ? e.linkedin_persona : 'https://www.linkedin.com/search/results/people/?keywords='+encodeURIComponent((e.prospecto||'')+' '+(e.empresa||''));
-  const liEmpUrl = e.linkedin_empresa || '';
-  const webUrl = e.web || '';
-  const msg = e.mensaje || '';
-  const fecha = e.fecha || e.createdAt || '';
-  const now = new Date();
-  const diasAtras = (iso) => { const f=new Date(iso); if(isNaN(f)) return '—'; const a=Math.floor((now-f)/86400000); return a<=0?'Hoy':a===1?'1 día de retraso':a+' días de retraso'; };
-  const fechaTxt = (()=>{ const f=new Date(fecha); return isNaN(f)?'—':f.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}); })();
-  const industLine = [
-    e.industria?e.industria.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()):'',
-    e.empleados?e.empleados+' empleados':''
-  ].filter(Boolean).join(' · ');
-  function fase(et){if(!et)return'gray';if(/Ganada/i.test(et))return'green';if(/Perdida/i.test(et))return'gray';if(/Atracci|Educaci|Propuesta|Aprobaci|Contract|Reunion|Renovaci/i.test(et))return'green';if(/Conversaci/i.test(et))return'yellow';return'red';}
-  function etBadge(et){return '<span class="pv4-badge pv4-b-'+fase(et)+'">'+esc(et)+'</span>';}
-  const mrow = (k,v,inner) => '<div class="pv4-mrow"><span class="k">'+k+'</span><span class="v">'+(inner||esc(v||'—'))+'</span></div>';
-  const abtn = (href,label,col) => href?'<a href="'+href+'" target="_blank" rel="noopener" style="flex:1;min-width:100px;text-align:center;text-decoration:none;padding:9px 6px;border-radius:9px;border:1px solid '+col+';color:'+col+';font-size:12px;font-weight:700;display:inline-block;">'+label+'</a>':'';
-  const webV = webUrl ? '<a href="'+esc(webUrl)+'" target="_blank" rel="noopener">'+esc(webUrl.replace(/^https?:\/\//,''))+'</a>' : '—';
-  const descBlock = e.descripcion
-    ? '<div class="pv4-desc"><span class="pv4-ql">Descripción de la empresa</span>'+esc(e.descripcion)+'</div>'
-    : '<div class="pv4-desc" style="color:#6B7280;font-style:italic;"><span class="pv4-ql">Descripción de la empresa</span>Pendiente de enriquecimiento.</div>';
-  const retraso = diasAtras(fecha);
-  const retrasoColor = (()=>{ const a=Math.floor((now-new Date(fecha))/86400000); return a>7?'#EF4444':'#F59E0B'; })();
-
-  const body =
+  var PORT={GR:'49671716',GR_PT:'49671716',STIL:'51496709',IMMMU:'51496709'};
+  var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
+  var portal=PORT[e.tenant]||'49671716';
+  var liPerUrl=(e.linkedin_persona&&e.linkedin_persona.indexOf('http')===0)?e.linkedin_persona:'https://www.linkedin.com/search/results/people/?keywords='+encodeURIComponent((e.prospecto||'')+' '+(e.empresa||''));
+  var liEmpUrl=(e.linkedin_empresa&&e.linkedin_empresa.indexOf('http')===0)?e.linkedin_empresa:'https://www.linkedin.com/search/results/companies/?keywords='+encodeURIComponent(e.empresa||'');
+  var webUrl=e.web||''; var msg=e.mensaje||''; var fecha=e.fecha||'';
+  var fmtLbl=function(s){return String(s||'').split('_').map(function(w){return w.charAt(0).toUpperCase()+w.slice(1);}).join(' ');};
+  var nowP=new Date();
+  var diasAtras=function(iso){var f=new Date(iso);if(isNaN(f))return '—';var a=Math.floor((nowP-f)/86400000);return a<=0?'Hoy':a===1?'1 día de retraso':a+' días de retraso';};
+  var fechaTxt=(function(){var f=new Date(fecha);return isNaN(f)?'—':f.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});})();
+  var industLine=[(e.industria?e.industria.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,function(c){return c.toUpperCase();}):''), (e.empleados?e.empleados+' empleados':'')].filter(Boolean).join(' · ');
+  var fase=function(et){if(!et)return'gray';if(/Ganada/i.test(et))return'green';if(/Perdida/i.test(et))return'gray';if(/Atracci|Educaci|Propuesta|Aprobaci|Contract|Reunion|Renovaci/i.test(et))return'green';if(/Conversaci/i.test(et))return'yellow';return'red';};
+  var FC={green:'#10B981',yellow:'#F59E0B',red:'#EF4444',gray:'#6B7280'};
+  var retraso=diasAtras(fecha);
+  var retroCol=(function(){var a=Math.floor((nowP-new Date(fecha))/86400000);return a>7?'#EF4444':'#F59E0B';})();
+  var mrow=function(k,v,inner){return '<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #2A3142;font-size:13px;"><span style="color:#9CA3AF;font-size:12px;">'+k+'</span><span style="font-weight:600;text-align:right;max-width:220px;">'+(inner||esc(v||'—'))+'</span></div>';};
+  var abtn=function(href,lbl,col){return href?'<a href="'+href+'" target="_blank" rel="noopener" style="flex:1;min-width:100px;text-align:center;text-decoration:none;padding:9px 6px;border-radius:9px;border:1px solid '+col+';color:'+col+';font-size:12px;font-weight:700;display:inline-block;">'+lbl+'</a>':'';};
+  var body=
     '<div style="font-size:19px;font-weight:800;color:#F3F4F6;line-height:1.15;">'+esc(e.empresa||'—')+'</div>'+
-    (industLine?'<div style="font-size:12px;color:#6B7280;margin:2px 0 12px;">'+esc(industLine)+'</div>':'')+
-    descBlock+
+    (industLine?'<div style="font-size:12px;color:#6B7280;margin:2px 0 10px;">'+esc(industLine)+'</div>':'')+
+    (e.descripcion?'<div style="font-size:12px;color:#cbd5e1;line-height:1.5;background:#1E2433;border:1px solid #2A3142;border-radius:10px;padding:10px 12px;margin:0 0 12px;max-height:120px;overflow:auto;"><span style="display:block;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#6B7280;margin-bottom:4px;">Descripción</span>'+esc(e.descripcion)+'</div>':'')+
     '<div style="font-size:14px;font-weight:700;color:#F3F4F6;">'+esc(e.prospecto||'—')+'</div>'+
-    (e.puesto?'<div style="font-size:12px;color:#9CA3AF;margin-bottom:12px;">'+esc(e.puesto)+'</div>':'')+
-    (msg?'<div class="pv4-quote" style="-webkit-line-clamp:initial;"><span class="pv4-ql">Último mensaje</span>'+esc(msg)+'</div>':'')+
+    (e.puesto?'<div style="font-size:12px;color:#9CA3AF;margin:2px 0 10px;">'+esc(e.puesto)+'</div>':'')+
+    (msg?'<div style="margin:10px 0;padding:9px 12px;border-left:3px solid #06B6D4;background:rgba(6,182,212,.06);border-radius:0 8px 8px 0;font-size:12px;color:#cbd5e1;font-style:italic;"><span style="display:block;font-style:normal;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#6B7280;margin-bottom:3px;">Último mensaje</span>'+esc(msg)+'</div>':'')+
     '<div style="margin:10px 0;">'+
-      mrow('Etapa','',etBadge(e.etapa||'—'))+
-      mrow('Clasificación',e.clasificacion)+
-      mrow('Web','',webV)+
+      mrow('Etapa','',(e.etapa?'<span style="background:'+FC[fase(e.etapa)]+'22;color:'+FC[fase(e.etapa)]+';padding:2px 8px;border-radius:12px;font-weight:700;">'+esc(e.etapa)+'</span>':'—'))+
+      mrow('Clasificación','',fmtLbl(e.clasificacion||''))+
+      mrow('Producto',e.producto)+
+      (webUrl?mrow('Web','','<a href="'+webUrl+'" target="_blank" style="color:#06B6D4;">'+esc(webUrl.replace(/^https?:\/\//,''))+'</a>'):'')+
       mrow('Campaña',e.campana)+
       mrow('Canal',e.canal)+
       mrow('Tenant',e.tenant)+
-      mrow('Sin respuesta','','<span style="color:'+retrasoColor+';">'+esc(retraso)+'</span>')+
+      mrow('Sin respuesta','','<span style="color:'+retroCol+';">'+esc(retraso)+'</span>')+
       mrow('Fecha',fechaTxt)+
     '</div>'+
     '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">'+
       abtn(liPerUrl,'in Persona ↗','#06B6D4')+
-      (liEmpUrl?abtn(liEmpUrl,'in Empresa ↗','#3b82f6'):'')+
+      abtn(liEmpUrl,'in Empresa ↗','#3b82f6')+
       (webUrl?abtn(webUrl,'Web ↗','#9CA3AF'):'')+
       (e.deal_id?abtn('https://app.hubspot.com/contacts/'+portal+'/record/0-3/'+e.deal_id,'HubSpot ↗','#10B981'):'')+
     '</div>';
-
-  let ov = document.getElementById('prosp-modal');
-  if(!ov){ ov=document.createElement('div'); ov.id='prosp-modal'; document.body.appendChild(ov); }
+  var ov=document.getElementById('prosp-modal');
+  if(!ov){ov=document.createElement('div');ov.id='prosp-modal';document.body.appendChild(ov);}
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px;';
-  ov.innerHTML='<div onclick="event.stopPropagation()" style="background:#141827;border:1px solid #2A3142;border-radius:16px;max-width:470px;width:100%;max-height:88vh;overflow:auto;padding:20px;position:relative;box-shadow:0 24px 70px rgba(0,0,0,.6);">'+
-    '<button onclick="closeProspModal()" style="position:absolute;top:10px;right:14px;background:none;border:none;color:#9CA3AF;font-size:26px;cursor:pointer;line-height:1;">&times;</button>'+
-    body+'</div>';
+  ov.innerHTML='<div onclick="event.stopPropagation()" style="background:#141827;border:1px solid #2A3142;border-radius:16px;max-width:470px;width:100%;max-height:88vh;overflow:auto;padding:20px;position:relative;box-shadow:0 24px 70px rgba(0,0,0,.6);"><button onclick="closeProspModal()" style="position:absolute;top:10px;right:14px;background:none;border:none;color:#9CA3AF;font-size:26px;cursor:pointer;line-height:1;">&times;</button>'+body+'</div>';
   ov.onclick=closeProspModal;
-  if(!window.__prospEsc){ window.__prospEsc=true; document.addEventListener('keydown',function(ev){ if(ev.key==='Escape') closeProspModal(); }); }
+  if(!window.__prospEsc){window.__prospEsc=true;document.addEventListener('keydown',function(ev){if(ev.key==='Escape')closeProspModal();});}
 }
 
 function renderAmplemarket() {
