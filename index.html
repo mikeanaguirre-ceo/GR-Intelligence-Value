@@ -3360,20 +3360,6 @@ function renderDuoGeneratedDrilldown() {
 
 // === RENDER PRINCIPAL ===
 // ====== PESTAÑA PROSPECCIÓN (embudo + señales) ======
-const PROSPECT_STAGES = [
-  { id: '1332596061', label: 'Señal', prob: 5 },
-  { id: '1332596062', label: 'Reply', prob: 10 },
-  { id: '1332596063', label: 'Contactado', prob: 15 },
-  { id: '1332596064', label: 'En Conversación', prob: 20 }
-];
-const BENCH = { open: 0.50, reply: 0.03, duoSeq: 0.80 };
-
-function proAgeDays(ds) {
-  if (!ds) return null;
-  const t = new Date(String(ds).slice(0, 10) + 'T00:00:00');
-  if (isNaN(t.getTime())) return null;
-  return Math.floor((Date.now() - t.getTime()) / 86400000);
-}
 
 function pPct(x) { return ((x || 0) * 100).toFixed(1) + '%'; }
 function pNum(n) { return (n || 0).toLocaleString('es-MX'); }
