@@ -1198,7 +1198,7 @@ function renderRecap() {
           <td><span class="tag tag-atraccion">${t.action}</span></td>
           <td><small>${t.title}</small></td>
           <td><small>${t.completedDate || '—'}</small></td>
-        <td style="text-align:center;"><button class="task-edit-btn" data-tid="${t.id||''}" data-did="${t.dealId||''}" data-oid="${t.ownerId||''}" data-client="${(t.client||'').replace(/\"/g,'&quot;')}" data-title="${(t.title||'').replace(/\"/g,'&quot;')}" data-completion-date="${t.completedDate||''}" title="Editar / reabrir" style="background:none;border:1px solid var(--border,#2a2d35);border-radius:6px;padding:3px 8px;color:var(--text-dim,#9ca3af);cursor:pointer;font-size:13px;">✏️</button></td>
+        <td style="text-align:center;"><button onclick="openRecapTask(encodeURIComponent('${(t.title||'').replace(/'/g,'')}'),'${(t.client||'').replace(/'/g,'')}','${t.completedDate||''}');event.stopPropagation();" title="Editar / reabrir" style="background:none;border:1px solid var(--border,#2a2d35);border-radius:6px;padding:3px 8px;color:var(--text-dim,#9ca3af);cursor:pointer;font-size:13px;">✏️</button></td>
         </tr>`;
       });
       if (tareas.length > 200) {
@@ -2111,6 +2111,34 @@ function setDateQuick(plusDays) {
 }
 
 // ---------- Modal ----------
+function openRecapTask(titleEncoded, clientEncoded, completionDate) {
+  var titleBtn = decodeURIComponent(titleEncoded).slice(0, 40);
+  var found = null;
+  if (TASKS && TASKS.tareas) {
+    Object.keys(TASKS.tareas).forEach(function(persona) {
+      if (!found) {
+        (TASKS.tareas[persona] || []).forEach(function(t) {
+          if (!found && titleBtn && (t.title||'').indexOf(titleBtn.slice(0,30)) >= 0)
+            found = Object.assign({}, t, { persona: persona });
+        });
+      }
+    });
+  }
+  if (found) {
+    openTaskEditor({
+      tid: found.id||'', did: (found.matchedDealIds && found.matchedDealIds[0])||'',
+      oid: found.ownerId||'', client: clientEncoded||found.client||'',
+      title: found.title||'', prod: found.prod||'', persona: found.persona||'',
+      date: found.date||'', stages: (found.dealStages||[]).join('|')
+    });
+  } else {
+    openTaskEditor({
+      tid:'', did:'', oid:'', client: clientEncoded||'',
+      title: decodeURIComponent(titleEncoded), completionDate: completionDate||''
+    });
+  }
+}
+
 function ensureTaskModal() {
   if (document.getElementById('task-modal')) return;
   const m = document.createElement('div');
