@@ -3102,7 +3102,14 @@ function renderProspeccion() {
   dh+='</tbody></table></div></div>';
   cont.innerHTML='<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Fuente: tabla de eventos (los 3 tenants), no HubSpot. Los 30d incluyen 7d y hoy.</div>'+chips+'<div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado. Toca un número para ver el detalle.</div>'+t1+'<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto</div>'+t2+'<div id="prosp-detalle" style="margin-top:16px;"></div></div>'+dh;
   cont.querySelectorAll('[data-prospfilter]').forEach(function(btn){ btn.addEventListener('click',function(){ prospProducto=btn.dataset.prospfilter; renderProspeccion(); }); });
-  cont.querySelectorAll('.pcell').forEach(function(td){ td.addEventListener('click',function(){ renderProspDetalle(td.dataset.ptype,decodeURIComponent(td.dataset.pval),td.dataset.pwin); }); });
+  cont.querySelectorAll('.pcell').forEach(function(td){ td.addEventListener('click',function(){
+    try {
+      renderProspDetalle(td.dataset.ptype,decodeURIComponent(td.dataset.pval),td.dataset.pwin);
+    } catch(err) {
+      var box=document.getElementById('prosp-detalle');
+      if(box) box.innerHTML='<div style="color:#ef4444;padding:12px;font-size:12px;">Error: '+err.message+'</div>';
+    }
+  }); });
 }
 function renderAmplemarketDrilldown() {
   const container = document.getElementById('am-drilldown');
