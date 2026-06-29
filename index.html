@@ -1192,15 +1192,36 @@ function renderRecap() {
       html += `<table class="tbl" style="margin-top:8px;">
         <thead><tr><th>Cliente</th><th>Producto</th><th>Acción</th><th>Tarea</th><th>Completada</th><th style="width:44px;"></th></tr></thead>
         <tbody>`;
-      tareas.slice(0, 200).forEach(t => {
-        html += `<tr>
-          <td>${t.client || '—'}</td>
-          <td><span class="tag">${t.prod}</span></td>
-          <td><span class="tag tag-atraccion">${t.action}</span></td>
-          <td><small>${t.title}</small></td>
-          <td><small>${t.completedDate || '—'}</small></td>
-<td style="text-align:center;"><button onclick="openRecapTask('${ti}')" title="Editar" style="background:none;border:1px solid var(--border,#2a2d35);border-radius:6px;padding:3px 8px;color:var(--text-dim,#9ca3af);cursor:pointer;font-size:13px;">✏️</button></td>
-        </tr>`;
+      tareas.slice(0, 200).forEach(function(t) {
+        // Buscar tarea en pendientes para obtener ID real
+        var found = null;
+        var tSlice = (t.title||'').slice(0,30);
+        if (TASKS && TASKS.tareas) {
+          Object.keys(TASKS.tareas).forEach(function(per) {
+            if (!found) (TASKS.tareas[per]||[]).forEach(function(pt) {
+              if (!found && tSlice && (pt.title||'').indexOf(tSlice) >= 0)
+                found = Object.assign({}, pt, {persona:per});
+            });
+          });
+        }
+        var idx = _recapTaskIndex.length;
+        _recapTaskIndex.push(found ? {
+          tid: found.id||'', did: (found.matchedDealIds&&found.matchedDealIds[0])||'',
+          oid: found.ownerId||'', client: t.client||'', title: found.title||t.title||'',
+          prod: found.prod||'', persona: found.persona||'', date: found.date||'',
+          stages: (found.dealStages||[]).join('|')
+        } : {
+          tid:'', did:'', oid:'', client: t.client||'', title: t.title||'',
+          completionDate: t.completedDate||''
+        });
+        html += '<tr>' +
+          '<td>' + (t.client||'—') + '</td>' +
+          '<td><span class="tag">' + (t.prod||'') + '</span></td>' +
+          '<td><span class="tag tag-atraccion">' + (t.action||'') + '</span></td>' +
+          '<td><small>' + (t.title||'') + '</small></td>' +
+          '<td><small>' + (t.completedDate||'—') + '</small></td>' +
+          '<td style="text-align:center;"><button onclick="openRecapTask(' + idx + ')" title="Editar / reabrir" style="background:none;border:1px solid var(--border,#2a2d35);border-radius:6px;padding:3px 8px;color:var(--text-dim,#9ca3af);cursor:pointer;font-size:13px;">✏️</button></td>' +
+          '</tr>';
       });
       if (tareas.length > 200) {
         html += `<tr><td colspan="6" class="empty">Mostrando 200 de ${tareas.length}</td></tr>`;
