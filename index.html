@@ -984,19 +984,31 @@ async function loadData() {
     $('#p-recap').innerHTML = html;
   $$('#p-recap .task-edit-btn').forEach(btn => {
     btn.addEventListener('click', function() {
-      var titleBtn = (btn.dataset.title || '').replace(/&quot;/g, '"');
-      var allTasks = (TASKS && TASKS.tasks) ? TASKS.tasks : [];
-      var found = allTasks.find(function(t) {
-        var s = t.subject || '';
-        return titleBtn && s && (s.indexOf(titleBtn.slice(0,25)) >= 0 || titleBtn.indexOf(s.slice(0,25)) >= 0);
-      });
+      var titleBtn = (btn.dataset.title || '').replace(/&quot;/g, '"').slice(0, 40);
+      // TASKS.tareas es {persona: [task, task, ...]}
+      var found = null;
+      if (TASKS && TASKS.tareas) {
+        Object.values(TASKS.tareas).forEach(function(arr) {
+          if (!found) arr.forEach(function(t) {
+            if (!found && titleBtn && (t.title||'').indexOf(titleBtn.slice(0,30)) >= 0)
+              found = t;
+          });
+        });
+      }
       if (found) {
-        openTaskEditor({ tid: found.id||'', did: found.dealId||'', oid: found.ownerId||'',
-          client: btn.dataset.client||'', title: found.subject||titleBtn,
-          prod: found.prod||'', persona: found.persona||'', date: found.dueDate||'', stages: found.stages||'' });
+        openTaskEditor({
+          tid: found.id||'', did: (found.matchedDealIds && found.matchedDealIds[0])||'',
+          oid: found.ownerId||'', client: btn.dataset.client||found.client||'',
+          title: found.title||'', prod: found.prod||'', persona: found.persona||'',
+          date: found.date||'', stages: (found.dealStages||[]).join('|')
+        });
       } else {
-        openTaskEditor({ tid:'', did:'', oid:'', client: btn.dataset.client||'',
-          title: titleBtn, completionDate: btn.dataset.completionDate||'' });
+        // Tarea completada sin match en pendientes
+        openTaskEditor({
+          tid:'', did:'', oid:'', client: btn.dataset.client||'',
+          title: (btn.dataset.title||'').replace(/&quot;/g,'"'),
+          completionDate: btn.dataset.completionDate||''
+        });
       }
     });
   });
