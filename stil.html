@@ -262,13 +262,16 @@ function renderPipeline(){
   ETAPAS.forEach(e=>{stilBS[e]=(dbs[e]||[]).filter(d=>esDeal(d.dealname));total+=stilBS[e].length;});
   const replies=evs.filter(e=>e.tipo==='reply').length;
   const open3=evs.filter(e=>e.tipo==='open3').length;
-  const atr=stilBS['Atraccion'].length;
-  const pct=replies>0?Math.round(atr/replies*100):0;
+  const enProsp=stilBS['Prospeccion'].length;
+  const enAtr=stilBS['Atraccion'].length;
+  const enEdu=stilBS['Educacion'].length;
+  const enReun=stilBS['Reunion'].length;
+  const pct=replies>0?Math.round(enAtr/replies*100):0;
   document.getElementById('kpis').innerHTML=`
-    <div class="kpi"><div class="kpi-n">${evs.length}</div><div class="kpi-l">Prospectos activos</div></div>
-    <div class="kpi"><div class="kpi-n">${replies}</div><div class="kpi-l">Replies recibidos</div></div>
-    <div class="kpi"><div class="kpi-n">${open3}</div><div class="kpi-l">Señales Open+3</div></div>
-    <div class="kpi"><div class="kpi-n g">${atr}</div><div class="kpi-l">Citas agendadas</div><div class="kpi-p">${pct}% de replies</div></div>
+    <div class="kpi"><div class="kpi-n">${enProsp}</div><div class="kpi-l">En Prospección</div></div>
+    <div class="kpi"><div class="kpi-n g">${enAtr}</div><div class="kpi-l">En Atracción</div><div class="kpi-p">${pct}% de replies</div></div>
+    <div class="kpi"><div class="kpi-n">${enEdu}</div><div class="kpi-l">En Educación</div></div>
+    <div class="kpi"><div class="kpi-n">${enReun}</div><div class="kpi-l">En Reunión</div></div>
     <div class="kpi"><div class="kpi-n">${total}</div><div class="kpi-l">Deals STIL activos</div></div>`;
   window.__stilBS=stilBS;
   renderKanban();
@@ -437,20 +440,21 @@ function renderTablas(){
   t+=`<tr class="tot"><td>TOTAL replies</td>${wc(wT.hoy,'hoy','clas','__ALL_REPLIES__',1)}${wc(wT.d7,'d7','clas','__ALL_REPLIES__',1)}${wc(wT.d30,'d30','clas','__ALL_REPLIES__',1)}${wc(wT.d90,'d90','clas','__ALL_REPLIES__',1)}${wc(wT.total,'total','clas','__ALL_REPLIES__',1)}</tr>`;
   document.getElementById('tbody-r').innerHTML=t;
 
-  // Open+3
+  // Open+3 — DUO PRIMERO, luego CB, NAC, total
   const open3=all.filter(e=>e.tipo==='open3');
-  const pCB=open3.filter(e=>String(e.campana||'').toUpperCase().startsWith('CB_'));
-  const pNAC=open3.filter(e=>!String(e.campana||'').toUpperCase().startsWith('CB_'));
+  const isDUOe=e=>e.campana&&e.campana.includes(' – ');
+  const duoS=open3.filter(e=>isDUOe(e));
+  const pCB=open3.filter(e=>!isDUOe(e)&&String(e.campana||'').toUpperCase().startsWith('CB_'));
+  const pNAC=open3.filter(e=>!isDUOe(e)&&!String(e.campana||'').toUpperCase().startsWith('CB_'));
   let t2='';
-  function openRow(label,arr,pval){
+  function openRow(label,arr,pval,style){
     const w=winOf(arr);
-    return `<tr><td style="font-weight:600">${label}</td>${wc(w.hoy,'hoy','prod',pval,0)}${wc(w.d7,'d7','prod',pval,0)}${wc(w.d30,'d30','prod',pval,0)}${wc(w.d90,'d90','prod',pval,0)}${wc(w.total,'total','prod',pval,1)}</tr>`;
+    return `<tr><td style="font-weight:600;${style||''}">${label}</td>${wc(w.hoy,'hoy','prod',pval,0)}${wc(w.d7,'d7','prod',pval,0)}${wc(w.d30,'d30','prod',pval,0)}${wc(w.d90,'d90','prod',pval,0)}${wc(w.total,'total','prod',pval,1)}</tr>`;
   }
+  // DUO siempre primero
+  if(duoS.length) t2+=openRow('DUO (señales conductuales)',duoS,'__DUO__','color:var(--purple)');
   if(prodSel==='ALL'||prodSel==='CB') t2+=openRow('P_STL_CB',pCB,'P_STL_CB');
   if(prodSel==='ALL'||prodSel==='NAC') t2+=openRow('P_STL_NAC',pNAC,'P_STL_NAC');
-  // DUO señales
-  const duoS=open3.filter(e=>isDUO(e));
-  if(duoS.length){const w=winOf(duoS);t2+=`<tr><td style="font-weight:600;color:var(--purple)">DUO (señales conductuales)</td>${wc(w.hoy,'hoy','prod','__DUO__',0)}${wc(w.d7,'d7','prod','__DUO__',0)}${wc(w.d30,'d30','prod','__DUO__',0)}${wc(w.d90,'d90','prod','__DUO__',0)}${wc(w.total,'total','prod','__DUO__',1)}</tr>`;}
   const wS=winOf(open3);
   t2+=`<tr class="tot"><td>TOTAL señales</td>${wc(wS.hoy,'hoy','prod','__ALL_SENALES__',1)}${wc(wS.d7,'d7','prod','__ALL_SENALES__',1)}${wc(wS.d30,'d30','prod','__ALL_SENALES__',1)}${wc(wS.d90,'d90','prod','__ALL_SENALES__',1)}${wc(wS.total,'total','prod','__ALL_SENALES__',1)}</tr>`;
   document.getElementById('tbody-o').innerHTML=t2;
@@ -480,6 +484,7 @@ const FC={green:'#34d399',yellow:'#F59E0B',red:'#EF4444',gray:'#6B7280'};
 
 function liPer(e){return(e.linkedin_persona&&e.linkedin_persona.startsWith('http'))?e.linkedin_persona:'https://www.linkedin.com/search/results/people/?keywords='+encodeURIComponent((e.prospecto||'')+' '+(e.empresa||''));}
 function liEmp(e){return(e.linkedin_empresa&&e.linkedin_empresa.startsWith('http'))?e.linkedin_empresa:'https://www.linkedin.com/search/results/companies/?keywords='+encodeURIComponent(e.empresa||'');}
+function goURL(url){window.location.href=url;}
 
 function renderDetalle(ptype,pval,pwin){
   const box=document.getElementById('prosp-detalle');if(!box)return;
@@ -530,8 +535,8 @@ function renderDetalle(ptype,pval,pwin){
         <span class="pv4-tg">${rel(e.fecha)}</span>
       </div>
       <div class="pv4-actions">
-        <a class="pv4-btn li" href="${liPer(e)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">in Persona ↗</a>
-        <a class="pv4-btn lc" href="${liEmp(e)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">in Empresa ↗</a>
+        <button class="pv4-btn li" onclick="event.stopPropagation();goURL('${liPer(e)}')">in Persona ↗</button>
+        <button class="pv4-btn lc" onclick="event.stopPropagation();goURL('${liEmp(e)}')">in Empresa ↗</button>
         <button class="pv4-btn dt" onclick="event.stopPropagation();oM(${i})">Ver detalle</button>
       </div>
     </div>`;
@@ -550,7 +555,7 @@ function oM(i){
   const fechaTxt=(()=>{const f=new Date(e.fecha);return isNaN(f)?'—':f.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});})();
   const industLine=[e.industria?(e.industria.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase())):'',e.empleados?e.empleados+' empleados':''].filter(Boolean).join(' · ');
   const mrow=(k,v,inner)=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #2A3142;font-size:13px"><span style="color:#9CA3AF;font-size:12px">${k}</span><span style="font-weight:600;text-align:right;max-width:230px">${inner||esc(v||'—')}</span></div>`;
-  const abtn=(href,lbl,col)=>href?`<a href="${href}" target="_blank" rel="noopener" style="flex:1;min-width:100px;text-align:center;text-decoration:none;padding:9px 6px;border-radius:9px;border:1px solid ${col};color:${col};font-size:12px;font-weight:700;display:inline-block">${lbl}</a>`:'';
+  const abtn=(href,lbl,col)=>href?`<button onclick="goURL('${href}')" style="flex:1;min-width:100px;text-align:center;padding:9px 6px;border-radius:9px;border:1px solid ${col};color:${col};font-size:12px;font-weight:700;display:inline-block;background:transparent;cursor:pointer;font-family:'Montserrat',sans-serif">${lbl}</button>`:'';
 
   document.getElementById('modal-body').innerHTML=
     `<div style="font-size:19px;font-weight:800;color:#F3F4F6;line-height:1.15;margin-bottom:${industLine?2:10}px">${esc(e.empresa||'—')}</div>`+
