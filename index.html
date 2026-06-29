@@ -3053,6 +3053,11 @@ function renderProspeccion() {
   var PEV_n = PEV.map(function(e){ return Object.assign({},e,{clasificacion:normClas(e.clasificacion||'')}); });
   var repliesArr = PEV_n.filter(function(e){ return e.tipo!=='open3' && matchFilt(e); });
   var senalesArr = PEV_n.filter(function(e){ return e.tipo==='open3' && matchFilt(e); });
+  // DUO: campana con formato "Empresa, Persona – señal"
+  var isDUO = function(e){ return e.campana && e.campana.indexOf(' – ')!==-1; };
+  var duoArr = senalesArr.filter(function(e){ return isDUO(e); });
+  var open3puro = senalesArr.filter(function(e){ return !isDUO(e); });
+  var duoReplies = repliesArr.filter(function(e){ return isDUO(e); });
   var GR_PRODS=['AM','AEO','GENIA','ITS','LT','TW','HS','360','WB','BD','EX'];
   var activeProd=GR_PRODS.filter(function(p){ return PEV.some(function(e){return (e.producto||'')===p;}); });
   var chip=function(val,lbl){ return '<button class="chip'+(prodSel===val?' active':'')+'" data-prospfilter="'+val+'" style="font-size:11px;padding:5px 11px;border-radius:18px;">'+lbl+'</button>'; };
@@ -3082,11 +3087,6 @@ function renderProspeccion() {
   var wcp=function(n,win,prod,bold){ var s=bold?'font-weight:700;':''; return n>0?'<td class="pcell" data-ptype="prod" data-pval="'+encodeURIComponent(prod)+'" data-pwin="'+win+'" style="text-align:center;'+s+'cursor:pointer;">'+n+'</td>':'<td style="text-align:center;color:var(--text-mute);'+s+'">0</td>'; };
   var t2='<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;">'+H2+'<tbody>';
   // Separar DUO (campana con formato "Empresa, Persona – señal") de Open+3 puro
-  var isDUO=function(e){ return e.campana && e.campana.indexOf(' – ')!==-1; };
-  var duoArr=senalesArr.filter(function(e){ return isDUO(e); });
-  var open3puro=senalesArr.filter(function(e){ return !isDUO(e); });
-  // DUO tambien puede venir de replies (replies cuya campaña tiene formato DUO)
-  var duoReplies=repliesArr.filter(function(e){ return isDUO(e); });
   var ps={}; open3puro.forEach(function(e){ var p=e.producto||'(sin producto)'; ps[p]=(ps[p]||0)+1; });
   Object.keys(ps).sort().forEach(function(p){ var sub=senalesArr.filter(function(e){return (e.producto||'(sin producto)')===p;}); var w=winOf(sub); t2+='<tr><td style="font-weight:600;">'+p+'</td>'+wcp(w.hoy,'hoy',p,0)+wcp(w.d7,'d7',p,0)+wcp(w.d30,'d30',p,0)+wcp(w.d90,'d90',p,0)+wcp(w.total,'total',p,1)+'</tr>'; });
   if(!senalesArr.length) t2+='<tr><td colspan="6" style="font-size:12px;color:var(--text-mute);padding:12px;">Sin señales para este filtro.</td></tr>';
