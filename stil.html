@@ -7,38 +7,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#0d0f1e;
-  --surface:#131629;
-  --card:#1a1e38;
-  --border:#232848;
-  --border2:#2e3560;
-  --text:#e8eaf6;
-  --muted:#9098c0;
-  --faint:#4a5280;
-  --stil-blue:#0033cc;
-  --stil-navy:#000067;
-  --stil-red:#fd050d;
-  --stil-amber:#f3b20e;
-  --green:#34d399;
-  --amber:#f3b20e;
-  --red:#f87171;
-  --purple:#c084fc;
-  --blue-light:#93c5fd;
-}
+:root{--bg:#0d0f1e;--surface:#131629;--card:#1a1e38;--border:#232848;--border2:#2e3560;--text:#e8eaf6;--muted:#9098c0;--faint:#4a5280;--stil-blue:#0033cc;--stil-navy:#000067;--stil-red:#fd050d;--stil-amber:#f3b20e;--green:#34d399;--amber:#f3b20e;--red:#f87171;--purple:#c084fc;--blue-light:#93c5fd}
 body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:13px}
-
-/* TOPBAR */
 .topbar{background:linear-gradient(135deg,var(--stil-navy) 0%,var(--stil-blue) 100%);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
-.brand{display:flex;align-items:center;gap:12px}
-.logo-wrap{display:flex;align-items:center;gap:1px}
-.logo-text{font-size:24px;font-weight:800;color:#fff;font-style:italic;letter-spacing:-.02em;line-height:1}
-.logo-dots{display:flex;flex-direction:column;gap:2px;margin-left:2px;margin-bottom:10px}
-.ld-r1{display:flex;gap:2px}
-.ld-r2{display:flex;gap:2px;margin-left:3px}
-.ld-r3{display:flex;gap:2px;margin-left:6px}
-.ld{border-radius:50%;background:var(--stil-red)}
-.brand-info{margin-left:6px}
+.brand{display:flex;align-items:center;gap:10px}
+.logo-text{font-size:24px;font-weight:800;color:#fff;font-style:italic}
 .brand-name{font-size:14px;font-weight:700;color:#fff;letter-spacing:.04em}
 .brand-sub{font-size:9px;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:.1em}
 .topbar-right{display:flex;align-items:center;gap:10px}
@@ -46,21 +19,13 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
 .live-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .btn-refresh{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:8px;padding:5px 12px;font-size:10px;color:#fff;cursor:pointer;font-weight:600;font-family:'Montserrat',sans-serif}
-.btn-refresh:hover{background:rgba(255,255,255,0.25)}
 .update-time{font-size:10px;color:rgba(255,255,255,0.5)}
-
-/* NAV */
-.nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;overflow-x:auto;scrollbar-width:none}
-.nav::-webkit-scrollbar{display:none}
-.ntab{padding:10px 16px;font-size:11px;color:var(--faint);white-space:nowrap;border-bottom:2px solid transparent;cursor:pointer;font-weight:600;transition:color .2s}
-.ntab:hover{color:var(--muted)}
+.nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex}
+.ntab{padding:10px 16px;font-size:11px;color:var(--faint);white-space:nowrap;border-bottom:2px solid transparent;cursor:pointer;font-weight:600}
 .ntab.on{color:#fff;border-bottom-color:var(--stil-amber)}
-
-/* LAYOUT */
 .page{display:none;padding:16px 20px}
 .page.on{display:block}
-
-/* KPI STRIP */
+/* KPI */
 .kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
 @media(max-width:700px){.kpi-strip{grid-template-columns:repeat(2,1fr)}}
 .kpi{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
@@ -68,19 +33,16 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
 .kpi-n.green{color:var(--green)}
 .kpi-l{font-size:9px;color:var(--faint);margin-top:4px;text-transform:uppercase;letter-spacing:.04em;line-height:1.4}
 .kpi-pct{font-size:10px;color:var(--amber);font-weight:600;margin-top:2px}
-
-/* FILTER BAR */
+/* FILTER */
 .filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .filter-label{font-size:9px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
-.fchip{font-size:10px;padding:4px 12px;border-radius:20px;border:1px solid var(--border2);color:var(--muted);cursor:pointer;font-weight:600;font-family:'Montserrat',sans-serif;background:var(--card);transition:all .15s}
+.fchip{font-size:10px;padding:4px 12px;border-radius:20px;border:1px solid var(--border2);color:var(--muted);cursor:pointer;font-weight:600;font-family:'Montserrat',sans-serif;background:var(--card)}
 .fchip.on{background:var(--stil-amber);color:#000;border-color:var(--stil-amber)}
-.fchip:hover:not(.on){border-color:var(--muted)}
 .deal-count{font-size:10px;color:var(--faint);margin-left:auto}
-
 /* KANBAN */
 .kanban-wrap{overflow-x:auto;margin:0 -20px;padding:0 20px}
 .kanban{display:flex;gap:0;min-width:900px}
-.col{flex:1;border-right:1px solid var(--border);background:var(--bg);min-width:180px}
+.col{flex:1;border-right:1px solid var(--border);background:var(--bg);min-width:170px}
 .col:last-child{border-right:none}
 .col-head{padding:10px 12px;border-bottom:1px solid var(--border);background:var(--surface)}
 .col-name{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
@@ -90,20 +52,16 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
 .dcard-title{font-size:11px;font-weight:600;color:#fff;margin-bottom:2px;line-height:1.3}
 .dcard-id{font-size:8px;color:var(--faint);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dcard-row{display:flex;justify-content:space-between;align-items:center}
-.dcard-val{font-size:11px;color:var(--muted);font-weight:500}
 .dcard-owner{font-size:9px;color:var(--faint)}
 .dcard-date{font-size:9px;margin-top:4px;color:var(--faint)}
 .dcard-date.red{color:var(--red)}
-
-/* PROSPECCION PAGE */
+/* PROSPECCION */
 .page-title{font-size:14px;font-weight:700;color:#fff;margin-bottom:2px}
 .page-sub{font-size:10px;color:var(--faint);margin-bottom:12px}
 .sec-title{font-size:11px;font-weight:700;margin-bottom:4px}
 .sec-title.green{color:var(--green)}
 .sec-title.amber{color:var(--amber)}
 .sec-hint{font-size:9px;color:var(--faint);margin-bottom:8px}
-
-/* TABLES */
 .tbl-wrap{overflow-x:auto;margin-bottom:16px}
 .tbl{width:100%;border-collapse:collapse;font-size:10px;min-width:420px}
 .tbl th{text-align:left;padding:5px 8px;color:var(--faint);font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);font-size:9px}
@@ -116,17 +74,14 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
 .grp-hdr.media td{color:var(--amber);background:#1a1400}
 .grp-hdr.desc td{color:var(--red);background:#180808}
 .grp-hdr.duo td{color:var(--purple);background:#120a24}
-.dotsm{display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:5px;vertical-align:middle;flex-shrink:0}
+.dotsm{display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:5px;vertical-align:middle}
 .dg{background:var(--green)}.dy{background:var(--amber)}.dr{background:var(--red)}.dp{background:var(--purple)}
-
-/* CARDS GRID */
 .divider{border:none;border-top:1px solid var(--border);margin:16px 0}
 .cards-section-label{font-size:10px;font-weight:700;color:var(--faint);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
 .cards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 @media(max-width:900px){.cards-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.cards-grid{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 13px;cursor:pointer;transition:border-color .2s}
-.card:hover{border-color:var(--border2)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 13px}
 .card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:2px}
 .card-co{font-size:12px;font-weight:700;color:#fff;line-height:1.3}
 .badge{font-size:8px;padding:2px 7px;border-radius:6px;font-weight:700;white-space:nowrap;flex-shrink:0}
@@ -134,6 +89,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
 .b-edu{background:#0a1840;color:var(--blue-light);border:1px solid #60a5fa}
 .b-conv{background:#1e1600;color:var(--amber);border:1px solid var(--amber)}
 .b-rep{background:#0d0018;color:var(--purple);border:1px solid var(--purple)}
+.b-reu{background:#1a0820;color:#e879f9;border:1px solid #e879f9}
 .card-ind{font-size:9px;color:var(--faint);margin-bottom:6px}
 .card-per{font-size:11px;font-weight:700;color:#d0d8f0}
 .card-rol{font-size:9px;color:var(--faint);margin-bottom:6px;line-height:1.3}
@@ -144,13 +100,13 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
 .cc.em{background:#1e1600;color:#fde68a;border-color:#4a3800}
 .cc.seq{background:#0a1840;color:var(--muted);border-color:var(--border2)}
 .card-time{font-size:9px;color:var(--faint);margin-bottom:8px}
-/* BOTONES — siempre visibles, fondo sólido */
+/* BOTONES — fondo sólido siempre visible */
 .card-btns{display:flex;gap:5px;flex-wrap:wrap}
 .btn-w{font-size:9px;padding:5px 9px;border-radius:6px;background:#ffffff;border:none;color:#0a1540;cursor:pointer;font-weight:700;font-family:'Montserrat',sans-serif}
 .btn-w:hover{background:#e8eeff}
+.btn-w:disabled{background:#9098c0;cursor:default}
 .btn-y{font-size:9px;padding:5px 9px;border-radius:6px;background:var(--stil-amber);border:none;color:#080800;cursor:pointer;font-weight:700;font-family:'Montserrat',sans-serif}
 .btn-y:hover{background:#e8a208}
-
 /* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,4,30,0.92);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
 .modal{background:#1a2050;border:2px solid var(--stil-amber);border-radius:14px;width:100%;max-width:380px;padding:18px;max-height:88vh;overflow-y:auto}
@@ -163,15 +119,16 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
 .mrow{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border);gap:10px}
 .mrow:last-of-type{border:none}
 .mlbl{font-size:10px;color:var(--faint);font-weight:600;flex-shrink:0}
-.mval{font-size:10px;color:#d0d8f8;text-align:right;font-weight:600;word-break:break-word;max-width:220px}
+.mval{font-size:10px;color:#d0d8f8;text-align:right;font-weight:600;word-break:break-word;max-width:230px}
 .mval.green{color:var(--green)}
 .mval.amber{color:var(--amber)}
 .mval.blue{color:var(--blue-light)}
+.mval.italic{font-style:italic;color:var(--muted)}
 .modal-btns{display:flex;gap:6px;margin-top:14px}
 .mbtn{flex:1;font-size:10px;padding:9px 4px;border-radius:8px;background:#ffffff;border:none;color:#0a1540;cursor:pointer;font-weight:700;text-align:center;font-family:'Montserrat',sans-serif}
 .mbtn:hover{background:#e8eeff}
-
-/* LOADING */
+.mbtn:disabled{background:#9098c0;cursor:default;color:#5a6280}
+/* LOADING / ERROR */
 .loading{display:flex;align-items:center;justify-content:center;padding:60px;color:var(--faint);font-size:12px;gap:10px}
 .spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--stil-amber);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -179,18 +136,17 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
 </style>
 </head>
 <body>
-
 <div class="topbar">
   <div class="brand">
-    <div class="logo-wrap">
+    <div style="display:flex;align-items:center;gap:2px">
       <span class="logo-text">Stil</span>
-      <div class="logo-dots">
-        <div class="ld-r1"><div class="ld" style="width:5px;height:5px"></div><div class="ld" style="width:6px;height:6px"></div><div class="ld" style="width:5px;height:5px"></div></div>
-        <div class="ld-r2"><div class="ld" style="width:5px;height:5px"></div><div class="ld" style="width:4px;height:4px"></div></div>
-        <div class="ld-r3"><div class="ld" style="width:4px;height:4px"></div></div>
+      <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:10px;margin-left:2px">
+        <div style="display:flex;gap:2px"><div style="width:5px;height:5px;border-radius:50%;background:#fd050d"></div><div style="width:6px;height:6px;border-radius:50%;background:#fd050d"></div><div style="width:5px;height:5px;border-radius:50%;background:#fd050d"></div></div>
+        <div style="display:flex;gap:2px;margin-left:3px"><div style="width:5px;height:5px;border-radius:50%;background:#fd050d"></div><div style="width:4px;height:4px;border-radius:50%;background:#fd050d"></div></div>
+        <div style="display:flex;gap:2px;margin-left:6px"><div style="width:4px;height:4px;border-radius:50%;background:#fd050d"></div></div>
       </div>
     </div>
-    <div class="brand-info">
+    <div style="margin-left:8px">
       <div class="brand-name">STIL Intelligence</div>
       <div class="brand-sub">Powered by Great Revenue</div>
     </div>
@@ -207,7 +163,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
   <div class="ntab" onclick="switchTab('prospeccion',this)">Prospección</div>
 </div>
 
-<!-- PIPELINE PAGE -->
+<!-- PIPELINE -->
 <div id="page-pipeline" class="page on">
   <div id="pipeline-loading" class="loading"><div class="spinner"></div>Cargando datos en vivo…</div>
   <div id="pipeline-content" style="display:none">
@@ -215,15 +171,15 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
     <div class="filter-bar">
       <span class="filter-label">Secuencia:</span>
       <button class="fchip on" onclick="filtrarKanban('ALL',this)">ALL</button>
-      <button class="fchip" onclick="filtrarKanban('P_STL_CB',this)">P_STL_CB</button>
-      <button class="fchip" onclick="filtrarKanban('P_STL_NAC',this)">P_STL_NAC</button>
+      <button class="fchip" onclick="filtrarKanban('CB',this)">P_STL_CB</button>
+      <button class="fchip" onclick="filtrarKanban('NAC',this)">P_STL_NAC</button>
       <span class="deal-count" id="deal-count"></span>
     </div>
     <div class="kanban-wrap"><div class="kanban" id="kanban"></div></div>
   </div>
 </div>
 
-<!-- PROSPECCION PAGE -->
+<!-- PROSPECCION -->
 <div id="page-prospeccion" class="page">
   <div id="prosp-loading" class="loading"><div class="spinner"></div>Cargando datos en vivo…</div>
   <div id="prosp-content" style="display:none">
@@ -237,14 +193,14 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
     </div>
     <div class="sec-title green">Replies por prioridad</div>
     <div class="sec-hint">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado</div>
-    <div class="tbl-wrap"><table class="tbl" id="tbl-replies">
+    <div class="tbl-wrap"><table class="tbl">
       <thead><tr><th>Clasificación</th><th>HOY</th><th>7D</th><th>30D</th><th>90D</th><th>TOTAL</th></tr></thead>
-      <tbody id="tbody-replies"><tr><td colspan="6" style="color:var(--faint);padding:12px">Cargando…</td></tr></tbody>
+      <tbody id="tbody-replies"></tbody>
     </table></div>
     <div class="sec-title amber">Open+3 (señales) por producto</div>
-    <div class="tbl-wrap"><table class="tbl" id="tbl-open">
+    <div class="tbl-wrap"><table class="tbl">
       <thead><tr><th>Producto</th><th>HOY</th><th>7D</th><th>30D</th><th>90D</th><th>TOTAL</th></tr></thead>
-      <tbody id="tbody-open"><tr><td colspan="6" style="color:var(--faint);padding:12px">Cargando…</td></tr></tbody>
+      <tbody id="tbody-open"></tbody>
     </table></div>
     <div class="divider"></div>
     <div class="cards-section-label" id="cards-label">REPLIES RECIENTES</div>
@@ -263,240 +219,72 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
     <div class="modal-rol" id="m-rol"></div>
     <div class="mrow"><span class="mlbl">Etapa</span><span class="mval green" id="m-etapa"></span></div>
     <div class="mrow"><span class="mlbl">Clasificación</span><span class="mval" id="m-clas"></span></div>
-    <div class="mrow"><span class="mlbl">Producto</span><span class="mval" id="m-prod"></span></div>
-    <div class="mrow"><span class="mlbl">Web</span><span class="mval blue" id="m-web"></span></div>
-    <div class="mrow"><span class="mlbl">Campaña</span><span class="mval" id="m-camp"></span></div>
+    <div class="mrow"><span class="mlbl">Secuencia / Campaña</span><span class="mval" id="m-camp"></span></div>
     <div class="mrow"><span class="mlbl">Canal</span><span class="mval" id="m-canal"></span></div>
-    <div class="mrow"><span class="mlbl">Tenant</span><span class="mval" id="m-tenant"></span></div>
-    <div class="mrow"><span class="mlbl">Último mensaje</span><span class="mval" id="m-msg" style="font-style:italic;max-width:220px"></span></div>
+    <div class="mrow"><span class="mlbl">Último mensaje</span><span class="mval italic" id="m-msg"></span></div>
     <div class="mrow"><span class="mlbl">Sin respuesta</span><span class="mval amber" id="m-dias"></span></div>
     <div class="mrow"><span class="mlbl">Fecha</span><span class="mval" id="m-fecha"></span></div>
     <div class="modal-btns">
-      <div class="mbtn" id="mbtn-persona">in Persona ↗</div>
-      <div class="mbtn" id="mbtn-empresa">in Empresa ↗</div>
-      <div class="mbtn" id="mbtn-web">Web ↗</div>
+      <button class="mbtn" id="mbtn-persona">in Persona ↗</button>
+      <button class="mbtn" id="mbtn-empresa">in Empresa ↗</button>
     </div>
   </div>
 </div>
 
 <script>
-const ENDPOINT = 'https://mikea.app.n8n.cloud/webhook/stil-prospeccion';
-const ETAPAS = ['Senal Detectada','Reply Recibido','Contactado','En Conversacion','Atraccion'];
-const ETAPA_LABELS = {'Senal Detectada':'Señal','Reply Recibido':'Reply','Contactado':'Contactado','En Conversacion':'En Conv.','Atraccion':'Atracción'};
-let DATA = null;
-let filtroKanban = 'ALL';
-let filtroCards = 'ALL';
+const ENDPOINT='https://mikea.app.n8n.cloud/webhook/stil-prospeccion';
+// Etapas reales de Portal Clientes STIL
+const ETAPAS=['Prospeccion','Atraccion','Educacion','Propuesta','Reunion','Ganada'];
+const ETAPA_LABEL={Prospeccion:'Prospección',Atraccion:'Atracción',Educacion:'Educación',Propuesta:'Propuesta',Reunion:'Reunión',Ganada:'Ganada'};
+let DATA=null;
+let filtroKanban='ALL';
+let filtroCards='ALL';
 
-function switchTab(id, el) {
+function switchTab(id,el){
   document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('on'));
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   el.classList.add('on');
   document.getElementById('page-'+id).classList.add('on');
 }
 
-async function cargarDatos() {
-  try {
-    const r = await fetch(ENDPOINT);
+async function cargarDatos(){
+  try{
+    const r=await fetch(ENDPOINT);
     if(!r.ok) throw new Error('HTTP '+r.status);
-    DATA = await r.json();
-    const now = new Date();
-    document.getElementById('update-time').textContent = now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+    DATA=await r.json();
+    const now=new Date();
+    document.getElementById('update-time').textContent=now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
     renderPipeline();
     renderProspeccion();
-  } catch(e) {
+  }catch(e){
     ['pipeline-loading','prosp-loading'].forEach(id=>{
-      const el = document.getElementById(id);
-      if(el) el.innerHTML = '<div class="error-msg">Error cargando datos: '+e.message+'</div>';
+      const el=document.getElementById(id);
+      if(el) el.innerHTML='<div class="error-msg">Error cargando datos: '+e.message+'. Intenta ↺ Actualizar.</div>';
     });
   }
 }
 
-/* ── PIPELINE ── */
-function renderPipeline() {
-  document.getElementById('pipeline-loading').style.display='none';
-  document.getElementById('pipeline-content').style.display='';
-  const eventos = DATA.eventos || [];
-  const dealsByStage = DATA.dealsByStage || {};
-
-  // KPIs — de menor a mayor impacto
-  const totalProsp = eventos.length;
-  const totalReplies = eventos.filter(e=>e.tipo==='reply'||e.tipo==='Reply').length;
-  const enConv = (dealsByStage['En Conversacion']||[]).length;
-  const enAtr = (dealsByStage['Atraccion']||[]).length;
-  const pctConv = totalReplies>0?Math.round(enConv/totalReplies*100):0;
-  const pctAtr = enConv>0?Math.round(enAtr/enConv*100):0;
-  const totalDeals = Object.values(dealsByStage).flat().length;
-
-  document.getElementById('kpi-strip').innerHTML = `
-    <div class="kpi"><div class="kpi-n">${totalProsp}</div><div class="kpi-l">Prospectos activos</div></div>
-    <div class="kpi"><div class="kpi-n">${totalReplies}</div><div class="kpi-l">Replies recibidos</div></div>
-    <div class="kpi"><div class="kpi-n">${enConv}</div><div class="kpi-l">En conversación</div><div class="kpi-pct">${pctConv}% de replies</div></div>
-    <div class="kpi"><div class="kpi-n green">${enAtr}</div><div class="kpi-l">Citas agendadas</div><div class="kpi-pct">${pctAtr}% de conv.</div></div>
-    <div class="kpi"><div class="kpi-n">${totalDeals}</div><div class="kpi-l">Deals activos</div></div>
-  `;
-  renderKanban();
-}
-
-function filtrarKanban(seq, el) {
-  document.querySelectorAll('.filter-bar .fchip').forEach(c=>c.classList.remove('on'));
-  el.classList.add('on');
-  filtroKanban = seq;
-  renderKanban();
-}
-
-function renderKanban() {
-  const dealsByStage = DATA.dealsByStage || {};
-  const kanban = document.getElementById('kanban');
-  let totalVisible = 0;
-  kanban.innerHTML = ETAPAS.map(etapa=>{
-    let deals = dealsByStage[etapa] || [];
-    if(filtroKanban !== 'ALL') {
-      const seq = filtroKanban.replace('P_STL_','');
-      deals = deals.filter(d=>String(d.campana||d.dealname||'').toUpperCase().includes(seq));
-    }
-    totalVisible += deals.length;
-    const totalVal = deals.reduce((s,d)=>s+(d.amount||0),0);
-    const valStr = totalVal>0?'$'+Math.round(totalVal/1000)+'K':'—';
-    const cards = deals.map(d=>{
-      const fecha = d.created?new Date(d.created).toISOString().split('T')[0]:'';
-      const isOld = fecha && (Date.now()-new Date(fecha).getTime())>90*24*3600*1000;
-      return `<div class="dcard">
-        <div class="dcard-title">${esc(d.dealname||'—')}</div>
-        <div class="dcard-id">${esc(d.campana||'')}</div>
-        <div class="dcard-row">
-          <span class="dcard-val">${d.amount?'$'+Math.round(d.amount/1000)+'K':'—'}</span>
-          <span class="dcard-owner">${esc(d.puesto||'')}</span>
-        </div>
-        ${fecha?`<div class="dcard-date${isOld?' red':''}">${fecha}</div>`:''}
-      </div>`;
-    }).join('');
-    return `<div class="col">
-      <div class="col-head">
-        <div class="col-name">${ETAPA_LABELS[etapa]||etapa}</div>
-        <div class="col-meta">${deals.length} · ${valStr}</div>
-      </div>
-      <div class="col-cards">${cards||'<div style="padding:10px;font-size:10px;color:var(--faint)">Sin deals</div>'}</div>
-    </div>`;
-  }).join('');
-  document.getElementById('deal-count').textContent = totalVisible+' deals visibles';
-}
-
-/* ── PROSPECCION ── */
-function renderProspeccion() {
-  document.getElementById('prosp-loading').style.display='none';
-  document.getElementById('prosp-content').style.display='';
-  renderTablas();
-  renderCards();
-}
-
-function filtrarCards(seq, el) {
-  document.querySelectorAll('#page-prospeccion .filter-bar .fchip').forEach(c=>c.classList.remove('on'));
-  el.classList.add('on');
-  filtroCards = seq;
-  renderTablas();
-  renderCards();
-}
-
-function eventosParaCards() {
-  const eventos = DATA.eventos || [];
-  if(filtroCards === 'ALL') return eventos;
-  return eventos.filter(e=>String(e.producto||e.campana||'').toUpperCase().includes(filtroCards));
-}
-
-function renderTablas() {
-  const evs = eventosParaCards();
-  const now = Date.now();
-  const ms1=86400000, ms7=7*ms1, ms30=30*ms1, ms90=90*ms1;
-  function inR(fecha,ms){return (now-new Date(fecha).getTime())<=ms;}
-  function row(label,dot,evsFilt){
-    const h=evsFilt.filter(e=>inR(e.fecha,ms1)).length;
-    const d7=evsFilt.filter(e=>inR(e.fecha,ms7)).length;
-    const d30=evsFilt.filter(e=>inR(e.fecha,ms30)).length;
-    const d90=evsFilt.filter(e=>inR(e.fecha,ms90)).length;
-    const tot=evsFilt.length;
-    return `<tr><td><span class="dotsm ${dot}"></span>${label}</td><td>${h||'0'}</td><td>${d7||'0'}</td><td>${d30||'0'}</td><td>${d90||'0'}</td><td><b>${tot}</b></td></tr>`;
+/* ── helpers ── */
+function parsearNombreDeal(dealname){
+  // P_STL_CB_STIL_Sika_VannessaBlandon → "Sika — Vannessa Blandon"
+  // P_STL_NAC_STIL_AROMARIA_CarlosHernandez → "AROMARIA — Carlos Hernandez"
+  if(!dealname) return {empresa:'—',persona:''};
+  let s=dealname;
+  // quitar prefijo P_STL_XX_STIL_ o STIL_XX_STIL_ o IMMMU_
+  s=s.replace(/^(P_STL_(CB|NAC)_STIL_|STIL_(CB|NAC)_(AM|STIL)_|IMMMU_|IMMU_)/,'');
+  // split en _ para separar empresa de persona
+  const parts=s.split('_');
+  if(parts.length>=2){
+    // último elemento es la persona (camelCase → "Camel Case")
+    const persona=parts[parts.length-1].replace(/([A-Z])/g,' $1').trim();
+    const empresa=parts.slice(0,parts.length-1).join(' ');
+    return{empresa,persona};
   }
-  function matchClas(e,clas){return String(e.clasificacion||'').toLowerCase()===clas.toLowerCase();}
-
-  const treplies = document.getElementById('tbody-replies');
-  treplies.innerHTML = `
-    <tr class="grp-hdr duo"><td colspan="6"><span class="dotsm dp"></span>DUO — SEÑAL CONDUCTUAL + REPLY</td></tr>
-    ${row('DUO Reply','dp',evs.filter(e=>matchClas(e,'duo reply')))}
-    <tr class="grp-hdr alta"><td colspan="6"><span class="dotsm dg"></span>ALTA PRIORIDAD — ATENDER YA</td></tr>
-    ${row('Interested','dg',evs.filter(e=>matchClas(e,'interested')))}
-    ${row('Meeting Booked','dg',evs.filter(e=>matchClas(e,'meeting booked')))}
-    ${row('Forwarded To The Right Person','dg',evs.filter(e=>matchClas(e,'forwarded to the right person')))}
-    ${row('Introduction','dg',evs.filter(e=>matchClas(e,'introduction')))}
-    <tr class="grp-hdr media"><td colspan="6"><span class="dotsm dy"></span>MEDIA — PENDIENTE / RETOMAR</td></tr>
-    ${row('Circle Back','dy',evs.filter(e=>matchClas(e,'circle back')||matchClas(e,'asked_to_circle_back_later')))}
-    ${row('OOO','dy',evs.filter(e=>matchClas(e,'ooo')))}
-    <tr class="grp-hdr desc"><td colspan="6"><span class="dotsm dr"></span>DESCARTADO — YA NO INTERESA</td></tr>
-    ${row('Not The Right Person','dr',evs.filter(e=>matchClas(e,'not the right person')))}
-    ${row('Not Interested','dr',evs.filter(e=>matchClas(e,'not interested')))}
-    ${row('Hard No','dr',evs.filter(e=>matchClas(e,'hard no')))}
-    <tr class="total-row"><td>TOTAL replies</td>
-      <td>${evs.filter(e=>inR(e.fecha,ms1)).length}</td>
-      <td>${evs.filter(e=>inR(e.fecha,ms7)).length}</td>
-      <td>${evs.filter(e=>inR(e.fecha,ms30)).length}</td>
-      <td>${evs.filter(e=>inR(e.fecha,ms90)).length}</td>
-      <td><b>${evs.length}</b></td>
-    </tr>`;
-
-  // Open+3
-  const statsOpen = DATA.statsOpen || {};
-  const topen = document.getElementById('tbody-open');
-  const prods = ['P_STL_CB','P_STL_NAC'];
-  let totH=0,tot7=0,tot30=0,tot90=0,totT=0;
-  const prodRows = prods.map(p=>{
-    if(filtroCards!=='ALL' && !p.includes(filtroCards)) return '';
-    const s=statsOpen[p]||{hoy:0,d7:0,d30:0,d90:0,total:0};
-    totH+=s.hoy;tot7+=s.d7;tot30+=s.d30;tot90+=s.d90;totT+=s.total;
-    return `<tr><td>${p}</td><td>${s.hoy}</td><td>${s.d7}</td><td>${s.d30}</td><td>${s.d90}</td><td><b>${s.total}</b></td></tr>`;
-  }).join('');
-  topen.innerHTML = prodRows + `<tr class="total-row"><td>TOTAL señales</td><td>${totH}</td><td>${tot7}</td><td>${tot30}</td><td>${tot90}</td><td><b>${totT}</b></td></tr>`;
+  return{empresa:s,persona:''};
 }
 
-function renderCards() {
-  const evs = eventosParaCards();
-  // Solo replies, ordenados por fecha desc
-  const replies = evs.filter(e=>e.tipo==='reply'||e.tipo==='Reply').sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
-  document.getElementById('cards-label').textContent = `REPLIES RECIENTES (${replies.length})`;
-  const grid = document.getElementById('cards-grid');
-  if(!replies.length){
-    grid.innerHTML='<div style="color:var(--faint);font-size:11px;padding:16px">Sin replies para el filtro seleccionado.</div>';
-    return;
-  }
-  grid.innerHTML = replies.slice(0,18).map(e=>{
-    const etapaBadge = e.etapa?`<span class="badge ${badgeClass(e.etapa)}">${e.etapa}</span>`:'';
-    const hace = tiempoRelativo(e.fecha);
-    const seq = String(e.producto||e.campana||'');
-    return `<div class="card" onclick="abrirModal(${JSON.stringify(e).replace(/'/g,'&#39;')})">
-      <div class="card-head"><div class="card-co">${esc(e.empresa||'—')}</div>${etapaBadge}</div>
-      <div class="card-ind">${esc(e.industria||'')}${e.empleados?' · '+e.empleados+' emp.':''}</div>
-      <div class="card-per">${esc(e.prospecto||'—')}</div>
-      <div class="card-rol">${esc(e.puesto||'')}</div>
-      <div class="card-chips">
-        <span class="cc stil">STIL</span>
-        ${e.canal==='LinkedIn'||e.canal==='linkedin'?'<span class="cc li">LinkedIn</span>':'<span class="cc em">Email</span>'}
-        ${seq?`<span class="cc seq">${esc(seq.split(',')[0]||seq)}</span>`:''}
-      </div>
-      <div class="card-time">${hace}</div>
-      <div class="card-btns">
-        <button class="btn-w" onclick="event.stopPropagation();abrirLinkedIn('${esc(e.linkedin_persona||'')}')">Persona ↗</button>
-        <button class="btn-w" onclick="event.stopPropagation();abrirLinkedIn('${esc(e.linkedin_empresa||'')}')">Empresa ↗</button>
-        <button class="btn-y" onclick="event.stopPropagation();abrirModal(${JSON.stringify(e).replace(/'/g,'&#39;')})">Ver detalle</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function badgeClass(etapa){
-  if(!etapa) return 'b-rep';
-  const e=etapa.toLowerCase();
-  if(e.includes('atracc')) return 'b-atr';
-  if(e.includes('educ')) return 'b-edu';
-  if(e.includes('conv')) return 'b-conv';
-  return 'b-rep';
+function normClasificacion(c){
+  return String(c||'').toLowerCase().replace(/_/g,' ').trim();
 }
 
 function tiempoRelativo(fecha){
@@ -504,42 +292,261 @@ function tiempoRelativo(fecha){
   const diff=Date.now()-new Date(fecha).getTime();
   const h=Math.floor(diff/3600000);
   if(h<1) return 'hace <1h';
-  if(h<24) return `hace ${h}h`;
+  if(h<24) return 'hace '+h+'h';
   const d=Math.floor(h/24);
-  if(d<7) return `hace ${d}d`;
-  return `hace ${Math.floor(d/7)} sem`;
+  if(d<7) return 'hace '+d+'d';
+  return 'hace '+Math.floor(d/7)+' sem';
 }
 
-function abrirLinkedIn(url){
-  if(url && url.startsWith('http')) window.open(url,'_blank');
+function badgeClass(etapa){
+  if(!etapa) return 'b-rep';
+  const e=etapa.toLowerCase();
+  if(e.includes('atracc')) return 'b-atr';
+  if(e.includes('educ')) return 'b-edu';
+  if(e.includes('prosp')) return 'b-conv';
+  if(e.includes('reun')) return 'b-reu';
+  return 'b-rep';
 }
 
-function abrirModal(e){
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+/* ── PIPELINE ── */
+function renderPipeline(){
+  document.getElementById('pipeline-loading').style.display='none';
+  document.getElementById('pipeline-content').style.display='';
+  const dealsByStage=DATA.dealsByStage||{};
+  const eventos=DATA.eventos||[];
+  const totalProsp=eventos.length;
+  const totalReplies=eventos.filter(e=>e.tipo==='reply').length;
+  const totalOpen=eventos.filter(e=>e.tipo==='open3').length;
+  const enAtr=(dealsByStage['Atraccion']||[]).length;
+  const enReu=(dealsByStage['Reunion']||[]).length;
+  const totalDeals=Object.values(dealsByStage).flat().length;
+  const pctAtr=totalReplies>0?Math.round(enAtr/totalReplies*100):0;
+
+  document.getElementById('kpi-strip').innerHTML=`
+    <div class="kpi"><div class="kpi-n">${totalProsp}</div><div class="kpi-l">Prospectos activos</div></div>
+    <div class="kpi"><div class="kpi-n">${totalReplies}</div><div class="kpi-l">Replies recibidos</div></div>
+    <div class="kpi"><div class="kpi-n">${totalOpen}</div><div class="kpi-l">Señales Open+3</div></div>
+    <div class="kpi"><div class="kpi-n green">${enAtr}</div><div class="kpi-l">Citas agendadas</div><div class="kpi-pct">${pctAtr}% de replies</div></div>
+    <div class="kpi"><div class="kpi-n">${totalDeals}</div><div class="kpi-l">Deals activos</div></div>
+  `;
+  renderKanban();
+}
+
+function filtrarKanban(seq,el){
+  document.querySelectorAll('#page-pipeline .filter-bar .fchip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  filtroKanban=seq;
+  renderKanban();
+}
+
+function renderKanban(){
+  const dealsByStage=DATA.dealsByStage||{};
+  const kanban=document.getElementById('kanban');
+  let totalVisible=0;
+  kanban.innerHTML=ETAPAS.map(etapa=>{
+    let deals=dealsByStage[etapa]||[];
+    if(filtroKanban!=='ALL'){
+      deals=deals.filter(d=>String(d.dealname||'').toUpperCase().includes('_'+filtroKanban+'_'));
+    }
+    totalVisible+=deals.length;
+    const cards=deals.map(d=>{
+      const{empresa,persona}=parsearNombreDeal(d.dealname);
+      const fecha=d.created?new Date(d.created).toISOString().split('T')[0]:'';
+      const isOld=fecha&&(Date.now()-new Date(fecha).getTime())>60*24*3600*1000;
+      const puesto=d.puesto?`<div class="dcard-owner">${esc(d.puesto)}</div>`:'';
+      return `<div class="dcard">
+        <div class="dcard-title">${esc(empresa)}</div>
+        <div class="dcard-id">${esc(persona)}</div>
+        <div class="dcard-row">${puesto}<span class="dcard-owner">${esc(d.campana?d.campana.split(',')[0]:'')}</span></div>
+        ${fecha?`<div class="dcard-date${isOld?' red':''}">${fecha}</div>`:''}
+      </div>`;
+    }).join('');
+    return `<div class="col">
+      <div class="col-head">
+        <div class="col-name">${ETAPA_LABEL[etapa]||etapa}</div>
+        <div class="col-meta">${deals.length} deals</div>
+      </div>
+      <div class="col-cards">${cards||'<div style="padding:10px;font-size:10px;color:var(--faint)">Sin deals</div>'}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('deal-count').textContent=totalVisible+' deals visibles';
+}
+
+/* ── PROSPECCION ── */
+function renderProspeccion(){
+  document.getElementById('prosp-loading').style.display='none';
+  document.getElementById('prosp-content').style.display='';
+  renderTablas();
+  renderCards();
+}
+
+function filtrarCards(seq,el){
+  document.querySelectorAll('#page-prospeccion .filter-bar .fchip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  filtroCards=seq;
+  renderTablas();
+  renderCards();
+}
+
+function eventosParaFiltro(){
+  const eventos=DATA.eventos||[];
+  if(filtroCards==='ALL') return eventos;
+  return eventos.filter(e=>{
+    const campana=String(e.campana||'').toUpperCase();
+    const deal=String(e.deal_id||'');
+    // buscar en campana o en dealname si tuviera
+    if(filtroCards==='CB') return campana.includes('CB_') || campana.includes('_CB_') || (e.etapa&&String(e.deal_id).length>0&&String(e.campana||'').toUpperCase().includes('CB'));
+    if(filtroCards==='NAC') return campana.includes('NAC_') || campana.includes('_NAC_') || campana.includes('NACIONAL') || campana.includes('VIP-LG');
+    return true;
+  });
+}
+
+function renderTablas(){
+  const evs=eventosParaFiltro();
+  const now=Date.now();
+  const ms1=86400000,ms7=7*ms1,ms30=30*ms1,ms90=90*ms1;
+  function inR(fecha,ms){return (now-new Date(fecha).getTime())<=ms;}
+
+  // Las clasificaciones vienen con guión bajo en los datos reales
+  const CLAS_MAP={
+    'DUO Reply':['duo reply','duo_reply'],
+    'Interested':['interested'],
+    'Meeting Booked':['meeting booked','meeting_booked'],
+    'Forwarded To The Right Person':['forwarded to the right person','forwarded_to_the_right_person'],
+    'Introduction':['introduction'],
+    'Circle Back':['circle back','circle_back','asked to circle back later','asked_to_circle_back_later'],
+    'OOO':['ooo'],
+    'Not The Right Person':['not the right person','not_the_right_person'],
+    'Not Interested':['not interested','not_interested'],
+    'Hard No':['hard no','hard_no']
+  };
+
+  function matchClas(e,variants){
+    const c=normClasificacion(e.clasificacion);
+    return variants.some(v=>c===v);
+  }
+  function row(label,dot,evsFilt){
+    const h=evsFilt.filter(e=>inR(e.fecha,ms1)).length;
+    const d7=evsFilt.filter(e=>inR(e.fecha,ms7)).length;
+    const d30=evsFilt.filter(e=>inR(e.fecha,ms30)).length;
+    const d90=evsFilt.filter(e=>inR(e.fecha,ms90)).length;
+    const tot=evsFilt.length;
+    return `<tr><td><span class="dotsm ${dot}"></span>${label}</td><td>${h}</td><td>${d7}</td><td>${d30}</td><td>${d90}</td><td><b>${tot}</b></td></tr>`;
+  }
+
+  const repliesEvs=evs.filter(e=>e.tipo==='reply');
+  document.getElementById('tbody-replies').innerHTML=`
+    <tr class="grp-hdr duo"><td colspan="6"><span class="dotsm dp"></span>DUO — SEÑAL CONDUCTUAL + REPLY</td></tr>
+    ${row('DUO Reply','dp',repliesEvs.filter(e=>matchClas(e,CLAS_MAP['DUO Reply'])))}
+    <tr class="grp-hdr alta"><td colspan="6"><span class="dotsm dg"></span>ALTA PRIORIDAD — ATENDER YA</td></tr>
+    ${row('Interested','dg',repliesEvs.filter(e=>matchClas(e,CLAS_MAP['Interested'])))}
+    ${row('Meeting Booked','dg',repliesEvs.filter(e=>matchClas(e,CLAS_MAP['Meeting Booked'])))}
+    ${row('Forwarded To The Right Person','dg',repliesEvs.filter(e=>matchClas(e,CLAS_MAP['Forwarded To The Right Person'])))}
+    ${row('Introduction','dg',repliesEvs.filter(e=>matchClas(e,CLAS_MAP['Introduction'])))}
+    <tr class="grp-hdr media"><td colspan="6"><span class="dotsm dy"></span>MEDIA — PENDIENTE / RETOMAR</td></tr>
+    ${row('Circle Back','dy',repliesEvs.filter(e=>matchClas(e,CLAS_MAP['Circle Back'])))}
+    ${row('OOO','dy',repliesEvs.filter(e=>matchClas(e,CLAS_MAP['OOO'])))}
+    <tr class="grp-hdr desc"><td colspan="6"><span class="dotsm dr"></span>DESCARTADO — YA NO INTERESA</td></tr>
+    ${row('Not The Right Person','dr',repliesEvs.filter(e=>matchClas(e,CLAS_MAP['Not The Right Person'])))}
+    ${row('Not Interested','dr',repliesEvs.filter(e=>matchClas(e,CLAS_MAP['Not Interested'])))}
+    ${row('Hard No','dr',repliesEvs.filter(e=>matchClas(e,CLAS_MAP['Hard No'])))}
+    <tr class="total-row"><td>TOTAL replies</td>
+      <td>${repliesEvs.filter(e=>inR(e.fecha,ms1)).length}</td>
+      <td>${repliesEvs.filter(e=>inR(e.fecha,ms7)).length}</td>
+      <td>${repliesEvs.filter(e=>inR(e.fecha,ms30)).length}</td>
+      <td>${repliesEvs.filter(e=>inR(e.fecha,ms90)).length}</td>
+      <td><b>${repliesEvs.length}</b></td>
+    </tr>`;
+
+  // Open+3 — tipo es "open3" en los datos reales
+  const open3Evs=evs.filter(e=>e.tipo==='open3');
+  const prods=['CB','NAC'];
+  let totH=0,tot7=0,tot30=0,tot90=0,totT=0;
+  const prodRows=prods.map(p=>{
+    if(filtroCards!=='ALL'&&filtroCards!==p) return '';
+    // buscar CB en campana que empieza con CB_ o NAC en NAC_ o NACIONAL
+    const pEvs=open3Evs.filter(e=>{
+      const c=String(e.campana||'').toUpperCase();
+      if(p==='CB') return c.startsWith('CB_');
+      if(p==='NAC') return !c.startsWith('CB_');
+      return true;
+    });
+    const h=pEvs.filter(e=>inR(e.fecha,ms1)).length;
+    const d7=pEvs.filter(e=>inR(e.fecha,ms7)).length;
+    const d30=pEvs.filter(e=>inR(e.fecha,ms30)).length;
+    const d90=pEvs.filter(e=>inR(e.fecha,ms90)).length;
+    const tot=pEvs.length;
+    totH+=h;tot7+=d7;tot30+=d30;tot90+=d90;totT+=tot;
+    return `<tr><td>P_STL_${p}</td><td>${h}</td><td>${d7}</td><td>${d30}</td><td>${d90}</td><td><b>${tot}</b></td></tr>`;
+  }).join('');
+  document.getElementById('tbody-open').innerHTML=prodRows+`<tr class="total-row"><td>TOTAL señales</td><td>${totH}</td><td>${tot7}</td><td>${tot30}</td><td>${tot90}</td><td><b>${totT}</b></td></tr>`;
+}
+
+function renderCards(){
+  const evs=eventosParaFiltro();
+  const replies=evs.filter(e=>e.tipo==='reply').sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  document.getElementById('cards-label').textContent='REPLIES RECIENTES ('+replies.length+')';
+  const grid=document.getElementById('cards-grid');
+  if(!replies.length){
+    grid.innerHTML='<div style="color:var(--faint);font-size:11px;padding:16px">Sin replies para el filtro seleccionado.</div>';
+    return;
+  }
+  grid.innerHTML=replies.slice(0,18).map((e,i)=>{
+    const etapaBadge=e.etapa?`<span class="badge ${badgeClass(e.etapa)}">${e.etapa}</span>`:'';
+    const hace=tiempoRelativo(e.fecha);
+    const tienePersona=e.linkedin_persona&&e.linkedin_persona.startsWith('http');
+    const tieneEmpresa=e.linkedin_empresa&&e.linkedin_empresa.startsWith('http');
+    const clas=normClasificacion(e.clasificacion);
+    return `<div class="card">
+      <div class="card-head"><div class="card-co">${esc(e.empresa||'—')}</div>${etapaBadge}</div>
+      <div class="card-ind">${esc(e.industria||'')}${e.empleados?' · '+e.empleados+' emp.':''}</div>
+      <div class="card-per">${esc(e.prospecto||'—')}</div>
+      <div class="card-rol">${esc(e.puesto||'')}</div>
+      <div class="card-chips">
+        <span class="cc stil">STIL</span>
+        ${e.canal==='LinkedIn'||e.canal==='linkedin'?'<span class="cc li">LinkedIn</span>':'<span class="cc em">Email</span>'}
+        ${e.campana?`<span class="cc seq">${esc(e.campana.split(',')[0].substring(0,20))}</span>`:''}
+      </div>
+      <div class="card-time">${hace} · <span style="color:var(--muted)">${clas||'—'}</span></div>
+      <div class="card-btns">
+        <button class="btn-w"${!tienePersona?' disabled title="Sin URL LinkedIn"':''} onclick="${tienePersona?'window.open(\''+esc(e.linkedin_persona)+'\',\'_blank\')':''}">Persona ↗</button>
+        <button class="btn-w"${!tieneEmpresa?' disabled title="Sin URL LinkedIn"':''} onclick="${tieneEmpresa?'window.open(\''+esc(e.linkedin_empresa)+'\',\'_blank\')':''}">Empresa ↗</button>
+        <button class="btn-y" onclick="abrirModal(${i})">Ver detalle</button>
+      </div>
+    </div>`;
+  }).join('');
+  window._replies=replies;
+}
+
+function abrirModal(idx){
+  const e=window._replies[idx];
+  if(!e) return;
   document.getElementById('m-co').textContent=e.empresa||'—';
   document.getElementById('m-ind').textContent=(e.industria||'')+(e.empleados?' · '+e.empleados+' emp.':'');
   document.getElementById('m-per').textContent=e.prospecto||'—';
   document.getElementById('m-rol').textContent=e.puesto||'';
   document.getElementById('m-etapa').textContent=e.etapa||'—';
-  document.getElementById('m-clas').textContent=e.clasificacion||'—';
-  document.getElementById('m-prod').textContent=e.producto||e.campana||'—';
-  document.getElementById('m-web').textContent=e.web||'—';
+  document.getElementById('m-clas').textContent=normClasificacion(e.clasificacion)||'—';
   document.getElementById('m-camp').textContent=e.campana||'—';
   document.getElementById('m-canal').textContent=e.canal||'—';
-  document.getElementById('m-tenant').textContent=e.tenant||'STIL';
-  document.getElementById('m-msg').textContent=e.mensaje?`"${e.mensaje}"` :'—';
+  document.getElementById('m-msg').textContent=e.mensaje?'"'+e.mensaje.substring(0,200)+'"':'Sin mensaje';
   const dias=e.fecha?Math.floor((Date.now()-new Date(e.fecha).getTime())/86400000):0;
   document.getElementById('m-dias').textContent=dias>0?dias+' días de retraso':'Hoy';
   document.getElementById('m-fecha').textContent=e.fecha?new Date(e.fecha).toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}):'—';
-  document.getElementById('mbtn-persona').onclick=()=>{if(e.linkedin_persona&&e.linkedin_persona.startsWith('http'))window.open(e.linkedin_persona,'_blank');};
-  document.getElementById('mbtn-empresa').onclick=()=>{if(e.linkedin_empresa&&e.linkedin_empresa.startsWith('http'))window.open(e.linkedin_empresa,'_blank');};
-  document.getElementById('mbtn-web').onclick=()=>{if(e.web&&e.web.startsWith('http'))window.open(e.web,'_blank');};
+  const tienePersona=e.linkedin_persona&&e.linkedin_persona.startsWith('http');
+  const tieneEmpresa=e.linkedin_empresa&&e.linkedin_empresa.startsWith('http');
+  const bp=document.getElementById('mbtn-persona');
+  const be=document.getElementById('mbtn-empresa');
+  bp.disabled=!tienePersona;
+  bp.onclick=tienePersona?()=>window.open(e.linkedin_persona,'_blank'):null;
+  be.disabled=!tieneEmpresa;
+  be.onclick=tieneEmpresa?()=>window.open(e.linkedin_empresa,'_blank'):null;
   document.getElementById('modal').style.display='flex';
 }
 function cerrarModal(){document.getElementById('modal').style.display='none';}
 
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
-// Arrancar
 cargarDatos();
 </script>
 </body>
