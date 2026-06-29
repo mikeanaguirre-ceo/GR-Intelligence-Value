@@ -874,12 +874,12 @@ async function loadData() {
     // Fetch principal v10 + AM v1 en paralelo
     // Prospección carga en paralelo pero NO bloquea el dashboard principal
     const prospPromise = fetch(PROSPECCION_URL).catch(e => { console.warn('Prospeccion endpoint failed:', e); return null; });
-    const empresasPromise = fetch(EMPRESAS_URL).catch(e => null);
     const [dealsRes, amRes] = await Promise.all([
       fetch(DATA_URL),
       fetch(AM_URL + '?period=' + amPeriod).catch(e => { console.warn('AM endpoint failed:', e); return null; })
     ]);
-    const [prospRes, empresasRes] = await Promise.all([prospPromise, empresasPromise]);
+    const prospRes = await prospPromise;
+    const empresasRes = null;
 
     if (!dealsRes.ok) throw new Error('HTTP ' + dealsRes.status);
     
