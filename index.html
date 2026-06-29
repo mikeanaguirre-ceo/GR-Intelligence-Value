@@ -3566,12 +3566,23 @@ function renderProspDetalle(ptype, pval, pwin) {
   var rel=function(iso){ var f=new Date(iso); if(isNaN(f)) return ''; var a=Math.floor((nowP-f)/86400000); if(a<=0)return 'hoy'; if(a===1)return 'ayer'; if(a<30)return 'hace '+a+'d'; return f.toLocaleDateString('es-MX',{day:'2-digit',month:'short'}); };
 
   var pool=PEV.map(function(e){return Object.assign({},e,{clasificacion:normClas(e.clasificacion||'')});}).filter(function(e){return matchFilt(e)&&inWin(e);});
+  var isDUOf=function(e){ return e.campana && e.campana.indexOf(' – ')!==-1; };
   if(ptype==='clas'){
-    pool=pool.filter(function(e){return e.tipo!=='open3';});
-    if(pval!=='__ALL_REPLIES__') pool=pool.filter(function(e){return (e.clasificacion||'')===pval;});
+    if(pval==='__DUO_REPLY__'){
+      // DUO replies: replies cuya campana tiene formato DuoCopilot
+      pool=pool.filter(function(e){ return e.tipo!=='open3' && isDUOf(e); });
+    } else {
+      pool=pool.filter(function(e){return e.tipo!=='open3';});
+      if(pval!=='__ALL_REPLIES__') pool=pool.filter(function(e){return (e.clasificacion||'')===pval;});
+    }
   } else {
-    pool=pool.filter(function(e){return e.tipo==='open3';});
-    if(pval!=='__ALL_SENALES__') pool=pool.filter(function(e){return (e.producto||'(sin producto)')===pval;});
+    if(pval==='__DUO__'){
+      // DUO señales: open3 cuya campana tiene formato DuoCopilot
+      pool=pool.filter(function(e){ return e.tipo==='open3' && isDUOf(e); });
+    } else {
+      pool=pool.filter(function(e){return e.tipo==='open3';});
+      if(pval!=='__ALL_SENALES__') pool=pool.filter(function(e){return (e.producto||'(sin producto)')===pval;});
+    }
   }
   pool.sort(function(a,b){return new Date(b.fecha)-new Date(a.fecha);});
   var winLbl={hoy:'Hoy',d7:'7d',d30:'30d',d90:'90d',total:'Total'}[pwin]||pwin;
