@@ -175,6 +175,9 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
     <div class="tw"><table class="tbl"><thead><tr><th style="width:38%">PRODUCTO</th><th>HOY</th><th>7D</th><th>30D</th><th>90D</th><th>TOTAL</th></tr></thead><tbody id="tbody-o"></tbody></table></div>
     <div class="divider"></div>
     <div id="prosp-detalle"></div>
+    <div class="divider"></div>
+    <div class="stitle" style="color:var(--green);margin-bottom:10px">Oportunidades en HubSpot por etapa</div>
+    <div class="tw"><table class="tbl" id="tbl-etapas"><thead><tr><th style="width:38%">ETAPA</th><th>HOY</th><th>7D</th><th>30D</th><th>90D</th><th>TOTAL</th></tr></thead><tbody id="tbody-etapas"></tbody></table></div>
   </div>
 </div>
 
@@ -321,7 +324,60 @@ function renderProspeccion(){
   document.getElementById('pp-c').style.display='';
   renderChips();
   renderTablas();
+  renderEtapas();
   renderDetalleAuto();
+}
+
+function renderEtapas(){
+  const dbs=DATA.dealsByStage||{};
+  const now=Date.now();
+  // Etapas STIL en Portal Clientes con sus IDs reales, en orden de embudo
+  const ETAPAS_STIL=[
+    {key:'Prospeccion',l:'Prospección',col:'#EF4444'},
+    {key:'Atraccion',l:'Atracción',col:'#F59E0B',venta:true},
+    {key:'Educacion',l:'Educación',col:'#34d399',venta:true},
+    {key:'Propuesta',l:'Propuesta',col:'#34d399',venta:true},
+    {key:'Reunion',l:'Reunión',col:'#34d399',venta:true},
+    {key:'Ganada',l:'Ganada',col:'#34d399',venta:true},
+  ];
+  function ageDays(created){
+    const f=new Date(created);if(isNaN(f))return null;
+    return Math.floor((now-f)/86400000);
+  }
+  // Contar por etapa usando createdate del deal
+  const sc={};
+  ETAPAS_STIL.forEach(e=>{
+    const deals=(dbs[e.key]||[]).filter(d=>esDeal(d.dealname));
+    const w={hoy:0,d7:0,d30:0,d90:0,total:deals.length};
+    deals.forEach(d=>{
+      const a=ageDays(d.created);
+      if(a===null)return;
+      if(a<=0)w.hoy++;if(a<=7)w.d7++;if(a<=30)w.d30++;if(a<=90)w.d90++;
+    });
+    sc[e.key]=w;
+  });
+  let t='';
+  let ventaMark=false;
+  ETAPAS_STIL.forEach(e=>{
+    if(e.venta&&!ventaMark){
+      t+=`<tr><td colspan="6" style="font-size:10px;font-weight:800;color:#34d399;padding:6px 12px;border-top:2px solid #34d399;letter-spacing:.05em">PASA A VENTA</td></tr>`;
+      ventaMark=true;
+    }
+    const w=sc[e.key]||{hoy:0,d7:0,d30:0,d90:0,total:0};
+    const lbl=e.venta?`<span style="color:${e.col};font-weight:600">${e.l}</span>`:e.l;
+    t+=`<tr>
+      <td><span class="dot" style="background:${e.col}"></span>${lbl}</td>
+      <td style="text-align:center">${w.hoy||0}</td>
+      <td style="text-align:center">${w.d7||0}</td>
+      <td style="text-align:center">${w.d30||0}</td>
+      <td style="text-align:center">${w.d90||0}</td>
+      <td style="text-align:center;font-weight:700">${w.total}</td>
+    </tr>`;
+  });
+  // Fila TOTAL
+  const tots=Object.values(sc).reduce((a,w)=>({hoy:a.hoy+w.hoy,d7:a.d7+w.d7,d30:a.d30+w.d30,d90:a.d90+w.d90,total:a.total+w.total}),{hoy:0,d7:0,d30:0,d90:0,total:0});
+  t+=`<tr class="tot"><td>TOTAL oportunidades</td><td style="text-align:center">${tots.hoy}</td><td style="text-align:center">${tots.d7}</td><td style="text-align:center">${tots.d30}</td><td style="text-align:center">${tots.d90}</td><td style="text-align:center;font-weight:700">${tots.total}</td></tr>`;
+  document.getElementById('tbody-etapas').innerHTML=t;
 }
 
 function renderChips(){
