@@ -983,7 +983,22 @@ async function loadData() {
     }
     $('#p-recap').innerHTML = html;
   $$('#p-recap .task-edit-btn').forEach(btn => {
-    btn.addEventListener('click', () => openTaskEditor(btn.dataset));
+    btn.addEventListener('click', function() {
+      var titleBtn = (btn.dataset.title || '').replace(/&quot;/g, '"');
+      var allTasks = (TASKS && TASKS.tasks) ? TASKS.tasks : [];
+      var found = allTasks.find(function(t) {
+        var s = t.subject || '';
+        return titleBtn && s && (s.indexOf(titleBtn.slice(0,25)) >= 0 || titleBtn.indexOf(s.slice(0,25)) >= 0);
+      });
+      if (found) {
+        openTaskEditor({ tid: found.id||'', did: found.dealId||'', oid: found.ownerId||'',
+          client: btn.dataset.client||'', title: found.subject||titleBtn,
+          prod: found.prod||'', persona: found.persona||'', date: found.dueDate||'', stages: found.stages||'' });
+      } else {
+        openTaskEditor({ tid:'', did:'', oid:'', client: btn.dataset.client||'',
+          title: titleBtn, completionDate: btn.dataset.completionDate||'' });
+      }
+    });
   });
   }
 }
