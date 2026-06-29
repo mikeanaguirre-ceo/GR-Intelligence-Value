@@ -1000,7 +1000,14 @@ function switchTab(tabId) {
 }
 
 function renderCurrentTab() {
-  if (!DATA) return;
+  if (!DATA) {
+    // DATA no cargó aún — mostrar mensaje en el tab activo
+    var contP = document.getElementById('p-prospeccion');
+    if (contP && currentTab === 'prospeccion') {
+      contP.innerHTML = '<div style="color:#9CA3AF;padding:16px;font-size:13px;">Esperando datos principales...</div>';
+    }
+    return;
+  }
   const renderers = {
     recap: renderRecap,
     overview: renderOverview,
@@ -1015,7 +1022,10 @@ function renderCurrentTab() {
     chat: renderChat
   };
   const fn = renderers[currentTab];
-  if (fn) fn();
+  try { if (fn) fn(); } catch(e) {
+    var ep = document.getElementById('p-' + currentTab);
+    if (ep) ep.innerHTML = '<div style="color:#ef4444;padding:16px;">Error en render: ' + e.message + '</div>';
+  }
 }
 
 // --- RECAP ---
@@ -3016,12 +3026,6 @@ function funnelRow(steps) {
 }
 
 function renderProspeccion() {
-  var cont = document.getElementById('p-prospeccion');
-  if (!cont) return;
-  // DIAGNOSTICO VISIBLE
-  var diag = 'PROSPECCION_DATA=' + (PROSPECCION_DATA ? 'ok total='+PROSPECCION_DATA.total : 'NULL');
-  cont.innerHTML = '<div style="color:#fff;padding:16px;font-size:13px;">Cargando... ' + diag + '</div>';
-  try {
   var deals = (DATA && DATA.deals) || [];
   var PEV = (PROSPECCION_DATA && Array.isArray(PROSPECCION_DATA.eventos)) ? PROSPECCION_DATA.eventos : null;
   var cont = document.getElementById('p-prospeccion');
@@ -3097,10 +3101,6 @@ function renderProspeccion() {
   ETAPAS.forEach(function(st){ if(st.v&&!venta){dh+='<tr><td colspan="6" style="font-size:10px;font-weight:800;color:#10B981;padding:6px 12px;border-top:2px solid #10B981;">PASA A VENTA</td></tr>';venta=true;} var w=sc[st.id]||{hoy:0,d7:0,d30:0,d90:0,total:0}; dh+='<tr><td>'+dot(st.col)+(st.v?'<span style="color:'+st.col+';font-weight:600;">'+st.l+'</span>':st.l)+'</td><td style="text-align:center;">'+w.hoy+'</td><td style="text-align:center;">'+w.d7+'</td><td style="text-align:center;">'+w.d30+'</td><td style="text-align:center;">'+w.d90+'</td><td style="text-align:center;font-weight:700;">'+w.total+'</td></tr>'; });
   dh+='</tbody></table></div></div>';
   cont.innerHTML='<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Fuente: tabla de eventos (los 3 tenants), no HubSpot. Los 30d incluyen 7d y hoy.</div>'+chips+'<div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado. Toca un número para ver el detalle.</div>'+t1+'<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto</div>'+t2+'<div id="prosp-detalle" style="margin-top:16px;"></div></div>'+dh;
-  } catch(err) {
-    cont.innerHTML = '<div style="color:#ef4444;padding:16px;font-size:13px;">ERROR en renderProspeccion: ' + err.message + '<br>' + err.stack + '</div>';
-    return;
-  }
   cont.querySelectorAll('[data-prospfilter]').forEach(function(btn){ btn.addEventListener('click',function(){ prospProducto=btn.dataset.prospfilter; renderProspeccion(); }); });
   cont.querySelectorAll('.pcell').forEach(function(td){ td.addEventListener('click',function(){ renderProspDetalle(td.dataset.ptype,decodeURIComponent(td.dataset.pval),td.dataset.pwin); }); });
 }
