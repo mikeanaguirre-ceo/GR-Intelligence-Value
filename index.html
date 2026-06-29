@@ -949,6 +949,11 @@ async function loadData() {
     updateTimer();
     updateFooter();
     renderCurrentTab();
+    // Cargar datos de empresa en background (no bloquea)
+    fetch(EMPRESAS_URL).then(function(r){ return r.json(); }).then(function(data){
+      EMPRESAS_DATA = data;
+      if(currentTab === 'prospeccion') renderCurrentTab();
+    }).catch(function(e){ console.warn('Empresas endpoint failed:', e); });
   } catch (err) {
     console.error('Load error:', err);
     let html = '';
