@@ -982,6 +982,9 @@ async function loadData() {
       </div>`;
     }
     $('#p-recap').innerHTML = html;
+  $$('#p-recap .task-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => openTaskEditor(btn.dataset));
+  });
   }
 }
 
@@ -1159,7 +1162,7 @@ function renderRecap() {
     // Si hay filtro persona específica (no Todos), mostrar tabla detalle
     if (filtroPersona !== 'Todos') {
       html += `<table class="tbl" style="margin-top:8px;">
-        <thead><tr><th>Cliente</th><th>Producto</th><th>Acción</th><th>Tarea</th><th>Completada</th></tr></thead>
+        <thead><tr><th>Cliente</th><th>Producto</th><th>Acción</th><th>Tarea</th><th>Completada</th><th style="width:44px;"></th></tr></thead>
         <tbody>`;
       tareas.slice(0, 200).forEach(t => {
         html += `<tr>
@@ -2111,13 +2114,13 @@ function ensureTaskModal() {
         '</div></div>' +
       '</div>' +
       // Acciones modo EDITAR
-      '<div id="tm-edit-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;">' +
-        '<button id="tm-save" style="flex:1;min-width:130px;background:linear-gradient(135deg,var(--purple,#7c3aed),var(--pink,#db2777));color:#fff;border:0;border-radius:8px;padding:10px;font-weight:600;cursor:pointer;">Guardar cambios</button>' +
-        '<button id="tm-close" style="flex:1;min-width:120px;background:#16A34A;color:#fff;border:0;border-radius:8px;padding:10px;font-weight:600;cursor:pointer;">✓ Cerrar tarea</button>' +
+      '<div id="tm-edit-actions" style="display:flex;flex-direction:column;gap:8px;margin-top:18px;">' +
+        '<button id="tm-save" style="width:100%;background:#7C3AED;color:#fff;border:0;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:.01em;">Guardar cambios</button>' +
+        '<button id="tm-next" style="width:100%;background:transparent;color:#c4b5fd;border:1px solid #7C3AED;border-radius:10px;padding:10px;font-weight:600;cursor:pointer;">+ Crear nueva tarea (misma oportunidad)</button>' +
+        '<button id="tm-close" style="width:100%;background:#DC2626;color:#fff;border:0;border-radius:10px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;">✓ Cerrar tarea</button>' +
+        '<button id="tm-reopen" style="display:none;width:100%;background:#D97706;color:#fff;border:0;border-radius:10px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;">↩ Reabrir tarea</button>' +
       '</div>' +
-      '<div id="tm-next-row" style="display:flex;gap:8px;margin-top:8px;">' +
-        '<button id="tm-next" style="flex:1;background:rgba(99,102,241,.15);color:#A5B4FC;border:1px solid var(--border,#2a2d35);border-radius:8px;padding:10px;font-weight:600;cursor:pointer;">+ Crear nueva tarea (en blanco, misma oportunidad)</button>' +
-      '</div>' +
+      '<div id="tm-next-row" style="display:none;"></div>' +
       // Acciones modo NUEVA
       '<div id="tm-create-actions" style="display:none;gap:8px;margin-top:18px;flex-direction:column;">' +
         '<button id="tm-create" style="background:linear-gradient(135deg,var(--purple,#7c3aed),var(--pink,#db2777));color:#fff;border:0;border-radius:8px;padding:10px;font-weight:600;cursor:pointer;">Crear tarea</button>' +
@@ -2137,6 +2140,7 @@ function ensureTaskModal() {
   document.getElementById('tm-cancel').addEventListener('click', () => m.style.display = 'none');
   document.getElementById('tm-save').addEventListener('click', () => doTaskAction('update'));
   document.getElementById('tm-close').addEventListener('click', () => doTaskAction('close'));
+  document.getElementById('tm-reopen').addEventListener('click', () => doTaskAction('reopen'));
   document.getElementById('tm-next').addEventListener('click', enterNewTaskMode);
   document.getElementById('tm-create').addEventListener('click', () => doTaskAction('create'));
   document.getElementById('tm-back').addEventListener('click', () => setMode('edit'));
@@ -2187,6 +2191,12 @@ function openTaskEditor(ds) {
   document.getElementById('tm-date-display').value = fmtDisplay(ds.date || '');
   document.getElementById('tm-cal').style.display = 'none';
   setMode('edit');
+  // Mostrar reabrir si la tarea está completada
+  const isCompleted = !!(ds.completionDate || (ds.status && ds.status === 'COMPLETED'));
+  const reopenBtn = document.getElementById('tm-reopen');
+  const closeBtn = document.getElementById('tm-close');
+  if (reopenBtn) { reopenBtn.style.display = isCompleted ? 'block' : 'none'; }
+  if (closeBtn)  { closeBtn.style.display  = isCompleted ? 'none' : 'block'; }
   document.getElementById('task-modal').style.display = 'flex';
 }
 
@@ -2225,6 +2235,9 @@ async function doTaskAction(kind) {
   if (kind === 'close') {
     url = TASK_CLOSE_URL;
     payload = { taskId: _taskCtx.tid };
+  } else if (kind === 'reopen') {
+    url = TASK_UPDATE_URL;
+    payload = { taskId: _taskCtx.tid, reopen: true, status: 'NOT_STARTED' };
   } else {
     if (!responsable) { taskToast('Falta el responsable', false); return; }
     if (!accion) { taskToast('Falta describir qué hay que hacer', false); return; }
