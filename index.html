@@ -1171,6 +1171,7 @@ function renderRecap() {
           <td><span class="tag tag-atraccion">${t.action}</span></td>
           <td><small>${t.title}</small></td>
           <td><small>${t.completedDate || '—'}</small></td>
+        <td style="text-align:center;"><button class="task-edit-btn" data-tid="${t.id||''}" data-did="${t.dealId||''}" data-oid="${t.ownerId||''}" data-client="${(t.client||'').replace(/\"/g,'&quot;')}" data-title="${(t.title||'').replace(/\"/g,'&quot;')}" data-completion-date="${t.completedDate||''}" title="Editar / reabrir" style="background:none;border:1px solid var(--border,#2a2d35);border-radius:6px;padding:3px 8px;color:var(--text-dim,#9ca3af);cursor:pointer;font-size:13px;">✏️</button></td>
         </tr>`;
       });
       if (tareas.length > 200) {
