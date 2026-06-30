@@ -207,7 +207,17 @@ function switchTab(id,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   el.classList.add('on');
   document.getElementById('page-'+id).classList.add('on');
+  history.pushState({tab:id},'',location.pathname+'?tab='+id);
 }
+window.addEventListener('popstate',function(e){
+  const tab=(e.state&&e.state.tab)||'pipeline';
+  const el=document.querySelector('.ntab[onclick*="\''+tab+'\'"]');
+  document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  if(el)el.classList.add('on');
+  const pg=document.getElementById('page-'+tab);
+  if(pg)pg.classList.add('on');
+});
 
 async function cargarDatos(){
   try{
@@ -331,8 +341,9 @@ function getEvsFiltrados(){
   if(prodSel==='ALL') return evs;
   return evs.filter(e=>{
     const c=String(e.campana||'').toUpperCase();
-    if(prodSel==='CB') return c.startsWith('CB_');
-    if(prodSel==='NAC') return !c.startsWith('CB_')&&c.length>0;
+    const emp=String(e.empresa||'').toUpperCase();
+    if(prodSel==='CB') return c.startsWith('CB_')||emp.includes('CB_')||emp.includes('_STL_CB');
+    if(prodSel==='NAC') return (!c.startsWith('CB_')&&c.length>0)||(emp.includes('NAC_')||emp.includes('_STL_NAC'));
     return true;
   });
 }
@@ -495,13 +506,14 @@ function fase(et){
   if(/Perdida/i.test(et))return'gray';
   if(/Atracc|Educ|Propuesta|Aproba|Contract|Reuni|Renova/i.test(et))return'green';
   if(/Conversa/i.test(et))return'yellow';
+  if(/Senal|Reply|Contactado/i.test(et))return'red';
   return'red';
 }
 const FC={green:'#34d399',yellow:'#F59E0B',red:'#EF4444',gray:'#6B7280'};
 
 function liPer(e){return(e.linkedin_persona&&e.linkedin_persona.startsWith('http'))?e.linkedin_persona:'https://www.linkedin.com/search/results/people/?keywords='+encodeURIComponent((e.prospecto||'')+' '+(e.empresa||''));}
 function liEmp(e){return(e.linkedin_empresa&&e.linkedin_empresa.startsWith('http'))?e.linkedin_empresa:'https://www.linkedin.com/search/results/companies/?keywords='+encodeURIComponent(e.empresa||'');}
-function goURL(url){window.location.href=url;}
+function goURL(url){if(url)window.open(url,'_blank','noopener,noreferrer');}
 
 function renderDetalle(ptype,pval,pwin){
   const box=document.getElementById('prosp-detalle');if(!box)return;
@@ -517,8 +529,8 @@ function renderDetalle(ptype,pval,pwin){
     if(pval==='__DUO__') pool=pool.filter(e=>e.tipo==='open3'&&isDUO(e));
     else{
       pool=pool.filter(e=>e.tipo==='open3');
-      if(pval==='P_STL_CB') pool=pool.filter(e=>String(e.campana||'').toUpperCase().startsWith('CB_'));
-      else if(pval==='P_STL_NAC') pool=pool.filter(e=>!String(e.campana||'').toUpperCase().startsWith('CB_'));
+      if(pval==='P_STL_CB') pool=pool.filter(e=>String(e.campana||'').toUpperCase().startsWith('CB_')||String(e.empresa||'').toUpperCase().includes('CB_'));
+      else if(pval==='P_STL_NAC') pool=pool.filter(e=>!String(e.campana||'').toUpperCase().startsWith('CB_')&&!String(e.empresa||'').toUpperCase().includes('CB_'));
     }
   }
   pool.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
@@ -533,7 +545,7 @@ function renderDetalle(ptype,pval,pwin){
   h+='<div class="pv4-grid">';
   pool.forEach((e,i)=>{
     const f=fase(e.etapa||''),ac=FC[f];
-    const sub=[e.industria?(e.industria.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase())):'',e.empleados?e.empleados+' emp.':''].filter(Boolean).join(' · ');
+  const sub=[e.industria?(e.industria.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase())):'',e.empleados?Number(e.empleados).toLocaleString('es-MX')+' emp.':''].filter(Boolean).join(' · ');
     const msg=e.mensaje||'';
     h+=`<div class="pv4-card" onclick="oM(${i})">
       <div class="pv4-accent" style="background:${ac}"></div>
@@ -548,12 +560,14 @@ function renderDetalle(ptype,pval,pwin){
       <div class="pv4-tags">
         <span class="pv4-tg">${esc(e.tenant||'STIL')}</span>
         ${e.canal?`<span class="pv4-tg ch">${esc(e.canal)}</span>`:''}
+        ${e.ciudad||e.pais?`<span class="pv4-tg">${esc([e.ciudad,e.pais].filter(Boolean).join(', '))}</span>`:''}
         ${e.campana?`<span class="pv4-tg" title="${esc(e.campana)}">${esc(e.campana.substring(0,30))}</span>`:''}
         <span class="pv4-tg">${rel(e.fecha)}</span>
       </div>
       <div class="pv4-actions">
         <button class="pv4-btn li" onclick="event.stopPropagation();goURL('${liPer(e)}')">in Persona ↗</button>
         <button class="pv4-btn lc" onclick="event.stopPropagation();goURL('${liEmp(e)}')">in Empresa ↗</button>
+        ${e.web?`<button class="pv4-btn" style="border-color:#6B7280;color:#9CA3AF" onclick="event.stopPropagation();goURL('${e.web}')">Web ↗</button>`:''}
         <button class="pv4-btn dt" onclick="event.stopPropagation();oM(${i})">Ver detalle</button>
       </div>
     </div>`;
@@ -570,7 +584,7 @@ function oM(i){
   const retraso=(()=>{const a=Math.floor((Date.now()-new Date(e.fecha))/864e5);return a<=0?'Hoy':a===1?'1 día de retraso':a+' días de retraso';})();
   const rCol=Math.floor((Date.now()-new Date(e.fecha))/864e5)>7?'#EF4444':'#F59E0B';
   const fechaTxt=(()=>{const f=new Date(e.fecha);return isNaN(f)?'—':f.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});})();
-  const industLine=[e.industria?(e.industria.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase())):'',e.empleados?e.empleados+' empleados':''].filter(Boolean).join(' · ');
+  const industLine=[e.industria?(e.industria.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase())):'',e.empleados?Number(e.empleados).toLocaleString('es-MX')+' emp.':'',e.ciudad&&e.pais?(e.ciudad+', '+e.pais):e.pais||e.ciudad||''].filter(Boolean).join(' · ');
   const mrow=(k,v,inner)=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #2A3142;font-size:13px"><span style="color:#9CA3AF;font-size:12px">${k}</span><span style="font-weight:600;text-align:right;max-width:230px">${inner||esc(v||'—')}</span></div>`;
   const abtn=(href,lbl,col)=>href?`<button onclick="goURL('${href}')" style="flex:1;min-width:100px;text-align:center;padding:9px 6px;border-radius:9px;border:1px solid ${col};color:${col};font-size:12px;font-weight:700;display:inline-block;background:transparent;cursor:pointer;font-family:'Montserrat',sans-serif">${lbl}</button>`:'';
 
@@ -585,7 +599,9 @@ function oM(i){
       ${mrow('Etapa','',(e.etapa?`<span style="background:${col}22;color:${col};padding:2px 8px;border-radius:12px;font-weight:700">${esc(e.etapa)}</span>`:'—'))}
       ${mrow('Clasificación','',fmtLbl(e.clasificacion||''))}
       ${mrow('Producto',e.producto)}
-      ${e.web?mrow('Web','',`<a href="${e.web}" target="_blank" style="color:#06B6D4">${esc(e.web.replace(/^https?:\/\//,''))}</a>`):''}
+      ${e.empleados?mrow('Empleados',Number(e.empleados).toLocaleString('es-MX')):''}
+      ${e.ciudad||e.pais?mrow('Ubicación',[e.ciudad,e.pais].filter(Boolean).join(', ')):''}
+      ${e.web?mrow('Web','',`<a href="${e.web}" target="_blank" rel="noopener noreferrer" style="color:#06B6D4">${esc(e.web.replace(/^https?:\/\//,''))}</a>`):''}
       ${mrow('Campaña',e.campana)}
       ${mrow('Canal',e.canal)}
       ${mrow('Tenant',e.tenant||'STIL')}
