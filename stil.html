@@ -192,8 +192,8 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
 <script>
 const EP='https://mikea.app.n8n.cloud/webhook/stil-prospeccion';
 const STIL_OK=['P_STL_','STIL_CB_','STIL_NAC_','STIL_AM_'];
-const ETAPAS=['Senal Detectada','Reply Recibido','Contactado','En Conversacion','Atraccion','Educacion','Ganada'];
-const EL={'Senal Detectada':'Señal Detectada','Reply Recibido':'Reply Recibido',Contactado:'Contactado','En Conversacion':'En Conversación',Atraccion:'Atracción',Educacion:'Educación',Ganada:'Ganada'};
+const ETAPAS_FIJAS=['Senal Detectada','Reply Recibido','Contactado','En Conversacion','Atraccion'];
+const EL={'Senal Detectada':'Señal Detectada','Reply Recibido':'Reply Recibido',Contactado:'Contactado','En Conversacion':'En Conversación',Atraccion:'Atracción',Educacion:'Educación','Qualified To Buy':'Qualified To Buy','Propuesta Enviada':'Propuesta Enviada','Aprobacion Verbal':'Aprobación Verbal','Decision Maker Bought-In':'Decision Maker Bought-In',Ganada:'Ganada',Perdida:'Perdida',Renovacion:'Renovación'};
 let DATA=null,fKanban='ALL',fProd='ALL';
 let __pool=[];
 
@@ -257,11 +257,25 @@ function renderPipeline(){
   document.getElementById('pl-c').style.display='';
   const dbs=DATA.dealsByStage||{};
   const evs=DATA.eventos||[];
+
+  // Etapas fijas Senal->Atraccion: siempre presentes
   const stilBS={};
+  ETAPAS_FIJAS.forEach(e=>{stilBS[e]=(dbs[e]||[]).filter(d=>esDeal(d.dealname));});
+
+  // Etapas posteriores a Atraccion: solo si tienen deals STIL
+  const etapasExtra=Object.keys(dbs).filter(k=>!ETAPAS_FIJAS.includes(k));
+  const stilExtra={};
+  etapasExtra.forEach(e=>{
+    const ds=(dbs[e]||[]).filter(d=>esDeal(d.dealname));
+    if(ds.length) stilExtra[e]=ds;
+  });
+
+  const ETAPAS_RENDER=[...ETAPAS_FIJAS, ...Object.keys(stilExtra)];
   let total=0;
-  ETAPAS.forEach(e=>{stilBS[e]=(dbs[e]||[]).filter(d=>esDeal(d.dealname));total+=stilBS[e].length;});
+  ETAPAS_FIJAS.forEach(e=>total+=stilBS[e].length);
+  Object.values(stilExtra).forEach(ds=>total+=ds.length);
+
   const replies=evs.filter(e=>e.tipo==='reply').length;
-  const open3=evs.filter(e=>e.tipo==='open3').length;
   const enSenal=stilBS['Senal Detectada'].length;
   const enReply=stilBS['Reply Recibido'].length;
   const enContactado=stilBS['Contactado'].length;
@@ -271,9 +285,9 @@ function renderPipeline(){
     <div class="kpi"><div class="kpi-n">${enSenal}</div><div class="kpi-l">Señal Detectada</div></div>
     <div class="kpi"><div class="kpi-n">${enReply}</div><div class="kpi-l">Reply Recibido</div></div>
     <div class="kpi"><div class="kpi-n">${enContactado}</div><div class="kpi-l">Contactado</div></div>
-    <div class="kpi"><div class="kpi-n g">${enAtr}</div><div class="kpi-l">En Atracción</div><div class="kpi-p">${pct}% de replies</div></div>
-    <div class="kpi"><div class="kpi-n">${total}</div><div class="kpi-l">Deals STIL activos</div></div>`;
-  window.__stilBS=stilBS;
+    <div class="kpi"><div class="kpi-n g">${enAtr}</div><div class="kpi-l">En Atracción</div><div class="kpi-p">${pct}% de replies</div></div>`;
+  window.__stilBS=Object.assign({},stilBS,stilExtra);
+  window.__etapasRender=ETAPAS_RENDER;
   renderKanban();
 }
 
@@ -284,8 +298,9 @@ function fK(seq,el){
 
 function renderKanban(){
   const stilBS=window.__stilBS||{};
+  const etapas=window.__etapasRender||ETAPAS_FIJAS;
   let vis=0;
-  document.getElementById('kanban').innerHTML=ETAPAS.map(etapa=>{
+  document.getElementById('kanban').innerHTML=etapas.map(etapa=>{
     let ds=stilBS[etapa]||[];
     if(fKanban!=='ALL') ds=ds.filter(d=>seqMatch(d.dealname,fKanban));
     vis+=ds.length;
@@ -334,23 +349,24 @@ function renderProspeccion(){
 function renderEtapas(){
   const dbs=DATA.dealsByStage||{};
   const now=Date.now();
-  // Etapas STIL en Portal Clientes con sus IDs reales, en orden de embudo
-  const ETAPAS_STIL=[
-    {key:'Senal Detectada',l:'Señal Detectada',col:'#EF4444'},
-    {key:'Reply Recibido',l:'Reply Recibido',col:'#EF4444'},
-    {key:'Contactado',l:'Contactado',col:'#EF4444'},
-    {key:'En Conversacion',l:'En Conversación',col:'#F59E0B'},
-    {key:'Atraccion',l:'Atracción',col:'#34d399',venta:true},
-    {key:'Educacion',l:'Educación',col:'#34d399',venta:true},
-    {key:'Ganada',l:'Ganada',col:'#34d399',venta:true},
-  ];
+  const COLORES_FIJAS={'Senal Detectada':'#EF4444','Reply Recibido':'#EF4444',Contactado:'#EF4444','En Conversacion':'#F59E0B',Atraccion:'#34d399'};
+
+  // Etapas fijas: siempre, en orden
+  const lista=ETAPAS_FIJAS.map(k=>({key:k,l:EL[k]||k,col:COLORES_FIJAS[k],venta:k==='Atraccion'}));
+
+  // Etapas posteriores a Atraccion: solo si tienen deals STIL
+  const extra=Object.keys(dbs).filter(k=>!ETAPAS_FIJAS.includes(k));
+  extra.forEach(k=>{
+    const deals=(dbs[k]||[]).filter(d=>esDeal(d.dealname));
+    if(deals.length) lista.push({key:k,l:EL[k]||k,col:'#34d399',venta:true});
+  });
+
   function ageDays(created){
     const f=new Date(created);if(isNaN(f))return null;
     return Math.floor((now-f)/86400000);
   }
-  // Contar por etapa usando createdate del deal
   const sc={};
-  ETAPAS_STIL.forEach(e=>{
+  lista.forEach(e=>{
     const deals=(dbs[e.key]||[]).filter(d=>esDeal(d.dealname));
     const w={hoy:0,d7:0,d30:0,d90:0,total:deals.length};
     deals.forEach(d=>{
@@ -362,7 +378,8 @@ function renderEtapas(){
   });
   let t='';
   let ventaMark=false;
-  ETAPAS_STIL.forEach(e=>{
+  lista.forEach((e,i)=>{
+    // Marca "PASA A VENTA" antes de la primera etapa marcada venta=true (Atraccion)
     if(e.venta&&!ventaMark){
       t+=`<tr><td colspan="6" style="font-size:10px;font-weight:800;color:#34d399;padding:6px 12px;border-top:2px solid #34d399;letter-spacing:.05em">PASA A VENTA</td></tr>`;
       ventaMark=true;
@@ -378,7 +395,6 @@ function renderEtapas(){
       <td style="text-align:center;font-weight:700">${w.total}</td>
     </tr>`;
   });
-  // Fila TOTAL
   const tots=Object.values(sc).reduce((a,w)=>({hoy:a.hoy+w.hoy,d7:a.d7+w.d7,d30:a.d30+w.d30,d90:a.d90+w.d90,total:a.total+w.total}),{hoy:0,d7:0,d30:0,d90:0,total:0});
   t+=`<tr class="tot"><td>TOTAL oportunidades</td><td style="text-align:center">${tots.hoy}</td><td style="text-align:center">${tots.d7}</td><td style="text-align:center">${tots.d30}</td><td style="text-align:center">${tots.d90}</td><td style="text-align:center;font-weight:700">${tots.total}</td></tr>`;
   document.getElementById('tbody-etapas').innerHTML=t;
