@@ -192,8 +192,8 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
 <script>
 const EP='https://mikea.app.n8n.cloud/webhook/stil-prospeccion';
 const STIL_OK=['P_STL_','STIL_CB_','STIL_NAC_','STIL_AM_'];
-const ETAPAS=['Prospeccion','Atraccion','Educacion','Propuesta','Reunion','Ganada'];
-const EL={Prospeccion:'Prospección',Atraccion:'Atracción',Educacion:'Educación',Propuesta:'Propuesta',Reunion:'Reunión',Ganada:'Ganada'};
+const ETAPAS=['Senal Detectada','Reply Recibido','Contactado','En Conversacion','Atraccion','Educacion','Ganada'];
+const EL={'Senal Detectada':'Señal Detectada','Reply Recibido':'Reply Recibido',Contactado:'Contactado','En Conversacion':'En Conversación',Atraccion:'Atracción',Educacion:'Educación',Ganada:'Ganada'};
 let DATA=null,fKanban='ALL',fProd='ALL';
 let __pool=[];
 
@@ -262,16 +262,16 @@ function renderPipeline(){
   ETAPAS.forEach(e=>{stilBS[e]=(dbs[e]||[]).filter(d=>esDeal(d.dealname));total+=stilBS[e].length;});
   const replies=evs.filter(e=>e.tipo==='reply').length;
   const open3=evs.filter(e=>e.tipo==='open3').length;
-  const enProsp=stilBS['Prospeccion'].length;
+  const enSenal=stilBS['Senal Detectada'].length;
+  const enReply=stilBS['Reply Recibido'].length;
+  const enContactado=stilBS['Contactado'].length;
   const enAtr=stilBS['Atraccion'].length;
-  const enEdu=stilBS['Educacion'].length;
-  const enReun=stilBS['Reunion'].length;
   const pct=replies>0?Math.round(enAtr/replies*100):0;
   document.getElementById('kpis').innerHTML=`
-    <div class="kpi"><div class="kpi-n">${enProsp}</div><div class="kpi-l">En Prospección</div></div>
+    <div class="kpi"><div class="kpi-n">${enSenal}</div><div class="kpi-l">Señal Detectada</div></div>
+    <div class="kpi"><div class="kpi-n">${enReply}</div><div class="kpi-l">Reply Recibido</div></div>
+    <div class="kpi"><div class="kpi-n">${enContactado}</div><div class="kpi-l">Contactado</div></div>
     <div class="kpi"><div class="kpi-n g">${enAtr}</div><div class="kpi-l">En Atracción</div><div class="kpi-p">${pct}% de replies</div></div>
-    <div class="kpi"><div class="kpi-n">${enEdu}</div><div class="kpi-l">En Educación</div></div>
-    <div class="kpi"><div class="kpi-n">${enReun}</div><div class="kpi-l">En Reunión</div></div>
     <div class="kpi"><div class="kpi-n">${total}</div><div class="kpi-l">Deals STIL activos</div></div>`;
   window.__stilBS=stilBS;
   renderKanban();
@@ -336,11 +336,12 @@ function renderEtapas(){
   const now=Date.now();
   // Etapas STIL en Portal Clientes con sus IDs reales, en orden de embudo
   const ETAPAS_STIL=[
-    {key:'Prospeccion',l:'Prospección',col:'#EF4444'},
-    {key:'Atraccion',l:'Atracción',col:'#F59E0B',venta:true},
+    {key:'Senal Detectada',l:'Señal Detectada',col:'#EF4444'},
+    {key:'Reply Recibido',l:'Reply Recibido',col:'#EF4444'},
+    {key:'Contactado',l:'Contactado',col:'#EF4444'},
+    {key:'En Conversacion',l:'En Conversación',col:'#F59E0B'},
+    {key:'Atraccion',l:'Atracción',col:'#34d399',venta:true},
     {key:'Educacion',l:'Educación',col:'#34d399',venta:true},
-    {key:'Propuesta',l:'Propuesta',col:'#34d399',venta:true},
-    {key:'Reunion',l:'Reunión',col:'#34d399',venta:true},
     {key:'Ganada',l:'Ganada',col:'#34d399',venta:true},
   ];
   function ageDays(created){
