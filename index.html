@@ -3675,9 +3675,9 @@ var GR_ETAPAS_ORDER_PM=['Senal Detectada','Reply Recibido','Contactado','En Conv
 var GR_ETAPA_COLORES={'Senal Detectada':'#DB0540','Reply Recibido':'#DB0540','Contactado':'#DB0540','En Conversacion':'#FFCD00','Atraccion':'#62D175','Educacion':'#62D175','Propuesta Enviada':'#62D175','Aprobacion Verbal':'#62D175','Contract Sent':'#02ADBA','Ganada':'#02ADBA','Perdida':'#6B7280','Renovacion':'#7D2AE4','Otra etapa':'#6B7280'};
 var GR_ETAPA_LABEL={'Senal Detectada':'Señal Detectada','Reply Recibido':'Reply Recibido','Contactado':'Contactado','En Conversacion':'En Conversación','Atraccion':'Atracción','Educacion':'Educación','Propuesta Enviada':'Propuesta Env.','Aprobacion Verbal':'Aprob. Verbal','Contract Sent':'Contract Sent','Ganada':'Ganada','Perdida':'Perdida','Renovacion':'Renovación','Otra etapa':'Otra etapa'};
 
-function renderPipelineMetricsGR(){
+function renderPipelineMetricsGR(pool){
   var box=document.getElementById('pipeline-metrics-gr'); if(!box) return;
-  // Calcular dealsByStage desde eventos filtrados (con etapa)
+  // Si se pasa pool explícito (las cards visibles), usar ese; sino usar eventos filtrados
   var PEV=(PROSPECCION_DATA&&Array.isArray(PROSPECCION_DATA.eventos))?PROSPECCION_DATA.eventos:[];
   var prodSel=prospProducto||'ALL';
   var matchFiltM=function(e){
@@ -3686,19 +3686,21 @@ function renderPipelineMetricsGR(){
     if(prodSel==='IMMMU') return e.tenant==='IMMMU';
     return (e.producto||'')===prodSel;
   };
-  // Contar deals únicos por etapa de los eventos filtrados
+  var source=pool||PEV.filter(matchFiltM);
+  // Contar deals únicos por etapa del source
   var dbs={};
   var seenDeals={};
-  PEV.filter(matchFiltM).forEach(function(e){
+  source.forEach(function(e){
     var et=e.etapa||''; if(!et) return;
-    var did=e.deal_id||e.empresa||''; if(!did||seenDeals[did+et]) return;
-    seenDeals[did+et]=true;
+    var did=(e.deal_id||e.empresa||'')+'_'+et;
+    if(seenDeals[did]) return;
+    seenDeals[did]=true;
     if(!dbs[et]) dbs[et]=[];
     dbs[et].push({deal_id:e.deal_id,dealname:e.empresa});
   });
-  // Si no hay eventos con etapa para el filtro, usar dealsByStage completo del payload
+  // Fallback: si source no tiene nada con etapa, usar dealsByStage del payload
   var dbsFull=(PROSPECCION_DATA&&PROSPECCION_DATA.dealsByStage)||{};
-  if(!Object.keys(dbs).length&&prodSel==='ALL') dbs=dbsFull;
+  if(!Object.keys(dbs).length&&!pool&&prodSel==='ALL') dbs=dbsFull;
   var allKeys=Object.keys(dbs);
   var ordered=[].concat(GR_ETAPAS_ORDER_PM.filter(function(k){return allKeys.indexOf(k)!==-1;}),allKeys.filter(function(k){return GR_ETAPAS_ORDER_PM.indexOf(k)===-1;}));
   var mainEtapas=ordered.filter(function(k){return !/Perdida/i.test(k);});
@@ -3856,6 +3858,7 @@ function renderProspDetalle(ptype, pval, pwin) {
   });
   h+='</div>';
   box.innerHTML=h; box.scrollIntoView({behavior:'smooth',block:'nearest'});
+  renderPipelineMetricsGR(pool);
 }
 
 function closeProspModal(){ const ov=document.getElementById('prosp-modal'); if(ov) ov.remove(); }
