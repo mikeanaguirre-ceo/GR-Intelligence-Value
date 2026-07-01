@@ -1540,7 +1540,7 @@ function renderPipeline() {
     html += `</tbody></table>`;
   }
 
-  html += `</div>`;
+  html += `</div><div id="pipeline-metrics-gr-pip" style="margin:16px 0 8px"></div>`;
   $('#p-pipeline').innerHTML = html;
 
   $$('[data-pfilter]').forEach(btn => {
