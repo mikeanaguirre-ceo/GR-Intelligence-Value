@@ -3210,7 +3210,7 @@ function renderProspeccion() {
   var GR_PRODS=['AM','AEO','GENIA','ITS','LT','TW','HS','360','WB','BD','EX'];
   var activeProd=GR_PRODS.filter(function(p){ return PEV.some(function(e){return (e.producto||'')===p;}); });
   var chip=function(val,lbl){ return '<button class="chip'+(prodSel===val?' active':'')+'" data-prospfilter="'+val+'" style="font-size:11px;padding:5px 11px;border-radius:18px;">'+lbl+'</button>'; };
-  var chips='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">'+chip('ALL','Todos')+chip('GR','GR')+chip('STIL','STIL')+chip('IMMMU','IMMMU')+'<span style="display:inline-block;width:1px;background:var(--border,#2A3142);margin:0 6px;"></span>';
+  var chips='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">'+chip('ALL','Todos')+chip('GR','GR')+chip('IMMMU','IMMMU')+'<span style="display:inline-block;width:1px;background:var(--border,#2A3142);margin:0 6px;"></span>';
   activeProd.forEach(function(p){ chips+=chip(p,p); });
   chips+='</div>';
   var dot=function(c){ return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+c+';margin-right:7px;vertical-align:middle;"></span>'; };
@@ -3245,7 +3245,7 @@ function renderProspeccion() {
   t2+='<tr style="border-top:2px solid var(--border,#2A3142);"><td style="font-weight:700;">TOTAL señales</td>'+wcp(wS.hoy,'hoy','__ALL_SENALES__',1)+wcp(wS.d7,'d7','__ALL_SENALES__',1)+wcp(wS.d30,'d30','__ALL_SENALES__',1)+wcp(wS.d90,'d90','__ALL_SENALES__',1)+wcp(wS.total,'total','__ALL_SENALES__',1)+'</tr></tbody></table></div>';
   // ETAPAS y sc eliminados (tabla dh quitada)
   // Tabla Oportunidades eliminada
-  cont.innerHTML='<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Fuente: tabla de eventos (los 3 tenants), no HubSpot. Los 30d incluyen 7d y hoy.</div>'+chips+'<div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado. Toca un número para ver el detalle.</div>'+t1+'<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto</div>'+t2+'<div id="pipeline-metrics-gr" style="margin:14px 0 4px;"></div><div class="divider" style="border:none;border-top:1px solid #252d50;margin:14px 0"></div><div id="prosp-detalle" style="margin-top:16px;"></div></div>';
+  cont.innerHTML='<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Fuente: tabla de eventos (los 3 tenants), no HubSpot. Los 30d incluyen 7d y hoy.</div>'+chips+'<div id="pipeline-metrics-gr" style="margin:0 0 16px 0;"></div><div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado. Toca un número para ver el detalle.</div>'+t1+'<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto</div>'+t2+'<div style="border:none;border-top:1px solid #252d50;margin:14px 0"></div><div id="prosp-detalle" style="margin-top:16px;"></div></div>';
   cont.querySelectorAll('[data-prospfilter]').forEach(function(btn){ btn.addEventListener('click',function(){ prospProducto=btn.dataset.prospfilter; renderProspeccion(); }); });
   renderPipelineMetricsGR();
   cont.querySelectorAll('.pcell').forEach(function(td){ td.addEventListener('click',function(){
@@ -3676,27 +3676,28 @@ var GR_ETAPA_LABEL={'Senal Detectada':'Señal Detectada','Reply Recibido':'Reply
 
 function renderPipelineMetricsGR(){
   var box=document.getElementById('pipeline-metrics-gr'); if(!box) return;
-  // Recalcular dealsByStage dinámicamente según filtro activo
+  // Calcular dealsByStage desde eventos filtrados (con etapa)
   var PEV=(PROSPECCION_DATA&&Array.isArray(PROSPECCION_DATA.eventos))?PROSPECCION_DATA.eventos:[];
   var prodSel=prospProducto||'ALL';
   var matchFiltM=function(e){
     if(prodSel==='ALL') return true;
     if(prodSel==='GR') return e.tenant==='GR';
-    if(prodSel==='STIL') return e.tenant==='STIL';
     if(prodSel==='IMMMU') return e.tenant==='IMMMU';
     return (e.producto||'')===prodSel;
   };
-  // Recalcular desde eventos con etapa, respetando el filtro
+  // Contar deals únicos por etapa de los eventos filtrados
   var dbs={};
+  var seenDeals={};
   PEV.filter(matchFiltM).forEach(function(e){
     var et=e.etapa||''; if(!et) return;
+    var did=e.deal_id||e.empresa||''; if(!did||seenDeals[did+et]) return;
+    seenDeals[did+et]=true;
     if(!dbs[et]) dbs[et]=[];
-    if(!dbs[et].find(function(x){return x.deal_id===e.deal_id;}))
-      dbs[et].push({deal_id:e.deal_id,dealname:e.empresa});
+    dbs[et].push({deal_id:e.deal_id,dealname:e.empresa});
   });
-  // Fallback: si no hay datos de eventos con etapa, usar dealsByStage del payload
+  // Si no hay eventos con etapa para el filtro, usar dealsByStage completo del payload
   var dbsFull=(PROSPECCION_DATA&&PROSPECCION_DATA.dealsByStage)||{};
-  if(!Object.keys(dbs).length) dbs=dbsFull;
+  if(!Object.keys(dbs).length&&prodSel==='ALL') dbs=dbsFull;
   var allKeys=Object.keys(dbs);
   var ordered=[].concat(GR_ETAPAS_ORDER_PM.filter(function(k){return allKeys.indexOf(k)!==-1;}),allKeys.filter(function(k){return GR_ETAPAS_ORDER_PM.indexOf(k)===-1;}));
   var mainEtapas=ordered.filter(function(k){return !/Perdida/i.test(k);});
