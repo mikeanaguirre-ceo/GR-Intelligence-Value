@@ -1031,8 +1031,16 @@ function switchTab(tabId) {
   currentTab = tabId;
   $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
   $$('.panel').forEach(p => p.classList.toggle('active', p.id === 'p-' + tabId));
+  history.pushState({tab:tabId},'',location.pathname+'?tab='+tabId);
   renderCurrentTab();
 }
+window.addEventListener('popstate',function(e){
+  var tab=(e.state&&e.state.tab)||'pipeline';
+  currentTab=tab;
+  $$('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  $$('.panel').forEach(p=>p.classList.toggle('active',p.id==='p-'+tab));
+  renderCurrentTab();
+});
 
 function renderCurrentTab() {
   if (!DATA) {
@@ -3175,8 +3183,9 @@ function renderProspeccion() {
   var venta=false;
   ETAPAS.forEach(function(st){ if(st.v&&!venta){dh+='<tr><td colspan="6" style="font-size:10px;font-weight:800;color:#10B981;padding:6px 12px;border-top:2px solid #10B981;">PASA A VENTA</td></tr>';venta=true;} var w=sc[st.id]||{hoy:0,d7:0,d30:0,d90:0,total:0}; dh+='<tr><td>'+dot(st.col)+(st.v?'<span style="color:'+st.col+';font-weight:600;">'+st.l+'</span>':st.l)+'</td><td style="text-align:center;">'+w.hoy+'</td><td style="text-align:center;">'+w.d7+'</td><td style="text-align:center;">'+w.d30+'</td><td style="text-align:center;">'+w.d90+'</td><td style="text-align:center;font-weight:700;">'+w.total+'</td></tr>'; });
   dh+='</tbody></table></div></div>';
-  cont.innerHTML='<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Fuente: tabla de eventos (los 3 tenants), no HubSpot. Los 30d incluyen 7d y hoy.</div>'+chips+'<div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado. Toca un número para ver el detalle.</div>'+t1+'<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto</div>'+t2+'<div id="prosp-detalle" style="margin-top:16px;"></div></div>'+dh;
+  cont.innerHTML='<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Fuente: tabla de eventos (los 3 tenants), no HubSpot. Los 30d incluyen 7d y hoy.</div>'+chips+'<div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado. Toca un número para ver el detalle.</div>'+t1+'<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto</div>'+t2+'<div id="pipeline-metrics-gr" style="margin:14px 0 4px;"></div><div class="divider" style="border:none;border-top:1px solid #252d50;margin:14px 0"></div><div id="prosp-detalle" style="margin-top:16px;"></div></div>'+dh;
   cont.querySelectorAll('[data-prospfilter]').forEach(function(btn){ btn.addEventListener('click',function(){ prospProducto=btn.dataset.prospfilter; renderProspeccion(); }); });
+  renderPipelineMetricsGR();
   cont.querySelectorAll('.pcell').forEach(function(td){ td.addEventListener('click',function(){
     try {
       renderProspDetalle(td.dataset.ptype,decodeURIComponent(td.dataset.pval),td.dataset.pwin);
@@ -3598,6 +3607,50 @@ function funnelRow(steps) {
 }
 
 
+// ── PIPELINE METRICS GR ──
+var GR_ETAPAS_ORDER_PM=['Senal Detectada','Reply Recibido','Contactado','En Conversacion','Atraccion','Educacion','Propuesta Enviada','Aprobacion Verbal','Contract Sent','Ganada','Perdida','Renovacion'];
+var GR_ETAPA_COLORES={'Senal Detectada':'#DB0540','Reply Recibido':'#DB0540','Contactado':'#DB0540','En Conversacion':'#FFCD00','Atraccion':'#62D175','Educacion':'#62D175','Propuesta Enviada':'#62D175','Aprobacion Verbal':'#62D175','Contract Sent':'#02ADBA','Ganada':'#02ADBA','Perdida':'#6B7280','Renovacion':'#7D2AE4','Otra etapa':'#6B7280'};
+var GR_ETAPA_LABEL={'Senal Detectada':'Señal Detectada','Reply Recibido':'Reply Recibido','Contactado':'Contactado','En Conversacion':'En Conversación','Atraccion':'Atracción','Educacion':'Educación','Propuesta Enviada':'Propuesta Env.','Aprobacion Verbal':'Aprob. Verbal','Contract Sent':'Contract Sent','Ganada':'Ganada','Perdida':'Perdida','Renovacion':'Renovación','Otra etapa':'Otra etapa'};
+
+function renderPipelineMetricsGR(){
+  var box=document.getElementById('pipeline-metrics-gr'); if(!box) return;
+  var dbs=(PROSPECCION_DATA&&PROSPECCION_DATA.dealsByStage)||{};
+  var allKeys=Object.keys(dbs);
+  var ordered=[].concat(GR_ETAPAS_ORDER_PM.filter(function(k){return allKeys.indexOf(k)!==-1;}),allKeys.filter(function(k){return GR_ETAPAS_ORDER_PM.indexOf(k)===-1;}));
+  var mainEtapas=ordered.filter(function(k){return !/Perdida/i.test(k);});
+  var perdidaEtapas=ordered.filter(function(k){return /Perdida/i.test(k);});
+  var totalActivos=mainEtapas.reduce(function(s,k){return s+(dbs[k]||[]).length;},0);
+  var totalPerdida=perdidaEtapas.reduce(function(s,k){return s+(dbs[k]||[]).length;},0);
+  var totalGeneral=totalActivos+totalPerdida;
+  if(!totalGeneral){box.innerHTML='';return;}
+  var h='<div style="margin-bottom:10px;font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.06em">Pipeline GR &middot; <span style="color:#F3F4F6">'+totalGeneral+'</span> deals &middot; <span style="color:#62D175">'+totalActivos+'</span> activos</div>';
+  h+='<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;">';
+  mainEtapas.forEach(function(k){
+    var deals=dbs[k]||[]; if(!deals.length) return;
+    var col=GR_ETAPA_COLORES[k]||'#6B7280';
+    var lbl=GR_ETAPA_LABEL[k]||k;
+    var pct=totalActivos>0?Math.round(deals.length/totalActivos*100):0;
+    h+='<div style="display:flex;flex-direction:column;align-items:center;gap:2px;background:'+col+'18;border:1px solid '+col+'44;border-radius:14px;padding:10px 16px;min-width:80px;">'+
+      '<div style="font-size:22px;font-weight:800;color:'+col+';line-height:1;">'+deals.length+'</div>'+
+      '<div style="font-size:10px;font-weight:700;color:#F3F4F6;text-align:center;line-height:1.3;">'+lbl+'</div>'+
+      '<div style="font-size:13px;font-weight:700;color:'+col+'cc;margin-top:2px;">'+pct+'%</div>'+
+      '</div>';
+  });
+  if(totalPerdida>0){
+    h+='<div style="align-self:stretch;width:1px;background:#2A3142;margin:0 4px;"></div>';
+    perdidaEtapas.forEach(function(k){
+      var deals=dbs[k]||[]; if(!deals.length) return;
+      h+='<div style="display:flex;flex-direction:column;align-items:center;gap:2px;background:#6B728018;border:1px solid #6B728044;border-radius:14px;padding:10px 16px;min-width:80px;">'+
+        '<div style="font-size:22px;font-weight:800;color:#6B7280;line-height:1;">'+deals.length+'</div>'+
+        '<div style="font-size:10px;font-weight:700;color:#9CA3AF;text-align:center;line-height:1.3;">Perdida</div>'+
+        '</div>';
+    });
+  }
+  h+='</div>';
+  box.innerHTML=h;
+}
+
+
 function renderProspDetalle(ptype, pval, pwin) {
   if (!document.getElementById('pv4css')) {
     var st=document.createElement('style'); st.id='pv4css';
@@ -3659,13 +3712,22 @@ function renderProspDetalle(ptype, pval, pwin) {
       if(pval!=='__ALL_SENALES__') pool=pool.filter(function(e){return (e.producto||'(sin producto)')===pval;});
     }
   }
-  pool.sort(function(a,b){return new Date(b.fecha)-new Date(a.fecha);});
+  var ETAPAS_GR_ORDER=['Senal Detectada','Reply Recibido','Contactado','En Conversacion','Atraccion','Educacion','Propuesta Enviada','Aprobacion Verbal','Contract Sent','Ganada','Perdida','Renovacion'];
+  var etapaIdxGR=function(k){var i=ETAPAS_GR_ORDER.indexOf(k);return i===-1?50:i;};
+  pool.sort(function(a,b){
+    var ea=etapaIdxGR(a.etapa||''),eb=etapaIdxGR(b.etapa||'');
+    if(ea!==eb)return ea-eb;
+    return new Date(b.fecha)-new Date(a.fecha);
+  });
+  var dedupMapGR=new Map();
+  pool.forEach(function(e){var key=(e.empresa||'')+'||'+(e.prospecto||'');if(!dedupMapGR.has(key))dedupMapGR.set(key,e);});
+  pool=Array.from(dedupMapGR.values());
   var winLbl={hoy:'Hoy',d7:'7d',d30:'30d',d90:'90d',total:'Total'}[pwin]||pwin;
   var titulo=ptype==='clas'?(pval==='__ALL_REPLIES__'?'Todos los replies':fmtLbl(pval)):('Open+3 · '+(pval==='__ALL_SENALES__'?'todos':pval));
 
   var fase=function(et){if(!et)return'gray';if(/Ganada/i.test(et))return'green';if(/Perdida/i.test(et))return'gray';if(/Atracci|Educaci|Propuesta|Aprobaci|Contract|Reunion|Renovaci/i.test(et))return'green';if(/Conversaci/i.test(et))return'yellow';return'red';};
   var FC={green:'#10B981',yellow:'#F59E0B',red:'#EF4444',gray:'#6B7280'};
-  var etBadge=function(et){var f=fase(et);return '<span class="pv4-badge pv4-b-'+f+'">'+et+'</span>';};
+  var etBadge=function(et){var f=fase(et||'');var col=FC[f]||'#6B7280';return '<span style="background:'+col+'22;color:'+col+';border:1px solid '+col+'44;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;">'+esc(et||'Sin etapa')+'</span>';};
   var liPerHref=function(e){return (e.linkedin_persona&&e.linkedin_persona.indexOf('http')===0)?e.linkedin_persona:'https://www.linkedin.com/search/results/people/?keywords='+encodeURIComponent((e.prospecto||'')+' '+(e.empresa||''));};
   var liEmpHref=function(e){return (e.linkedin_empresa&&e.linkedin_empresa.indexOf('http')===0)?e.linkedin_empresa:'https://www.linkedin.com/search/results/companies/?keywords='+encodeURIComponent(e.empresa||'');};
   var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');};
@@ -3685,7 +3747,7 @@ function renderProspDetalle(ptype, pval, pwin) {
       '<div class="pv4-accent" style="background:'+acent+'"></div>'+
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'+
         '<div><div class="pv4-co">'+esc(e.empresa||'—')+'</div>'+(sub?'<div class="pv4-sub">'+esc(sub)+'</div>':'')+'</div>'+
-        (e.etapa?etBadge(e.etapa):'')+
+        etBadge(e.etapa||'Sin etapa')+
       '</div>'+
       '<div class="pv4-div"></div>'+
       '<div class="pv4-person">'+esc(e.prospecto||'—')+'</div>'+
@@ -3695,12 +3757,14 @@ function renderProspDetalle(ptype, pval, pwin) {
         '<span class="pv4-tg">'+esc(e.tenant||'')+'</span>'+
         (e.canal?'<span class="pv4-tg ch">'+esc(e.canal)+'</span>':'')+
         (e.producto?'<span class="pv4-tg prod">'+esc(e.producto)+'</span>':'')+
-        (e.campana?'<span class="pv4-tg" title="'+esc(e.campana)+'">'+esc(e.campana)+'</span>':'')+
+        (e.ciudad||e.pais?'<span class="pv4-tg">'+esc([e.ciudad,e.pais].filter(Boolean).join(', '))+'</span>':'')+
+        (e.campana?'<span class="pv4-tg" title="'+esc(e.campana)+'">'+esc(e.campana.substring(0,30))+'</span>':'')+
         (fecha?'<span class="pv4-tg">'+rel(fecha)+'</span>':'')+
       '</div>'+
       '<div class="pv4-actions">'+
         '<a class="pv4-btn li" href="'+liPerHref(e)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">in Persona ↗</a>'+
         '<a class="pv4-btn lc" href="'+liEmpHref(e)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">in Empresa ↗</a>'+
+        (e.web?'<a class="pv4-btn" style="border-color:#6B7280;color:#9CA3AF;" href="'+esc(e.web)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">Web ↗</a>':'')+
         '<button class="pv4-btn dt" onclick="event.stopPropagation();openProspModal('+i+')">Ver detalle</button>'+
       '</div>'+
     '</div>';
@@ -3734,13 +3798,15 @@ function openProspModal(i){
   var body=
     '<div style="font-size:19px;font-weight:800;color:#F3F4F6;line-height:1.15;">'+esc(e.empresa||'—')+'</div>'+
     (industLine?'<div style="font-size:12px;color:#6B7280;margin:2px 0 10px;">'+esc(industLine)+'</div>':'')+
-    (e.descripcion?'<div style="font-size:12px;color:#cbd5e1;line-height:1.5;background:#1E2433;border:1px solid #2A3142;border-radius:10px;padding:10px 12px;margin:0 0 12px;max-height:120px;overflow:auto;"><span style="display:block;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#6B7280;margin-bottom:4px;">Descripción</span>'+esc(e.descripcion)+'</div>':'')+
+    ((e.descripcion_empresa||e.descripcion)?'<div style="font-size:12px;color:#cbd5e1;line-height:1.5;background:#1E2433;border:1px solid #2A3142;border-radius:10px;padding:10px 12px;margin:0 0 12px;max-height:120px;overflow:auto;"><span style="display:block;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#6B7280;margin-bottom:4px;">Descripción</span>'+esc(e.descripcion_empresa||e.descripcion)+'</div>':'')+
     '<div style="font-size:14px;font-weight:700;color:#F3F4F6;">'+esc(e.prospecto||'—')+'</div>'+
     (e.puesto?'<div style="font-size:12px;color:#9CA3AF;margin:2px 0 10px;">'+esc(e.puesto)+'</div>':'')+
     (msg?'<div style="margin:10px 0;padding:9px 12px;border-left:3px solid #06B6D4;background:rgba(6,182,212,.06);border-radius:0 8px 8px 0;font-size:12px;color:#cbd5e1;font-style:italic;"><span style="display:block;font-style:normal;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#6B7280;margin-bottom:3px;">Último mensaje</span>'+esc(msg)+'</div>':'')+
     '<div style="margin:10px 0;">'+
       mrow('Etapa','',(e.etapa?'<span style="background:'+FC[fase(e.etapa)]+'22;color:'+FC[fase(e.etapa)]+';padding:2px 8px;border-radius:12px;font-weight:700;">'+esc(e.etapa)+'</span>':'—'))+
       mrow('Clasificación','',fmtLbl(e.clasificacion||''))+
+      (e.empleados?mrow('Empleados',Number(e.empleados).toLocaleString('es-MX')):'')+
+      (e.ciudad||e.pais?mrow('Ubicación',[e.ciudad,e.pais].filter(Boolean).join(', ')):'')+
       mrow('Producto',e.producto)+
       (webUrl?mrow('Web','','<a href="'+webUrl+'" target="_blank" style="color:#06B6D4;">'+esc(webUrl.replace(/^https?:\/\//,''))+'</a>'):'')+
       mrow('Campaña',e.campana)+
