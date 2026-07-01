@@ -173,11 +173,9 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
     <div class="tw"><table class="tbl"><thead><tr><th style="width:38%">CLASIFICACIÓN</th><th>HOY</th><th>7D</th><th>30D</th><th>90D</th><th>TOTAL</th></tr></thead><tbody id="tbody-r"></tbody></table></div>
     <div class="stitle y">Open+3 (señales) por producto</div>
     <div class="tw"><table class="tbl"><thead><tr><th style="width:38%">PRODUCTO</th><th>HOY</th><th>7D</th><th>30D</th><th>90D</th><th>TOTAL</th></tr></thead><tbody id="tbody-o"></tbody></table></div>
+    <div id="pipeline-metrics" style="margin:14px 0 4px"></div>
     <div class="divider"></div>
     <div id="prosp-detalle"></div>
-    <div class="divider"></div>
-    <div class="stitle" style="color:var(--green);margin-bottom:10px">Oportunidades en HubSpot por etapa</div>
-    <div class="tw"><table class="tbl" id="tbl-etapas"><thead><tr><th style="width:38%">ETAPA</th><th>HOY</th><th>7D</th><th>30D</th><th>90D</th><th>TOTAL</th></tr></thead><tbody id="tbody-etapas"></tbody></table></div>
   </div>
 </div>
 
@@ -353,7 +351,7 @@ function renderProspeccion(){
   document.getElementById('pp-c').style.display='';
   renderChips();
   renderTablas();
-  renderEtapas();
+  renderPipelineMetrics();
   renderDetalleAuto();
 }
 
@@ -408,7 +406,7 @@ function renderEtapas(){
   });
   const tots=Object.values(sc).reduce((a,w)=>({hoy:a.hoy+w.hoy,d7:a.d7+w.d7,d30:a.d30+w.d30,d90:a.d90+w.d90,total:a.total+w.total}),{hoy:0,d7:0,d30:0,d90:0,total:0});
   t+=`<tr class="tot"><td>TOTAL oportunidades</td><td style="text-align:center">${tots.hoy}</td><td style="text-align:center">${tots.d7}</td><td style="text-align:center">${tots.d30}</td><td style="text-align:center">${tots.d90}</td><td style="text-align:center;font-weight:700">${tots.total}</td></tr>`;
-  document.getElementById('tbody-etapas').innerHTML=t;
+  const _tbe=document.getElementById('tbody-etapas'); if(_tbe)_tbe.innerHTML=t;
 }
 
 function renderChips(){
@@ -533,7 +531,7 @@ function renderDetalle(ptype,pval,pwin){
       else if(pval==='P_STL_NAC') pool=pool.filter(e=>!String(e.campana||'').toUpperCase().startsWith('CB_')&&!String(e.empresa||'').toUpperCase().includes('CB_'));
     }
   }
-  pool.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  pool.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));  // más reciente primero
   __pool=pool;
 
   const winLbl={hoy:'Hoy',d7:'7d',d30:'30d',d90:'90d',total:'Total'}[pwin]||pwin;
@@ -551,7 +549,7 @@ function renderDetalle(ptype,pval,pwin){
       <div class="pv4-accent" style="background:${ac}"></div>
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
         <div><div class="pv4-co">${esc(e.empresa||'—')}</div>${sub?`<div class="pv4-sub">${esc(sub)}</div>`:''}</div>
-        ${e.etapa?`<span class="pv4-badge pb-${f}">${e.etapa}</span>`:''}
+        ${e.etapa?`<span class="pv4-badge" style="background:${ac}22;color:${ac};border:1px solid ${ac}44;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap">${e.etapa}</span>`:''}
       </div>
       <div class="pv4-div"></div>
       <div class="pv4-person">${esc(e.prospecto||'—')}</div>
@@ -617,6 +615,57 @@ function oM(i){
 }
 function cM(){document.getElementById('modal').style.display='none';}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')cM();});
+
+
+// ── MÉTRICAS PIPELINE ──
+const ETAPAS_ORDER=['Senal Detectada','Reply Recibido','Contactado','En Conversacion','Atraccion','Educacion','Qualified To Buy','Propuesta Enviada','Aprobacion Verbal','Decision Maker Bought-In','Ganada','Perdida','Renovacion'];
+const ETAPA_COLORES={
+  'Senal Detectada':'#EF4444','Reply Recibido':'#EF4444','Contactado':'#EF4444',
+  'En Conversacion':'#F59E0B',
+  'Atraccion':'#34d399','Educacion':'#34d399','Qualified To Buy':'#34d399',
+  'Propuesta Enviada':'#34d399','Aprobacion Verbal':'#34d399','Decision Maker Bought-In':'#34d399',
+  'Ganada':'#34d399','Perdida':'#6B7280','Renovacion':'#06B6D4'
+};
+const ETAPA_LABEL={
+  'Senal Detectada':'Señal Detectada','Reply Recibido':'Reply Recibido','Contactado':'Contactado',
+  'En Conversacion':'En Conversación','Atraccion':'Atracción','Educacion':'Educación',
+  'Qualified To Buy':'Qual. To Buy','Propuesta Enviada':'Propuesta Env.','Aprobacion Verbal':'Aprob. Verbal',
+  'Decision Maker Bought-In':'DM Bought-In','Ganada':'Ganada','Perdida':'Perdida','Renovacion':'Renovación'
+};
+
+function renderPipelineMetrics(){
+  const box=document.getElementById('pipeline-metrics');if(!box)return;
+  const dbs=DATA.dealsByStage||{};
+  // Ordenar etapas según ETAPAS_ORDER, luego las que no estén en el array
+  const allKeys=Object.keys(dbs);
+  const ordered=[...ETAPAS_ORDER.filter(k=>allKeys.includes(k)),...allKeys.filter(k=>!ETAPAS_ORDER.includes(k))];
+  // Contar total (excluir Perdida para el % de conversión)
+  const totalDeals=ordered.reduce((s,k)=>s+(dbs[k]||[]).length,0);
+  if(!totalDeals){box.innerHTML='';return;}
+  // Separar Perdida para mostrar al final
+  const mainEtapas=ordered.filter(k=>!/Perdida/i.test(k));
+  const perdida=ordered.filter(k=>/Perdida/i.test(k));
+  const etapasRender=[...mainEtapas,...perdida];
+
+  let h='<div style="margin-bottom:6px;font-size:10px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.06em">Pipeline HubSpot · '+totalDeals+' deals activos</div>';
+  h+='<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">';
+  etapasRender.forEach(k=>{
+    const deals=dbs[k]||[];
+    if(!deals.length)return;
+    const col=ETAPA_COLORES[k]||'#6B7280';
+    const lbl=ETAPA_LABEL[k]||EL[k]||k;
+    const pct=Math.round(deals.length/totalDeals*100);
+    const isPerdida=/Perdida/i.test(k);
+    h+=`<div style="display:flex;align-items:center;gap:6px;background:${col}18;border:1px solid ${col}44;border-radius:20px;padding:5px 12px">
+      <span style="width:8px;height:8px;border-radius:50%;background:${col};display:inline-block;flex-shrink:0"></span>
+      <span style="font-size:11px;font-weight:700;color:#F3F4F6">${lbl}</span>
+      <span style="font-size:12px;font-weight:800;color:${col}">${deals.length}</span>
+      ${!isPerdida?`<span style="font-size:10px;color:#6B7280">${pct}%</span>`:''}
+    </div>`;
+  });
+  h+='</div>';
+  box.innerHTML=h;
+}
 
 cargarDatos();
 </script>
