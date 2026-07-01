@@ -1565,16 +1565,20 @@ function renderPipelineMetricsPipeline(){
     if(pipelineFilters.excludeP&&d.name&&d.name.startsWith('P_')) return false;
     return true;
   });
+  // stageMap usa el label EXACTO de cada stage en STAGE_ORDER del Kanban
   var stageMap={};
-  if(typeof STAGE_ORDER!=='undefined') STAGE_ORDER.forEach(function(s){stageMap[s.id]=s.label||s.key;});
+  if(typeof STAGE_ORDER!=='undefined') STAGE_ORDER.forEach(function(s){stageMap[s.id]=s.label;});
+  // Solo incluir deals con stage reconocido en el Kanban activo
   var dbs={};
   filtered.forEach(function(d){
-    var et=stageMap[d.stage]||d.stageLabel||d.stage||'Otra etapa';
+    var et=stageMap[d.stage]; // undefined para Renovación, Perdida, etc.
+    if(!et) return;
     if(!dbs[et]) dbs[et]=[];
     dbs[et].push(d);
   });
-  var GR_ORDER=['Señal Detectada','Reply Recibido','Contactado','En Conversación','Atracción','Educación','Propuesta Enviada','Aprobación Verbal','Contract Sent','Ganada','Perdida','Renovación'];
-  var GR_COL={'Señal Detectada':'#DB0540','Reply Recibido':'#DB0540','Contactado':'#DB0540','En Conversación':'#FFCD00','Atracción':'#62D175','Educación':'#62D175','Propuesta Enviada':'#62D175','Aprobación Verbal':'#62D175','Contract Sent':'#02ADBA','Ganada':'#02ADBA','Perdida':'#6B7280','Renovación':'#7D2AE4','Otra etapa':'#6B7280'};
+  // Labels y colores = los mismos que las columnas del Kanban
+  var GR_ORDER=['Señal','Reply','Contactado','En Conv.','Atracción','Educación','Propuesta','Aprobación'];
+  var GR_COL={'Señal':'#DB0540','Reply':'#DB0540','Contactado':'#DB0540','En Conv.':'#FFCD00','Atracción':'#62D175','Educación':'#62D175','Propuesta':'#62D175','Aprobación':'#02ADBA'};
   var allKeys=Object.keys(dbs);
   var main=allKeys.filter(function(k){return !/Perdida|Closed Won/i.test(k);});
   var perd=allKeys.filter(function(k){return /Perdida|Closed Won/i.test(k);});
