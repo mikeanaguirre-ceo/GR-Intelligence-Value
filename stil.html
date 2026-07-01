@@ -358,16 +358,18 @@ function renderProspeccion(){
 function renderEtapas(){
   const dbs=DATA.dealsByStage||{};
   const now=Date.now();
-  const COLORES_FIJAS={'Senal Detectada':'#EF4444','Reply Recibido':'#EF4444',Contactado:'#EF4444','En Conversacion':'#F59E0B',Atraccion:'#34d399'};
+  const COLORES_FIJAS={'Senal Detectada':'#EF4444','Reply Recibido':'#EF4444',Contactado:'#EF4444','En Conversacion':'#F59E0B',Atraccion:'#34d399',Educacion:'#34d399','Ganada':'#34d399',Perdida:'#6B7280'};
 
   // Etapas fijas: siempre, en orden
   const lista=ETAPAS_FIJAS.map(k=>({key:k,l:EL[k]||k,col:COLORES_FIJAS[k],venta:k==='Atraccion'}));
 
-  // Etapas posteriores a Atraccion: solo si tienen deals STIL
-  const extra=Object.keys(dbs).filter(k=>!ETAPAS_FIJAS.includes(k));
-  extra.forEach(k=>{
+  // Etapas extra: en orden ETAPAS_ORDER, luego cualquier otra
+  const extraOrdenadas=[...ETAPAS_ORDER.filter(k=>!ETAPAS_FIJAS.includes(k)&&Object.keys(dbs).includes(k)),...Object.keys(dbs).filter(k=>!ETAPAS_FIJAS.includes(k)&&!ETAPAS_ORDER.includes(k))];
+  extraOrdenadas.forEach(k=>{
     const deals=(dbs[k]||[]).filter(d=>esDeal(d.dealname));
-    if(deals.length) lista.push({key:k,l:EL[k]||k,col:'#34d399',venta:true});
+    const isPerdida=/Perdida/i.test(k);
+    const col=ETAPA_COLORES[k]||(isPerdida?'#6B7280':'#34d399');
+    if(deals.length) lista.push({key:k,l:EL[k]||k,col,venta:!isPerdida,esPerdida:isPerdida});
   });
 
   function ageDays(created){
@@ -388,10 +390,14 @@ function renderEtapas(){
   let t='';
   let ventaMark=false;
   lista.forEach((e,i)=>{
-    // Marca "PASA A VENTA" antes de la primera etapa marcada venta=true (Atraccion)
+    // Marca "PASA A VENTA" antes de la primera etapa venta=true (Atraccion)
     if(e.venta&&!ventaMark){
       t+=`<tr><td colspan="6" style="font-size:10px;font-weight:800;color:#34d399;padding:6px 12px;border-top:2px solid #34d399;letter-spacing:.05em">PASA A VENTA</td></tr>`;
       ventaMark=true;
+    }
+    // Separador antes de Perdida
+    if(e.esPerdida){
+      t+=`<tr><td colspan="6" style="font-size:10px;font-weight:800;color:#6B7280;padding:6px 12px;border-top:2px solid #374151;letter-spacing:.05em">PERDIDOS</td></tr>`;
     }
     const w=sc[e.key]||{hoy:0,d7:0,d30:0,d90:0,total:0};
     const lbl=e.venta?`<span style="color:${e.col};font-weight:600">${e.l}</span>`:e.l;
@@ -531,7 +537,13 @@ function renderDetalle(ptype,pval,pwin){
       else if(pval==='P_STL_NAC') pool=pool.filter(e=>!String(e.campana||'').toUpperCase().startsWith('CB_')&&!String(e.empresa||'').toUpperCase().includes('CB_'));
     }
   }
-  pool.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));  // más reciente primero
+  // Ordenar: primero por prioridad de etapa, luego más reciente
+  const etapaIdx=k=>{ const i=ETAPAS_ORDER.indexOf(k); return i===-1?50:i; };
+  pool.sort((a,b)=>{
+    const ea=etapaIdx(a.etapa||''),eb=etapaIdx(b.etapa||'');
+    if(ea!==eb)return ea-eb;
+    return new Date(b.fecha)-new Date(a.fecha);
+  });
   __pool=pool;
 
   const winLbl={hoy:'Hoy',d7:'7d',d30:'30d',d90:'90d',total:'Total'}[pwin]||pwin;
@@ -629,40 +641,51 @@ const ETAPA_COLORES={
 const ETAPA_LABEL={
   'Senal Detectada':'Señal Detectada','Reply Recibido':'Reply Recibido','Contactado':'Contactado',
   'En Conversacion':'En Conversación','Atraccion':'Atracción','Educacion':'Educación',
-  'Qualified To Buy':'Qual. To Buy','Propuesta Enviada':'Propuesta Env.','Aprobacion Verbal':'Aprob. Verbal',
+  'Qualified To Buy':'Qual. to Buy','Propuesta Enviada':'Propuesta Env.','Aprobacion Verbal':'Aprob. Verbal',
   'Decision Maker Bought-In':'DM Bought-In','Ganada':'Ganada','Perdida':'Perdida','Renovacion':'Renovación'
 };
 
 function renderPipelineMetrics(){
   const box=document.getElementById('pipeline-metrics');if(!box)return;
   const dbs=DATA.dealsByStage||{};
-  // Ordenar etapas según ETAPAS_ORDER, luego las que no estén en el array
   const allKeys=Object.keys(dbs);
   const ordered=[...ETAPAS_ORDER.filter(k=>allKeys.includes(k)),...allKeys.filter(k=>!ETAPAS_ORDER.includes(k))];
-  // Contar total (excluir Perdida para el % de conversión)
-  const totalDeals=ordered.reduce((s,k)=>s+(dbs[k]||[]).length,0);
-  if(!totalDeals){box.innerHTML='';return;}
-  // Separar Perdida para mostrar al final
   const mainEtapas=ordered.filter(k=>!/Perdida/i.test(k));
-  const perdida=ordered.filter(k=>/Perdida/i.test(k));
-  const etapasRender=[...mainEtapas,...perdida];
+  const perdidaEtapas=ordered.filter(k=>/Perdida/i.test(k));
+  // Total activos = excluir Perdida del denominador
+  const totalActivos=mainEtapas.reduce((s,k)=>s+(dbs[k]||[]).length,0);
+  const totalPerdida=perdidaEtapas.reduce((s,k)=>s+(dbs[k]||[]).length,0);
+  const totalGeneral=totalActivos+totalPerdida;
+  if(!totalGeneral){box.innerHTML='';return;}
 
-  let h='<div style="margin-bottom:6px;font-size:10px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.06em">Pipeline HubSpot · '+totalDeals+' deals activos</div>';
-  h+='<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">';
-  etapasRender.forEach(k=>{
+  let h=`<div style="margin-bottom:10px;font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.06em">Pipeline HubSpot · <span style="color:#F3F4F6">${totalGeneral}</span> deals totales · <span style="color:#34d399">${totalActivos}</span> activos</div>`;
+  h+='<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:stretch">';
+  // Etapas activas
+  mainEtapas.forEach(k=>{
     const deals=dbs[k]||[];
     if(!deals.length)return;
     const col=ETAPA_COLORES[k]||'#6B7280';
     const lbl=ETAPA_LABEL[k]||EL[k]||k;
-    const pct=Math.round(deals.length/totalDeals*100);
-    const isPerdida=/Perdida/i.test(k);
-    h+=`<div style="display:flex;align-items:center;gap:6px;background:${col}18;border:1px solid ${col}44;border-radius:20px;padding:5px 12px">
-      <span style="width:8px;height:8px;border-radius:50%;background:${col};display:inline-block;flex-shrink:0"></span>
-      <span style="font-size:11px;font-weight:700;color:#F3F4F6">${lbl}</span>
-      <span style="font-size:12px;font-weight:800;color:${col}">${deals.length}</span>
-      ${!isPerdida?`<span style="font-size:10px;color:#6B7280">${pct}%</span>`:''}
+    const pct=totalActivos>0?Math.round(deals.length/totalActivos*100):0;
+    h+=`<div style="display:flex;flex-direction:column;align-items:center;gap:2px;background:${col}18;border:1px solid ${col}44;border-radius:14px;padding:10px 16px;min-width:80px">
+      <div style="font-size:22px;font-weight:800;color:${col};line-height:1">${deals.length}</div>
+      <div style="font-size:10px;font-weight:700;color:#F3F4F6;text-align:center;line-height:1.3">${lbl}</div>
+      <div style="font-size:13px;font-weight:700;color:${col}cc;margin-top:2px">${pct}%</div>
     </div>`;
   });
+  // Separador visual
+  if(totalPerdida>0){
+    h+='<div style="align-self:stretch;width:1px;background:#2A3142;margin:0 4px"></div>';
+    perdidaEtapas.forEach(k=>{
+      const deals=dbs[k]||[];
+      if(!deals.length)return;
+      const col='#6B7280';
+      h+=`<div style="display:flex;flex-direction:column;align-items:center;gap:2px;background:#6B728018;border:1px solid #6B728044;border-radius:14px;padding:10px 16px;min-width:80px">
+        <div style="font-size:22px;font-weight:800;color:#6B7280;line-height:1">${deals.length}</div>
+        <div style="font-size:10px;font-weight:700;color:#9CA3AF;text-align:center;line-height:1.3">Perdida</div>
+      </div>`;
+    });
+  }
   h+='</div>';
   box.innerHTML=h;
 }
