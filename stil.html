@@ -266,35 +266,55 @@ function renderPipeline(){
   const dbs=DATA.dealsByStage||{};
   const evs=DATA.eventos||[];
 
-  // Etapas fijas Senal->Atraccion: siempre presentes
+  // Todas las etapas — fijas siempre presentes, extras solo si tienen deals
   const stilBS={};
-  ETAPAS_FIJAS.forEach(e=>{stilBS[e]=(dbs[e]||[]).filter(d=>esDeal(d.dealname));});
-
-  // Etapas posteriores a Atraccion: solo si tienen deals STIL
-  const etapasExtra=Object.keys(dbs).filter(k=>!ETAPAS_FIJAS.includes(k));
-  const stilExtra={};
-  etapasExtra.forEach(e=>{
-    const ds=(dbs[e]||[]).filter(d=>esDeal(d.dealname));
-    if(ds.length) stilExtra[e]=ds;
+  ETAPAS_FIJAS.forEach(k=>{stilBS[k]=(dbs[k]||[]).filter(d=>esDeal(d.dealname));});
+  const allExtra=Object.keys(dbs).filter(k=>!ETAPAS_FIJAS.includes(k));
+  allExtra.forEach(k=>{
+    const ds=(dbs[k]||[]).filter(d=>esDeal(d.dealname));
+    if(ds.length) stilBS[k]=ds;
   });
 
-  const ETAPAS_RENDER=[...ETAPAS_FIJAS, ...Object.keys(stilExtra)];
-  let total=0;
-  ETAPAS_FIJAS.forEach(e=>total+=stilBS[e].length);
-  Object.values(stilExtra).forEach(ds=>total+=ds.length);
+  // Orden correcto: ETAPAS_ORDER primero, Perdida al final, resto al final
+  const ordenadas=[
+    ...ETAPAS_ORDER.filter(k=>stilBS[k]),
+    ...Object.keys(stilBS).filter(k=>!ETAPAS_ORDER.includes(k))
+  ];
+  // Mover Perdida al final
+  const sinPerdida=ordenadas.filter(k=>!/Perdida/i.test(k));
+  const conPerdida=ordenadas.filter(k=>/Perdida/i.test(k));
+  const ETAPAS_RENDER=[...sinPerdida,...conPerdida];
 
+  const totalActivos=sinPerdida.reduce((s,k)=>s+(stilBS[k]||[]).length,0);
+  const totalPerdida=conPerdida.reduce((s,k)=>s+(stilBS[k]||[]).length,0);
+  const totalGeneral=totalActivos+totalPerdida;
   const replies=evs.filter(e=>e.tipo==='reply').length;
-  const enSenal=stilBS['Senal Detectada'].length;
-  const enReply=stilBS['Reply Recibido'].length;
-  const enContactado=stilBS['Contactado'].length;
-  const enAtr=stilBS['Atraccion'].length;
-  const pct=replies>0?Math.round(enAtr/replies*100):0;
-  document.getElementById('kpis').innerHTML=`
-    <div class="kpi"><div class="kpi-n">${enSenal}</div><div class="kpi-l">Señal Detectada</div></div>
-    <div class="kpi"><div class="kpi-n">${enReply}</div><div class="kpi-l">Reply Recibido</div></div>
-    <div class="kpi"><div class="kpi-n">${enContactado}</div><div class="kpi-l">Contactado</div></div>
-    <div class="kpi"><div class="kpi-n g">${enAtr}</div><div class="kpi-l">En Atracción</div><div class="kpi-p">${pct}% de replies</div></div>`;
-  window.__stilBS=Object.assign({},stilBS,stilExtra);
+
+  // KPIs dinámicos: una card por etapa activa + una para Perdida al final
+  let kpiHtml='';
+  sinPerdida.forEach(k=>{
+    if(!(stilBS[k]||[]).length&&!ETAPAS_FIJAS.includes(k))return;
+    const n=(stilBS[k]||[]).length;
+    const col=ETAPA_COLORES[k]||'#9CA3AF';
+    const lbl=ETAPA_LABEL[k]||EL[k]||k;
+    const pct=totalActivos>0?Math.round(n/totalActivos*100):0;
+    const isGreen=/Atracc|Educ|Propuesta|Aproba|Contract|Reuni|Renova|Ganada/i.test(k);
+    kpiHtml+=`<div class="kpi" style="border-left:3px solid ${col}44">
+      <div class="kpi-n" style="color:${col}">${n}</div>
+      <div class="kpi-l">${lbl}</div>
+      <div class="kpi-p" style="color:${col}">${pct}% activos</div>
+    </div>`;
+  });
+  if(totalPerdida>0){
+    kpiHtml+=`<div class="kpi" style="border-left:3px solid #6B728044;opacity:.7">
+      <div class="kpi-n" style="color:#6B7280">${totalPerdida}</div>
+      <div class="kpi-l">Perdida</div>
+    </div>`;
+  }
+  document.getElementById('kpis').innerHTML=kpiHtml;
+  document.getElementById('dcnt').textContent=totalGeneral+' deals visibles';
+
+  window.__stilBS=stilBS;
   window.__etapasRender=ETAPAS_RENDER;
   renderKanban();
 }
@@ -544,6 +564,13 @@ function renderDetalle(ptype,pval,pwin){
     if(ea!==eb)return ea-eb;
     return new Date(b.fecha)-new Date(a.fecha);
   });
+  // Deduplicar por (empresa + prospecto): mantener el de mayor prioridad de etapa (ya viene primero tras el sort)
+  const dedupMap=new Map();
+  pool.forEach(e=>{
+    const key=(e.empresa||'')+'||'+(e.prospecto||'');
+    if(!dedupMap.has(key)) dedupMap.set(key,e);
+  });
+  pool=Array.from(dedupMap.values());
   __pool=pool;
 
   const winLbl={hoy:'Hoy',d7:'7d',d30:'30d',d90:'90d',total:'Total'}[pwin]||pwin;
@@ -561,7 +588,7 @@ function renderDetalle(ptype,pval,pwin){
       <div class="pv4-accent" style="background:${ac}"></div>
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
         <div><div class="pv4-co">${esc(e.empresa||'—')}</div>${sub?`<div class="pv4-sub">${esc(sub)}</div>`:''}</div>
-        ${e.etapa?`<span class="pv4-badge" style="background:${ac}22;color:${ac};border:1px solid ${ac}44;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap">${e.etapa}</span>`:''}
+        <span class="pv4-badge" style="background:${ac}22;color:${ac};border:1px solid ${ac}44;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap">${e.etapa?e.etapa:'Sin etapa'}</span>
       </div>
       <div class="pv4-div"></div>
       <div class="pv4-person">${esc(e.prospecto||'—')}</div>
