@@ -3677,30 +3677,33 @@ var GR_ETAPA_LABEL={'Senal Detectada':'Señal Detectada','Reply Recibido':'Reply
 
 function renderPipelineMetricsGR(pool){
   var box=document.getElementById('pipeline-metrics-gr'); if(!box) return;
-  // Si se pasa pool explícito (las cards visibles), usar ese; sino usar eventos filtrados
-  var PEV=(PROSPECCION_DATA&&Array.isArray(PROSPECCION_DATA.eventos))?PROSPECCION_DATA.eventos:[];
-  var prodSel=prospProducto||'ALL';
-  var matchFiltM=function(e){
-    if(prodSel==='ALL') return true;
-    if(prodSel==='GR') return e.tenant==='GR';
-    if(prodSel==='IMMMU') return e.tenant==='IMMMU';
-    return (e.producto||'')===prodSel;
-  };
-  var source=pool||PEV.filter(matchFiltM);
-  // Contar deals únicos por etapa del source
   var dbs={};
-  var seenDeals={};
-  source.forEach(function(e){
-    var et=e.etapa||''; if(!et) return;
-    var did=(e.deal_id||e.empresa||'')+'_'+et;
-    if(seenDeals[did]) return;
-    seenDeals[did]=true;
-    if(!dbs[et]) dbs[et]=[];
-    dbs[et].push({deal_id:e.deal_id,dealname:e.empresa});
-  });
-  // Fallback: si source no tiene nada con etapa, usar dealsByStage del payload
-  var dbsFull=(PROSPECCION_DATA&&PROSPECCION_DATA.dealsByStage)||{};
-  if(!Object.keys(dbs).length&&!pool&&prodSel==='ALL') dbs=dbsFull;
+  if(pool){
+    // Pool explícito (cards visibles): cada evento es una card, contar por etapa
+    pool.forEach(function(e){
+      var et=e.etapa||''; if(!et) return;
+      if(!dbs[et]) dbs[et]=[];
+      dbs[et].push({deal_id:e.deal_id,dealname:e.empresa});
+    });
+  } else {
+    // Sin pool: usar eventos filtrados por filtro activo
+    var PEV=(PROSPECCION_DATA&&Array.isArray(PROSPECCION_DATA.eventos))?PROSPECCION_DATA.eventos:[];
+    var prodSel=prospProducto||'ALL';
+    var matchFiltM=function(e){
+      if(prodSel==='ALL') return true;
+      if(prodSel==='GR') return e.tenant==='GR';
+      if(prodSel==='IMMMU') return e.tenant==='IMMMU';
+      return (e.producto||'')===prodSel;
+    };
+    PEV.filter(matchFiltM).forEach(function(e){
+      var et=e.etapa||''; if(!et) return;
+      if(!dbs[et]) dbs[et]=[];
+      dbs[et].push({deal_id:e.deal_id,dealname:e.empresa});
+    });
+    if(!Object.keys(dbs).length){
+      dbs=(PROSPECCION_DATA&&PROSPECCION_DATA.dealsByStage)||{};
+    }
+  }
   var allKeys=Object.keys(dbs);
   var ordered=[].concat(GR_ETAPAS_ORDER_PM.filter(function(k){return allKeys.indexOf(k)!==-1;}),allKeys.filter(function(k){return GR_ETAPAS_ORDER_PM.indexOf(k)===-1;}));
   var mainEtapas=ordered.filter(function(k){return !/Perdida/i.test(k);});
