@@ -3883,7 +3883,7 @@ function openProspModal(i){
   var nowP=new Date();
   var diasAtras=function(iso){var f=new Date(iso);if(isNaN(f))return '—';var a=Math.floor((nowP-f)/86400000);return a<=0?'Hoy':a===1?'1 día de retraso':a+' días de retraso';};
   var fechaTxt=(function(){var f=new Date(fecha);return isNaN(f)?'—':f.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});})();
-  var industLine=[(e.industria?e.industria.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,function(c){return c.toUpperCase();}):''), (e.empleados?e.empleados+' empleados':'')].filter(Boolean).join(' · ');
+  var industLine=[(e.industria?e.industria.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,function(c){return c.toUpperCase();}):''), (e.empleados?Number(e.empleados).toLocaleString('es-MX')+' emp.':''), (e.ciudad&&e.pais?e.ciudad+', '+e.pais:e.ciudad||e.pais||'')].filter(Boolean).join(' · ');
   var fase=function(et){if(!et)return'gray';if(/Ganada/i.test(et))return'green';if(/Perdida/i.test(et))return'gray';if(/Atracci|Educaci|Propuesta|Aprobaci|Contract|Reunion|Renovaci/i.test(et))return'green';if(/Conversaci/i.test(et))return'yellow';return'red';};
   var FC={green:'#10B981',yellow:'#F59E0B',red:'#EF4444',gray:'#6B7280'};
   var retraso=diasAtras(fecha);
@@ -3900,9 +3900,9 @@ function openProspModal(i){
     '<div style="margin:10px 0;">'+
       mrow('Etapa','',(e.etapa?'<span style="background:'+FC[fase(e.etapa)]+'22;color:'+FC[fase(e.etapa)]+';padding:2px 8px;border-radius:12px;font-weight:700;">'+esc(e.etapa)+'</span>':'—'))+
       mrow('Clasificación','',fmtLbl(e.clasificacion||''))+
+      mrow('Producto',e.producto)+
       (e.empleados?mrow('Empleados',Number(e.empleados).toLocaleString('es-MX')):'')+
       (e.ciudad||e.pais?mrow('Ubicación',[e.ciudad,e.pais].filter(Boolean).join(', ')):'')+
-      mrow('Producto',e.producto)+
       (webUrl?mrow('Web','','<a href="'+webUrl+'" target="_blank" style="color:#06B6D4;">'+esc(webUrl.replace(/^https?:\/\//,''))+'</a>'):'')+
       mrow('Campaña',e.campana)+
       mrow('Canal',e.canal)+
