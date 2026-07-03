@@ -1439,6 +1439,14 @@ const STAGE_ORDER = [
 ];
 
 function renderPipeline() {
+  // Normaliza producto desde el nombre para categorias que el backend deja en Otro (BD, AEO+SEO)
+  (DATA.deals||[]).forEach(function(d){
+    if(d.prod==='Otro'||d.prod==='P-Otro'){
+      var nm=String(d.name||'').toUpperCase().replace(/^P_/,'');
+      if(nm.indexOf('AEO+SEO')===0) d.prod='AEO+SEO';
+      else if(nm.indexOf('BD_')===0||nm.indexOf('BD ')===0||nm.indexOf('BD-')===0) d.prod='BD';
+    }
+  });
   const prods = ['ALL', ...new Set(DATA.deals.map(d => d.prod).filter(Boolean))];
   const owners = ['ALL', ...new Set(DATA.deals.map(d => d.owner).filter(Boolean))];
 
