@@ -285,20 +285,27 @@ function renderPipeline(){
   const conPerdida=ordenadas.filter(k=>/Perdida/i.test(k));
   const ETAPAS_RENDER=[...sinPerdida,...conPerdida];
 
-  const totalActivos=sinPerdida.reduce((s,k)=>s+(stilBS[k]||[]).length,0);
-  const totalPerdida=conPerdida.reduce((s,k)=>s+(stilBS[k]||[]).length,0);
-  const totalGeneral=totalActivos+totalPerdida;
-  const replies=evs.filter(e=>e.tipo==='reply').length;
+  window.__stilBS=stilBS;
+  window.__etapasRender=ETAPAS_RENDER;
+  renderKpis();
+  renderKanban();
+}
 
-  // KPIs dinámicos: una card por etapa activa + una para Perdida al final
+function renderKpis(){
+  const stilBS=window.__stilBS||{};
+  const etapas=window.__etapasRender||ETAPAS_FIJAS;
+  const filt=k=>{ let ds=stilBS[k]||[]; if(fKanban!=='ALL') ds=ds.filter(d=>seqMatch(d.dealname,fKanban)); return ds; };
+  const sinPerdida=etapas.filter(k=>!/Perdida/i.test(k));
+  const conPerdida=etapas.filter(k=>/Perdida/i.test(k));
+  const totalActivos=sinPerdida.reduce((s,k)=>s+filt(k).length,0);
+  const totalPerdida=conPerdida.reduce((s,k)=>s+filt(k).length,0);
   let kpiHtml='';
   sinPerdida.forEach(k=>{
-    if(!(stilBS[k]||[]).length&&!ETAPAS_FIJAS.includes(k))return;
-    const n=(stilBS[k]||[]).length;
+    const n=filt(k).length;
+    if(!n&&!ETAPAS_FIJAS.includes(k))return;
     const col=ETAPA_COLORES[k]||'#9CA3AF';
     const lbl=ETAPA_LABEL[k]||EL[k]||k;
     const pct=totalActivos>0?Math.round(n/totalActivos*100):0;
-    const isGreen=/Atracc|Educ|Propuesta|Aproba|Contract|Reuni|Renova|Ganada/i.test(k);
     kpiHtml+=`<div class="kpi" style="border-left:3px solid ${col}44">
       <div class="kpi-n" style="color:${col}">${n}</div>
       <div class="kpi-l">${lbl}</div>
@@ -312,16 +319,10 @@ function renderPipeline(){
     </div>`;
   }
   document.getElementById('kpis').innerHTML=kpiHtml;
-  document.getElementById('dcnt').textContent=totalGeneral+' deals visibles';
-
-  window.__stilBS=stilBS;
-  window.__etapasRender=ETAPAS_RENDER;
-  renderKanban();
 }
-
 function fK(seq,el){
   document.querySelectorAll('#page-pipeline .fbar .chip').forEach(c=>c.classList.remove('on'));
-  el.classList.add('on');fKanban=seq;renderKanban();
+  el.classList.add('on');fKanban=seq;renderKpis();renderKanban();
 }
 
 function renderKanban(){
