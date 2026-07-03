@@ -85,7 +85,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
 /* DRILLDOWN CARDS */
 .divider{border:none;border-top:1px solid var(--border);margin:18px 0}
 .pv4-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:10px}
-.pv4-card{position:relative;background:#1E2433;border:1px solid #2A3142;border-radius:14px;padding:16px 16px 15px 18px;overflow:hidden;cursor:pointer;transition:border-color .15s}
+.pv4-card{position:relative;background:#1E2433;border:1px solid #2A3142;border-radius:14px;padding:16px 16px 15px 18px;overflow:hidden;cursor:pointer;transition:border-color .15sdisplay:flex;flex-direction:column;}
 .pv4-card:hover{border-color:#3A4358}
 .pv4-accent{position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:14px 0 0 14px}
 .pv4-co{font-size:16px;font-weight:800;color:#F3F4F6;line-height:1.15}
@@ -95,11 +95,11 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
 .pv4-role{font-size:11px;color:#9CA3AF;margin-top:1px}
 .pv4-quote{margin:10px 0;padding:9px 12px;border-left:3px solid #06B6D4;background:rgba(6,182,212,.06);border-radius:0 8px 8px 0;font-size:11px;color:#cbd5e1;font-style:italic;overflow:hidden;min-height:52px}.pv4-qt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .pv4-ql{display:block;font-style:normal;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#6B7280;margin-bottom:3px}
-.pv4-tags{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0 12px}
+.pv4-tags{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0 12px;min-height:44px}
 .pv4-tg{font-size:10px;padding:2px 8px;border-radius:12px;border:1px solid #2A3142;color:#9CA3AF;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}
 .pv4-tg.ch{border-color:#06B6D4;color:#06B6D4}
 .pv4-tg.prod{border-color:#7C3AED;color:#c4b5fd}
-.pv4-actions{display:flex;gap:6px;flex-wrap:wrap}
+.pv4-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
 .pv4-btn{flex:1;min-width:80px;text-align:center;text-decoration:none;padding:7px 6px;border-radius:9px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid #2A3142;background:transparent;color:#F3F4F6;display:inline-block;font-family:'Montserrat',sans-serif}
 .pv4-btn.li{border-color:#06B6D4;color:#06B6D4}
 .pv4-btn.lc{border-color:#3b82f6;color:#93c5fd}
