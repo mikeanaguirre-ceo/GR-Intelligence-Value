@@ -1445,6 +1445,7 @@ function renderPipeline() {
       var nm=String(d.name||'').toUpperCase().replace(/^P_/,'');
       if(nm.indexOf('AEO+SEO')===0) d.prod='AEO+SEO';
       else if(nm.indexOf('BD_')===0||nm.indexOf('BD ')===0||nm.indexOf('BD-')===0) d.prod='BD';
+      else if(nm.indexOf('IMU')===0||nm.indexOf('IMMMU')===0) d.prod='IMMMU';
     }
   });
   const prods = ['ALL', ...new Set(DATA.deals.map(d => d.prod).filter(Boolean))];
