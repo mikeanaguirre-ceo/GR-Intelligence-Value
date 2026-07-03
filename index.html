@@ -3912,11 +3912,12 @@ function openProspModal(i){
     ((e.descripcion_empresa||e.descripcion)?'<div style="font-size:12px;color:#cbd5e1;line-height:1.5;background:#1E2433;border:1px solid #2A3142;border-radius:10px;padding:10px 12px;margin:0 0 12px;max-height:120px;overflow:auto;"><span style="display:block;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#6B7280;margin-bottom:4px;">Descripción</span>'+esc(e.descripcion_empresa||e.descripcion)+'</div>':'')+
     '<div style="font-size:14px;font-weight:700;color:#F3F4F6;">'+esc(e.prospecto||'—')+'</div>'+
     (e.puesto?'<div style="font-size:12px;color:#9CA3AF;margin:2px 0 10px;">'+esc(e.puesto)+'</div>':'')+
-    (msg?'<div style="margin:10px 0;padding:9px 12px;border-left:3px solid #06B6D4;background:rgba(6,182,212,.06);border-radius:0 8px 8px 0;font-size:12px;color:#cbd5e1;font-style:italic;"><span style="display:block;font-style:normal;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#6B7280;margin-bottom:3px;">Último mensaje</span>'+esc(msg)+'</div>':'')+
+    '<div style="margin:10px 0;padding:9px 12px;border-left:3px solid #06B6D4;background:rgba(6,182,212,.06);border-radius:0 8px 8px 0;font-size:12px;color:#cbd5e1;font-style:italic;"><span style="display:block;font-style:normal;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#6B7280;margin-bottom:3px;">Último mensaje</span>'+(msg?esc(msg):'<span style="opacity:.4;">Sin mensaje registrado</span>')+'</div>'+
     '<div style="margin:10px 0;">'+
       mrow('Etapa','',(e.etapa?'<span style="background:'+FC[fase(e.etapa)]+'22;color:'+FC[fase(e.etapa)]+';padding:2px 8px;border-radius:12px;font-weight:700;">'+esc(e.etapa)+'</span>':'—'))+
       mrow('Clasificación','',fmtLbl(e.clasificacion||''))+
       mrow('Producto',e.producto)+
+      (e.amount?mrow('Valor','','$'+Number(e.amount).toLocaleString('es-MX')):'')+
       (e.empleados?mrow('Empleados',Number(e.empleados).toLocaleString('es-MX')):'')+
       (e.ciudad||e.pais?mrow('Ubicación',[e.ciudad,e.pais].filter(Boolean).join(', ')):'')+
       (webUrl?mrow('Web','','<a href="'+webUrl+'" target="_blank" style="color:#06B6D4;">'+esc(webUrl.replace(/^https?:\/\//,''))+'</a>'):'')+

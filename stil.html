@@ -623,11 +623,11 @@ function oM(i){
   const f=fase(e.etapa||'');
   const col=FC[f];
   const retraso=(()=>{const a=Math.floor((Date.now()-new Date(e.fecha))/864e5);return a<=0?'Hoy':a===1?'1 día de retraso':a+' días de retraso';})();
-  const rCol=Math.floor((Date.now()-new Date(e.fecha))/864e5)>7?'#EF4444':'#F59E0B';
+  const rCol=(function(){const a=Math.floor((Date.now()-new Date(e.fecha))/864e5);return a<=1?'#10B981':a<=7?'#F59E0B':'#EF4444';})();
   const fechaTxt=(()=>{const f=new Date(e.fecha);return isNaN(f)?'—':f.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});})();
   const industLine=[e.industria?(e.industria.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase())):'',e.empleados?Number(e.empleados).toLocaleString('es-MX')+' emp.':'',e.ciudad&&e.pais?(e.ciudad+', '+e.pais):e.pais||e.ciudad||''].filter(Boolean).join(' · ');
   const mrow=(k,v,inner)=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #2A3142;font-size:13px"><span style="color:#9CA3AF;font-size:12px">${k}</span><span style="font-weight:600;text-align:right;max-width:230px">${inner||esc(v||'—')}</span></div>`;
-  const abtn=(href,lbl,col)=>href?`<button onclick="goURL('${href}')" style="flex:1;min-width:100px;text-align:center;padding:9px 6px;border-radius:9px;border:1px solid ${col};color:${col};font-size:12px;font-weight:700;display:inline-block;background:transparent;cursor:pointer;font-family:'Montserrat',sans-serif">${lbl}</button>`:'';
+  const abtn=(href,lbl,col)=>href?`<a href="${href}" target="_blank" rel="noopener" style="flex:1;min-width:100px;text-align:center;text-decoration:none;padding:9px 6px;border-radius:9px;border:1px solid ${col};color:${col};font-size:12px;font-weight:700;display:inline-block">${lbl}</a>`:'';
 
   document.getElementById('modal-body').innerHTML=
     `<div style="font-size:19px;font-weight:800;color:#F3F4F6;line-height:1.15;margin-bottom:${industLine?2:10}px">${esc(e.empresa||'—')}</div>`+
@@ -635,7 +635,7 @@ function oM(i){
     (e.descripcion_empresa?`<div style="font-size:12px;color:#cbd5e1;line-height:1.5;background:#1E2433;border:1px solid #2A3142;border-radius:10px;padding:10px 12px;margin-bottom:12px;max-height:100px;overflow:auto"><span style="display:block;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#6B7280;margin-bottom:4px">Descripción</span>${esc(e.descripcion_empresa)}</div>`:'')+
     `<div style="font-size:14px;font-weight:700;color:#F3F4F6">${esc(e.prospecto||'—')}</div>`+
     (e.puesto?`<div style="font-size:12px;color:#9CA3AF;margin:2px 0 10px">${esc(e.puesto)}</div>`:'')+
-    (e.mensaje?`<div style="margin:10px 0;padding:9px 12px;border-left:3px solid #06B6D4;background:rgba(6,182,212,.06);border-radius:0 8px 8px 0;font-size:12px;color:#cbd5e1;font-style:italic"><span style="display:block;font-style:normal;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#6B7280;margin-bottom:3px">Último mensaje</span>${esc(e.mensaje)}</div>`:'')+
+    `<div style="margin:10px 0;padding:9px 12px;border-left:3px solid #06B6D4;background:rgba(6,182,212,.06);border-radius:0 8px 8px 0;font-size:12px;color:#cbd5e1;font-style:italic"><span style="display:block;font-style:normal;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#6B7280;margin-bottom:3px">Último mensaje</span>${e.mensaje?esc(e.mensaje):'<span style="opacity:.4">Sin mensaje registrado</span>'}</div>`+
     `<div style="margin:10px 0">
       ${mrow('Etapa','',(e.etapa?`<span style="background:${col}22;color:${col};padding:2px 8px;border-radius:12px;font-weight:700">${esc(e.etapa)}</span>`:'—'))}
       ${mrow('Clasificación','',fmtLbl(e.clasificacion||''))}
