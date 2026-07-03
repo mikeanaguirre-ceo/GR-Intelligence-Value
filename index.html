@@ -1448,7 +1448,10 @@ function renderPipeline() {
       else if(nm.indexOf('IMU')===0||nm.indexOf('IMMMU')===0) d.prod='IMMMU';
     }
   });
-  const prods = ['ALL', ...new Set(DATA.deals.map(d => d.prod).filter(Boolean))];
+  const _uniqP=[...new Set(DATA.deals.map(d => d.prod).filter(Boolean))];
+  const _ORD=['TW','AM','AEO+SEO','AEO','3V','GenIA','ITS','LT','BD','WB','HS','PT','EX','IMMMU','Interno','Otro'];
+  _uniqP.sort((a,b)=>{const ia=_ORD.indexOf(a),ib=_ORD.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
+  const prods = ['ALL', ..._uniqP];
   const owners = ['ALL', ...new Set(DATA.deals.map(d => d.owner).filter(Boolean))];
 
   const filtered = DATA.deals.filter(d => {
@@ -3222,7 +3225,7 @@ function renderProspeccion() {
   var duoArr = senalesArr.filter(function(e){ return isDUO(e); });
   var open3puro = senalesArr.filter(function(e){ return !isDUO(e); });
   var duoReplies = repliesArr.filter(function(e){ return isDUO(e); });
-  var GR_PRODS=['AM','AEO','GENIA','ITS','LT','TW','HS','360','WB','BD','EX'];
+  var GR_PRODS=['TW','AM','AEO+SEO','AEO','360','GENIA','ITS','LT','BD','WB','HS','EX'];
   var activeProd=GR_PRODS.filter(function(p){ return PEV.some(function(e){return (e.producto||'')===p;}); });
   var chip=function(val,lbl){ return '<button class="chip'+(prodSel===val?' active':'')+'" data-prospfilter="'+val+'" style="font-size:11px;padding:5px 11px;border-radius:18px;">'+lbl+'</button>'; };
   var chips='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">'+chip('ALL','Todos')+chip('GR','GR')+chip('IMMMU','IMMMU')+'<span style="display:inline-block;width:1px;background:var(--border,#2A3142);margin:0 6px;"></span>';
