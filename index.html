@@ -815,7 +815,9 @@ const ACTIVE_CLIENTS = {
 let DATA = null;
 let TASKS = null;
 let currentTab = 'recap';
-let pipelineFilters = { prod: 'ALL', owner: 'ALL', excludeP: false };
+let pipelineFilters = { group: 'ALL', prod: 'ALL', owner: 'ALL', excludeP: false };
+const PROD_GROUPS = { GR:['TW','AM','AEO','3V','GenIA','ITS','LT','BD','WB','HS'], PT:['PT'], INTERNO:['Interno'], IMMMU:['IMMMU'] };
+function inGroup(d){ if(pipelineFilters.group==='ALL') return true; return (PROD_GROUPS[pipelineFilters.group]||[]).includes(d.prod); }
 let pendientesFilters = { persona: 'Todos', urgency: 'ALL', scope: 'ALL', sort: 'urgency', stage: 'ALL' };
 let alertasFilters = { accion: 'ALL', categoria: 'ALL', persona: 'Todos', producto: 'ALL', stage: 'ALL', minMonto: 0, sort: 'monto_desc' };
 let recapFilters = {
@@ -1267,6 +1269,10 @@ function renderRecap() {
     html += `<div class="section">
       <div class="section-title">Deals creados esta semana <span class="section-count">${filteredCreados.length}/${recap.dealsCreados.total}</span> <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">${fmtK(montoFiltrado)}</span></div>
       <div class="filters">
+        <span class="filter-label">Grupo:</span>
+        ${['ALL','GR','PT','INTERNO','IMMMU'].map(gg => `<button class="chip ${pipelineFilters.group === gg ? 'active' : ''}" data-pfilter="group" data-pval="${gg}">${gg==='ALL'?'All':gg}</button>`).join('')}
+      </div>
+      <div class="filters">
         <span class="filter-label">Producto:</span>
         <button class="chip ${prodCreadoFilter === 'ALL' ? 'active' : ''}" data-recapfilter="prodCreado" data-rval="ALL">Todos</button>
         ${prodsCreados.map(pr => `<button class="chip ${prodCreadoFilter === pr ? 'active' : ''}" data-recapfilter="prodCreado" data-rval="${pr}">${pr}</button>`).join('')}
@@ -1332,6 +1338,10 @@ function renderRecap() {
 
     html += `<div class="section">
       <div class="section-title">Deals con movimiento esta semana <span class="section-count">${filteredMov.length}/${recap.dealsMovidos.total}</span> <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">${fmtK(montoMovFiltrado)}</span></div>
+      <div class="filters">
+        <span class="filter-label">Grupo:</span>
+        ${['ALL','GR','PT','INTERNO','IMMMU'].map(gg => `<button class="chip ${pipelineFilters.group === gg ? 'active' : ''}" data-pfilter="group" data-pval="${gg}">${gg==='ALL'?'All':gg}</button>`).join('')}
+      </div>
       <div class="filters">
         <span class="filter-label">Producto:</span>
         <button class="chip ${prodMovFilter === 'ALL' ? 'active' : ''}" data-recapfilter="prodMovido" data-rval="ALL">Todos</button>
@@ -1443,18 +1453,19 @@ function renderPipeline() {
   (DATA.deals||[]).forEach(function(d){
     if(d.prod==='Otro'||d.prod==='P-Otro'){
       var nm=String(d.name||'').toUpperCase().replace(/^P_/,'');
-      if(nm.indexOf('AEO+SEO')===0) d.prod='AEO+SEO';
-      else if(nm.indexOf('BD_')===0||nm.indexOf('BD ')===0||nm.indexOf('BD-')===0) d.prod='BD';
+      if(nm.indexOf('BD_')===0||nm.indexOf('BD ')===0||nm.indexOf('BD-')===0) d.prod='BD';
       else if(nm.indexOf('IMU')===0||nm.indexOf('IMMMU')===0) d.prod='IMMMU';
     }
   });
   const _uniqP=[...new Set(DATA.deals.map(d => d.prod).filter(Boolean))];
-  const _ORD=['TW','AM','AEO+SEO','AEO','3V','GenIA','ITS','LT','BD','WB','HS','PT','EX','IMMMU','Interno','Otro'];
+  const _ORD=['TW','AM','AEO','3V','GenIA','ITS','LT','BD','WB','HS','PT','IMMMU','Interno','Otro'];
   _uniqP.sort((a,b)=>{const ia=_ORD.indexOf(a),ib=_ORD.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
-  const prods = ['ALL', ..._uniqP];
+  let _grp=_uniqP; if(pipelineFilters.group!=='ALL'){ const gs=PROD_GROUPS[pipelineFilters.group]||[]; _grp=_uniqP.filter(p=>gs.includes(p)); }
+  const prods = ['ALL', ..._grp];
   const owners = ['ALL', ...new Set(DATA.deals.map(d => d.owner).filter(Boolean))];
 
   const filtered = DATA.deals.filter(d => {
+    if (!inGroup(d)) return false;
     if (pipelineFilters.prod !== 'ALL' && d.prod !== pipelineFilters.prod) return false;
     if (pipelineFilters.owner !== 'ALL' && d.owner !== pipelineFilters.owner) return false;
     if (pipelineFilters.excludeP && d.name.startsWith('P_')) return false;
@@ -1480,6 +1491,10 @@ function renderPipeline() {
 
   let html = `
     <div class="section">
+      <div class="filters">
+        <span class="filter-label">Grupo:</span>
+        ${['ALL','GR','PT','INTERNO','IMMMU'].map(gg => `<button class="chip ${pipelineFilters.group === gg ? 'active' : ''}" data-pfilter="group" data-pval="${gg}">${gg==='ALL'?'All':gg}</button>`).join('')}
+      </div>
       <div class="filters">
         <span class="filter-label">Producto:</span>
         ${prods.map(p => `<button class="chip ${pipelineFilters.prod === p ? 'active' : ''}" data-pfilter="prod" data-pval="${p}">${p}</button>`).join('')}
@@ -1573,6 +1588,7 @@ function renderPipelineMetricsPipeline(){
   var box=document.getElementById('pipeline-metrics-gr-pip'); if(!box) return;
   var allDeals=(DATA&&DATA.deals)||[];
   var filtered=allDeals.filter(function(d){
+    if(!inGroup(d)) return false;
     if(pipelineFilters.prod!=='ALL'&&d.prod!==pipelineFilters.prod) return false;
     if(pipelineFilters.owner!=='ALL'&&d.owner!==pipelineFilters.owner) return false;
     if(pipelineFilters.excludeP&&d.name&&d.name.startsWith('P_')) return false;
