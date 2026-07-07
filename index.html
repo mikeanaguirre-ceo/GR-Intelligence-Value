@@ -2123,7 +2123,7 @@ function renderPendientes() {
 }
 
 // ====== EDITOR DE TAREAS v3 (campos controlados + calendario propio + nueva en blanco) ======
-const PERSONAS = ['Mike','Migue','Martha','Daniel','Fer','Mine','Manu','Diana','Sandra','Nico'];
+const PERSONAS = ['Mike','Migue','Martha','Daniel','Fer','Mine','Manu','Diana','Sandra','Nico','Sara','Sabrina','Valeria'];
 const PRODUCTOS = ['TW','HS','AEO','360','WB','AM','GenIA','ITS','LT','BD'];
 const EARLY_STAGES = ['Señal','Reply','Contactado','En Conv.'];
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -2572,7 +2572,7 @@ function renderAlertas() {
     <button class="chip ${alertasFilters.categoria === 'Higienizar' ? 'active' : ''}" data-alfilter="categoria" data-aval="Higienizar" style="color:#A5B4FC;">🧰 Higienizar (${stats.porCategoria.Higienizar || 0})</button>
   </div>`;
 
-  const personas = ['Todos', 'Mike', 'Migue', 'Martha', 'Fer', 'Otro'];
+  const personas = ['Todos', 'Mike', 'Migue', 'Martha', 'Daniel', 'Fer', 'Mine', 'Sara', 'Sabrina', 'Otro'];
   html += `<div class="filters">
     <span class="filter-label">Persona:</span>`;
   personas.forEach(p => {
