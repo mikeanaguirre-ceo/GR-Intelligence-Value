@@ -193,6 +193,17 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
 </div>
 
 <script>
+/* FIX 17jul2026 — "HOY" no media el dia natural: media una ventana rodante de 24h
+   (a = floor((now-fecha)/86400000); a<=0). Arrastraba parte del dia anterior al
+   reporte diario. Ahora se compara la fecha calendario en America/Mexico_City. */
+var GR_TZ_FMT = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City', year: 'numeric', month: '2-digit', day: '2-digit' });
+function grDayKey(d) {
+  var p = GR_TZ_FMT.formatToParts(d), o = {};
+  for (var i = 0; i < p.length; i++) { o[p[i].type] = p[i].value; }
+  return o.year + '-' + o.month + '-' + o.day;
+}
+</script>
+<script>
 const EP='https://mikea.app.n8n.cloud/webhook/stil-prospeccion';
 const STIL_OK=['P_STL_','STIL_CB_','STIL_NAC_','STIL_AM_'];
 const ETAPAS_FIJAS=['Senal Detectada','Reply Recibido','Contactado','En Conversacion','Atraccion'];
@@ -252,7 +263,8 @@ function parseDeal(dn){
 function rel(iso){
   const f=new Date(iso);if(isNaN(f))return '';
   const a=Math.floor((Date.now()-f)/86400000);
-  if(a<=0)return 'hoy';if(a===1)return 'ayer';if(a<30)return 'hace '+a+'d';
+  const k=grDayKey(new Date(f));
+  if(k===grDayKey(new Date()))return 'hoy';if(k===grDayKey(new Date(Date.now()-86400000)))return 'ayer';if(a<30)return 'hace '+a+'d';
   return f.toLocaleDateString('es-MX',{day:'2-digit',month:'short'});
 }
 
@@ -409,7 +421,7 @@ function renderEtapas(){
     deals.forEach(d=>{
       const a=ageDays(d.created);
       if(a===null)return;
-      if(a<=0)w.hoy++;if(a<=7)w.d7++;if(a<=30)w.d30++;if(a<=90)w.d90++;
+      if(grDayKey(new Date(f))===grDayKey(new Date()))w.hoy++;if(a<=7)w.d7++;if(a<=30)w.d30++;if(a<=90)w.d90++;
     });
     sc[e.key]=w;
   });
@@ -452,12 +464,12 @@ const NOW=()=>Date.now();
 function inW(e,w){
   const f=new Date(e.fecha);if(isNaN(f))return w==='total';
   const a=Math.floor((NOW()-f)/86400000);
-  if(w==='hoy')return a<=0;if(w==='d7')return a<=7;if(w==='d30')return a<=30;if(w==='d90')return a<=90;return true;
+  if(w==='hoy')return grDayKey(f)===grDayKey(new Date());if(w==='d7')return a<=7;if(w==='d30')return a<=30;if(w==='d90')return a<=90;return true;
 }
 
 function winOf(arr){
   const w={hoy:0,d7:0,d30:0,d90:0,total:0};
-  arr.forEach(e=>{w.total++;const f=new Date(e.fecha);if(isNaN(f))return;const a=Math.floor((NOW()-f)/86400000);if(a<=0)w.hoy++;if(a<=7)w.d7++;if(a<=30)w.d30++;if(a<=90)w.d90++;});
+  arr.forEach(e=>{w.total++;const f=new Date(e.fecha);if(isNaN(f))return;const a=Math.floor((NOW()-f)/86400000);if(grDayKey(f)===grDayKey(new Date()))w.hoy++;if(a<=7)w.d7++;if(a<=30)w.d30++;if(a<=90)w.d90++;});
   return w;
 }
 
