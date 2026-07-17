@@ -3208,6 +3208,23 @@ function isEventoPrueba(e){
   return false;
 }
 
+/* ---- Dia natural America/Mexico_City ----------------------------------
+   FIX 16jul2026 — CAUSA RAIZ: la columna y el filtro "HOY" no median el dia
+   natural, median una ventana rodante de 24h:
+       age = Math.floor((now - fecha)/86400000);  if (age <= 0) -> hoy
+   Con eso, a cualquier hora del render "HOY" arrastraba parte del dia
+   anterior (replies del 15-jul contados el 16-jul en el reporte diario).
+   Ahora se compara la fecha calendario en America/Mexico_City: independiente
+   de la hora del render y del huso horario del navegador.
+   d7/d30/d90 se dejan rodantes A PROPOSITO: ahi "ultimos N dias" es la
+   semantica correcta y no hay defecto medido. HOY sigue contenido en d7. */
+var GR_TZ_FMT = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City', year: 'numeric', month: '2-digit', day: '2-digit' });
+function grDayKey(d) {
+  var p = GR_TZ_FMT.formatToParts(d), o = {};
+  for (var i = 0; i < p.length; i++) { o[p[i].type] = p[i].value; }
+  return o.year + '-' + o.month + '-' + o.day;
+}
+
 function renderProspeccion() {
   var deals = (DATA && DATA.deals) || [];
   var PEV = (PROSPECCION_DATA && Array.isArray(PROSPECCION_DATA.eventos)) ? PROSPECCION_DATA.eventos : null;
@@ -3220,9 +3237,10 @@ function renderProspeccion() {
   }
   var fmtLbl = function(s) { return String(s||'').split('_').map(function(w){return w.charAt(0).toUpperCase()+w.slice(1);}).join(' '); };
   var nowP = new Date();
+  var HOY_KEY = grDayKey(nowP);
   var winOf = function(arr) {
     var w={hoy:0,d7:0,d30:0,d90:0,total:0};
-    arr.forEach(function(e){ w.total++; var f=new Date(e.fecha); if(isNaN(f)) return; var age=Math.floor((nowP-f)/86400000); if(age<=0)w.hoy++; if(age<=7)w.d7++; if(age<=30)w.d30++; if(age<=90)w.d90++; });
+    arr.forEach(function(e){ w.total++; var f=new Date(e.fecha); if(isNaN(f)) return; var age=Math.floor((nowP-f)/86400000); if(grDayKey(f)===HOY_KEY)w.hoy++; if(age<=7)w.d7++; if(age<=30)w.d30++; if(age<=90)w.d90++; });
     return w;
   };
   var prodSel = prospProducto;
@@ -3816,13 +3834,15 @@ function renderProspDetalle(ptype, pval, pwin) {
   var normClas=function(c){ return c==='asked_to_circle_back_later'?'circle_back':(c||''); };
   var fmtLbl=function(s){ return String(s||'').split('_').map(function(w){return w.charAt(0).toUpperCase()+w.slice(1);}).join(' '); };
   var nowP=new Date();
+  var HOY_KEY=grDayKey(nowP);
+  var AYER_KEY=grDayKey(new Date(nowP.getTime()-86400000));
   var inWin=function(e){
     var f=new Date(e.fecha); if(isNaN(f)) return pwin==='total';
     var age=Math.floor((nowP-f)/86400000);
-    if(pwin==='hoy') return age<=0; if(pwin==='d7') return age<=7;
+    if(pwin==='hoy') return grDayKey(f)===HOY_KEY; if(pwin==='d7') return age<=7;
     if(pwin==='d30') return age<=30; if(pwin==='d90') return age<=90; return true;
   };
-  var rel=function(iso){ var f=new Date(iso); if(isNaN(f)) return ''; var a=Math.floor((nowP-f)/86400000); if(a<=0)return 'hoy'; if(a===1)return 'ayer'; if(a<30)return 'hace '+a+'d'; return f.toLocaleDateString('es-MX',{day:'2-digit',month:'short'}); };
+  var rel=function(iso){ var f=new Date(iso); if(isNaN(f)) return ''; var k=grDayKey(f); if(k===HOY_KEY)return 'hoy'; if(k===AYER_KEY)return 'ayer'; var a=Math.floor((nowP-f)/86400000); if(a>0&&a<30)return 'hace '+a+'d'; return f.toLocaleDateString('es-MX',{day:'2-digit',month:'short'}); };
 
   var pool=PEV.map(function(e){return Object.assign({},e,{clasificacion:normClas(e.clasificacion||'')});}).filter(function(e){return matchFilt(e)&&inWin(e);});
   var isDUOf=function(e){ return e.campana && e.campana.indexOf(' – ')!==-1; };
