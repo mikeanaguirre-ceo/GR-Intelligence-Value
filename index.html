@@ -3225,6 +3225,11 @@ function grDayKey(d) {
   return o.year + '-' + o.month + '-' + o.day;
 }
 
+/* FIX 17jul2026 — la tabla de conteos filtraba por la clasificacion CRUDA
+   ('asked_to_circle_back_later') y el detalle por la NORMALIZADA ('circle_back'),
+   asi que tocar el numero abria una lista vacia. Se unifica con el mismo mapeo. */
+function normClasP(c){ return c==='asked_to_circle_back_later' ? 'circle_back' : (c||''); }
+
 function renderProspeccion() {
   var deals = (DATA && DATA.deals) || [];
   var PEV = (PROSPECCION_DATA && Array.isArray(PROSPECCION_DATA.eventos)) ? PROSPECCION_DATA.eventos : null;
@@ -3269,7 +3274,7 @@ function renderProspeccion() {
   var dot=function(c){ return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+c+';margin-right:7px;vertical-align:middle;"></span>'; };
   var H1='<thead><tr><th style="width:38%;">CLASIFICACIÓN</th><th style="text-align:center;">HOY</th><th style="text-align:center;">7D</th><th style="text-align:center;">30D</th><th style="text-align:center;">90D</th><th style="text-align:center;">TOTAL</th></tr></thead>';
   var wc=function(n,win,clas,bold){ var s=bold?'font-weight:700;':''; return n>0?'<td class="pcell" data-ptype="clas" data-pval="'+encodeURIComponent(clas)+'" data-pwin="'+win+'" style="text-align:center;'+s+'cursor:pointer;">'+n+'</td>':'<td style="text-align:center;color:var(--text-mute);'+s+'">0</td>'; };
-  var rowC=function(clas,col){ var sub=repliesArr.filter(function(e){return (e.clasificacion||'')===clas;}); if(!sub.length)return ''; var w=winOf(sub); return '<tr><td>'+dot(col)+fmtLbl(clas)+'</td>'+wc(w.hoy,'hoy',clas,0)+wc(w.d7,'d7',clas,0)+wc(w.d30,'d30',clas,0)+wc(w.d90,'d90',clas,0)+wc(w.total,'total',clas,1)+'</tr>'; };
+  var rowC=function(clas,col){ var sub=repliesArr.filter(function(e){return normClasP(e.clasificacion||'')===clas;}); if(!sub.length)return ''; var w=winOf(sub); return '<tr><td>'+dot(col)+fmtLbl(clas)+'</td>'+wc(w.hoy,'hoy',clas,0)+wc(w.d7,'d7',clas,0)+wc(w.d30,'d30',clas,0)+wc(w.d90,'d90',clas,0)+wc(w.total,'total',clas,1)+'</tr>'; };
   var secH=function(lbl,col,bg){ return '<tr style="background:'+bg+';"><td colspan="6" style="font-size:11px;font-weight:800;text-transform:uppercase;color:'+col+';padding:8px 12px;">'+dot(col)+lbl+'</td></tr>'; };
   var t1='<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;">'+H1+'<tbody>';
   // Sección DUO en replies (contactos DUO que respondieron)
