@@ -366,10 +366,11 @@ function renderKpis(){
   const totalPerdida=conPerdida.reduce((s,k)=>s+filt(k).length,0);
   let kpiHtml='';
   var _now=new Date();
+  var _metaGoal=(DATA.catalogos&&DATA.catalogos.meta&&DATA.catalogos.meta.citasEducacionMes)||10;
   var _eduMes=(stilBS['Educación']||[]).filter(function(d){ var f=new Date(d.created); return !isNaN(f)&&f.getMonth()===_now.getMonth()&&f.getFullYear()===_now.getFullYear(); }).length;
-  var _pctMeta=Math.round(_eduMes/20*100);
+  var _pctMeta=Math.round(_eduMes/_metaGoal*100);
   var _metaCol=_pctMeta>=100?'#34d399':_pctMeta>=50?'#FFCD00':'#EF4444';
-  kpiHtml+=`<div class="kpi" style="border-left:3px solid ${_metaCol};background:${_metaCol}12"><div class="kpi-n" style="color:${_metaCol}">${_eduMes}/20</div><div class="kpi-l">Meta citas (Educación) este mes</div><div class="kpi-p" style="color:${_metaCol}">${_pctMeta}% de la meta</div></div>`;
+  kpiHtml+=`<div class="kpi" style="border-left:3px solid ${_metaCol};background:${_metaCol}12"><div class="kpi-n" style="color:${_metaCol}">${_eduMes}/${_metaGoal}</div><div class="kpi-l">Meta citas (Educación) este mes</div><div class="kpi-p" style="color:${_metaCol}">${_pctMeta}% de la meta</div></div>`;
   sinPerdida.forEach(k=>{
     const n=filt(k).length;
     if(!n&&!ETAPAS_FIJAS.includes(k))return;
