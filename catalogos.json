@@ -125,17 +125,20 @@
       "id": "AEO",
       "label": "AEO",
       "prefijos": [
-        "AEO"
+        "AEO",
+        "AEO+SEO",
+        "AEO +SEO"
       ],
       "color": "azul",
       "grupo": "GR"
     },
     {
-      "id": "3V",
-      "label": "3V/360",
+      "id": "360",
+      "label": "360",
       "prefijos": [
+        "360",
         "3V",
-        "360"
+        "3V/360"
       ],
       "color": "azul",
       "grupo": "GR"
