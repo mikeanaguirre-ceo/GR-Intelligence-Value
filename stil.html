@@ -147,6 +147,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
 <div class="nav">
   <div class="ntab on" onclick="switchTab('pipeline',this)">Pipeline</div>
   <div class="ntab" onclick="switchTab('prospeccion',this)">Prospección</div>
+  <div class="ntab" onclick="switchTab('pendientes',this)">Pendientes</div>
 </div>
 
 <!-- PIPELINE -->
@@ -192,6 +193,10 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
   </div>
 </div>
 
+<div id="page-pendientes" class="page">
+  <div id="pd" class="loading"><div class="spinner"></div>Cargando…</div>
+</div>
+
 <script>
 /* FIX 17jul2026 — "HOY" no media el dia natural: media una ventana rodante de 24h
    (a = floor((now-fecha)/86400000); a<=0). Arrastraba parte del dia anterior al
@@ -209,6 +214,51 @@ const STIL_OK=['P_STL_','STIL_CB_','STIL_NAC_','STIL_AM_'];
 const ETAPAS_FIJAS=['Senal Detectada','Reply Recibido','Contactado','En Conversacion','Atraccion'];
 const EL={'Senal Detectada':'Señal Detectada','Reply Recibido':'Reply Recibido',Contactado:'Contactado','En Conversacion':'En Conversación',Atraccion:'Atracción',Educacion:'Educación','Qualified To Buy':'Qualified To Buy','Propuesta Enviada':'Propuesta Enviada','Aprobacion Verbal':'Aprobación Verbal','Decision Maker Bought-In':'Decision Maker Bought-In',Ganada:'Ganada',Perdida:'Perdida',Renovacion:'Renovación'};
 let DATA=null,fKanban='ALL',fProd='ALL';
+function semColorStil(x){return {rojo:'#DB0540',amarillo:'#FFCD00',verde:'#62D175'}[x]||'transparent';}
+var FILTpd={prod:'ALL',sem:'ALL',persona:'Todos'};
+function catStil(){return (DATA&&DATA.catalogos)||{};}
+function prodsStil(){return (catStil().productos||[]).map(function(p){return p.id;});}
+function renderPendientes(){
+  var box=document.getElementById('pd'); if(!box) return;
+  var porP=(DATA&&DATA.tareasPorPersona)||{};
+  var all=[]; Object.keys(porP).forEach(function(k){ all=all.concat(porP[k]||[]); });
+  function pasa(t){
+    if(FILTpd.prod!=='ALL' && (t.prod||'')!==FILTpd.prod) return false;
+    if(FILTpd.sem!=='ALL' && (t.semaforo||'')!==FILTpd.sem) return false;
+    if(FILTpd.persona!=='Todos' && (t.persona||'')!==FILTpd.persona) return false;
+    return true;
+  }
+  var list=all.filter(pasa);
+  var prods=prodsStil();
+  var personas=Object.keys(porP);
+  var sems=[['ALL','Todos'],['rojo','\uD83D\uDD34 Vencidas'],['amarillo','\uD83D\uDFE1 Próximas'],['verde','\uD83D\uDFE2 Al día']];
+  var h='<div class="ptitle">Pendientes</div><div class="psub">Tareas por atender · modelo GR (portal Clientes)</div>';
+  h+='<div class="fbar"><span class="flbl">Persona:</span>';
+  h+='<span class="chip '+(FILTpd.persona==='Todos'?'on':'')+'" data-pd="persona" data-v="Todos">Todos</span>';
+  personas.forEach(function(p){ h+='<span class="chip '+(FILTpd.persona===p?'on':'')+'" data-pd="persona" data-v="'+p+'">'+esc(p)+' ('+(porP[p]||[]).length+')</span>'; });
+  h+='</div>';
+  h+='<div class="fbar"><span class="flbl">Semáforo:</span>'+sems.map(function(x){return '<span class="chip '+(FILTpd.sem===x[0]?'on':'')+'" data-pd="sem" data-v="'+x[0]+'">'+x[1]+'</span>';}).join('')+'</div>';
+  h+='<div class="fbar"><span class="flbl">Producto:</span><span class="chip '+(FILTpd.prod==='ALL'?'on':'')+'" data-pd="prod" data-v="ALL">Todos</span>'+prods.map(function(p){return '<span class="chip '+(FILTpd.prod===p?'on':'')+'" data-pd="prod" data-v="'+p+'">'+esc(p)+'</span>';}).join('')+'<span class="dcount">'+list.length+' tareas</span></div>';
+  if(!list.length){ box.innerHTML=h+'<div class="nd" style="padding:40px 12px">Sin tareas pendientes. La estructura está lista: en cuanto se generen tareas en HubSpot (portal Clientes) aparecerán aquí.</div>'; return; }
+  var uo={vencida:0,hoy:1,proxima:2,futura:3};
+  list.sort(function(a,b){return (uo[a.urgency]-uo[b.urgency])||String(a.date||'').localeCompare(String(b.date||''));});
+  h+='<div class="pv4-grid">';
+  list.forEach(function(t){
+    var sc=semColorStil(t.semaforo);
+    var etapas=(t.dealStages||[]).join(', ');
+    h+='<div class="pv4-card"><div class="pv4-accent" style="background:'+sc+'"></div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><div class="pv4-co">'+esc(t.client||'—')+'</div><div class="pv4-sub">'+esc(t.title||'')+'</div></div>'+
+      '<span class="pv4-badge" style="background:'+sc+'22;color:'+sc+';border:1px solid '+sc+'44">'+esc(t.date||'—')+'</span></div>'+
+      '<div class="pv4-tags"><span class="pv4-tg prod">'+esc(t.prod||'')+'</span>'+(etapas?'<span class="pv4-tg ch">'+esc(etapas)+'</span>':'')+'<span class="pv4-tg">'+esc(t.persona||'')+'</span></div>'+
+      '</div>';
+  });
+  h+='</div>';
+  box.innerHTML=h;
+}
+document.addEventListener('click',function(ev){
+  var b=ev.target.closest?ev.target.closest('[data-pd]'):null; if(!b) return;
+  FILTpd[b.getAttribute('data-pd')]=b.getAttribute('data-v'); renderPendientes();
+});
 let __pool=[];
 
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
@@ -241,6 +291,7 @@ async function cargarDatos(){
     document.getElementById('utime').textContent=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
     renderPipeline();
     renderProspeccion();
+    renderPendientes();
   }catch(e){
     ['pl','pp'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='<div class="err">Error: '+e.message+'. Intenta ↺ Actualizar.</div>';});
   }
@@ -354,7 +405,7 @@ function renderKanban(){
       const{empresa,persona}=parseDeal(d.dealname);
       const fecha=d.created?new Date(d.created).toISOString().split('T')[0]:'';
       const old=fecha&&(Date.now()-new Date(fecha))>60*864e5;
-      return `<div class="dc">
+      return `<div class="dc" style="border-left:3px solid ${semColorStil(d.semaforo)}">
         <div class="dc-co">${esc(empresa)}</div>
         ${persona?`<div class="dc-per">${esc(persona)}</div>`:''}
         ${d.puesto?`<div class="dc-per" style="color:var(--dim);font-size:9px">${esc(d.puesto)}</div>`:''}
