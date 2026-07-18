@@ -834,6 +834,10 @@ const CAT_FALLBACK = {
     {id:'appointmentscheduled',label:'Atracción',color:'verde',prioridad:5},{id:'qualifiedtobuy',label:'Educación',color:'verde',prioridad:6},
     {id:'presentationscheduled',label:'Propuesta',color:'verde',prioridad:7},{id:'decisionmakerboughtin',label:'Aprobación',color:'azul',prioridad:8},
     {id:'closedwon',label:'Won',color:'azul',prioridad:10},{id:'1092009814',label:'Perdida',color:'gris',prioridad:99}
+  ],
+  productos: [
+    {id:'TW'},{id:'AM'},{id:'AEO'},{id:'3V'},{id:'GenIA'},{id:'ITS'},{id:'LT'},{id:'BD'},
+    {id:'WB'},{id:'HS'},{id:'PT'},{id:'IMMMU'},{id:'Interno'},{id:'Otro'}
   ]
 };
 function CAT(){ return (typeof DATA !== 'undefined' && DATA && DATA.catalogos) ? DATA.catalogos : CAT_FALLBACK; }
@@ -842,6 +846,13 @@ function catColor(name){ return (CAT().paleta || CAT_FALLBACK.paleta)[name] || '
 function catStagesAct(){ return ((CAT().stages)||CAT_FALLBACK.stages).filter(function(s){return s.prioridad<=8;}); }
 function catStageLabelsAct(){ return catStagesAct().map(function(s){return s.label;}); }
 function catStageColHex(){ var m={},pal=(CAT().paleta||CAT_FALLBACK.paleta); catStagesAct().forEach(function(s){m[s.label]=pal[s.color];}); return m; }
+function catProdsPresentes(){
+  var orden=((CAT().productos)||CAT_FALLBACK.productos||[]).map(function(p){return p.id;});
+  var excl={'Interno':1,'Otro':1};
+  var pres=[...new Set(((typeof DATA!=='undefined'&&DATA&&DATA.deals)?DATA.deals:[]).map(function(d){return d.prod;}).filter(Boolean))].filter(function(p){return !excl[p];});
+  pres.sort(function(a,b){var ia=orden.indexOf(a),ib=orden.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
+  return pres;
+}
 let TASKS = null;
 let currentTab = 'recap';
 let pipelineFilters = { group: 'ALL', prod: 'ALL', owner: 'ALL', excludeP: false };
@@ -2144,7 +2155,6 @@ function renderPendientes() {
 
 // ====== EDITOR DE TAREAS v3 (campos controlados + calendario propio + nueva en blanco) ======
 const PERSONAS = catPersonaIds(); // centralizado en catálogo (CAT)
-const PRODUCTOS = ['TW','HS','AEO','360','WB','AM','GenIA','ITS','LT','BD'];
 const EARLY_STAGES = ['Señal','Reply','Contactado','En Conv.'];
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MESES_CORTO = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -2302,7 +2312,7 @@ function ensureTaskModal() {
       '<div style="text-align:center;margin-top:10px;"><button id="tm-cancel" style="background:none;border:0;color:var(--text-dim,#9ca3af);font-size:13px;cursor:pointer;">Cerrar</button></div>' +
     '</div>';
   document.body.appendChild(m);
-  document.getElementById('tm-prod').innerHTML = '<option value="">— sin producto —</option>' + selOptions(PRODUCTOS, '');
+  document.getElementById('tm-prod').innerHTML = '<option value="">— sin producto —</option>' + selOptions(catProdsPresentes(), ''); // data-derived, excluye Interno/Otro (3V no 360)
   document.getElementById('tm-resp').innerHTML = selOptions(PERSONAS, '') + '<option value="__OTRO__">Otro…</option>';
   document.getElementById('tm-resp').addEventListener('change', e => {
     document.getElementById('tm-resp-otro').style.display = e.target.value === '__OTRO__' ? 'block' : 'none';
