@@ -970,7 +970,7 @@ let recapFilters = {
 };
 // ===== Estado unificado de filtros (homologado) =====
 var FILT = {
-  pipeline:   { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, excludeP:false },
+  pipeline:   { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, excludeP:false, nueva:'ALL' },
   pendientes: { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', sort:'urgency' },
   alertas:    { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, categoria:'ALL', sort:'monto_desc' },
   recap:      { persona:'Todos', grupo:'ALL', prod:'ALL' }
@@ -1554,6 +1554,9 @@ function renderOverview() {
 // --- PIPELINE ---
 // Orden de stages para Kanban (columnas de izquierda a derecha)
 const STAGE_ORDER = catStagesAct().map(function(s){return {key:s.id,label:s.label,id:s.id};}); // catálogo (CAT)
+const STAGE_ORDER_K = STAGE_ORDER.concat([{key:'1092009814',label:'Perdida',id:'1092009814'}]);
+function nuevaPasa(d,val){ if(val==='ALL') return true; var f=new Date(d.createdate); if(isNaN(f)) return false; var age=Math.floor((new Date()-f)/86400000); return age<=Number(val); }
+function nuevaCol(d){ var f=new Date(d.createdate); if(isNaN(f)) return 'transparent'; var age=Math.floor((new Date()-f)/86400000); return age<=7?'#10B981':age<=15?'#34d399':age<=30?'#FFCD00':age<=45?'#F59E0B':age<=90?'#F97316':'#6B7280'; }
 
 function renderPipeline() {
   // Normaliza producto desde el nombre para categorias que el backend deja en Otro (BD, AEO+SEO)
@@ -1571,20 +1574,22 @@ function renderPipeline() {
   const prods = ['ALL', ..._grp];
   const owners = ['ALL', ...new Set(DATA.deals.map(d => d.owner).filter(Boolean))];
 
-  const poolPipe = DATA.deals.filter(d => d.stage !== 'closedwon' && d.stage !== '1092009814');
+  const poolPipe = DATA.deals.filter(d => d.stage !== 'closedwon');
   const filtered = poolPipe.filter(d => {
     if (FILT.pipeline.excludeP && d.name && d.name.startsWith('P_')) return false;
+    if (!nuevaPasa(d, FILT.pipeline.nueva)) return false;
     return pasaFiltro('pipeline', d, 'deal');
   });
 
-  const total = filtered.reduce((s, d) => s + (d.amount || 0), 0);
+  const activos = filtered.filter(d => d.stage !== '1092009814');
+  const total = activos.reduce((s, d) => s + (d.amount || 0), 0);
 
   // Agrupar por stage
   const byStage = {};
-  STAGE_ORDER.forEach(s => byStage[s.key] = []);
+  STAGE_ORDER_K.forEach(s => byStage[s.key] = []);
   const otros = [];
   filtered.forEach(d => {
-    const key = STAGE_ORDER.find(s => s.id === d.stage)?.key;
+    const key = STAGE_ORDER_K.find(s => s.id === d.stage)?.key;
     if (key) byStage[key].push(d);
     else otros.push(d);
   });
@@ -1596,18 +1601,22 @@ function renderPipeline() {
     <div class="section">
       ${filtrosHTML('pipeline', poolPipe, 'deal')}
       <div class="filters">
+        <span class="filter-label">Nuevas oportunidades:</span>
+        ${['ALL','7','15','30','45','90'].map(v => { const lbl = v==='ALL'?'Todas':'≤'+v+'d'; const col = ({'7':'#10B981','15':'#34d399','30':'#FFCD00','45':'#F59E0B','90':'#F97316'})[v]||''; return `<button class="chip ${FILT.pipeline.nueva===v?'active':''}" data-f="pipeline" data-k="nueva" data-v="${v}" ${col?`style="border-color:${col}80;"`:''}>${lbl}</button>`; }).join('')}
+      </div>
+      <div class="filters">
         <span class="filter-label">Otros:</span>
         <button class="chip ${FILT.pipeline.excludeP ? 'active' : ''}" data-f="pipeline" data-k="excludeP" data-v="toggle">Excluir P_</button>
       </div>
       <div id="pipeline-metrics-gr-pip" style="margin:12px 0 4px"></div>
       <div class="section-title">
-        <span class="section-count">${filtered.length} deals activos</span>
+        <span class="section-count">${activos.length} deals activos</span>
         <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">Total: <strong style="color:var(--text);">${fmtK(total)}</strong></span>
       </div>
       <div class="kanban">
   `;
 
-  STAGE_ORDER.forEach(s => {
+  STAGE_ORDER_K.forEach(s => {
     const col = byStage[s.key];
     const colTotal = col.reduce((sum, d) => sum + (d.amount || 0), 0);
     html += `
@@ -1639,6 +1648,7 @@ function renderPipeline() {
             <div class="kanban-card-meta">
               <span class="kanban-card-amount">${fmtK(d.amount)}</span>
               <span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--text-dim);"><span style="width:8px;height:8px;border-radius:50%;background:${_semCol};display:inline-block;"></span>${({rojo:'Vencida',amarillo:'Próxima',verde:'Al día'})[d.semaforo]||''}</span>
+              <span title="Antigüedad de creación" style="width:8px;height:8px;border-radius:50%;background:${nuevaCol(d)};display:inline-block;margin-left:auto;"></span>
             </div>
             ${_perChips}
             ${d.closedate ? `<div class="kanban-card-date ${dateClass}">${d.closedate}</div>` : ''}
@@ -2915,9 +2925,9 @@ const REPLY_TAG_STYLES = {
 };
 
 let amFilters = { canal: 'todos', tipo: 'todos', producto: 'todos' };
-let prospProducto = 'ALL', prospGrupo = 'ALL', prospCanal = 'ALL', prospSem = 'ALL';
+let prospProducto = 'ALL', prospGrupo = 'ALL', prospCanal = 'ALL', prospSem = 'ALL', prospStage = 'ALL';
 function prospSemOf(e){ var f=new Date(e.fecha); if(isNaN(f)) return 'verde'; var age=Math.floor((new Date()-f)/86400000); return age>30?'rojo':(age>7?'amarillo':'verde'); }
-function prospPasa(e){ if(prospGrupo!=='ALL'&&grupoDeProd(e.producto||'')!==prospGrupo) return false; if(prospProducto!=='ALL'&&(e.producto||'')!==prospProducto) return false; if(prospCanal!=='ALL'&&(e.canal||'')!==prospCanal) return false; if(prospSem!=='ALL'&&prospSemOf(e)!==prospSem) return false; return true; }
+function prospPasa(e){ if(prospGrupo!=='ALL'&&grupoDeProd(e.producto||'')!==prospGrupo) return false; if(prospStage!=='ALL'&&(e.etapa||'')!==prospStage) return false; if(prospProducto!=='ALL'&&(e.producto||'')!==prospProducto) return false; if(prospCanal!=='ALL'&&(e.canal||'')!==prospCanal) return false; if(prospSem!=='ALL'&&prospSemOf(e)!==prospSem) return false; return true; }
 let amDetailView = 'sequences';
 let amDrilldown = null;  // null | 'meetings' | 'replies' | 'openplus3' | 'duogenerated'
 
@@ -3256,6 +3266,9 @@ function renderProspeccion() {
   var chips='';
   chips+=_row('Grupo', _cf('grupo','ALL','Todos',prospGrupo)+GRUPOS_PRES.map(function(g){return _cf('grupo',g,g,prospGrupo);}).join(''));
   chips+=_row('Producto', _cf('prod','ALL','Todos',prospProducto)+prodShown.map(function(p){return _cf('prod',p,p,prospProducto);}).join(''));
+  var _ordEt=(typeof GR_ETAPAS_ORDER_PM!=='undefined')?GR_ETAPAS_ORDER_PM:[];
+  var etapasPres=Array.from(new Set(PEV_n.map(function(e){return e.etapa;}).filter(Boolean))).sort(function(a,b){var ia=_ordEt.indexOf(a),ib=_ordEt.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
+  if(etapasPres.length){ chips+=_row('Stage', _cf('stage','ALL','Todos',prospStage)+etapasPres.map(function(et){return _cf('stage',et,(typeof GR_ETAPA_LABEL!=='undefined'&&GR_ETAPA_LABEL[et])?GR_ETAPA_LABEL[et]:et,prospStage);}).join('')); }
   if(canalesPres.length){ chips+=_row('Canal', _cf('canal','ALL','Todos',prospCanal)+canalesPres.map(function(c){return _cf('canal',c,c,prospCanal);}).join('')); }
   chips+=_row('Semáforo', _cf('sem','ALL','Todos',prospSem)+_cf('sem','rojo','🔴 Vencidas',prospSem)+_cf('sem','amarillo','🟡 Próximas',prospSem)+_cf('sem','verde','🟢 Al día',prospSem));
   var dot=function(c){ return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+c+';margin-right:7px;vertical-align:middle;"></span>'; };
@@ -3270,8 +3283,8 @@ function renderProspeccion() {
   t1+=rowC('interested','#10B981')+rowC('meeting_booked','#10B981')+rowC('forwarded_to_the_right_person','#10B981')+rowC('introduction','#10B981');
   t1+=secH('MEDIA — PENDIENTE / RETOMAR','#F59E0B','rgba(245,158,11,.08)');
   t1+=rowC('circle_back','#F59E0B')+rowC('ooo','#F59E0B');
-  t1+=secH('DESCARTADO — YA NO INTERESA','#EF4444','rgba(239,68,68,.07)');
-  t1+=rowC('not_the_right_person','#EF4444')+rowC('not_interested','#EF4444')+rowC('hard_no','#EF4444');
+  t1+=secH('DESCARTADO — YA NO INTERESA','#6B7280','rgba(107,114,128,.08)');
+  t1+=rowC('not_the_right_person','#6B7280')+rowC('not_interested','#6B7280')+rowC('hard_no','#6B7280');
   var known=new Set(['interested','meeting_booked','forwarded_to_the_right_person','introduction','circle_back','ooo','not_the_right_person','not_interested','hard_no']);
   var seen={}; repliesArr.forEach(function(e){ var c=e.clasificacion||''; if(c&&!known.has(c)&&!seen[c]){seen[c]=true;t1+=rowC(c,'#6B7280');} });
   if(!repliesArr.length) t1+='<tr><td colspan="6" style="font-size:12px;color:var(--text-mute);padding:12px;">Sin replies para este filtro.</td></tr>';
@@ -3291,7 +3304,7 @@ function renderProspeccion() {
   // ETAPAS y sc eliminados (tabla dh quitada)
   // Tabla Oportunidades eliminada
   cont.innerHTML='<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Fuente: tabla de eventos (los 3 tenants), no HubSpot. Los 30d incluyen 7d y hoy.</div>'+chips+'<div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado. Toca un número para ver el detalle.</div>'+t1+'<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto</div>'+t2+'<div id="pipeline-metrics-gr" style="margin:16px 0 4px;"></div><div style="border:none;border-top:1px solid #252d50;margin:14px 0"></div><div id="prosp-detalle" style="margin-top:16px;"></div></div>';
-  cont.querySelectorAll('[data-pf]').forEach(function(btn){ btn.addEventListener('click',function(){ var f=btn.dataset.pf, v=decodeURIComponent(btn.dataset.pv); if(f==='grupo'){prospGrupo=v; prospProducto='ALL';} else if(f==='prod')prospProducto=v; else if(f==='canal')prospCanal=v; else if(f==='sem')prospSem=v; renderProspeccion(); }); });
+  cont.querySelectorAll('[data-pf]').forEach(function(btn){ btn.addEventListener('click',function(){ var f=btn.dataset.pf, v=decodeURIComponent(btn.dataset.pv); if(f==='grupo'){prospGrupo=v; prospProducto='ALL';} else if(f==='prod')prospProducto=v; else if(f==='canal')prospCanal=v; else if(f==='sem')prospSem=v; else if(f==='stage')prospStage=v; renderProspeccion(); }); });
   renderPipelineMetricsGR();
   cont.querySelectorAll('.pcell').forEach(function(td){ td.addEventListener('click',function(){
     try {
