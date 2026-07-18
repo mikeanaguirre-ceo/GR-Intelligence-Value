@@ -860,7 +860,7 @@ function grupoDeProd(prod){ var p=catProdMap()[prod]; if(p&&p.grupo) return p.gr
 var GRUPOS_ORDEN=['ALL','GR','PT','IMMMU','INTERNO'];
 function grupoLabel(g){ return g==='ALL'?'All':(g==='INTERNO'?'Interno':g); }
 // Semáforo de tiempo (uno solo): rojo=vencida, amarillo=hoy/próx 3d, verde=al día/futura
-function semList(){ return [ {id:'ALL',label:'Todos'},{id:'rojo',label:'🔴 Vencidas'},{id:'amarillo',label:'🟡 Próximas'},{id:'verde',label:'🟢 Al día'} ]; }
+function semList(menu){ var b=[ {id:'ALL',label:'Todos'},{id:'rojo',label:'🔴 Vencidas'},{id:'amarillo',label:'🟡 Próximas'},{id:'verde',label:'🟢 Al día'} ]; if(menu==='pendientes'){ b.splice(1,0,{id:'cerradas',label:'✅ Cerradas'}); } return b; }
 function semDeItem(it,kind){ if(it&&it.semaforo) return it.semaforo; return 'verde'; }
 // Producto canónico presente en un arreglo dado (excluye Interno/Otro), en orden de catálogo
 function prodsPresentesDe(arr){
@@ -894,7 +894,7 @@ function filtrosHTML(menu, arr, kind){
   // Semáforo (pipeline, pendientes, alertas — no recap)
   if(menu!=='recap'){
     H+='<div class="filters"><span class="filter-label">Semáforo:</span>';
-    semList().forEach(function(o){ H+=_chip(menu,'sem',o.id,o.label, (f.sem||'ALL')===o.id); });
+    semList(menu).forEach(function(o){ H+=_chip(menu,'sem',o.id,o.label, (f.sem||'ALL')===o.id); });
     H+='</div>';
   }
   // Grupo (todos)
@@ -1251,11 +1251,6 @@ function renderRecap() {
         <div class="kpi-value">${fmtK(k.wonAnual)}</div>
         <div class="kpi-sub">${k.wonCount} clientes</div>
       </div>
-      <div class="kpi kpi-yellow">
-        <div class="kpi-label">Tareas Completadas (7d)</div>
-        <div class="kpi-value">${recap.tareasCompletadas.total}</div>
-        <div class="kpi-sub">${recap.ventanaDesde} → ${recap.ventanaHasta}</div>
-      </div>
     </div>
   `;
 
@@ -1269,7 +1264,6 @@ function renderRecap() {
       <table class="tbl">
         <thead><tr>
           <th>Persona</th>
-          <th class="num">Tareas Completadas</th>
           <th class="num">Deals Creados</th>
           <th class="num">Deals Movidos</th>
         </tr></thead>
@@ -1282,7 +1276,7 @@ function renderRecap() {
   ]);
   const personasArr = Array.from(todasPersonas).sort();
   if (personasArr.length === 0) {
-    html += `<tr><td colspan="4" class="empty">Sin actividad detectada en la última semana.</td></tr>`;
+    html += `<tr><td colspan="3" class="empty">Sin actividad detectada en la última semana.</td></tr>`;
   }
   personasArr.forEach(p => {
     const tc = recap.tareasCompletadas.porPersona[p] || 0;
@@ -1290,14 +1284,12 @@ function renderRecap() {
     const dm = recap.dealsMovidos.porOwner[p] || 0;
     html += `<tr>
       <td><strong>${p}</strong></td>
-      <td class="num">${tc}</td>
       <td class="num">${dc}</td>
       <td class="num">${dm}</td>
     </tr>`;
   });
   html += `<tr style="border-top:2px solid var(--border);">
     <td><strong>TOTAL</strong></td>
-    <td class="num"><strong>${recap.tareasCompletadas.total}</strong></td>
     <td class="num"><strong>${recap.dealsCreados.total}</strong> <span style="color:var(--text-dim);font-size:11px;">(${fmtK(recap.dealsCreados.montoTotal)})</span></td>
     <td class="num"><strong>${recap.dealsMovidos.total}</strong></td>
   </tr>`;
@@ -1646,7 +1638,7 @@ function renderPipeline() {
             ${subtitleHtml}
             <div class="kanban-card-meta">
               <span class="kanban-card-amount">${fmtK(d.amount)}</span>
-              <span class="kanban-card-owner">${d.owner || '—'}</span>
+              <span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--text-dim);"><span style="width:8px;height:8px;border-radius:50%;background:${_semCol};display:inline-block;"></span>${({rojo:'Vencida',amarillo:'Próxima',verde:'Al día'})[d.semaforo]||''}</span>
             </div>
             ${_perChips}
             ${d.closedate ? `<div class="kanban-card-date ${dateClass}">${d.closedate}</div>` : ''}
@@ -2028,11 +2020,26 @@ function renderPendientes() {
   const current = pendientesFilters.persona;
 
   // Universo de tareas (todas las personas) para conteos + filtro unificado
+  const _isCerradas = FILT.pendientes.sem === 'cerradas';
   let allT = [];
-  personas.forEach(p => {
-    TASKS.tareas[p].forEach(t => allT.push({ ...t, persona: p }));
-  });
+  if (_isCerradas) {
+    const _det = (DATA.recapSemanal && DATA.recapSemanal.tareasCompletadas && DATA.recapSemanal.tareasCompletadas.detalle) || {};
+    Object.keys(_det).forEach(p => {
+      (_det[p] || []).forEach(t => allT.push({
+        persona: p, title: t.title, client: t.client, action: t.action, type: t.action,
+        prod: t.prod, isInternal: t.isInternal, personas: [p],
+        date: t.completedDate || t.date, urgency: 'cerrada', semaforo: 'cerrada', dealStages: []
+      }));
+    });
+  } else {
+    personas.forEach(p => {
+      TASKS.tareas[p].forEach(t => allT.push({ ...t, persona: p }));
+    });
+  }
+  const _savedSem = FILT.pendientes.sem;
+  if (_isCerradas) FILT.pendientes.sem = 'ALL';
   let filtered = allT.filter(t => pasaFiltro('pendientes', t, 'task'));
+  FILT.pendientes.sem = _savedSem;
 
   // Re-sort por opción elegida
   const sortMode = FILT.pendientes.sort || 'urgency';
@@ -2908,7 +2915,9 @@ const REPLY_TAG_STYLES = {
 };
 
 let amFilters = { canal: 'todos', tipo: 'todos', producto: 'todos' };
-let prospProducto = 'ALL';
+let prospProducto = 'ALL', prospGrupo = 'ALL', prospCanal = 'ALL', prospSem = 'ALL';
+function prospSemOf(e){ var f=new Date(e.fecha); if(isNaN(f)) return 'verde'; var age=Math.floor((new Date()-f)/86400000); return age>30?'rojo':(age>7?'amarillo':'verde'); }
+function prospPasa(e){ if(prospGrupo!=='ALL'&&grupoDeProd(e.producto||'')!==prospGrupo) return false; if(prospProducto!=='ALL'&&(e.producto||'')!==prospProducto) return false; if(prospCanal!=='ALL'&&(e.canal||'')!==prospCanal) return false; if(prospSem!=='ALL'&&prospSemOf(e)!==prospSem) return false; return true; }
 let amDetailView = 'sequences';
 let amDrilldown = null;  // null | 'meetings' | 'replies' | 'openplus3' | 'duogenerated'
 
@@ -3212,7 +3221,7 @@ function normClasP(c){ return c==='asked_to_circle_back_later' ? 'circle_back' :
 function renderProspeccion() {
   var deals = (DATA && DATA.deals) || [];
   var PEV = (PROSPECCION_DATA && Array.isArray(PROSPECCION_DATA.eventos)) ? PROSPECCION_DATA.eventos : null;
-  if(PEV){ PEV.forEach(function(e){ var u=String(e.producto||'').toUpperCase().replace(/\s+/g,''); if(u==='360'||u==='3V') e.producto='3V'; else if(u==='GENIA') e.producto='GenIA'; else if(u==='AEO+SEO') e.producto='AEO+SEO'; }); }
+  if(PEV){ PEV.forEach(function(e){ var u=String(e.producto||'').toUpperCase().replace(/\s+/g,''); if(u==='360'||u==='3V') e.producto='360'; else if(u==='GENIA') e.producto='GenIA'; else if(u==='AEO+SEO'||u==='AEO') e.producto='AEO'; }); }
   var cont = document.getElementById('p-prospeccion');
   if (!cont) return;
   if (!PEV || !PEV.length) {
@@ -3227,14 +3236,7 @@ function renderProspeccion() {
     arr.forEach(function(e){ w.total++; var f=new Date(e.fecha); if(isNaN(f)) return; var age=Math.floor((nowP-f)/86400000); if(grDayKey(f)===HOY_KEY)w.hoy++; if(age<=7)w.d7++; if(age<=30)w.d30++; if(age<=90)w.d90++; });
     return w;
   };
-  var prodSel = prospProducto;
-  var matchFilt = function(e) {
-    if(prodSel==='ALL')   return true;
-    if(prodSel==='GR')    return e.tenant==='GR';
-    if(prodSel==='STIL')  return e.tenant==='STIL';
-    if(prodSel==='IMMMU') return e.tenant==='IMMMU';
-    return (e.producto||'')===prodSel;
-  };
+  var matchFilt = prospPasa;
   var normClas = function(c) { return (c==='asked_to_circle_back_later') ? 'circle_back' : (c||''); };
   var PEV_n = PEV.map(function(e){ return Object.assign({},e,{clasificacion:normClas(e.clasificacion||'')}); }).filter(function(e){ return !isEventoPrueba(e); });
   var repliesArr = PEV_n.filter(function(e){ return e.tipo!=='open3' && matchFilt(e); });
@@ -3244,12 +3246,18 @@ function renderProspeccion() {
   var duoArr = senalesArr.filter(function(e){ return isDUO(e); });
   var open3puro = senalesArr.filter(function(e){ return !isDUO(e); });
   var duoReplies = repliesArr.filter(function(e){ return isDUO(e); });
-  var GR_PRODS=['TW','AM','AEO+SEO','AEO','3V','GenIA','ITS','LT','BD','WB','HS','EX'];
+  var GR_PRODS=['TW','AM','AEO','360','GenIA','ITS','LT','BD','WB','HS'];
   var activeProd=GR_PRODS.filter(function(p){ return PEV.some(function(e){return (e.producto||'')===p;}); });
-  var chip=function(val,lbl){ return '<button class="chip'+(prodSel===val?' active':'')+'" data-prospfilter="'+val+'" style="font-size:11px;padding:5px 11px;border-radius:18px;">'+lbl+'</button>'; };
-  var chips='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">'+chip('ALL','Todos')+chip('GR','GR')+chip('IMMMU','IMMMU')+'<span style="display:inline-block;width:1px;background:var(--border,#2A3142);margin:0 6px;"></span>';
-  activeProd.forEach(function(p){ chips+=chip(p,p); });
-  chips+='</div>';
+  var _cf=function(field,val,lbl,cur){ return '<button class="chip'+(cur===val?' active':'')+'" data-pf="'+field+'" data-pv="'+encodeURIComponent(val)+'" style="font-size:11px;padding:5px 11px;border-radius:18px;">'+lbl+'</button>'; };
+  var _row=function(label,inner){ return '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px;"><span style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-right:2px;min-width:62px;">'+label+'</span>'+inner+'</div>'; };
+  var GRUPOS_PRES=['GR','PT','IMMMU'].filter(function(g){ return activeProd.some(function(p){return grupoDeProd(p)===g;}); });
+  var prodShown = prospGrupo==='ALL'?activeProd:activeProd.filter(function(p){return grupoDeProd(p)===prospGrupo;});
+  var canalesPres=Array.from(new Set(PEV_n.map(function(e){return e.canal;}).filter(Boolean)));
+  var chips='';
+  chips+=_row('Grupo', _cf('grupo','ALL','Todos',prospGrupo)+GRUPOS_PRES.map(function(g){return _cf('grupo',g,g,prospGrupo);}).join(''));
+  chips+=_row('Producto', _cf('prod','ALL','Todos',prospProducto)+prodShown.map(function(p){return _cf('prod',p,p,prospProducto);}).join(''));
+  if(canalesPres.length){ chips+=_row('Canal', _cf('canal','ALL','Todos',prospCanal)+canalesPres.map(function(c){return _cf('canal',c,c,prospCanal);}).join('')); }
+  chips+=_row('Semáforo', _cf('sem','ALL','Todos',prospSem)+_cf('sem','rojo','🔴 Vencidas',prospSem)+_cf('sem','amarillo','🟡 Próximas',prospSem)+_cf('sem','verde','🟢 Al día',prospSem));
   var dot=function(c){ return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+c+';margin-right:7px;vertical-align:middle;"></span>'; };
   var H1='<thead><tr><th style="width:38%;">CLASIFICACIÓN</th><th style="text-align:center;">HOY</th><th style="text-align:center;">7D</th><th style="text-align:center;">30D</th><th style="text-align:center;">90D</th><th style="text-align:center;">TOTAL</th></tr></thead>';
   var wc=function(n,win,clas,bold){ var s=bold?'font-weight:700;':''; return n>0?'<td class="pcell" data-ptype="clas" data-pval="'+encodeURIComponent(clas)+'" data-pwin="'+win+'" style="text-align:center;'+s+'cursor:pointer;">'+n+'</td>':'<td style="text-align:center;color:var(--text-mute);'+s+'">0</td>'; };
@@ -3283,7 +3291,7 @@ function renderProspeccion() {
   // ETAPAS y sc eliminados (tabla dh quitada)
   // Tabla Oportunidades eliminada
   cont.innerHTML='<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Fuente: tabla de eventos (los 3 tenants), no HubSpot. Los 30d incluyen 7d y hoy.</div>'+chips+'<div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado. Toca un número para ver el detalle.</div>'+t1+'<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto</div>'+t2+'<div id="pipeline-metrics-gr" style="margin:16px 0 4px;"></div><div style="border:none;border-top:1px solid #252d50;margin:14px 0"></div><div id="prosp-detalle" style="margin-top:16px;"></div></div>';
-  cont.querySelectorAll('[data-prospfilter]').forEach(function(btn){ btn.addEventListener('click',function(){ prospProducto=btn.dataset.prospfilter; renderProspeccion(); }); });
+  cont.querySelectorAll('[data-pf]').forEach(function(btn){ btn.addEventListener('click',function(){ var f=btn.dataset.pf, v=decodeURIComponent(btn.dataset.pv); if(f==='grupo'){prospGrupo=v; prospProducto='ALL';} else if(f==='prod')prospProducto=v; else if(f==='canal')prospCanal=v; else if(f==='sem')prospSem=v; renderProspeccion(); }); });
   renderPipelineMetricsGR();
   cont.querySelectorAll('.pcell').forEach(function(td){ td.addEventListener('click',function(){
     try {
@@ -3722,13 +3730,7 @@ function renderPipelineMetricsGR(pool){
     });
   } else {
     var PEV=(PROSPECCION_DATA&&Array.isArray(PROSPECCION_DATA.eventos))?PROSPECCION_DATA.eventos:[];
-    var prodSel=prospProducto||'ALL';
-    var matchFiltM=function(e){
-      if(prodSel==='ALL') return true;
-      if(prodSel==='GR') return e.tenant==='GR';
-      if(prodSel==='IMMMU') return e.tenant==='IMMMU';
-      return (e.producto||'')===prodSel;
-    };
+    var matchFiltM=prospPasa;
     PEV.filter(matchFiltM).forEach(function(e){
       var et=e.etapa||''; if(!et){sinEtapa++;return;}
       if(!dbs[et]) dbs[et]=[];
@@ -3806,15 +3808,7 @@ function renderProspDetalle(ptype, pval, pwin) {
   var box=document.getElementById('prosp-detalle'); if(!box) return;
   var PEV=(PROSPECCION_DATA&&Array.isArray(PROSPECCION_DATA.eventos))?PROSPECCION_DATA.eventos:[];
   PEV=PEV.filter(function(e){return !isEventoPrueba(e);});
-  var prodSel=prospProducto;
-  // matchFilt igual que renderProspeccion
-  var matchFilt=function(e){
-    if(prodSel==='ALL') return true;
-    if(prodSel==='GR')    return e.tenant==='GR';
-    if(prodSel==='STIL')  return e.tenant==='STIL';
-    if(prodSel==='IMMMU') return e.tenant==='IMMMU';
-    return (e.producto||'')===prodSel;
-  };
+  var matchFilt=prospPasa;
   var normClas=function(c){ return c==='asked_to_circle_back_later'?'circle_back':(c||''); };
   var fmtLbl=function(s){ return String(s||'').split('_').map(function(w){return w.charAt(0).toUpperCase()+w.slice(1);}).join(' '); };
   var nowP=new Date();
@@ -3868,8 +3862,8 @@ function renderProspDetalle(ptype, pval, pwin) {
   var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');};
 
   window.__pv4pool=pool;
-  var h='<div style="display:flex;align-items:baseline;gap:8px;margin:0 0 14px;"><span style="font-size:14px;font-weight:800;">'+esc(titulo)+'</span><span style="font-size:12px;color:#9CA3AF;">'+winLbl+(prodSel!=='ALL'?' · '+esc(prodSel):'')+' ('+pool.length+')</span></div>';
-  if(!pool.length){box.innerHTML=h+'<div style="font-size:12px;color:#9CA3AF;padding:12px 0;">Sin contactos en esta intersección para el filtro activo ('+esc(prodSel)+').</div>';box.scrollIntoView({behavior:'smooth',block:'nearest'});return;}
+  var h='<div style="display:flex;align-items:baseline;gap:8px;margin:0 0 14px;"><span style="font-size:14px;font-weight:800;">'+esc(titulo)+'</span><span style="font-size:12px;color:#9CA3AF;">'+winLbl+(prospProducto!=='ALL'?' · '+esc(prospProducto):'')+' ('+pool.length+')</span></div>';
+  if(!pool.length){box.innerHTML=h+'<div style="font-size:12px;color:#9CA3AF;padding:12px 0;">Sin contactos en esta intersección para el filtro activo ('+esc(prospProducto)+').</div>';box.scrollIntoView({behavior:'smooth',block:'nearest'});return;}
   h+='<div class="pv4-grid">';
   pool = pool.map(enrichE);
   window.__pv4pool=pool;
