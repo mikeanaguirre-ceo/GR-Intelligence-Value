@@ -827,11 +827,21 @@ const CAT_FALLBACK = {
     {id:'GR',label:'GR',linea:'GR',naturaleza:'cliente'},{id:'PT',label:'PT',linea:'PT',naturaleza:'cliente'},
     {id:'IMMMU',label:'IMMMU',linea:'IMMMU',naturaleza:'cliente'},
     {id:'GR_INTERNO',label:'GR Interno',linea:'GR',naturaleza:'interno'},{id:'PT_INTERNO',label:'PT Interno',linea:'PT',naturaleza:'interno'}
+  ],
+  stages: [
+    {id:'1332596061',label:'Señal',color:'rojo',prioridad:1},{id:'1332596062',label:'Reply',color:'rojo',prioridad:2},
+    {id:'1332596063',label:'Contactado',color:'rojo',prioridad:3},{id:'1332596064',label:'En Conv.',color:'amarillo',prioridad:4},
+    {id:'appointmentscheduled',label:'Atracción',color:'verde',prioridad:5},{id:'qualifiedtobuy',label:'Educación',color:'verde',prioridad:6},
+    {id:'presentationscheduled',label:'Propuesta',color:'verde',prioridad:7},{id:'decisionmakerboughtin',label:'Aprobación',color:'azul',prioridad:8},
+    {id:'closedwon',label:'Won',color:'azul',prioridad:10},{id:'1092009814',label:'Perdida',color:'gris',prioridad:99}
   ]
 };
 function CAT(){ return (typeof DATA !== 'undefined' && DATA && DATA.catalogos) ? DATA.catalogos : CAT_FALLBACK; }
 function catPersonaIds(){ return (CAT().personas || CAT_FALLBACK.personas).map(function(p){return p.id;}); }
 function catColor(name){ return (CAT().paleta || CAT_FALLBACK.paleta)[name] || '#6B7280'; }
+function catStagesAct(){ return ((CAT().stages)||CAT_FALLBACK.stages).filter(function(s){return s.prioridad<=8;}); }
+function catStageLabelsAct(){ return catStagesAct().map(function(s){return s.label;}); }
+function catStageColHex(){ var m={},pal=(CAT().paleta||CAT_FALLBACK.paleta); catStagesAct().forEach(function(s){m[s.label]=pal[s.color];}); return m; }
 let TASKS = null;
 let currentTab = 'recap';
 let pipelineFilters = { group: 'ALL', prod: 'ALL', owner: 'ALL', excludeP: false };
@@ -1270,7 +1280,7 @@ function renderRecap() {
 
     const prodsCreados = [...new Set(dealsCreadosList.map(d => d.prod || 'Otro'))].sort();
     const ownersCreados = [...new Set(dealsCreadosList.map(d => d.owner))].sort();
-    const STAGES_PREDEF = ['Señal','Reply','Contactado','En Conv.','Atracción','Educación','Propuesta','Aprobación','Won'];
+    const STAGES_PREDEF = catStageLabelsAct().concat(['Won']); // catálogo (CAT)
 
     const prodCreadoFilter = recapFilters.prodCreado || 'ALL';
     const ownerCreadoFilter = recapFilters.ownerCreado || 'ALL';
@@ -1338,7 +1348,7 @@ function renderRecap() {
 
     const prodsMov = [...new Set(dealsMovList.map(d => d.prod || 'Otro'))].sort();
     const ownersMov = [...new Set(dealsMovList.map(d => d.owner))].sort();
-    const STAGES_MOV_PREDEF = ['Señal','Reply','Contactado','En Conv.','Atracción','Educación','Propuesta','Aprobación','Won','Perdida'];
+    const STAGES_MOV_PREDEF = catStageLabelsAct().concat(['Won','Perdida']); // catálogo (CAT)
 
     const prodMovFilter = recapFilters.prodMovido || 'ALL';
     const ownerMovFilter = recapFilters.ownerMovido || 'ALL';
@@ -1456,16 +1466,7 @@ function renderOverview() {
 
 // --- PIPELINE ---
 // Orden de stages para Kanban (columnas de izquierda a derecha)
-const STAGE_ORDER = [
-  { key: '1332596061', label: 'Señal',      id: '1332596061' },
-  { key: '1332596062', label: 'Reply',      id: '1332596062' },
-  { key: '1332596063', label: 'Contactado', id: '1332596063' },
-  { key: '1332596064', label: 'En Conv.',   id: '1332596064' },
-  { key: 'appointmentscheduled', label: 'Atracción', id: 'appointmentscheduled' },
-  { key: 'qualifiedtobuy', label: 'Educación', id: 'qualifiedtobuy' },
-  { key: 'presentationscheduled', label: 'Propuesta', id: 'presentationscheduled' },
-  { key: 'decisionmakerboughtin', label: 'Aprobación', id: 'decisionmakerboughtin' }
-];
+const STAGE_ORDER = catStagesAct().map(function(s){return {key:s.id,label:s.label,id:s.id};}); // catálogo (CAT)
 
 function renderPipeline() {
   // Normaliza producto desde el nombre para categorias que el backend deja en Otro (BD, AEO+SEO)
@@ -1625,8 +1626,8 @@ function renderPipelineMetricsPipeline(){
     dbs[et].push(d);
   });
   // Labels y colores = los mismos que las columnas del Kanban
-  var GR_ORDER=['Señal','Reply','Contactado','En Conv.','Atracción','Educación','Propuesta','Aprobación'];
-  var GR_COL={'Señal':'#DB0540','Reply':'#DB0540','Contactado':'#DB0540','En Conv.':'#FFCD00','Atracción':'#62D175','Educación':'#62D175','Propuesta':'#62D175','Aprobación':'#02ADBA'};
+  var GR_ORDER=catStageLabelsAct(); // catálogo (CAT)
+  var GR_COL=catStageColHex(); // catálogo (CAT)
   var allKeys=Object.keys(dbs);
   var main=allKeys.filter(function(k){return !/Perdida|Closed Won/i.test(k);});
   var perd=allKeys.filter(function(k){return /Perdida|Closed Won/i.test(k);});
