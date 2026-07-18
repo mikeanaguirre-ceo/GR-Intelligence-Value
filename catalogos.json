@@ -303,12 +303,28 @@
       "prioridad": 8
     },
     {
+      "id": "contractsent",
+      "idCli": "Contract Sent",
+      "label": "Contract Sent",
+      "corto": "Contract Sent",
+      "color": "azul",
+      "prioridad": 9
+    },
+    {
       "id": "closedwon",
       "idCli": "Ganada",
       "label": "Won",
       "corto": "Ganada",
       "color": "azul",
       "prioridad": 10
+    },
+    {
+      "id": "1355589932",
+      "idCli": "Renovacion",
+      "label": "Renovación",
+      "corto": "Renovación",
+      "color": "morado",
+      "prioridad": 11
     },
     {
       "id": "1092009814",
