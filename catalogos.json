@@ -476,5 +476,9 @@
     "recapPersonas": [
       "persona"
     ]
+  },
+  "semaforo": {
+    "dealDiasAmarillo": 30,
+    "tareaDiasAmarillo": 3
   }
 }
