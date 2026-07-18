@@ -860,7 +860,7 @@ function grupoDeProd(prod){ var p=catProdMap()[prod]; if(p&&p.grupo) return p.gr
 var GRUPOS_ORDEN=['ALL','GR','PT','IMMMU','INTERNO'];
 function grupoLabel(g){ return g==='ALL'?'All':(g==='INTERNO'?'Interno':g); }
 // Semáforo de tiempo (uno solo): rojo=vencida, amarillo=hoy/próx 3d, verde=al día/futura
-function semList(){ return [ {id:'ALL',label:'Todos'},{id:'rojo',label:'🔴 Vencidas'},{id:'amarillo',label:'🟡 Hoy / 3d'},{id:'verde',label:'🟢 Al día'} ]; }
+function semList(){ return [ {id:'ALL',label:'Todos'},{id:'rojo',label:'🔴 Vencidas'},{id:'amarillo',label:'🟡 Próximas'},{id:'verde',label:'🟢 Al día'} ]; }
 function semDeItem(it,kind){ if(it&&it.semaforo) return it.semaforo; return 'verde'; }
 // Producto canónico presente en un arreglo dado (excluye Interno/Otro), en orden de catálogo
 function prodsPresentesDe(arr){
@@ -1401,14 +1401,12 @@ function renderRecap() {
     const ownersCreados = [...new Set(dealsCreadosList.map(d => d.owner))].sort();
     const STAGES_PREDEF = catStageLabelsAct().concat(['Won']); // catálogo (CAT)
 
+    const grupoFilter = recapFilters.grupo || 'ALL';
     const prodCreadoFilter = recapFilters.prodCreado || 'ALL';
-    const ownerCreadoFilter = recapFilters.ownerCreado || 'ALL';
-    const stageCreadoFilter = recapFilters.stageCreado || 'ALL';
 
     const filteredCreados = dealsCreadosList.filter(d => {
+      if (grupoFilter !== 'ALL' && grupoDeProd(d.prod) !== grupoFilter) return false;
       if (prodCreadoFilter !== 'ALL' && (d.prod || 'Otro') !== prodCreadoFilter) return false;
-      if (ownerCreadoFilter !== 'ALL' && d.owner !== ownerCreadoFilter) return false;
-      if (stageCreadoFilter !== 'ALL' && (d.stage || '—') !== stageCreadoFilter) return false;
       return true;
     });
 
@@ -1418,22 +1416,12 @@ function renderRecap() {
       <div class="section-title">Deals creados esta semana <span class="section-count">${filteredCreados.length}/${recap.dealsCreados.total}</span> <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">${fmtK(montoFiltrado)}</span></div>
       <div class="filters">
         <span class="filter-label">Grupo:</span>
-        ${['ALL','GR','PT','INTERNO','IMMMU'].map(gg => `<button class="chip ${pipelineFilters.group === gg ? 'active' : ''}" data-pfilter="group" data-pval="${gg}">${gg==='ALL'?'All':gg}</button>`).join('')}
+        ${GRUPOS_ORDEN.map(gg => `<button class="chip ${grupoFilter === gg ? 'active' : ''}" data-recapfilter="grupo" data-rval="${gg}">${grupoLabel(gg)}</button>`).join('')}
       </div>
       <div class="filters">
         <span class="filter-label">Producto:</span>
         <button class="chip ${prodCreadoFilter === 'ALL' ? 'active' : ''}" data-recapfilter="prodCreado" data-rval="ALL">Todos</button>
         ${prodsCreados.map(pr => `<button class="chip ${prodCreadoFilter === pr ? 'active' : ''}" data-recapfilter="prodCreado" data-rval="${pr}">${pr}</button>`).join('')}
-      </div>
-      <div class="filters" style="margin-top:6px">
-        <span class="filter-label">Owner:</span>
-        <button class="chip ${ownerCreadoFilter === 'ALL' ? 'active' : ''}" data-recapfilter="ownerCreado" data-rval="ALL">Todos</button>
-        ${ownersCreados.map(ow => `<button class="chip ${ownerCreadoFilter === ow ? 'active' : ''}" data-recapfilter="ownerCreado" data-rval="${ow}">${ow}</button>`).join('')}
-      </div>
-      <div class="filters" style="margin-top:6px">
-        <span class="filter-label">Stage del deal:</span>
-        <button class="chip ${stageCreadoFilter === 'ALL' ? 'active' : ''}" data-recapfilter="stageCreado" data-rval="ALL">Todos</button>
-        ${STAGES_PREDEF.map(st => `<button class="chip ${stageCreadoFilter === st ? 'active' : ''}" data-recapfilter="stageCreado" data-rval="${st}">${st}</button>`).join('')}
       </div>
       <table class="tbl">
         <thead><tr><th>Cliente / Deal</th><th>Producto</th><th>Owner</th><th>Stage</th><th>Creado</th><th class="num">Monto</th></tr></thead>
@@ -1470,13 +1458,11 @@ function renderRecap() {
     const STAGES_MOV_PREDEF = catStageLabelsAct().concat(['Won','Perdida']); // catálogo (CAT)
 
     const prodMovFilter = recapFilters.prodMovido || 'ALL';
-    const ownerMovFilter = recapFilters.ownerMovido || 'ALL';
-    const stageMovFilter = recapFilters.stageMovido || 'ALL';
+    const grupoMovFilter = recapFilters.grupo || 'ALL';
 
     const filteredMov = dealsMovList.filter(d => {
+      if (grupoMovFilter !== 'ALL' && grupoDeProd(d.prod) !== grupoMovFilter) return false;
       if (prodMovFilter !== 'ALL' && (d.prod || 'Otro') !== prodMovFilter) return false;
-      if (ownerMovFilter !== 'ALL' && d.owner !== ownerMovFilter) return false;
-      if (stageMovFilter !== 'ALL' && (d.stageActual || '—') !== stageMovFilter) return false;
       return true;
     });
 
@@ -1488,22 +1474,12 @@ function renderRecap() {
       <div class="section-title">Deals con movimiento esta semana <span class="section-count">${filteredMov.length}/${recap.dealsMovidos.total}</span> <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">${fmtK(montoMovFiltrado)}</span></div>
       <div class="filters">
         <span class="filter-label">Grupo:</span>
-        ${['ALL','GR','PT','INTERNO','IMMMU'].map(gg => `<button class="chip ${pipelineFilters.group === gg ? 'active' : ''}" data-pfilter="group" data-pval="${gg}">${gg==='ALL'?'All':gg}</button>`).join('')}
+        ${GRUPOS_ORDEN.map(gg => `<button class="chip ${grupoMovFilter === gg ? 'active' : ''}" data-recapfilter="grupo" data-rval="${gg}">${grupoLabel(gg)}</button>`).join('')}
       </div>
       <div class="filters">
         <span class="filter-label">Producto:</span>
         <button class="chip ${prodMovFilter === 'ALL' ? 'active' : ''}" data-recapfilter="prodMovido" data-rval="ALL">Todos</button>
         ${prodsMov.map(pr => `<button class="chip ${prodMovFilter === pr ? 'active' : ''}" data-recapfilter="prodMovido" data-rval="${pr}">${pr}</button>`).join('')}
-      </div>
-      <div class="filters" style="margin-top:6px">
-        <span class="filter-label">Owner:</span>
-        <button class="chip ${ownerMovFilter === 'ALL' ? 'active' : ''}" data-recapfilter="ownerMovido" data-rval="ALL">Todos</button>
-        ${ownersMov.map(ow => `<button class="chip ${ownerMovFilter === ow ? 'active' : ''}" data-recapfilter="ownerMovido" data-rval="${ow}">${ow}</button>`).join('')}
-      </div>
-      <div class="filters" style="margin-top:6px">
-        <span class="filter-label">Stage del deal:</span>
-        <button class="chip ${stageMovFilter === 'ALL' ? 'active' : ''}" data-recapfilter="stageMovido" data-rval="ALL">Todos</button>
-        ${STAGES_MOV_PREDEF.map(st => `<button class="chip ${stageMovFilter === st ? 'active' : ''}" data-recapfilter="stageMovido" data-rval="${st}">${st}</button>`).join('')}
       </div>
       <table class="tbl">
         <thead><tr><th>Cliente / Deal</th><th>Producto</th><th>Owner</th><th>Stage Actual</th><th>Última modif.</th><th class="num">Monto</th></tr></thead>
@@ -1603,14 +1579,10 @@ function renderPipeline() {
   const prods = ['ALL', ..._grp];
   const owners = ['ALL', ...new Set(DATA.deals.map(d => d.owner).filter(Boolean))];
 
-  const filtered = DATA.deals.filter(d => {
-    if (!inGroup(d)) return false;
-    if (pipelineFilters.prod !== 'ALL' && d.prod !== pipelineFilters.prod) return false;
-    if (pipelineFilters.owner !== 'ALL' && d.owner !== pipelineFilters.owner) return false;
-    if (pipelineFilters.excludeP && d.name.startsWith('P_')) return false;
-    // Excluir Closed Won y Perdida del Kanban de pipeline activo
-    if (d.stage === 'closedwon' || d.stage === '1092009814') return false;
-    return true;
+  const poolPipe = DATA.deals.filter(d => d.stage !== 'closedwon' && d.stage !== '1092009814');
+  const filtered = poolPipe.filter(d => {
+    if (FILT.pipeline.excludeP && d.name && d.name.startsWith('P_')) return false;
+    return pasaFiltro('pipeline', d, 'deal');
   });
 
   const total = filtered.reduce((s, d) => s + (d.amount || 0), 0);
@@ -1630,18 +1602,10 @@ function renderPipeline() {
 
   let html = `
     <div class="section">
+      ${filtrosHTML('pipeline', poolPipe, 'deal')}
       <div class="filters">
-        <span class="filter-label">Grupo:</span>
-        ${['ALL','GR','PT','INTERNO','IMMMU'].map(gg => `<button class="chip ${pipelineFilters.group === gg ? 'active' : ''}" data-pfilter="group" data-pval="${gg}">${gg==='ALL'?'All':gg}</button>`).join('')}
-      </div>
-      <div class="filters">
-        <span class="filter-label">Producto:</span>
-        ${prods.map(p => `<button class="chip ${pipelineFilters.prod === p ? 'active' : ''}" data-pfilter="prod" data-pval="${p}">${p}</button>`).join('')}
-      </div>
-      <div class="filters">
-        <span class="filter-label">Owner:</span>
-        ${owners.map(o => `<button class="chip ${pipelineFilters.owner === o ? 'active' : ''}" data-pfilter="owner" data-pval="${o}">${o}</button>`).join('')}
-        <button class="chip ${pipelineFilters.excludeP ? 'active' : ''}" data-pfilter="excludeP" data-pval="toggle">Excluir P_</button>
+        <span class="filter-label">Otros:</span>
+        <button class="chip ${FILT.pipeline.excludeP ? 'active' : ''}" data-f="pipeline" data-k="excludeP" data-v="toggle">Excluir P_</button>
       </div>
       <div id="pipeline-metrics-gr-pip" style="margin:12px 0 4px"></div>
       <div class="section-title">
@@ -1672,14 +1636,19 @@ function renderPipeline() {
         const subtitleHtml = d.cliente && d.cliente !== d.name
           ? `<div class="kanban-card-sub" style="font-size:10px;color:var(--text-dim);margin-top:2px;">${d.name}</div>`
           : '';
+        const _semCol = ({rojo:'#DB0540',amarillo:'#FFCD00',verde:'#62D175'})[d.semaforo] || 'transparent';
+        const _perChips = (d.personas && d.personas.length)
+          ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;">${d.personas.slice(0,3).map(p=>`<span style="font-size:10px;padding:1px 7px;border-radius:8px;background:rgba(125,42,228,.16);color:#C4A5F0;">${p}</span>`).join('')}</div>`
+          : '';
         html += `
-          <div class="kanban-card">
+          <div class="kanban-card" style="border-left:3px solid ${_semCol};">
             <div class="kanban-card-name">${clienteDisplay}</div>
             ${subtitleHtml}
             <div class="kanban-card-meta">
               <span class="kanban-card-amount">${fmtK(d.amount)}</span>
               <span class="kanban-card-owner">${d.owner || '—'}</span>
             </div>
+            ${_perChips}
             ${d.closedate ? `<div class="kanban-card-date ${dateClass}">${d.closedate}</div>` : ''}
           </div>
         `;
@@ -1727,11 +1696,9 @@ function renderPipelineMetricsPipeline(){
   var box=document.getElementById('pipeline-metrics-gr-pip'); if(!box) return;
   var allDeals=(DATA&&DATA.deals)||[];
   var filtered=allDeals.filter(function(d){
-    if(!inGroup(d)) return false;
-    if(pipelineFilters.prod!=='ALL'&&d.prod!==pipelineFilters.prod) return false;
-    if(pipelineFilters.owner!=='ALL'&&d.owner!==pipelineFilters.owner) return false;
-    if(pipelineFilters.excludeP&&d.name&&d.name.startsWith('P_')) return false;
-    return true;
+    if(d.stage==='closedwon'||d.stage==='1092009814') return false;
+    if(FILT.pipeline.excludeP&&d.name&&d.name.startsWith('P_')) return false;
+    return pasaFiltro('pipeline', d, 'deal');
   });
   // stageMap usa el label EXACTO de cada stage en STAGE_ORDER del Kanban
   var stageMap={};
@@ -2541,32 +2508,10 @@ function ownerIdToPersona(ownerId) {
 }
 
 function applyAlertasFilters(alertas) {
-  let filtered = alertas.slice();
-
-  if (alertasFilters.accion !== 'ALL') {
-    filtered = filtered.filter(a => a.accion === alertasFilters.accion);
-  }
-  if (alertasFilters.categoria !== 'ALL') {
-    filtered = filtered.filter(a => a.categoria === alertasFilters.categoria);
-  }
-  if (alertasFilters.persona !== 'Todos') {
-    filtered = filtered.filter(a => {
-      const p = ownerIdToPersona(String(a.ownerId || ''));
-      return p === alertasFilters.persona || a.owner === alertasFilters.persona;
-    });
-  }
-  if (alertasFilters.producto !== 'ALL') {
-    filtered = filtered.filter(a => a.prod === alertasFilters.producto);
-  }
-  if (alertasFilters.stage !== 'ALL') {
-    filtered = filtered.filter(a => a.stage === alertasFilters.stage);
-  }
-  if (alertasFilters.minMonto > 0) {
-    filtered = filtered.filter(a => (a.amount || 0) >= alertasFilters.minMonto);
-  }
+  let filtered = alertas.filter(a => pasaFiltro('alertas', a, 'alerta'));
 
   // Sort
-  const sortMode = alertasFilters.sort || 'monto_desc';
+  const sortMode = FILT.alertas.sort || 'monto_desc';
   filtered.sort((a, b) => {
     if (sortMode === 'monto_desc') return (b.amount || 0) - (a.amount || 0);
     if (sortMode === 'dias_desc') return (b.days || 0) - (a.days || 0);
@@ -2636,70 +2581,21 @@ function renderAlertas() {
     </div>
   `;
 
-  // Filtros
-  html += `<div class="filters">
-    <span class="filter-label">Acción:</span>
-    <button class="chip ${alertasFilters.accion === 'ALL' ? 'active' : ''}" data-alfilter="accion" data-aval="ALL">Todas (${stats.total || 0})</button>`;
-  ACCION_DEFS.forEach(d => {
-    const c = accionCounts[d.id] || 0;
-    if (c === 0 && alertasFilters.accion !== d.id) return; // ocultar acciones sin alertas (a menos que esté seleccionada)
-    html += `<button class="chip ${alertasFilters.accion === d.id ? 'active' : ''}" data-alfilter="accion" data-aval="${d.id}">${d.icon} ${d.label} (${c})</button>`;
-  });
-  html += `</div>`;
-
-  html += `<div class="filters">
-    <span class="filter-label">Categoría:</span>
-    <button class="chip ${alertasFilters.categoria === 'ALL' ? 'active' : ''}" data-alfilter="categoria" data-aval="ALL">Todas</button>
-    <button class="chip ${alertasFilters.categoria === 'Cerrar' ? 'active' : ''}" data-alfilter="categoria" data-aval="Cerrar" style="color:#FCA5A5;">🎯 Cerrar (${stats.porCategoria.Cerrar || 0})</button>
-    <button class="chip ${alertasFilters.categoria === 'ReActivar' ? 'active' : ''}" data-alfilter="categoria" data-aval="ReActivar" style="color:#FCD34D;">🤝 ReActivar (${stats.porCategoria.ReActivar || 0})</button>
-    <button class="chip ${alertasFilters.categoria === 'Higienizar' ? 'active' : ''}" data-alfilter="categoria" data-aval="Higienizar" style="color:#A5B4FC;">🧰 Higienizar (${stats.porCategoria.Higienizar || 0})</button>
-  </div>`;
-
-  const personas = ['Todos'].concat(catPersonaIds()).concat(['Otro']); // roster completo desde catálogo
-  html += `<div class="filters">
-    <span class="filter-label">Persona:</span>`;
-  personas.forEach(p => {
-    html += `<button class="chip ${alertasFilters.persona === p ? 'active' : ''}" data-alfilter="persona" data-aval="${p}">${p}</button>`;
-  });
-  html += `</div>`;
-
-  html += `<div class="filters">
-    <span class="filter-label">Producto:</span>
-    <button class="chip ${alertasFilters.producto === 'ALL' ? 'active' : ''}" data-alfilter="producto" data-aval="ALL">Todos</button>`;
-  productosDisponibles.forEach(p => {
-    html += `<button class="chip ${alertasFilters.producto === p ? 'active' : ''}" data-alfilter="producto" data-aval="${p}">${p}</button>`;
-  });
-  html += `</div>`;
-
-  html += `<div class="filters">
-    <span class="filter-label">Stage:</span>
-    <button class="chip ${alertasFilters.stage === 'ALL' ? 'active' : ''}" data-alfilter="stage" data-aval="ALL">Todos</button>`;
-  ['Señal','Reply','Contactado','En Conv.','Atracción','Educación','Propuesta','Aprobación'].forEach(st => {
-    html += `<button class="chip ${alertasFilters.stage === st ? 'active' : ''}" data-alfilter="stage" data-aval="${st}">${st}</button>`;
-  });
-  html += `</div>`;
-
-  html += `<div class="filters">
-    <span class="filter-label">Monto mínimo:</span>
-    <button class="chip ${alertasFilters.minMonto === 0 ? 'active' : ''}" data-alfilter="minMonto" data-aval="0">Todos</button>
-    <button class="chip ${alertasFilters.minMonto === 10000 ? 'active' : ''}" data-alfilter="minMonto" data-aval="10000">≥ $10K</button>
-    <button class="chip ${alertasFilters.minMonto === 25000 ? 'active' : ''}" data-alfilter="minMonto" data-aval="25000">≥ $25K</button>
-    <button class="chip ${alertasFilters.minMonto === 50000 ? 'active' : ''}" data-alfilter="minMonto" data-aval="50000">≥ $50K</button>
-    <button class="chip ${alertasFilters.minMonto === 100000 ? 'active' : ''}" data-alfilter="minMonto" data-aval="100000">≥ $100K</button>
-  </div>`;
+  // Filtros unificados (persona c/conteo · semáforo · grupo · producto · stage · monto · categoría)
+  html += filtrosHTML('alertas', allAlertas, 'alerta');
 
   html += `<div class="filters">
     <span class="filter-label">Ordenar por:</span>
-    <button class="chip ${alertasFilters.sort === 'monto_desc' ? 'active' : ''}" data-alfilter="sort" data-aval="monto_desc">💰 Monto ↓</button>
-    <button class="chip ${alertasFilters.sort === 'urgencia' ? 'active' : ''}" data-alfilter="sort" data-aval="urgencia">⚠️ Urgencia</button>
-    <button class="chip ${alertasFilters.sort === 'dias_desc' ? 'active' : ''}" data-alfilter="sort" data-aval="dias_desc">📅 Días estancado ↓</button>
+    <button class="chip ${FILT.alertas.sort === 'monto_desc' ? 'active' : ''}" data-f="alertas" data-k="sort" data-v="monto_desc">💰 Monto ↓</button>
+    <button class="chip ${FILT.alertas.sort === 'urgencia' ? 'active' : ''}" data-f="alertas" data-k="sort" data-v="urgencia">⚠️ Urgencia</button>
+    <button class="chip ${FILT.alertas.sort === 'dias_desc' ? 'active' : ''}" data-f="alertas" data-k="sort" data-v="dias_desc">📅 Días estancado ↓</button>
   </div>`;
 
   // Lista
   const revenueFiltered = filtered.reduce((s, a) => s + (a.amount || 0), 0);
   html += `<div class="section-title" style="margin-top:16px;">
     <span class="section-count">${filtered.length} alertas</span>
-    <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">${fmtK(revenueFiltered)} en juego · Ordenadas por ${alertasFilters.sort === 'monto_desc' ? 'monto descendente' : alertasFilters.sort === 'urgencia' ? 'urgencia' : 'días estancado'}</span>
+    <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">${fmtK(revenueFiltered)} en juego · Ordenadas por ${FILT.alertas.sort === 'monto_desc' ? 'monto descendente' : FILT.alertas.sort === 'urgencia' ? 'urgencia' : 'días estancado'}</span>
   </div>`;
 
   if (filtered.length === 0) {
