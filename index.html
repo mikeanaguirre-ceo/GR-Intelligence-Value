@@ -860,7 +860,7 @@ function grupoDeProd(prod){ var p=catProdMap()[prod]; if(p&&p.grupo) return p.gr
 var GRUPOS_ORDEN=['ALL','GR','PT','IMMMU','INTERNO'];
 function grupoLabel(g){ return g==='ALL'?'All':(g==='INTERNO'?'Interno':g); }
 // Semáforo de tiempo (uno solo): rojo=vencida, amarillo=hoy/próx 3d, verde=al día/futura
-function semList(menu){ var b=[ {id:'ALL',label:'Todos'},{id:'rojo',label:'🔴 Vencidas'},{id:'amarillo',label:'🟡 Próximas'},{id:'verde',label:'🟢 Al día'} ]; if(menu==='pendientes'){ b.splice(1,0,{id:'cerradas',label:'✅ Cerradas'}); } return b; }
+function semList(menu){ var b=[ {id:'ALL',label:'Todos'},{id:'rojo',label:'🔴 Vencidas'},{id:'amarillo',label:'🟡 Próximas'},{id:'verde',label:'🟢 Al día'} ]; if(menu==='pendientes'){ b.splice(1,0,{id:'cerradas',label:'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6B7280;margin-right:5px;vertical-align:middle;"></span>Cerradas'}); } return b; }
 function semDeItem(it,kind){ if(it&&it.semaforo) return it.semaforo; return 'verde'; }
 // Producto canónico presente en un arreglo dado (excluye Interno/Otro), en orden de catálogo
 function prodsPresentesDe(arr){
@@ -911,6 +911,7 @@ function filtrosHTML(menu, arr, kind){
   // Stage (solo deals: pipeline, alertas)
   if(kind==='deal'||kind==='alerta'){
     var stgs=_stagesPresentes(arr);
+    if(!stgs.some(function(x){return x.label==='Perdida';})) stgs=stgs.concat([{label:'Perdida'}]);
     H+='<div class="filters"><span class="filter-label">Stage:</span>';
     H+=_chip(menu,'stage','ALL','Todos', (f.stage||'ALL')==='ALL');
     stgs.forEach(function(x){ H+=_chip(menu,'stage',x.label,x.label, f.stage===x.label); });
@@ -971,8 +972,8 @@ let recapFilters = {
 // ===== Estado unificado de filtros (homologado) =====
 var FILT = {
   pipeline:   { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, excludeP:false, nueva:'ALL' },
-  pendientes: { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', sort:'urgency' },
-  alertas:    { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, categoria:'ALL', sort:'monto_desc' },
+  pendientes: { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', sort:'urgency', nueva:'ALL' },
+  alertas:    { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, categoria:'ALL', accion:'ALL', sort:'monto_desc' },
   recap:      { persona:'Todos', grupo:'ALL', prod:'ALL' }
 };
 var MONTO_OPC=[ {id:0,label:'Todos'},{id:10000,label:'≥10k'},{id:50000,label:'≥50k'},{id:100000,label:'≥100k'} ];
@@ -1557,6 +1558,8 @@ const STAGE_ORDER = catStagesAct().map(function(s){return {key:s.id,label:s.labe
 const STAGE_ORDER_K = STAGE_ORDER.concat([{key:'1092009814',label:'Perdida',id:'1092009814'}]);
 function nuevaPasa(d,val){ if(val==='ALL') return true; var f=new Date(d.createdate); if(isNaN(f)) return false; var age=Math.floor((new Date()-f)/86400000); return age<=Number(val); }
 function nuevaCol(d){ var f=new Date(d.createdate); if(isNaN(f)) return 'transparent'; var age=Math.floor((new Date()-f)/86400000); return age<=7?'#10B981':age<=15?'#34d399':age<=30?'#FFCD00':age<=45?'#F59E0B':age<=90?'#F97316':'#6B7280'; }
+function _dealAgeMap(){ var m={}; (DATA.deals||[]).forEach(function(d){ var f=new Date(d.createdate); if(!isNaN(f)) m[String(d.id)]=Math.floor((new Date()-f)/86400000); }); return m; }
+function nuevaPasaTask(t,val,am){ if(val==='ALL') return true; var ids=t.matchedDealIds||[]; if(!ids.length) return false; return ids.some(function(id){ var a=am[String(id)]; return a!==undefined && a<=Number(val); }); }
 
 function renderPipeline() {
   // Normaliza producto desde el nombre para categorias que el backend deja en Otro (BD, AEO+SEO)
@@ -2050,6 +2053,7 @@ function renderPendientes() {
   if (_isCerradas) FILT.pendientes.sem = 'ALL';
   let filtered = allT.filter(t => pasaFiltro('pendientes', t, 'task'));
   FILT.pendientes.sem = _savedSem;
+  if (FILT.pendientes.nueva !== 'ALL') { const _am = _dealAgeMap(); filtered = filtered.filter(t => nuevaPasaTask(t, FILT.pendientes.nueva, _am)); }
 
   // Re-sort por opción elegida
   const sortMode = FILT.pendientes.sort || 'urgency';
@@ -2098,6 +2102,10 @@ function renderPendientes() {
   // Persona filter
   html += `<div class="section">
     ${filtrosHTML('pendientes', allT, 'task')}
+    <div class="filters">
+      <span class="filter-label">Nuevas oportunidades:</span>
+      ${['ALL','7','15','30','45','90'].map(v => { const lbl = v==='ALL'?'Todas':'≤'+v+'d'; const col = ({'7':'#10B981','15':'#34d399','30':'#FFCD00','45':'#F59E0B','90':'#F97316'})[v]||''; return `<button class="chip ${FILT.pendientes.nueva===v?'active':''}" data-f="pendientes" data-k="nueva" data-v="${v}" ${col?`style="border-color:${col}80;"`:''}>${lbl}</button>`; }).join('')}
+    </div>
     <div class="filters">
       <span class="filter-label">Ordenar por:</span>
       <button class="chip ${sortMode === 'urgency' ? 'active' : ''}" data-f="pendientes" data-k="sort" data-v="urgency">🎯 Urgencia</button>
@@ -2526,6 +2534,7 @@ function ownerIdToPersona(ownerId) {
 
 function applyAlertasFilters(alertas) {
   let filtered = alertas.filter(a => pasaFiltro('alertas', a, 'alerta'));
+  if (FILT.alertas.accion !== 'ALL') filtered = filtered.filter(a => a.accion === FILT.alertas.accion);
 
   // Sort
   const sortMode = FILT.alertas.sort || 'monto_desc';
@@ -2600,6 +2609,13 @@ function renderAlertas() {
 
   // Filtros unificados (persona c/conteo · semáforo · grupo · producto · stage · monto · categoría)
   html += filtrosHTML('alertas', allAlertas, 'alerta');
+
+  var _accBase = allAlertas.filter(function(a){ return pasaFiltro('alertas', a, 'alerta'); });
+  var _accCounts = {}; _accBase.forEach(function(a){ _accCounts[a.accion]=(_accCounts[a.accion]||0)+1; });
+  html += '<div class="filters"><span class="filter-label">Acción:</span>';
+  html += _chip('alertas','accion','ALL','Todas ('+_accBase.length+')', FILT.alertas.accion==='ALL');
+  ACCION_DEFS.forEach(function(d){ var c=_accCounts[d.id]||0; if(c>0||FILT.alertas.accion===d.id){ html += _chip('alertas','accion',d.id, d.icon+' '+d.label+' ('+c+')', FILT.alertas.accion===d.id); } });
+  html += '</div>';
 
   html += `<div class="filters">
     <span class="filter-label">Ordenar por:</span>
