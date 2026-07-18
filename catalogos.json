@@ -1,0 +1,468 @@
+{
+  "personas": [
+    {
+      "id": "Mike",
+      "label": "Mike",
+      "alias": [
+        "mike"
+      ]
+    },
+    {
+      "id": "Migue",
+      "label": "Migue",
+      "alias": [
+        "migue",
+        "miguel"
+      ],
+      "ownerId": "77808624"
+    },
+    {
+      "id": "Martha",
+      "label": "Martha",
+      "alias": [
+        "martha"
+      ],
+      "ownerId": "82004391"
+    },
+    {
+      "id": "Daniel",
+      "label": "Daniel",
+      "alias": [
+        "daniel",
+        "dani"
+      ]
+    },
+    {
+      "id": "Fer",
+      "label": "Fer",
+      "alias": [
+        "fer",
+        "fernanda"
+      ]
+    },
+    {
+      "id": "Mine",
+      "label": "Mine",
+      "alias": [
+        "mine",
+        "minerva"
+      ]
+    },
+    {
+      "id": "Manu",
+      "label": "Manu",
+      "alias": [
+        "manu",
+        "manuel"
+      ]
+    },
+    {
+      "id": "Diana",
+      "label": "Diana",
+      "alias": [
+        "diana"
+      ]
+    },
+    {
+      "id": "Sandra",
+      "label": "Sandra",
+      "alias": [
+        "sandra"
+      ]
+    },
+    {
+      "id": "Nico",
+      "label": "Nico",
+      "alias": [
+        "nico",
+        "nicolas",
+        "nicolás"
+      ]
+    },
+    {
+      "id": "Sara",
+      "label": "Sara",
+      "alias": [
+        "sara"
+      ]
+    },
+    {
+      "id": "Sabrina",
+      "label": "Sabrina",
+      "alias": [
+        "sabrina"
+      ]
+    },
+    {
+      "id": "Valeria",
+      "label": "Valeria",
+      "alias": [
+        "valeria",
+        "vale"
+      ]
+    },
+    {
+      "id": "Uri",
+      "label": "Uri",
+      "alias": [
+        "uri"
+      ]
+    }
+  ],
+  "productos": [
+    {
+      "id": "TW",
+      "label": "TW",
+      "prefijos": [
+        "TW"
+      ],
+      "color": "azul",
+      "grupo": "GR"
+    },
+    {
+      "id": "AM",
+      "label": "AM",
+      "prefijos": [
+        "AM"
+      ],
+      "color": "azul",
+      "grupo": "GR"
+    },
+    {
+      "id": "AEO",
+      "label": "AEO",
+      "prefijos": [
+        "AEO"
+      ],
+      "color": "azul",
+      "grupo": "GR"
+    },
+    {
+      "id": "3V",
+      "label": "3V/360",
+      "prefijos": [
+        "3V",
+        "360"
+      ],
+      "color": "azul",
+      "grupo": "GR"
+    },
+    {
+      "id": "GenIA",
+      "label": "GenIA",
+      "prefijos": [
+        "GENIA",
+        "GEN IA"
+      ],
+      "color": "azul",
+      "grupo": "GR"
+    },
+    {
+      "id": "ITS",
+      "label": "ITS",
+      "prefijos": [
+        "ITS",
+        "IT SUPPORT"
+      ],
+      "color": "azul",
+      "grupo": "GR"
+    },
+    {
+      "id": "LT",
+      "label": "LT",
+      "prefijos": [
+        "LT"
+      ],
+      "color": "azul",
+      "grupo": "GR"
+    },
+    {
+      "id": "BD",
+      "label": "BD",
+      "prefijos": [
+        "BD"
+      ],
+      "color": "azul",
+      "grupo": "GR"
+    },
+    {
+      "id": "WB",
+      "label": "WB",
+      "prefijos": [
+        "WB"
+      ],
+      "color": "azul",
+      "grupo": "GR"
+    },
+    {
+      "id": "HS",
+      "label": "HS",
+      "prefijos": [
+        "HS"
+      ],
+      "color": "azul",
+      "grupo": "GR"
+    },
+    {
+      "id": "PT",
+      "label": "PT",
+      "prefijos": [
+        "PT"
+      ],
+      "color": "morado",
+      "grupo": "PT"
+    },
+    {
+      "id": "IMMMU",
+      "label": "IMMMU",
+      "prefijos": [
+        "IMU",
+        "IMMMU"
+      ],
+      "color": "verde",
+      "grupo": "IMMMU"
+    },
+    {
+      "id": "Interno",
+      "label": "Interno",
+      "prefijos": [],
+      "color": "gris",
+      "grupo": "INTERNO"
+    },
+    {
+      "id": "Otro",
+      "label": "Otro",
+      "prefijos": [],
+      "color": "gris",
+      "grupo": "INTERNO"
+    }
+  ],
+  "stages": [
+    {
+      "id": "1332596061",
+      "idCli": "Senal Detectada",
+      "label": "Señal",
+      "corto": "Señal",
+      "color": "rojo",
+      "prioridad": 1
+    },
+    {
+      "id": "1332596062",
+      "idCli": "Reply Recibido",
+      "label": "Reply",
+      "corto": "Reply",
+      "color": "rojo",
+      "prioridad": 2
+    },
+    {
+      "id": "1332596063",
+      "idCli": "Contactado",
+      "label": "Contactado",
+      "corto": "Contactado",
+      "color": "rojo",
+      "prioridad": 3
+    },
+    {
+      "id": "1332596064",
+      "idCli": "En Conversacion",
+      "label": "En Conv.",
+      "corto": "En Conv.",
+      "color": "amarillo",
+      "prioridad": 4
+    },
+    {
+      "id": "appointmentscheduled",
+      "idCli": "Atraccion",
+      "label": "Atracción",
+      "corto": "Atracción",
+      "color": "verde",
+      "prioridad": 5
+    },
+    {
+      "id": "qualifiedtobuy",
+      "idCli": "Educacion",
+      "label": "Educación",
+      "corto": "Educación",
+      "color": "verde",
+      "prioridad": 6
+    },
+    {
+      "id": "presentationscheduled",
+      "idCli": "Propuesta Enviada",
+      "label": "Propuesta",
+      "corto": "Propuesta Env.",
+      "color": "verde",
+      "prioridad": 7
+    },
+    {
+      "id": "decisionmakerboughtin",
+      "idCli": "Aprobacion Verbal",
+      "label": "Aprobación",
+      "corto": "Aprob. Verbal",
+      "color": "azul",
+      "prioridad": 8
+    },
+    {
+      "id": "closedwon",
+      "idCli": "Ganada",
+      "label": "Won",
+      "corto": "Ganada",
+      "color": "azul",
+      "prioridad": 10
+    },
+    {
+      "id": "1092009814",
+      "idCli": "Perdida",
+      "label": "Perdida",
+      "corto": "Perdida",
+      "color": "gris",
+      "prioridad": 99
+    }
+  ],
+  "segmentos": [
+    {
+      "id": "GR",
+      "label": "GR",
+      "linea": "GR",
+      "naturaleza": "cliente"
+    },
+    {
+      "id": "PT",
+      "label": "PT",
+      "linea": "PT",
+      "naturaleza": "cliente"
+    },
+    {
+      "id": "IMMMU",
+      "label": "IMMMU",
+      "linea": "IMMMU",
+      "naturaleza": "cliente"
+    },
+    {
+      "id": "GR_INTERNO",
+      "label": "GR Interno",
+      "linea": "GR",
+      "naturaleza": "interno"
+    },
+    {
+      "id": "PT_INTERNO",
+      "label": "PT Interno",
+      "linea": "PT",
+      "naturaleza": "interno"
+    }
+  ],
+  "paleta": {
+    "morado": "#7D2AE4",
+    "azul": "#02ADBA",
+    "verde": "#62D175",
+    "amarillo": "#FFCD00",
+    "rojo": "#DB0540",
+    "gris": "#6B7280"
+  },
+  "urgencias": [
+    {
+      "id": "vencida",
+      "label": "Vencidas",
+      "color": "rojo"
+    },
+    {
+      "id": "hoy",
+      "label": "Hoy",
+      "color": "amarillo"
+    },
+    {
+      "id": "proxima",
+      "label": "Próximas",
+      "color": "azul"
+    },
+    {
+      "id": "futura",
+      "label": "Futuras",
+      "color": "gris"
+    }
+  ],
+  "categoriasAlerta": [
+    {
+      "id": "Cerrar",
+      "label": "Cerrar",
+      "color": "rojo"
+    },
+    {
+      "id": "ReActivar",
+      "label": "ReActivar",
+      "color": "amarillo"
+    },
+    {
+      "id": "Higienizar",
+      "label": "Higienizar",
+      "color": "azul"
+    }
+  ],
+  "sorts": {
+    "pendientes": [
+      {
+        "id": "urgency",
+        "label": "Urgencia"
+      },
+      {
+        "id": "date_asc",
+        "label": "Fecha ↑"
+      },
+      {
+        "id": "date_desc",
+        "label": "Fecha ↓"
+      }
+    ],
+    "alertas": [
+      {
+        "id": "monto_desc",
+        "label": "Monto"
+      },
+      {
+        "id": "dias_desc",
+        "label": "Días"
+      },
+      {
+        "id": "urgencia",
+        "label": "Urgencia"
+      }
+    ]
+  },
+  "menus": {
+    "pipeline": [
+      "grupo",
+      "producto",
+      "owner",
+      "excludeP"
+    ],
+    "pendientes": [
+      "persona",
+      "urgencia",
+      "segmento",
+      "stage",
+      "sort"
+    ],
+    "alertas": [
+      "categoria",
+      "accion",
+      "persona",
+      "producto",
+      "stage",
+      "minMonto",
+      "sort"
+    ],
+    "recapCreados": [
+      "producto",
+      "owner",
+      "stage"
+    ],
+    "recapMovidos": [
+      "producto",
+      "owner",
+      "stage"
+    ],
+    "recapPersonas": [
+      "persona"
+    ]
+  }
+}
