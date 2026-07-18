@@ -1556,10 +1556,11 @@ function renderOverview() {
 // Orden de stages para Kanban (columnas de izquierda a derecha)
 const STAGE_ORDER = catStagesAct().map(function(s){return {key:s.id,label:s.label,id:s.id};}); // catálogo (CAT)
 const STAGE_ORDER_K = STAGE_ORDER.concat([{key:'1092009814',label:'Perdida',id:'1092009814'}]);
-function nuevaPasa(d,val){ if(val==='ALL') return true; var f=new Date(d.createdate); if(isNaN(f)) return false; var age=Math.floor((new Date()-f)/86400000); return age<=Number(val); }
+function nuevaMatchAge(age,val){ if(val==='ALL') return true; if(age===null||age===undefined) return false; if(val==='s1')return age<=7; if(val==='s2')return age>=8&&age<=14; if(val==='s3')return age>=15&&age<=21; if(val==='s4')return age>=22&&age<=30; if(val==='g30')return age>30; if(val==='g45')return age>45; if(val==='g90')return age>90; return true; }
+function nuevaPasa(d,val){ if(val==='ALL') return true; var f=new Date(d.createdate); if(isNaN(f)) return false; var age=Math.floor((new Date()-f)/86400000); return nuevaMatchAge(age,val); }
 function nuevaCol(d){ var f=new Date(d.createdate); if(isNaN(f)) return 'transparent'; var age=Math.floor((new Date()-f)/86400000); return age<=7?'#10B981':age<=15?'#34d399':age<=30?'#FFCD00':age<=45?'#F59E0B':age<=90?'#F97316':'#6B7280'; }
 function _dealAgeMap(){ var m={}; (DATA.deals||[]).forEach(function(d){ var f=new Date(d.createdate); if(!isNaN(f)) m[String(d.id)]=Math.floor((new Date()-f)/86400000); }); return m; }
-function nuevaPasaTask(t,val,am){ if(val==='ALL') return true; var ids=t.matchedDealIds||[]; if(!ids.length) return false; return ids.some(function(id){ var a=am[String(id)]; return a!==undefined && a<=Number(val); }); }
+function nuevaPasaTask(t,val,am){ if(val==='ALL') return true; var ids=t.matchedDealIds||[]; if(!ids.length) return false; return ids.some(function(id){ var a=am[String(id)]; return a!==undefined && nuevaMatchAge(a,val); }); }
 
 function renderPipeline() {
   // Normaliza producto desde el nombre para categorias que el backend deja en Otro (BD, AEO+SEO)
@@ -1605,7 +1606,7 @@ function renderPipeline() {
       ${filtrosHTML('pipeline', poolPipe, 'deal')}
       <div class="filters">
         <span class="filter-label">Nuevas oportunidades:</span>
-        ${['ALL','7','15','30','45','90'].map(v => { const lbl = v==='ALL'?'Todas':'≤'+v+'d'; const col = ({'7':'#10B981','15':'#34d399','30':'#FFCD00','45':'#F59E0B','90':'#F97316'})[v]||''; return `<button class="chip ${FILT.pipeline.nueva===v?'active':''}" data-f="pipeline" data-k="nueva" data-v="${v}" ${col?`style="border-color:${col}80;"`:''}>${lbl}</button>`; }).join('')}
+        ${[['ALL','Todas'],['s1','Sem 1'],['s2','Sem 2'],['s3','Sem 3'],['s4','Sem 4'],['g30','>30d'],['g45','>45d'],['g90','>90d']].map(o => { const col = ({s1:'#10B981',s2:'#34d399',s3:'#A3E635',s4:'#FFCD00',g30:'#F59E0B',g45:'#F97316',g90:'#EF4444'})[o[0]]||''; return `<button class="chip ${FILT.pipeline.nueva===o[0]?'active':''}" data-f="pipeline" data-k="nueva" data-v="${o[0]}" ${col?`style="border-color:${col}80;"`:''}>${o[1]}</button>`; }).join('')}
       </div>
       <div class="filters">
         <span class="filter-label">Otros:</span>
@@ -2104,7 +2105,7 @@ function renderPendientes() {
     ${filtrosHTML('pendientes', allT, 'task')}
     <div class="filters">
       <span class="filter-label">Nuevas oportunidades:</span>
-      ${['ALL','7','15','30','45','90'].map(v => { const lbl = v==='ALL'?'Todas':'≤'+v+'d'; const col = ({'7':'#10B981','15':'#34d399','30':'#FFCD00','45':'#F59E0B','90':'#F97316'})[v]||''; return `<button class="chip ${FILT.pendientes.nueva===v?'active':''}" data-f="pendientes" data-k="nueva" data-v="${v}" ${col?`style="border-color:${col}80;"`:''}>${lbl}</button>`; }).join('')}
+      ${[['ALL','Todas'],['s1','Sem 1'],['s2','Sem 2'],['s3','Sem 3'],['s4','Sem 4'],['g30','>30d'],['g45','>45d'],['g90','>90d']].map(o => { const col = ({s1:'#10B981',s2:'#34d399',s3:'#A3E635',s4:'#FFCD00',g30:'#F59E0B',g45:'#F97316',g90:'#EF4444'})[o[0]]||''; return `<button class="chip ${FILT.pendientes.nueva===o[0]?'active':''}" data-f="pendientes" data-k="nueva" data-v="${o[0]}" ${col?`style="border-color:${col}80;"`:''}>${o[1]}</button>`; }).join('')}
     </div>
     <div class="filters">
       <span class="filter-label">Ordenar por:</span>
