@@ -1,0 +1,54 @@
+{
+  "meta": {
+    "tenant": "STIL",
+    "portal": "51496709",
+    "webhook": "stil-prospeccion",
+    "modelo": "prospeccion",
+    "funnelHasta": "Educacion",
+    "monoTenant": true
+  },
+  "personas": [
+    { "id": "Sabrina", "label": "Sabrina", "alias": ["sabrina"], "ownerId": "" }
+  ],
+  "productos": [
+    { "id": "CB",  "label": "CB",  "prefijos": ["P_STL_CB", "STIL_CB"], "alias": ["CROSS"], "color": "azul" },
+    { "id": "NAC", "label": "NAC", "prefijos": ["P_STL_NAC", "STIL_NAC"], "alias": [], "color": "morado" }
+  ],
+  "stages": [
+    { "id": "1364921412",          "label": "Señal Detectada", "corto": "Señal",     "color": "rojo",     "prioridad": 10 },
+    { "id": "1364921413",          "label": "Reply Recibido",  "corto": "Reply",     "color": "rojo",     "prioridad": 20 },
+    { "id": "1364921414",          "label": "Contactado",      "corto": "Contactado","color": "rojo",     "prioridad": 30 },
+    { "id": "1364919472",          "label": "En Conversación", "corto": "En Conv.",  "color": "amarillo", "prioridad": 40 },
+    { "id": "1364919473",          "label": "Atracción",       "corto": "Atracción", "color": "verde",    "prioridad": 50 },
+    { "id": "appointmentscheduled","label": "Educación",       "corto": "Educación", "color": "verde",    "prioridad": 60 },
+    { "id": "1364919474",          "label": "Perdida",         "corto": "Perdida",   "color": "gris",     "prioridad": 1 }
+  ],
+  "segmentos": [
+    { "id": "STIL", "label": "STIL", "naturaleza": "cliente" }
+  ],
+  "canales": ["LinkedIn", "Email", "Email DUO", "WhatsApp"],
+  "tipos": ["open3", "reply"],
+  "clasificaciones": [
+    "interested", "not_interested", "hard_no", "ooo",
+    "forwarded_to_the_right_person", "not_the_right_person",
+    "introduction", "asked_to_circle_back_later", "meeting_booked"
+  ],
+  "semaforo": { "dealDiasAmarillo": 30, "tareaDiasAmarillo": 3 },
+  "paleta": { "morado": "#7D2AE4", "azul": "#02ADBA", "verde": "#62D175", "amarillo": "#FFCD00", "rojo": "#DB0540", "gris": "#6B7280" },
+  "montoOpc": [
+    { "id": 0, "label": "Todos" },
+    { "id": 10000, "label": "≥ $10K" },
+    { "id": 50000, "label": "≥ $50K" },
+    { "id": 100000, "label": "≥ $100K" }
+  ],
+  "sorts": {
+    "prospeccion": [ { "id": "fecha_desc", "label": "Fecha ↓" }, { "id": "etapa", "label": "Etapa" } ],
+    "pipeline":    [ { "id": "monto_desc", "label": "Monto" }, { "id": "etapa", "label": "Etapa" } ],
+    "pendientes":  [ { "id": "urgency", "label": "Urgencia" }, { "id": "date_asc", "label": "Fecha ↑" } ]
+  },
+  "menus": {
+    "prospeccion": ["persona", "semaforo", "producto", "etapa", "canal", "clasificacion", "tipo", "sort"],
+    "pipeline":    ["persona", "semaforo", "producto", "etapa", "monto", "sort"],
+    "pendientes":  ["persona", "semaforo", "producto", "sort"]
+  }
+}
