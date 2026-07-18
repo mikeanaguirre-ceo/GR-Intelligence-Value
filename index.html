@@ -813,6 +813,25 @@ const ACTIVE_CLIENTS = {
 
 // --- State ---
 let DATA = null;
+
+// ==== CATÁLOGOS (fuente única): live desde DATA.catalogos; fallback embebido de respaldo ====
+const CAT_FALLBACK = {
+  personas: [
+    {id:'Mike',label:'Mike'},{id:'Migue',label:'Migue',ownerId:'77808624'},{id:'Martha',label:'Martha',ownerId:'82004391'},
+    {id:'Daniel',label:'Daniel'},{id:'Fer',label:'Fer'},{id:'Mine',label:'Mine'},{id:'Manu',label:'Manu'},
+    {id:'Diana',label:'Diana'},{id:'Sandra',label:'Sandra'},{id:'Nico',label:'Nico'},{id:'Sara',label:'Sara'},
+    {id:'Sabrina',label:'Sabrina'},{id:'Valeria',label:'Valeria'},{id:'Uri',label:'Uri'}
+  ],
+  paleta: { morado:'#7D2AE4', azul:'#02ADBA', verde:'#62D175', amarillo:'#FFCD00', rojo:'#DB0540', gris:'#6B7280' },
+  segmentos: [
+    {id:'GR',label:'GR',linea:'GR',naturaleza:'cliente'},{id:'PT',label:'PT',linea:'PT',naturaleza:'cliente'},
+    {id:'IMMMU',label:'IMMMU',linea:'IMMMU',naturaleza:'cliente'},
+    {id:'GR_INTERNO',label:'GR Interno',linea:'GR',naturaleza:'interno'},{id:'PT_INTERNO',label:'PT Interno',linea:'PT',naturaleza:'interno'}
+  ]
+};
+function CAT(){ return (typeof DATA !== 'undefined' && DATA && DATA.catalogos) ? DATA.catalogos : CAT_FALLBACK; }
+function catPersonaIds(){ return (CAT().personas || CAT_FALLBACK.personas).map(function(p){return p.id;}); }
+function catColor(name){ return (CAT().paleta || CAT_FALLBACK.paleta)[name] || '#6B7280'; }
 let TASKS = null;
 let currentTab = 'recap';
 let pipelineFilters = { group: 'ALL', prod: 'ALL', owner: 'ALL', excludeP: false };
@@ -2123,7 +2142,7 @@ function renderPendientes() {
 }
 
 // ====== EDITOR DE TAREAS v3 (campos controlados + calendario propio + nueva en blanco) ======
-const PERSONAS = ['Mike','Migue','Martha','Daniel','Fer','Mine','Manu','Diana','Sandra','Nico','Sara','Sabrina','Valeria','Uri'];
+const PERSONAS = catPersonaIds(); // centralizado en catálogo (CAT)
 const PRODUCTOS = ['TW','HS','AEO','360','WB','AM','GenIA','ITS','LT','BD'];
 const EARLY_STAGES = ['Señal','Reply','Contactado','En Conv.'];
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -2572,7 +2591,7 @@ function renderAlertas() {
     <button class="chip ${alertasFilters.categoria === 'Higienizar' ? 'active' : ''}" data-alfilter="categoria" data-aval="Higienizar" style="color:#A5B4FC;">🧰 Higienizar (${stats.porCategoria.Higienizar || 0})</button>
   </div>`;
 
-  const personas = ['Todos', 'Mike', 'Migue', 'Martha', 'Daniel', 'Fer', 'Mine', 'Sara', 'Sabrina', 'Otro'];
+  const personas = ['Todos'].concat(catPersonaIds()).concat(['Otro']); // roster completo desde catálogo
   html += `<div class="filters">
     <span class="filter-label">Persona:</span>`;
   personas.forEach(p => {
