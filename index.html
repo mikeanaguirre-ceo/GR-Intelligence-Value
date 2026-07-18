@@ -819,7 +819,7 @@ const CAT_FALLBACK = {
   personas: [
     {id:'Mike',label:'Mike'},{id:'Migue',label:'Migue',ownerId:'77808624'},{id:'Martha',label:'Martha',ownerId:'82004391'},
     {id:'Daniel',label:'Daniel'},{id:'Fer',label:'Fer'},{id:'Mine',label:'Mine'},{id:'Manu',label:'Manu'},
-    {id:'Diana',label:'Diana'},{id:'Sandra',label:'Sandra'},{id:'Nico',label:'Nico'},{id:'Sara',label:'Sara'},
+    {id:'Diana',label:'Diana'},{id:'Nico',label:'Nico'},{id:'Sara',label:'Sara'},
     {id:'Sabrina',label:'Sabrina'},{id:'Valeria',label:'Valeria'},{id:'Uri',label:'Uri'}
   ],
   paleta: { morado:'#7D2AE4', azul:'#02ADBA', verde:'#62D175', amarillo:'#FFCD00', rojo:'#DB0540', gris:'#6B7280' },
@@ -836,8 +836,9 @@ const CAT_FALLBACK = {
     {id:'closedwon',label:'Won',color:'azul',prioridad:10},{id:'1092009814',label:'Perdida',color:'gris',prioridad:99}
   ],
   productos: [
-    {id:'TW'},{id:'AM'},{id:'AEO'},{id:'3V'},{id:'GenIA'},{id:'ITS'},{id:'LT'},{id:'BD'},
-    {id:'WB'},{id:'HS'},{id:'PT'},{id:'IMMMU'},{id:'Interno'},{id:'Otro'}
+    {id:'TW',grupo:'GR'},{id:'AM',grupo:'GR'},{id:'AEO',grupo:'GR'},{id:'360',grupo:'GR'},{id:'GenIA',grupo:'GR'},
+    {id:'ITS',grupo:'GR'},{id:'LT',grupo:'GR'},{id:'BD',grupo:'GR'},{id:'WB',grupo:'GR'},{id:'HS',grupo:'GR'},
+    {id:'PT',grupo:'PT'},{id:'IMMMU',grupo:'IMMMU'},{id:'Interno',grupo:'INTERNO'},{id:'Otro',grupo:'INTERNO'}
   ]
 };
 function CAT(){ return (typeof DATA !== 'undefined' && DATA && DATA.catalogos) ? DATA.catalogos : CAT_FALLBACK; }
@@ -853,6 +854,105 @@ function catProdsPresentes(){
   pres.sort(function(a,b){var ia=orden.indexOf(a),ib=orden.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
   return pres;
 }
+// ===== Helpers compartidos de filtros (homologación) =====
+function catProdMap(){ var m={}; ((CAT().productos)||CAT_FALLBACK.productos||[]).forEach(function(p){ m[p.id]=p; }); return m; }
+function grupoDeProd(prod){ var p=catProdMap()[prod]; if(p&&p.grupo) return p.grupo; if(prod==='Interno'||prod==='Otro'||prod==='P-Otro') return 'INTERNO'; return 'GR'; }
+var GRUPOS_ORDEN=['ALL','GR','PT','IMMMU','INTERNO'];
+function grupoLabel(g){ return g==='ALL'?'All':(g==='INTERNO'?'Interno':g); }
+// Semáforo de tiempo (uno solo): rojo=vencida, amarillo=hoy/próx 3d, verde=al día/futura
+function semList(){ return [ {id:'ALL',label:'Todos'},{id:'rojo',label:'🔴 Vencidas'},{id:'amarillo',label:'🟡 Hoy / 3d'},{id:'verde',label:'🟢 Al día'} ]; }
+function semDeItem(it,kind){ if(it&&it.semaforo) return it.semaforo; return 'verde'; }
+// Producto canónico presente en un arreglo dado (excluye Interno/Otro), en orden de catálogo
+function prodsPresentesDe(arr){
+  var orden=((CAT().productos)||CAT_FALLBACK.productos||[]).map(function(p){return p.id;});
+  var excl={'Interno':1,'Otro':1,'P-Otro':1};
+  var pres=[...new Set((arr||[]).map(function(x){return x.prod;}).filter(Boolean))].filter(function(p){return !excl[p];});
+  pres.sort(function(a,b){var ia=orden.indexOf(a),ib=orden.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
+  return pres;
+}
+// Personas presentes (para conteo) en un arreglo, cada item con .personas (deals/alertas) o .persona (tareas)
+function personasDeItem(it){ if(it&&Array.isArray(it.personas)) return it.personas; if(it&&it.persona) return [it.persona]; return []; }
+// ===== Render de filtros unificado =====
+function _chip(menu,k,v,label,active,extra){ return '<button class="chip '+(active?'active':'')+'" data-f="'+menu+'" data-k="'+k+'" data-v="'+v+'"'+(extra||'')+'>'+label+'</button>'; }
+function _stagesPresentes(arr){
+  var st=((CAT().stages)||CAT_FALLBACK.stages||[]).slice().sort(function(a,b){return a.prioridad-b.prioridad;});
+  var labelsPres=[...new Set((arr||[]).map(function(d){return d.stageLabel||d.stage;}).filter(Boolean))];
+  return st.filter(function(x){return labelsPres.indexOf(x.label)>=0;});
+}
+// arr = universo del menú (para conteos y opciones presentes). kind: 'deal'|'task'|'alerta'
+function filtrosHTML(menu, arr, kind){
+  var f=FILT[menu]; var H='';
+  // Persona (todos los menús) con conteo
+  var pcount={}; var totalP=0;
+  (arr||[]).forEach(function(it){ var ps=personasDeItem(it); if(ps.length===0){ pcount['Otro']=(pcount['Otro']||0)+1; } else { ps.forEach(function(p){ pcount[p]=(pcount[p]||0)+1; }); } totalP++; });
+  var pids=catPersonaIds();
+  H+='<div class="filters"><span class="filter-label">Persona:</span>';
+  H+=_chip(menu,'persona','Todos','Todos ('+totalP+')', f.persona==='Todos');
+  pids.forEach(function(p){ if(pcount[p]) H+=_chip(menu,'persona',p, p+' ('+pcount[p]+')', f.persona===p); });
+  if(pcount['Otro']) H+=_chip(menu,'persona','Otro','Otro ('+pcount['Otro']+')', f.persona==='Otro');
+  H+='</div>';
+  // Semáforo (pipeline, pendientes, alertas — no recap)
+  if(menu!=='recap'){
+    H+='<div class="filters"><span class="filter-label">Semáforo:</span>';
+    semList().forEach(function(o){ H+=_chip(menu,'sem',o.id,o.label, (f.sem||'ALL')===o.id); });
+    H+='</div>';
+  }
+  // Grupo (todos)
+  H+='<div class="filters"><span class="filter-label">Grupo:</span>';
+  GRUPOS_ORDEN.forEach(function(g){ H+=_chip(menu,'grupo',g,grupoLabel(g), (f.grupo||'ALL')===g); });
+  H+='</div>';
+  // Producto (todos) canónico, presente
+  var prods=prodsPresentesDe(arr);
+  if(f.grupo && f.grupo!=='ALL'){ prods=prods.filter(function(p){return grupoDeProd(p)===f.grupo;}); }
+  H+='<div class="filters"><span class="filter-label">Producto:</span>';
+  H+=_chip(menu,'prod','ALL','Todos', (f.prod||'ALL')==='ALL');
+  prods.forEach(function(p){ H+=_chip(menu,'prod',p,p, f.prod===p); });
+  H+='</div>';
+  // Stage (solo deals: pipeline, alertas)
+  if(kind==='deal'||kind==='alerta'){
+    var stgs=_stagesPresentes(arr);
+    H+='<div class="filters"><span class="filter-label">Stage:</span>';
+    H+=_chip(menu,'stage','ALL','Todos', (f.stage||'ALL')==='ALL');
+    stgs.forEach(function(x){ H+=_chip(menu,'stage',x.label,x.label, f.stage===x.label); });
+    H+='</div>';
+    // Monto
+    H+='<div class="filters"><span class="filter-label">Monto:</span>';
+    MONTO_OPC.forEach(function(o){ H+=_chip(menu,'monto',o.id,o.label, (f.monto||0)===o.id); });
+    H+='</div>';
+  }
+  // Categoría (solo alertas)
+  if(menu==='alertas'){
+    H+='<div class="filters"><span class="filter-label">Categoría:</span>';
+    [['ALL','Todas'],['Cerrar','Cerrar'],['ReActivar','ReActivar'],['Higienizar','Higienizar']].forEach(function(o){ H+=_chip(menu,'categoria',o[0],o[1], (f.categoria||'ALL')===o[0]); });
+    H+='</div>';
+  }
+  return H;
+}
+// Predicado unificado
+function pasaFiltro(menu, it, kind){
+  var f=FILT[menu];
+  if(f.persona && f.persona!=='Todos'){ var ps=personasDeItem(it); if(f.persona==='Otro'){ if(ps.length>0) return false; } else if(ps.indexOf(f.persona)<0) return false; }
+  if(menu!=='recap' && f.sem && f.sem!=='ALL'){ if(semDeItem(it,kind)!==f.sem) return false; }
+  if(f.grupo && f.grupo!=='ALL'){ if(grupoDeProd(it.prod)!==f.grupo) return false; }
+  if(f.prod && f.prod!=='ALL'){ if(it.prod!==f.prod) return false; }
+  if((kind==='deal'||kind==='alerta') && f.stage && f.stage!=='ALL'){ var sl=it.stageLabel||it.stage; if(sl!==f.stage) return false; }
+  if((kind==='deal'||kind==='alerta') && f.monto){ if((it.amount||0) < f.monto) return false; }
+  if(menu==='alertas' && f.categoria && f.categoria!=='ALL'){ if(it.categoria!==f.categoria) return false; }
+  return true;
+}
+
+// Handler global de filtros unificados
+document.addEventListener('click', function(ev){
+  var b = ev.target.closest ? ev.target.closest('[data-f]') : null;
+  if(!b) return;
+  var menu=b.getAttribute('data-f'), k=b.getAttribute('data-k'), v=b.getAttribute('data-v');
+  if(!FILT[menu]) return;
+  if(k==='monto') FILT[menu][k]=Number(v);
+  else if(k==='excludeP') FILT[menu][k]=!FILT[menu][k];
+  else FILT[menu][k]=v;
+  if(typeof renderCurrentTab==='function') renderCurrentTab();
+});
+
 let TASKS = null;
 let currentTab = 'recap';
 let pipelineFilters = { group: 'ALL', prod: 'ALL', owner: 'ALL', excludeP: false };
@@ -868,6 +968,14 @@ let recapFilters = {
   // Deals movidos
   prodMovido: 'ALL', ownerMovido: 'ALL', stageMovido: 'ALL'
 };
+// ===== Estado unificado de filtros (homologado) =====
+var FILT = {
+  pipeline:   { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, excludeP:false },
+  pendientes: { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', sort:'urgency' },
+  alertas:    { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, categoria:'ALL', sort:'monto_desc' },
+  recap:      { persona:'Todos', grupo:'ALL', prod:'ALL' }
+};
+var MONTO_OPC=[ {id:0,label:'Todos'},{id:10000,label:'≥10k'},{id:50000,label:'≥50k'},{id:100000,label:'≥100k'} ];
 
 // --- Utilities ---
 const $ = (sel) => document.querySelector(sel);
@@ -1952,41 +2060,15 @@ function renderPendientes() {
   const personas = Object.keys(TASKS.tareas);
   const current = pendientesFilters.persona;
 
-  // Filter tasks based on current filters
-  let filtered = [];
-  if (current === 'Todos') {
-    personas.forEach(p => {
-      TASKS.tareas[p].forEach(t => filtered.push({ ...t, persona: p }));
-    });
-  } else {
-    filtered = (TASKS.tareas[current] || []).map(t => ({ ...t, persona: current }));
-  }
-
-  if (pendientesFilters.urgency !== 'ALL') {
-    filtered = filtered.filter(t => t.urgency === pendientesFilters.urgency);
-  }
-  if (pendientesFilters.scope === 'CLIENTE') {
-    filtered = filtered.filter(t => !t.isInternal);
-  } else if (pendientesFilters.scope === 'GR_INTERNO') {
-    filtered = filtered.filter(t => t.isInternal && /^(GR|INT)/i.test((t.title || '').toUpperCase().trim()));
-  } else if (pendientesFilters.scope === 'PT_INTERNO') {
-    filtered = filtered.filter(t => t.isInternal && /^PT/i.test((t.title || '').toUpperCase().trim()));
-  } else if (pendientesFilters.scope === 'INTERNO_TODO') {
-    filtered = filtered.filter(t => t.isInternal);
-  }
-
-  // dealStages viene precalculado del backend v15 (con aliases). No recalcular.
-  // Aplicar filtro por stage si está activo
-  if (pendientesFilters.stage && pendientesFilters.stage !== 'ALL') {
-    if (pendientesFilters.stage === 'SIN_DEAL') {
-      filtered = filtered.filter(t => !t.dealStages || t.dealStages.length === 0);
-    } else {
-      filtered = filtered.filter(t => t.dealStages && t.dealStages.includes(pendientesFilters.stage));
-    }
-  }
+  // Universo de tareas (todas las personas) para conteos + filtro unificado
+  let allT = [];
+  personas.forEach(p => {
+    TASKS.tareas[p].forEach(t => allT.push({ ...t, persona: p }));
+  });
+  let filtered = allT.filter(t => pasaFiltro('pendientes', t, 'task'));
 
   // Re-sort por opción elegida
-  const sortMode = pendientesFilters.sort || 'urgency';
+  const sortMode = FILT.pendientes.sort || 'urgency';
   filtered.sort((a, b) => {
     if (sortMode === 'date_asc') {
       return (a.date || '9999').localeCompare(b.date || '9999');
@@ -2031,41 +2113,12 @@ function renderPendientes() {
 
   // Persona filter
   html += `<div class="section">
-    <div class="filters">
-      <span class="filter-label">Persona:</span>
-      <button class="chip ${current === 'Todos' ? 'active' : ''}" data-pendfilter="persona" data-pval="Todos">Todos (${s.total})</button>
-      ${personas.map(p => `
-        <button class="chip ${current === p ? 'active' : ''}" data-pendfilter="persona" data-pval="${p}">${p} (${s.personas[p] || 0})</button>
-      `).join('')}
-    </div>
-    <div class="filters">
-      <span class="filter-label">Urgencia:</span>
-      <button class="chip ${pendientesFilters.urgency === 'ALL' ? 'active' : ''}" data-pendfilter="urgency" data-pval="ALL">Todas</button>
-      <button class="chip ${pendientesFilters.urgency === 'vencida' ? 'active' : ''}" data-pendfilter="urgency" data-pval="vencida" style="color:#FCA5A5;">🔴 Vencidas</button>
-      <button class="chip ${pendientesFilters.urgency === 'hoy' ? 'active' : ''}" data-pendfilter="urgency" data-pval="hoy">🟡 Hoy</button>
-      <button class="chip ${pendientesFilters.urgency === 'proxima' ? 'active' : ''}" data-pendfilter="urgency" data-pval="proxima">🟢 Próximas</button>
-    </div>
-    <div class="filters">
-      <span class="filter-label">Scope:</span>
-      <button class="chip ${pendientesFilters.scope === 'ALL' ? 'active' : ''}" data-pendfilter="scope" data-pval="ALL">Todo</button>
-      <button class="chip ${pendientesFilters.scope === 'CLIENTE' ? 'active' : ''}" data-pendfilter="scope" data-pval="CLIENTE">Solo Cliente</button>
-      <button class="chip ${pendientesFilters.scope === 'GR_INTERNO' ? 'active' : ''}" data-pendfilter="scope" data-pval="GR_INTERNO">Solo GR Interno</button>
-      <button class="chip ${pendientesFilters.scope === 'PT_INTERNO' ? 'active' : ''}" data-pendfilter="scope" data-pval="PT_INTERNO">Solo PT Interno</button>
-      <button class="chip ${pendientesFilters.scope === 'INTERNO_TODO' ? 'active' : ''}" data-pendfilter="scope" data-pval="INTERNO_TODO">Todo Interno</button>
-    </div>
-    <div class="filters">
-      <span class="filter-label">Stage del deal:</span>
-      <button class="chip ${(pendientesFilters.stage||'ALL') === 'ALL' ? 'active' : ''}" data-pendfilter="stage" data-pval="ALL">Todos</button>
-      ${['Señal','Reply','Contactado','En Conv.','Atracción','Educación','Propuesta','Aprobación','Won'].map(st => `
-        <button class="chip ${pendientesFilters.stage === st ? 'active' : ''}" data-pendfilter="stage" data-pval="${st}">${st}</button>
-      `).join('')}
-      <button class="chip ${pendientesFilters.stage === 'SIN_DEAL' ? 'active' : ''}" data-pendfilter="stage" data-pval="SIN_DEAL" style="color:var(--text-dim);">Sin deal</button>
-    </div>
+    ${filtrosHTML('pendientes', allT, 'task')}
     <div class="filters">
       <span class="filter-label">Ordenar por:</span>
-      <button class="chip ${sortMode === 'urgency' ? 'active' : ''}" data-pendfilter="sort" data-pval="urgency">🎯 Urgencia</button>
-      <button class="chip ${sortMode === 'date_asc' ? 'active' : ''}" data-pendfilter="sort" data-pval="date_asc">📅 Fecha ↑ (más antigua)</button>
-      <button class="chip ${sortMode === 'date_desc' ? 'active' : ''}" data-pendfilter="sort" data-pval="date_desc">📅 Fecha ↓ (más reciente)</button>
+      <button class="chip ${sortMode === 'urgency' ? 'active' : ''}" data-f="pendientes" data-k="sort" data-v="urgency">🎯 Urgencia</button>
+      <button class="chip ${sortMode === 'date_asc' ? 'active' : ''}" data-f="pendientes" data-k="sort" data-v="date_asc">📅 Fecha ↑</button>
+      <button class="chip ${sortMode === 'date_desc' ? 'active' : ''}" data-f="pendientes" data-k="sort" data-v="date_desc">📅 Fecha ↓</button>
     </div>
     <div class="section-title">
       <span class="section-count">${filtered.length} tareas</span>
