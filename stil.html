@@ -204,21 +204,24 @@ function grDayKey(d) {
 <script>
 const EP='https://mikea.app.n8n.cloud/webhook/stil-prospeccion';
 const STIL_OK=['P_STL_','STIL_CB_','STIL_NAC_','STIL_AM_'];
-const ETAPAS_FIJAS=['Senal Detectada','Reply Recibido','Contactado','En Conversacion','Atraccion'];
+const ETAPAS_FIJAS=['Señal Detectada','Reply Recibido','Contactado','En Conversación','Atracción','Educación'];
 const EL={'Senal Detectada':'Señal Detectada','Reply Recibido':'Reply Recibido',Contactado:'Contactado','En Conversacion':'En Conversación',Atraccion:'Atracción',Educacion:'Educación','Qualified To Buy':'Qualified To Buy','Propuesta Enviada':'Propuesta Enviada','Aprobacion Verbal':'Aprobación Verbal','Decision Maker Bought-In':'Decision Maker Bought-In',Ganada:'Ganada',Perdida:'Perdida',Renovacion:'Renovación'};
 let DATA=null,fKanban='ALL',fProd='ALL';
 function semColorStil(x){return {rojo:'#DB0540',amarillo:'#FFCD00',verde:'#62D175'}[x]||'transparent';}
-var FILTpd={prod:'ALL',sem:'ALL',persona:'Todos'};
+var FILTpd={prod:'ALL',sem:'ALL',persona:'Todos',nueva:'ALL'};
 function catStil(){return (DATA&&DATA.catalogos)||{};}
 function prodsStil(){return (catStil().productos||[]).map(function(p){return p.id;});}
 function renderPendientes(){
   var box=document.getElementById('pd'); if(!box) return;
   var porP=(DATA&&DATA.tareasPorPersona)||{};
   var all=[]; Object.keys(porP).forEach(function(k){ all=all.concat(porP[k]||[]); });
+  var _am={}; (DATA.deals||[]).forEach(function(d){ var a=stAge(d.createdate); if(a!==null) _am[String(d.id)]=a; });
+  function nuevaPasaT(t){ if(FILTpd.nueva==='ALL') return true; var ids=t.matchedDealIds||[]; if(!ids.length) return false; return ids.some(function(id){ var a=_am[String(id)]; return a!==undefined && nuevaMatch(a,FILTpd.nueva); }); }
   function pasa(t){
     if(FILTpd.prod!=='ALL' && (t.prod||'')!==FILTpd.prod) return false;
     if(FILTpd.sem!=='ALL' && (t.semaforo||'')!==FILTpd.sem) return false;
     if(FILTpd.persona!=='Todos' && (t.persona||'')!==FILTpd.persona) return false;
+    if(!nuevaPasaT(t)) return false;
     return true;
   }
   var list=all.filter(pasa);
@@ -232,6 +235,7 @@ function renderPendientes(){
   h+='</div>';
   h+='<div class="fbar"><span class="flbl">Semáforo:</span>'+sems.map(function(x){return '<span class="chip '+(FILTpd.sem===x[0]?'on':'')+'" data-pd="sem" data-v="'+x[0]+'">'+x[1]+'</span>';}).join('')+'</div>';
   h+='<div class="fbar"><span class="flbl">Producto:</span><span class="chip '+(FILTpd.prod==='ALL'?'on':'')+'" data-pd="prod" data-v="ALL">Todos</span>'+prods.map(function(p){return '<span class="chip '+(FILTpd.prod===p?'on':'')+'" data-pd="prod" data-v="'+p+'">'+esc(p)+'</span>';}).join('')+'<span class="dcount">'+list.length+' tareas</span></div>';
+  h+='<div class="fbar">'+nuevaChipsPD(FILTpd.nueva)+'</div>';
   if(!list.length){ box.innerHTML=h+'<div class="nd" style="padding:40px 12px">Sin tareas pendientes. La estructura está lista: en cuanto se generen tareas en HubSpot (portal Clientes) aparecerán aquí.</div>'; return; }
   var uo={vencida:0,hoy:1,proxima:2,futura:3};
   list.sort(function(a,b){return (uo[a.urgency]-uo[b.urgency])||String(a.date||'').localeCompare(String(b.date||''));});
@@ -355,12 +359,17 @@ function renderPipeline(){
 function renderKpis(){
   const stilBS=window.__stilBS||{};
   const etapas=window.__etapasRender||ETAPAS_FIJAS;
-  const filt=k=>{ let ds=stilBS[k]||[]; if(fKanban!=='ALL') ds=ds.filter(d=>seqMatch(d.dealname,fKanban)); return ds; };
+  const filt=k=>{ let ds=stilBS[k]||[]; return ds.filter(stPasaPipe); };
   const sinPerdida=etapas.filter(k=>!/Perdida/i.test(k));
   const conPerdida=etapas.filter(k=>/Perdida/i.test(k));
   const totalActivos=sinPerdida.reduce((s,k)=>s+filt(k).length,0);
   const totalPerdida=conPerdida.reduce((s,k)=>s+filt(k).length,0);
   let kpiHtml='';
+  var _now=new Date();
+  var _eduMes=(stilBS['Educación']||[]).filter(function(d){ var f=new Date(d.created); return !isNaN(f)&&f.getMonth()===_now.getMonth()&&f.getFullYear()===_now.getFullYear(); }).length;
+  var _pctMeta=Math.round(_eduMes/20*100);
+  var _metaCol=_pctMeta>=100?'#34d399':_pctMeta>=50?'#FFCD00':'#EF4444';
+  kpiHtml+=`<div class="kpi" style="border-left:3px solid ${_metaCol};background:${_metaCol}12"><div class="kpi-n" style="color:${_metaCol}">${_eduMes}/20</div><div class="kpi-l">Meta citas (Educación) este mes</div><div class="kpi-p" style="color:${_metaCol}">${_pctMeta}% de la meta</div></div>`;
   sinPerdida.forEach(k=>{
     const n=filt(k).length;
     if(!n&&!ETAPAS_FIJAS.includes(k))return;
@@ -416,15 +425,21 @@ function renderKanban(){
 
 // ── PROSPECCIÓN ──
 let prodSel='ALL';
-var FILTst={ prosp:{sem:'ALL',canal:'ALL'}, pipe:{prod:'ALL',sem:'ALL'} };
+var FILTst={ prosp:{sem:'ALL',canal:'ALL'}, pipe:{prod:'ALL',sem:'ALL',stage:'ALL',nueva:'ALL'} };
+function stAge(created){ var f=new Date(created); if(isNaN(f)) return null; return Math.floor((Date.now()-f)/86400000); }
+function nuevaMatch(age,val){ if(val==='ALL') return true; if(age===null) return false; if(val==='s1')return age<=7; if(val==='s2')return age>=8&&age<=14; if(val==='s3')return age>=15&&age<=21; if(val==='s4')return age>=22&&age<=30; if(val==='g30')return age>30; if(val==='g45')return age>45; if(val==='g90')return age>90; return true; }
+function nuevaChipsST(menu,cur){ var opts=[['ALL','Todas'],['s1','Sem 1'],['s2','Sem 2'],['s3','Sem 3'],['s4','Sem 4'],['g30','>30d'],['g45','>45d'],['g90','>90d']]; var cols={s1:'#10B981',s2:'#34d399',s3:'#A3E635',s4:'#FFCD00',g30:'#F59E0B',g45:'#F97316',g90:'#EF4444'}; return '<span class="flbl">Nuevas:</span>'+opts.map(function(o){var st=cols[o[0]]?' style="border-color:'+cols[o[0]]+'80"':''; return '<span class="chip '+(cur===o[0]?'on':'')+'" data-st="'+menu+'" data-k="nueva" data-v="'+o[0]+'"'+st+'>'+o[1]+'</span>';}).join(''); }
+function nuevaChipsPD(cur){ var opts=[['ALL','Todas'],['s1','Sem 1'],['s2','Sem 2'],['s3','Sem 3'],['s4','Sem 4'],['g30','>30d'],['g45','>45d'],['g90','>90d']]; var cols={s1:'#10B981',s2:'#34d399',s3:'#A3E635',s4:'#FFCD00',g30:'#F59E0B',g45:'#F97316',g90:'#EF4444'}; return '<span class="flbl">Nuevas:</span>'+opts.map(function(o){var st=cols[o[0]]?' style="border-color:'+cols[o[0]]+'80"':''; return '<span class="chip '+(cur===o[0]?'on':'')+'" data-pd="nueva" data-v="'+o[0]+'"'+st+'>'+o[1]+'</span>';}).join(''); }
+function stStageList(){ var st=((DATA&&DATA.catalogos&&DATA.catalogos.stages)||[]).slice().sort(function(a,b){return a.prioridad-b.prioridad;}); var noP=st.filter(function(x){return !/Perdida/i.test(x.label);}); var pd=st.filter(function(x){return /Perdida/i.test(x.label);}); return noP.concat(pd).map(function(x){return x.label;}); }
+function stStageChips(menu,cur){ return '<span class="flbl">Stage:</span><span class="chip '+(cur==='ALL'?'on':'')+'" data-st="'+menu+'" data-k="stage" data-v="ALL">Todos</span>'+stStageList().map(function(l){return '<span class="chip '+(cur===l?'on':'')+'" data-st="'+menu+'" data-k="stage" data-v="'+esc(l)+'">'+esc(l)+'</span>';}).join(''); }
 function stCat(){return (DATA&&DATA.catalogos)||{};}
 function stProds(){return (stCat().productos||[]).map(function(p){return p.id;});}
 function stCanales(){return (stCat().canales||['LinkedIn','Email','Email DUO','WhatsApp']);}
 var SEMS_ST=[['ALL','Todos'],['rojo','\uD83D\uDD34 Vencidas'],['amarillo','\uD83D\uDFE1 Próximas'],['verde','\uD83D\uDFE2 Al día']];
 function semChipsST(menu,cur){return '<span class="flbl">Semáforo:</span>'+SEMS_ST.map(function(x){return '<span class="chip '+(cur===x[0]?'on':'')+'" data-st="'+menu+'" data-k="sem" data-v="'+x[0]+'">'+x[1]+'</span>';}).join('');}
-function stPasaPipe(d){ if(FILTst.pipe.prod!=='ALL'&&(d.producto||'')!==FILTst.pipe.prod) return false; if(FILTst.pipe.sem!=='ALL'&&(d.semaforo||'')!==FILTst.pipe.sem) return false; return true; }
-function renderPipeChips(){ var box=document.getElementById('pipe-chips'); if(!box) return; var prods=stProds(); var h='<span class="flbl">Producto:</span><span class="chip '+(FILTst.pipe.prod==='ALL'?'on':'')+'" data-st="pipe" data-k="prod" data-v="ALL">Todos</span>'+prods.map(function(p){return '<span class="chip '+(FILTst.pipe.prod===p?'on':'')+'" data-st="pipe" data-k="prod" data-v="'+p+'">'+esc(p)+'</span>';}).join('')+' &nbsp; '+semChipsST('pipe',FILTst.pipe.sem)+'<span class="dcount" id="dcnt"></span>'; box.innerHTML=h; }
-document.addEventListener('click',function(ev){ var b=ev.target.closest?ev.target.closest('[data-st]'):null; if(!b) return; var m=b.getAttribute('data-st'),k=b.getAttribute('data-k'),v=b.getAttribute('data-v'); if(!FILTst[m]) return; FILTst[m][k]=v; if(m==='pipe'){ renderKanban(); } else { renderChips(); renderTablas(); renderDetalleAuto(); } });
+function stPasaPipe(d){ if(FILTst.pipe.prod!=='ALL'&&(d.producto||'')!==FILTst.pipe.prod) return false; if(FILTst.pipe.sem!=='ALL'&&(d.semaforo||'')!==FILTst.pipe.sem) return false; if(FILTst.pipe.stage!=='ALL'&&(d.etapa||'')!==FILTst.pipe.stage) return false; if(!nuevaMatch(stAge(d.created),FILTst.pipe.nueva)) return false; return true; }
+function renderPipeChips(){ var box=document.getElementById('pipe-chips'); if(!box) return; var prods=stProds(); var h='<div class="fbar"><span class="flbl">Producto:</span><span class="chip '+(FILTst.pipe.prod==='ALL'?'on':'')+'" data-st="pipe" data-k="prod" data-v="ALL">Todos</span>'+prods.map(function(p){return '<span class="chip '+(FILTst.pipe.prod===p?'on':'')+'" data-st="pipe" data-k="prod" data-v="'+p+'">'+esc(p)+'</span>';}).join('')+'</div>'; h+='<div class="fbar">'+semChipsST('pipe',FILTst.pipe.sem)+'</div>'; h+='<div class="fbar">'+stStageChips('pipe',FILTst.pipe.stage)+'</div>'; h+='<div class="fbar">'+nuevaChipsST('pipe',FILTst.pipe.nueva)+'<span class="dcount" id="dcnt"></span></div>'; box.innerHTML=h; }
+document.addEventListener('click',function(ev){ var b=ev.target.closest?ev.target.closest('[data-st]'):null; if(!b) return; var m=b.getAttribute('data-st'),k=b.getAttribute('data-k'),v=b.getAttribute('data-v'); if(!FILTst[m]) return; FILTst[m][k]=v; if(m==='pipe'){ renderKpis(); renderKanban(); } else { renderChips(); renderTablas(); renderDetalleAuto(); } });
 
 function getEvsFiltrados(){
   const evs=DATA.eventos||[];
@@ -448,10 +463,10 @@ function renderProspeccion(){
 function renderEtapas(){
   const dbs=DATA.dealsByStage||{};
   const now=Date.now();
-  const COLORES_FIJAS={'Senal Detectada':'#EF4444','Reply Recibido':'#EF4444',Contactado:'#EF4444','En Conversacion':'#F59E0B',Atraccion:'#34d399',Educacion:'#34d399','Ganada':'#34d399',Perdida:'#6B7280'};
+  const COLORES_FIJAS={'Señal Detectada':'#EF4444','Reply Recibido':'#EF4444',Contactado:'#EF4444','En Conversación':'#F59E0B','Atracción':'#34d399','Educación':'#34d399','Ganada':'#34d399',Perdida:'#6B7280'};
 
   // Etapas fijas: siempre, en orden
-  const lista=ETAPAS_FIJAS.map(k=>({key:k,l:EL[k]||k,col:COLORES_FIJAS[k],venta:k==='Atraccion'}));
+  const lista=ETAPAS_FIJAS.map(k=>({key:k,l:EL[k]||k,col:COLORES_FIJAS[k],venta:k==='Atracción'}));
 
   // Etapas extra: en orden ETAPAS_ORDER, luego cualquier otra
   const extraOrdenadas=[...ETAPAS_ORDER.filter(k=>!ETAPAS_FIJAS.includes(k)&&Object.keys(dbs).includes(k)),...Object.keys(dbs).filter(k=>!ETAPAS_FIJAS.includes(k)&&!ETAPAS_ORDER.includes(k))];
@@ -732,13 +747,13 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')cM();});
 
 
 // ── MÉTRICAS PIPELINE ──
-const ETAPAS_ORDER=['Senal Detectada','Reply Recibido','Contactado','En Conversacion','Atraccion','Educacion','Qualified To Buy','Propuesta Enviada','Aprobacion Verbal','Decision Maker Bought-In','Ganada','Perdida','Renovacion'];
+const ETAPAS_ORDER=['Señal Detectada','Reply Recibido','Contactado','En Conversación','Atracción','Educación','Qualified To Buy','Propuesta Enviada','Aprobación Verbal','Decision Maker Bought-In','Ganada','Perdida','Renovación'];
 const ETAPA_COLORES={
-  'Senal Detectada':'#EF4444','Reply Recibido':'#EF4444','Contactado':'#EF4444',
-  'En Conversacion':'#F59E0B',
-  'Atraccion':'#34d399','Educacion':'#34d399','Qualified To Buy':'#34d399',
-  'Propuesta Enviada':'#34d399','Aprobacion Verbal':'#34d399','Decision Maker Bought-In':'#34d399',
-  'Ganada':'#34d399','Perdida':'#6B7280','Renovacion':'#06B6D4'
+  'Señal Detectada':'#EF4444','Reply Recibido':'#EF4444','Contactado':'#EF4444',
+  'En Conversación':'#F59E0B',
+  'Atracción':'#34d399','Educación':'#34d399','Qualified To Buy':'#34d399',
+  'Propuesta Enviada':'#34d399','Aprobación Verbal':'#34d399','Decision Maker Bought-In':'#34d399',
+  'Ganada':'#34d399','Perdida':'#6B7280','Renovación':'#06B6D4'
 };
 const ETAPA_LABEL={
   'Senal Detectada':'Señal Detectada','Reply Recibido':'Reply Recibido','Contactado':'Contactado',
