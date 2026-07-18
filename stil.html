@@ -155,14 +155,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
   <div id="pl" class="loading"><div class="spinner"></div>Cargando…</div>
   <div id="pl-c" style="display:none">
     <div class="kpi-grid" id="kpis"></div>
-    <div class="fbar">
-      <span class="flbl">Secuencia:</span>
-      <button class="chip on" onclick="fK('ALL',this)">ALL</button>
-      <button class="chip" onclick="fK('CB',this)">P_STL_CB</button>
-      <button class="chip" onclick="fK('NAC',this)">P_STL_NAC</button>
-      <button class="chip" onclick="fK('OTROS',this)">Otros</button>
-      <span class="dcount" id="dcnt"></span>
-    </div>
+    <div class="fbar" id="pipe-chips"></div>
     <div class="kw"><div class="kanban" id="kanban"></div></div>
   </div>
 </div>
@@ -394,12 +387,13 @@ function fK(seq,el){
 }
 
 function renderKanban(){
+  renderPipeChips();
   const stilBS=window.__stilBS||{};
   const etapas=window.__etapasRender||ETAPAS_FIJAS;
   let vis=0;
   document.getElementById('kanban').innerHTML=etapas.map(etapa=>{
     let ds=stilBS[etapa]||[];
-    if(fKanban!=='ALL') ds=ds.filter(d=>seqMatch(d.dealname,fKanban));
+    ds=ds.filter(stPasaPipe);
     vis+=ds.length;
     const cards=ds.map(d=>{
       const{empresa,persona}=parseDeal(d.dealname);
@@ -422,15 +416,22 @@ function renderKanban(){
 
 // ── PROSPECCIÓN ──
 let prodSel='ALL';
+var FILTst={ prosp:{sem:'ALL',canal:'ALL'}, pipe:{prod:'ALL',sem:'ALL'} };
+function stCat(){return (DATA&&DATA.catalogos)||{};}
+function stProds(){return (stCat().productos||[]).map(function(p){return p.id;});}
+function stCanales(){return (stCat().canales||['LinkedIn','Email','Email DUO','WhatsApp']);}
+var SEMS_ST=[['ALL','Todos'],['rojo','\uD83D\uDD34 Vencidas'],['amarillo','\uD83D\uDFE1 Próximas'],['verde','\uD83D\uDFE2 Al día']];
+function semChipsST(menu,cur){return '<span class="flbl">Semáforo:</span>'+SEMS_ST.map(function(x){return '<span class="chip '+(cur===x[0]?'on':'')+'" data-st="'+menu+'" data-k="sem" data-v="'+x[0]+'">'+x[1]+'</span>';}).join('');}
+function stPasaPipe(d){ if(FILTst.pipe.prod!=='ALL'&&(d.producto||'')!==FILTst.pipe.prod) return false; if(FILTst.pipe.sem!=='ALL'&&(d.semaforo||'')!==FILTst.pipe.sem) return false; return true; }
+function renderPipeChips(){ var box=document.getElementById('pipe-chips'); if(!box) return; var prods=stProds(); var h='<span class="flbl">Producto:</span><span class="chip '+(FILTst.pipe.prod==='ALL'?'on':'')+'" data-st="pipe" data-k="prod" data-v="ALL">Todos</span>'+prods.map(function(p){return '<span class="chip '+(FILTst.pipe.prod===p?'on':'')+'" data-st="pipe" data-k="prod" data-v="'+p+'">'+esc(p)+'</span>';}).join('')+' &nbsp; '+semChipsST('pipe',FILTst.pipe.sem)+'<span class="dcount" id="dcnt"></span>'; box.innerHTML=h; }
+document.addEventListener('click',function(ev){ var b=ev.target.closest?ev.target.closest('[data-st]'):null; if(!b) return; var m=b.getAttribute('data-st'),k=b.getAttribute('data-k'),v=b.getAttribute('data-v'); if(!FILTst[m]) return; FILTst[m][k]=v; if(m==='pipe'){ renderKanban(); } else { renderChips(); renderTablas(); renderDetalleAuto(); } });
 
 function getEvsFiltrados(){
   const evs=DATA.eventos||[];
-  if(prodSel==='ALL') return evs;
-  return evs.filter(e=>{
-    const c=String(e.campana||'').toUpperCase();
-    const emp=String(e.empresa||'').toUpperCase();
-    if(prodSel==='CB') return c.startsWith('CB_')||emp.includes('CB_')||emp.includes('_STL_CB');
-    if(prodSel==='NAC') return (!c.startsWith('CB_')&&c.length>0)||(emp.includes('NAC_')||emp.includes('_STL_NAC'));
+  return evs.filter(function(e){
+    if(prodSel!=='ALL' && (e.prod||'')!==prodSel) return false;
+    if(FILTst.prosp.sem!=='ALL' && (e.semaforo||'')!==FILTst.prosp.sem) return false;
+    if(FILTst.prosp.canal!=='ALL' && (e.canal||'')!==FILTst.prosp.canal) return false;
     return true;
   });
 }
@@ -505,8 +506,11 @@ function renderEtapas(){
 }
 
 function renderChips(){
-  const chips=['ALL','CB','NAC'].map(v=>`<button class="chip${prodSel===v?' on':''}" onclick="setProd('${v}',this)">${v==='ALL'?'Todos':'P_STL_'+v}</button>`).join('');
-  document.getElementById('prosp-chips').innerHTML='<span class="flbl">Secuencia:</span>'+chips;
+  var prods=stProds();
+  var h='<span class="flbl">Producto:</span>'+['ALL'].concat(prods).map(function(v){return '<span class="chip '+(prodSel===v?'on':'')+'" onclick="setProd(\''+v+'\',this)">'+(v==='ALL'?'Todos':esc(v))+'</span>';}).join('');
+  h+=' &nbsp; '+semChipsST('prosp',FILTst.prosp.sem);
+  h+=' &nbsp; <span class="flbl">Canal:</span>'+['ALL'].concat(stCanales()).map(function(v){return '<span class="chip '+(FILTst.prosp.canal===v?'on':'')+'" data-st="prosp" data-k="canal" data-v="'+v+'">'+(v==='ALL'?'Todos':esc(v))+'</span>';}).join('');
+  document.getElementById('prosp-chips').innerHTML=h;
 }
 
 function setProd(v,el){prodSel=v;renderChips();renderTablas();renderDetalleAuto();}
