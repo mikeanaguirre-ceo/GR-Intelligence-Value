@@ -208,7 +208,7 @@ const ETAPAS_FIJAS=['Señal Detectada','Reply Recibido','Contactado','En Convers
 const EL={'Senal Detectada':'Señal Detectada','Reply Recibido':'Reply Recibido',Contactado:'Contactado','En Conversacion':'En Conversación',Atraccion:'Atracción',Educacion:'Educación','Qualified To Buy':'Qualified To Buy','Propuesta Enviada':'Propuesta Enviada','Aprobacion Verbal':'Aprobación Verbal','Decision Maker Bought-In':'Decision Maker Bought-In',Ganada:'Ganada',Perdida:'Perdida',Renovacion:'Renovación'};
 let DATA=null,fKanban='ALL',fProd='ALL';
 function semColorStil(x){return {rojo:'#DB0540',amarillo:'#FFCD00',verde:'#62D175'}[x]||'transparent';}
-var FILTpd={prod:'ALL',sem:'ALL',persona:'Todos',nueva:'ALL'};
+var FILTpd={prod:'ALL',sem:'ALL',persona:'Todos',nueva:'ALL',sort:'urgency'};
 function catStil(){return (DATA&&DATA.catalogos)||{};}
 function prodsStil(){return (catStil().productos||[]).map(function(p){return p.id;});}
 function renderPendientes(){
@@ -220,34 +220,51 @@ function renderPendientes(){
   function pasa(t){
     if(FILTpd.prod!=='ALL' && (t.prod||'')!==FILTpd.prod) return false;
     if(FILTpd.sem!=='ALL' && (t.semaforo||'')!==FILTpd.sem) return false;
-    if(FILTpd.persona!=='Todos' && (t.persona||'')!==FILTpd.persona) return false;
     if(!nuevaPasaT(t)) return false;
     return true;
   }
   var list=all.filter(pasa);
-  var prods=prodsStil();
-  var personas=Object.keys(porP);
-  var sems=[['ALL','Todos'],['rojo','\uD83D\uDD34 Vencidas'],['amarillo','\uD83D\uDFE1 Próximas'],['verde','\uD83D\uDFE2 Al día']];
-  var h='<div class="ptitle">Pendientes</div><div class="psub">Tareas por atender · modelo GR (portal Clientes)</div>';
-  h+='<div class="fbar"><span class="flbl">Semáforo:</span>'+sems.map(function(x){return '<span class="chip '+(FILTpd.sem===x[0]?'on':'')+'" data-pd="sem" data-v="'+x[0]+'">'+x[1]+'</span>';}).join('')+'</div>';
-  h+='<div class="fbar"><span class="flbl">Producto:</span><span class="chip '+(FILTpd.prod==='ALL'?'on':'')+'" data-pd="prod" data-v="ALL">Todos</span>'+prods.map(function(p){return '<span class="chip '+(FILTpd.prod===p?'on':'')+'" data-pd="prod" data-v="'+p+'">'+esc(p)+'</span>';}).join('')+'<span class="dcount">'+list.length+' tareas</span></div>';
-  h+='<div class="fbar">'+nuevaChipsPD(FILTpd.nueva)+'</div>';
-  if(!list.length){ box.innerHTML=h+'<div class="nd" style="padding:40px 12px">Sin tareas pendientes. La estructura está lista: en cuanto se generen tareas en HubSpot (portal Clientes) aparecerán aquí.</div>'; return; }
+  var st={total:all.length, venc:0, hoy:0, prox:0};
+  all.forEach(function(t){ if(t.urgency==='vencida')st.venc++; else if(t.urgency==='hoy')st.hoy++; else if(t.urgency==='proxima')st.prox++; });
+  var sortMode=FILTpd.sort||'urgency';
   var uo={vencida:0,hoy:1,proxima:2,futura:3};
-  list.sort(function(a,b){return (uo[a.urgency]-uo[b.urgency])||String(a.date||'').localeCompare(String(b.date||''));});
-  h+='<div class="pv4-grid">';
-  list.forEach(function(t){
-    var sc=semColorStil(t.semaforo);
-    var etapas=(t.dealStages||[]).join(', ');
-    h+='<div class="pv4-card"><div class="pv4-accent" style="background:'+sc+'"></div>'+
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><div class="pv4-co">'+esc(t.client||'—')+'</div><div class="pv4-sub">'+esc(t.title||'')+'</div></div>'+
-      '<span class="pv4-badge" style="background:'+sc+'22;color:'+sc+';border:1px solid '+sc+'44">'+esc(t.date||'—')+'</span></div>'+
-      '<div class="pv4-tags"><span class="pv4-tg prod">'+esc(t.prod||'')+'</span>'+(etapas?'<span class="pv4-tg ch">'+esc(etapas)+'</span>':'')+'<span class="pv4-tg">'+esc(t.persona||'')+'</span></div>'+
-      '</div>';
+  list.sort(function(a,b){
+    if(sortMode==='date_asc') return String(a.date||'9999').localeCompare(String(b.date||'9999'));
+    if(sortMode==='date_desc') return String(b.date||'0000').localeCompare(String(a.date||'0000'));
+    return (((uo[a.urgency]===undefined?5:uo[a.urgency]))-((uo[b.urgency]===undefined?5:uo[b.urgency])))||String(a.date||'9999').localeCompare(String(b.date||'9999'));
   });
-  h+='</div>';
+  var prods=prodsStil();
+  var sems=[['ALL','Todos'],['rojo','\uD83D\uDD34 Vencidas'],['amarillo','\uD83D\uDFE1 Pr\u00f3ximas'],['verde','\uD83D\uDFE2 Al d\u00eda']];
+  var h='<div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">'+
+    '<div class="kpi"><div class="kpi-n">'+st.total+'</div><div class="kpi-l">Total pendientes</div></div>'+
+    '<div class="kpi" style="border-left:3px solid #DB0540"><div class="kpi-n" style="color:#DB0540">'+st.venc+'</div><div class="kpi-l">Vencidas</div></div>'+
+    '<div class="kpi" style="border-left:3px solid #FFCD00"><div class="kpi-n" style="color:#FFCD00">'+st.hoy+'</div><div class="kpi-l">Hoy</div></div>'+
+    '<div class="kpi" style="border-left:3px solid #62D175"><div class="kpi-n" style="color:#62D175">'+st.prox+'</div><div class="kpi-l">Pr\u00f3ximas (3d)</div></div>'+
+    '</div>';
+  h+='<div class="fbar"><span class="flbl">Sem\u00e1foro:</span>'+sems.map(function(x){return '<span class="chip '+(FILTpd.sem===x[0]?'on':'')+'" data-pd="sem" data-v="'+x[0]+'">'+x[1]+'</span>';}).join('')+'</div>';
+  h+='<div class="fbar"><span class="flbl">Producto:</span><span class="chip '+(FILTpd.prod==='ALL'?'on':'')+'" data-pd="prod" data-v="ALL">Todos</span>'+prods.map(function(p){return '<span class="chip '+(FILTpd.prod===p?'on':'')+'" data-pd="prod" data-v="'+p+'">'+esc(p)+'</span>';}).join('')+'</div>';
+  h+='<div class="fbar">'+nuevaChipsPD(FILTpd.nueva)+'</div>';
+  h+='<div class="fbar"><span class="flbl">Ordenar:</span>'+
+    '<span class="chip '+(sortMode==='urgency'?'on':'')+'" data-pd="sort" data-v="urgency">\uD83C\uDFAF Urgencia</span>'+
+    '<span class="chip '+(sortMode==='date_asc'?'on':'')+'" data-pd="sort" data-v="date_asc">\uD83D\uDCC5 Fecha \u2191</span>'+
+    '<span class="chip '+(sortMode==='date_desc'?'on':'')+'" data-pd="sort" data-v="date_desc">\uD83D\uDCC5 Fecha \u2193</span>'+
+    '<span class="dcount">'+list.length+' tareas</span></div>';
+  if(!list.length){ box.innerHTML=h+'<div class="nd" style="padding:36px 12px">Sin tareas con estos filtros. Si esperabas tareas y no salen, revisa que el nodo "Tareas Clientes STIL" en n8n tenga asignada su credencial de Clientes.</div>'; return; }
+  var UE={vencida:'\uD83D\uDD34',hoy:'\uD83D\uDFE1',proxima:'\uD83D\uDFE2',futura:'\u26AA'};
+  h+='<div class="tw"><table class="tbl"><thead><tr><th style="width:34px"></th><th>TAREA</th><th>CLIENTE</th><th style="width:60px">PROD</th><th style="width:90px">FECHA</th></tr></thead><tbody>';
+  list.slice(0,200).forEach(function(t){
+    var badges=(t.dealStages||[]).slice(0,2).map(function(x){return '<span style="margin-left:5px;font-size:9px;background:#1f2937;color:#9CA3AF;padding:1px 5px;border-radius:6px">'+esc(x)+'</span>';}).join('');
+    h+='<tr><td style="text-align:center">'+(UE[t.urgency]||'\u26AB')+'</td>'+
+      '<td>'+esc(t.title||'\u2014')+'</td>'+
+      '<td><small>'+esc(t.client||'\u2014')+'</small>'+badges+'</td>'+
+      '<td><small>'+esc(t.prod||'')+'</small></td>'+
+      '<td><small>'+fmtFecha(t.date)+'</small></td></tr>';
+  });
+  h+='</tbody></table></div>';
+  if(list.length>200) h+='<div class="nd" style="padding:10px;font-size:11px">Mostrando 200 de '+list.length+'</div>';
   box.innerHTML=h;
 }
+
 document.addEventListener('click',function(ev){
   var b=ev.target.closest?ev.target.closest('[data-pd]'):null; if(!b) return;
   FILTpd[b.getAttribute('data-pd')]=b.getAttribute('data-v'); renderPendientes();
