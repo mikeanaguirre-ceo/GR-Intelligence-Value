@@ -398,22 +398,20 @@ function stStagesForSelect(){ var st=((DATA.catalogos&&DATA.catalogos.stages)||[
 var OWNERS={'77808624':'Migue','82004391':'Martha'};
 async function cargarActividades(endpoint,dealId,containerId){
   var box=document.getElementById(containerId); if(!box) return;
-  box.innerHTML='<div style="color:#6B7280;font-size:12px">Cargando actividades…</div>';
+  box.innerHTML='<div style="color:#6B7280;font-size:11px">Cargando tareas…</div>';
   try{
     var r=await fetch(endpoint+'?dealId='+encodeURIComponent(dealId));
     var data=await r.json();
-    var results=(data&&data.results)||[];
-    if(!results.length){ box.innerHTML='<div style="color:#6B7280;font-size:12px">Sin actividades registradas para este deal.</div>'; return; }
+    var tasks=((data&&data.results)||[]).filter(function(x){return (x.engagement&&x.engagement.type)==='TASK';});
+    if(!tasks.length){ box.innerHTML='<div style="color:#6B7280;font-size:11px">Sin tareas asociadas a esta oportunidad.</div>'; return; }
     var byOwner={};
-    results.forEach(function(x){ var e=x.engagement||{}; var oid=String(e.ownerId||'—'); (byOwner[oid]=byOwner[oid]||[]).push(x); });
-    var TI={NOTE:'📝',TASK:'✅',CALL:'📞',EMAIL:'✉️',INCOMING_EMAIL:'✉️',MEETING:'📅'};
+    tasks.forEach(function(x){ var oid=String((x.engagement||{}).ownerId||'—'); (byOwner[oid]=byOwner[oid]||[]).push(x); });
     var html='';
     Object.keys(byOwner).forEach(function(oid){
-      var nm=OWNERS[oid]||('Owner '+oid);
-      var acts=byOwner[oid].sort(function(a,b){return (b.engagement.timestamp||0)-(a.engagement.timestamp||0);});
-      html+='<div style="margin-bottom:9px"><div style="font-weight:800;color:#E5E7EB;font-size:12px;margin-bottom:3px">'+esc(nm)+' <span style="color:#6B7280;font-weight:600">· '+acts.length+'</span></div>';
-      acts.slice(0,12).forEach(function(x){ var e=x.engagement||{}; var m=x.metadata||{}; var dd=e.timestamp?new Date(e.timestamp).toISOString().slice(0,10):''; var subj=m.subject||m.title||m.body||e.type||''; subj=String(subj).replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').trim().slice(0,64); html+='<div style="font-size:11px;color:#9CA3AF;padding:2px 0;line-height:1.4">'+(TI[e.type]||'•')+' <span style="color:#6B7280">'+dd+'</span> · '+esc(subj)+'</div>'; });
-      html+='</div>';
+      var nm=OWNERS[oid]||('Persona '+oid);
+      var ts=byOwner[oid].sort(function(a,b){return (b.engagement.timestamp||0)-(a.engagement.timestamp||0);});
+      html+='<div style="font-weight:800;color:#E5E7EB;font-size:11px;margin:3px 0 1px">'+esc(nm)+' <span style="color:#6B7280;font-weight:600">· '+ts.length+'</span></div>';
+      ts.forEach(function(x){ var m=x.metadata||{}; var done=String(m.status||'').toUpperCase()==='COMPLETED'; var subj=String(m.subject||m.body||'Tarea').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').trim().slice(0,72); html+='<div style="font-size:11px;color:'+(done?'#4B5563':'#9CA3AF')+';padding:1px 0;line-height:1.35">'+(done?'✅':'⬜')+' '+esc(subj)+'</div>'; });
     });
     box.innerHTML=html;
   }catch(err){ box.innerHTML='<div style="color:#EF4444;font-size:12px">No se pudieron cargar las actividades.</div>'; }
@@ -899,8 +897,8 @@ cargarDatos();
     <select id="md-stage" style="width:100%;margin:5px 0 14px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #374151;color:#F3F4F6;font-size:14px;"></select>
     <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Fecha de cierre</label>
     <input id="md-close" type="date" style="width:100%;margin:5px 0 14px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #374151;color:#F3F4F6;font-size:14px;">
-    <div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Actividades por persona</div>
-    <div id="md-acts" style="max-height:180px;overflow:auto;margin:6px 0 12px;border:1px solid #2A3142;border-radius:9px;padding:9px;background:#0d111a;"></div>
+    <div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Tareas por persona</div>
+    <div id="md-acts" style="max-height:82px;overflow:auto;margin:6px 0 12px;border:1px solid #2A3142;border-radius:9px;padding:8px 9px;background:#0d111a;"></div>
     <div id="md-status" style="font-size:12px;margin:4px 0;min-height:16px;font-weight:700;"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
       <button onclick="cerrarModal()" style="background:#1f2937;border:1px solid #374151;border-radius:9px;padding:9px 16px;color:#D1D5DB;cursor:pointer;">Cancelar</button>
