@@ -410,8 +410,8 @@ async function cargarActividades(endpoint,dealId,containerId){
     Object.keys(byOwner).forEach(function(oid){
       var nm=OWNERS[oid]||('Persona '+oid);
       var ts=byOwner[oid].sort(function(a,b){return (b.engagement.timestamp||0)-(a.engagement.timestamp||0);});
-      html+='<div style="font-weight:800;color:#E5E7EB;font-size:11px;margin:3px 0 1px">'+esc(nm)+' <span style="color:#6B7280;font-weight:600">· '+ts.length+'</span></div>';
-      ts.forEach(function(x){ var m=x.metadata||{}; var done=String(m.status||'').toUpperCase()==='COMPLETED'; var subj=String(m.subject||m.body||'Tarea').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').trim().slice(0,72); html+='<div style="font-size:11px;color:'+(done?'#4B5563':'#9CA3AF')+';padding:1px 0;line-height:1.35">'+(done?'✅':'⬜')+' '+esc(subj)+'</div>'; });
+      html+='<div style="font-weight:800;color:#F3F4F6;font-size:13px;margin:9px 0 4px">'+esc(nm)+' <span style="color:#9CA3AF;font-weight:600;font-size:12px">· '+ts.length+' tarea'+(ts.length!==1?'s':'')+'</span></div>';
+      ts.forEach(function(x){ var e=x.engagement||{}; var m=x.metadata||{}; var done=String(m.status||'').toUpperCase()==='COMPLETED'; var dts=e.timestamp||0; var now=Date.now(); var col=done?'#6B7280':(dts&&dts<now?'#DB0540':(dts&&(dts-now)<3*86400000?'#FFCD00':'#62D175')); var subj=String(m.subject||m.body||'Tarea').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').trim().slice(0,90); var dd=dts?new Date(dts).toISOString().slice(0,10):''; html+='<div style="display:flex;align-items:center;gap:9px;font-size:13px;padding:5px 0;line-height:1.4;border-bottom:1px solid rgba(255,255,255,.05)"><span style="width:10px;height:10px;border-radius:50%;background:'+col+';flex:none"></span><span style="flex:1;color:'+(done?'#6B7280':'#E5E7EB')+';'+(done?'text-decoration:line-through':'')+'">'+esc(subj)+'</span><span style="color:#9CA3AF;font-size:11px;flex:none">'+dd+'</span></div>'; });
     });
     box.innerHTML=html;
   }catch(err){ box.innerHTML='<div style="color:#EF4444;font-size:12px">No se pudieron cargar las actividades.</div>'; }
@@ -887,7 +887,7 @@ function renderPipelineMetrics(pool){
 cargarDatos();
 </script>
 <div id="modal-edit" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;align-items:center;justify-content:center;padding:16px;">
-  <div style="background:#111827;border:1px solid #374151;border-radius:16px;max-width:440px;width:100%;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.5);">
+  <div style="background:#111827;border:1px solid #374151;border-radius:16px;max-width:560px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.5);">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
       <div id="md-title" style="font-size:16px;font-weight:800;color:#F3F4F6;"></div>
       <button onclick="cerrarModal()" style="background:none;border:none;color:#9CA3AF;font-size:22px;cursor:pointer;line-height:1;">×</button>
@@ -898,7 +898,7 @@ cargarDatos();
     <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Fecha de cierre</label>
     <input id="md-close" type="date" style="width:100%;margin:5px 0 14px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #374151;color:#F3F4F6;font-size:14px;">
     <div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Tareas por persona</div>
-    <div id="md-acts" style="max-height:82px;overflow:auto;margin:6px 0 12px;border:1px solid #2A3142;border-radius:9px;padding:8px 9px;background:#0d111a;"></div>
+    <div id="md-acts" style="max-height:220px;overflow:auto;margin:6px 0 14px;border:1px solid #2A3142;border-radius:10px;padding:10px 12px;background:#0d111a;"></div>
     <div id="md-status" style="font-size:12px;margin:4px 0;min-height:16px;font-weight:700;"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
       <button onclick="cerrarModal()" style="background:#1f2937;border:1px solid #374151;border-radius:9px;padding:9px 16px;color:#D1D5DB;cursor:pointer;">Cancelar</button>
