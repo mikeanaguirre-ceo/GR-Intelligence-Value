@@ -843,6 +843,7 @@ const CAT_FALLBACK = {
 };
 function CAT(){ return (typeof DATA !== 'undefined' && DATA && DATA.catalogos) ? DATA.catalogos : CAT_FALLBACK; }
 function grEsc(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtFecha(s){ if(!s||s==='null') return ''; var d=new Date(s); if(isNaN(d)) return ''; var M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; return d.getUTCDate()+' '+M[d.getUTCMonth()]+' '+String(d.getUTCFullYear()).slice(2); }
 function grStagesForSelect(){ var st=((CAT().stages)||CAT_FALLBACK.stages||[]).slice().sort(function(a,b){return a.prioridad-b.prioridad;}); var noP=st.filter(function(x){return !/Perdida/i.test(x.label);}); var pd=st.filter(function(x){return /Perdida/i.test(x.label);}); return noP.concat(pd); }
 var GR_OWNERS={'77808624':'Migue','82004391':'Martha'};
 async function cargarActividadesGR(dealId,containerId){
@@ -873,7 +874,7 @@ function abrirEditarDealGR(dealId){
   document.getElementById('grmd-info').innerHTML='<b>Producto:</b> '+grEsc(d.prod||'—')+' &nbsp; <b>Monto:</b> $'+((d.amount||0).toLocaleString());
   var stgs=grStagesForSelect(); var curId=''; stgs.forEach(function(x){ if(x.id===d.stage) curId=x.id; });
   document.getElementById('grmd-stage').innerHTML=stgs.map(function(x){return '<option value="'+x.id+'"'+(x.id===curId?' selected':'')+'>'+grEsc(x.label)+'</option>';}).join('');
-  document.getElementById('grmd-close').value=String(d.closedate||'').slice(0,10);
+  document.getElementById('grmd-close').value=(d.closedate&&d.closedate!=='null')?String(d.closedate).slice(0,10):'';
   document.getElementById('grmd-status').textContent=''; document.getElementById('grmd-save').disabled=false;
   document.getElementById('gr-modal-edit').style.display='flex';
   cargarActividadesGR(dealId, 'grmd-acts');
@@ -1573,7 +1574,7 @@ function renderPipeline() {
               <span title="Antigüedad de creación" style="width:8px;height:8px;border-radius:50%;background:${nuevaCol(d)};display:inline-block;margin-left:auto;"></span>
             </div>
             ${_perChips}
-            ${d.closedate ? `<div class="kanban-card-date ${dateClass}">${d.closedate}</div>` : ''}
+            ${d.closedate ? `<div class="kanban-card-date ${dateClass}">${fmtFecha(d.closedate)}</div>` : ''}
             <div style="text-align:right;margin-top:2px"><span onclick="event.stopPropagation();abrirEditarDealGR('${d.id}')" title="Editar" style="cursor:pointer;font-size:13px;opacity:.5">✏️</span></div>
           </div>
         `;
