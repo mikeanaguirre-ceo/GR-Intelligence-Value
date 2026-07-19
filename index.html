@@ -2045,6 +2045,7 @@ function renderPendientes() {
         <th style="width:30px;"></th>
         <th>Tarea</th>
         <th>Cliente</th>
+        <th>Stage</th>
         ${current === 'Todos' ? '<th>Persona</th>' : ''}
         <th>Producto</th>
         <th>Fecha</th>
@@ -2054,7 +2055,7 @@ function renderPendientes() {
   `;
 
   if (filtered.length === 0) {
-    html += `<tr><td colspan="${current === 'Todos' ? 7 : 6}" class="empty">Sin tareas con estos filtros 🎉</td></tr>`;
+    html += `<tr><td colspan="${current === 'Todos' ? 8 : 7}" class="empty">Sin tareas con estos filtros 🎉</td></tr>`;
   }
 
   filtered.slice(0, 150).forEach(t => {
@@ -2080,10 +2081,11 @@ function renderPendientes() {
     html += `<tr class="${rowClass}">
       <td>${urgColor}</td>
       <td>${t.title} ${prioTag} ${scopeTag}</td>
-      <td><small>${t.client || '—'}</small>${stageBadges}</td>
+      <td><small>${t.client || '—'}</small></td>
+      <td>${stageBadges || '<span style="color:var(--text-mute);">—</span>'}</td>
       ${current === 'Todos' ? `<td><strong>${t.persona}</strong></td>` : ''}
       <td><small>${t.prod || '—'}</small></td>
-      <td><small>${t.date || '—'}</small></td>
+      <td><small>${fmtFecha(t.date) || '—'}</small></td>
       <td style="text-align:center;"><button class="task-edit-btn" title="Editar / cerrar / siguiente"
         data-tid="${t.id || ''}"
         data-did="${(t.matchedDealIds && t.matchedDealIds[0]) || ''}"
