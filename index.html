@@ -1413,15 +1413,18 @@ function renderOverview() {
 // Orden de stages para Kanban (columnas de izquierda a derecha)
 const STAGE_ORDER = catStagesAct().map(function(s){return {key:s.id,label:s.label,id:s.id};}); // catálogo (CAT)
 const STAGE_ORDER_K = STAGE_ORDER.concat([{key:'1092009814',label:'Perdida',id:'1092009814'}]);
-function nuevaMatch(createdate,val){ if(val==='ALL') return true; var f=new Date(createdate); if(isNaN(f)) return false; var now=new Date(); var sameMonth=f.getMonth()===now.getMonth()&&f.getFullYear()===now.getFullYear(); var age=Math.floor((now-f)/86400000); var dom=f.getDate(); if(val==='s1')return sameMonth&&dom<=7; if(val==='s2')return sameMonth&&dom>=8&&dom<=14; if(val==='s3')return sameMonth&&dom>=15&&dom<=21; if(val==='s4')return sameMonth&&dom>=22; if(val==='g30')return age>30; if(val==='g45')return age>45; if(val==='g90')return age>90; return true; }
+function nuevaMatch(createdate,val){ if(val==='ALL') return true; var f=new Date(createdate); if(isNaN(f)) return false; var now=new Date(); var sameMonth=f.getMonth()===now.getMonth()&&f.getFullYear()===now.getFullYear(); var age=Math.floor((now-f)/86400000); var dom=f.getDate(); if(val==='mes')return sameMonth; if(val==='s1')return sameMonth&&dom<=7; if(val==='s2')return sameMonth&&dom>=8&&dom<=14; if(val==='s3')return sameMonth&&dom>=15&&dom<=21; if(val==='s4')return sameMonth&&dom>=22; if(val==='g30')return age>30; if(val==='g45')return age>45; if(val==='g90')return age>90; return true; }
 function nuevaPasa(d,val){ return nuevaMatch(d.createdate,val); }
 function metaNuevas(goal){
   var prioMap={}; ((typeof CAT==='function'?CAT().stages:null)||CAT_FALLBACK.stages||[]).forEach(function(s){prioMap[s.id]=s.prioridad;});
-  var _ss=FILT.pipeline.stage,_sm=FILT.pipeline.sem; FILT.pipeline.stage='ALL'; FILT.pipeline.sem='ALL';
-  var eduPlus=(DATA.deals||[]).filter(function(d){ var p=prioMap[d.stage]; if(p===undefined||p<6||p>10) return false; if(FILT.pipeline.excludeP&&d.name&&d.name.startsWith('P_')) return false; if(!nuevaPasa(d,FILT.pipeline.nueva)) return false; return pasaFiltro('pipeline',d,'deal'); }).length;
-  FILT.pipeline.stage=_ss; FILT.pipeline.sem=_sm;
-  var pct=Math.round(eduPlus/goal*100);
-  return {goal:goal,eduPlus:eduPlus,pct:pct};
+  var now=new Date();
+  var _ss=FILT.pipeline.stage,_sm=FILT.pipeline.sem,_sn=FILT.pipeline.nueva; FILT.pipeline.stage='ALL'; FILT.pipeline.sem='ALL'; FILT.pipeline.nueva='ALL';
+  var eduPlus=(DATA.deals||[]).filter(function(d){ var p=prioMap[d.stage]; if(p===undefined||p<6||p>10) return false; var f=new Date(d.createdate); if(isNaN(f)||f.getMonth()!==now.getMonth()||f.getFullYear()!==now.getFullYear()) return false; if(FILT.pipeline.excludeP&&d.name&&d.name.startsWith('P_')) return false; return pasaFiltro('pipeline',d,'deal'); }).length;
+  FILT.pipeline.stage=_ss; FILT.pipeline.sem=_sm; FILT.pipeline.nueva=_sn;
+  var week=Math.min(4,Math.max(1,Math.ceil(now.getDate()/7)));
+  var expected=Math.round(goal*week/4);
+  var pacing=expected>0?Math.round(eduPlus/expected*100):0;
+  return {goal:goal,eduPlus:eduPlus,week:week,expected:expected,pacing:pacing,onPace:eduPlus>=expected};
 }
 function nuevaCol(d){ var f=new Date(d.createdate); if(isNaN(f)) return 'transparent'; var age=Math.floor((new Date()-f)/86400000); return age<=7?'#10B981':age<=15?'#34d399':age<=30?'#FFCD00':age<=45?'#F59E0B':age<=90?'#F97316':'#6B7280'; }
 function _dealAgeMap(){ var m={}; (DATA.deals||[]).forEach(function(d){ if(d.createdate) m[String(d.id)]=d.createdate; }); return m; }
@@ -1472,7 +1475,7 @@ function renderPipeline() {
       ${filtrosHTML('pipeline', poolPipe, 'deal')}
       <div class="filters">
         <span class="filter-label">Nuevas oportunidades:</span>
-        ${[['ALL','Todas'],['s1','Sem 1'],['s2','Sem 2'],['s3','Sem 3'],['s4','Sem 4'],['g30','>30d'],['g45','>45d'],['g90','>90d']].map(o => { const col = ({s1:'#10B981',s2:'#34d399',s3:'#A3E635',s4:'#FFCD00',g30:'#F59E0B',g45:'#F97316',g90:'#EF4444'})[o[0]]||''; return `<button class="chip ${FILT.pipeline.nueva===o[0]?'active':''}" data-f="pipeline" data-k="nueva" data-v="${o[0]}" ${col?`style="border-color:${col}80;"`:''}>${o[1]}</button>`; }).join('')}
+        ${[['ALL','Todas'],['mes','Mes'],['s1','Sem 1'],['s2','Sem 2'],['s3','Sem 3'],['s4','Sem 4'],['g30','>30d'],['g45','>45d'],['g90','>90d']].map(o => { const col = ({s1:'#10B981',s2:'#34d399',s3:'#A3E635',s4:'#FFCD00',g30:'#F59E0B',g45:'#F97316',g90:'#EF4444'})[o[0]]||''; return `<button class="chip ${FILT.pipeline.nueva===o[0]?'active':''}" data-f="pipeline" data-k="nueva" data-v="${o[0]}" ${col?`style="border-color:${col}80;"`:''}>${o[1]}</button>`; }).join('')}
       </div>
       <div class="filters">
         <span class="filter-label">Otros:</span>
@@ -1616,8 +1619,8 @@ function renderPipelineMetricsPipeline(){
         '</div>';
     });
   }
-  var _mn=metaNuevas(20); var _mnC=_mn.pct>=100?'#62D175':(_mn.pct>=50?'#FFCD00':'#DB0540');
-  h+='<div style="margin-left:auto;display:flex;flex-direction:column;align-items:center;gap:2px;background:'+_mnC+'1f;border:1px solid '+_mnC+'66;border-radius:14px;padding:10px 18px;min-width:124px;"><div style="font-size:22px;font-weight:800;color:'+_mnC+';line-height:1;">'+_mn.eduPlus+'</div><div style="font-size:10px;font-weight:700;color:#F3F4F6;text-align:center;line-height:1.3;">Nuevas oportunidades<br>(Educación+)</div><div style="font-size:13px;font-weight:700;color:'+_mnC+'cc;">'+_mn.pct+'% de '+_mn.goal+'</div></div>';
+  var _mn=metaNuevas(20); var _mnC=_mn.onPace?'#62D175':(_mn.pacing>=70?'#FFCD00':'#DB0540');
+  h+='<div style="margin-left:auto;display:flex;flex-direction:column;align-items:center;gap:2px;background:'+_mnC+'1f;border:1px solid '+_mnC+'66;border-radius:14px;padding:10px 18px;min-width:150px;"><div style="font-size:22px;font-weight:800;color:'+_mnC+';line-height:1;">'+_mn.eduPlus+' / '+_mn.goal+'</div><div style="font-size:10px;font-weight:700;color:#F3F4F6;text-align:center;line-height:1.3;">Nuevas (Educación+) · este mes</div><div style="font-size:12px;font-weight:700;color:'+_mnC+'cc;">Ritmo '+_mn.pacing+'% · sem '+_mn.week+': '+_mn.expected+'</div></div>';
   h+='</div>';
   box.innerHTML=h;
 }
@@ -1973,7 +1976,7 @@ function renderPendientes() {
     ${filtrosHTML('pendientes', allT, 'task')}
     <div class="filters">
       <span class="filter-label">Nuevas oportunidades:</span>
-      ${[['ALL','Todas'],['s1','Sem 1'],['s2','Sem 2'],['s3','Sem 3'],['s4','Sem 4'],['g30','>30d'],['g45','>45d'],['g90','>90d']].map(o => { const col = ({s1:'#10B981',s2:'#34d399',s3:'#A3E635',s4:'#FFCD00',g30:'#F59E0B',g45:'#F97316',g90:'#EF4444'})[o[0]]||''; return `<button class="chip ${FILT.pendientes.nueva===o[0]?'active':''}" data-f="pendientes" data-k="nueva" data-v="${o[0]}" ${col?`style="border-color:${col}80;"`:''}>${o[1]}</button>`; }).join('')}
+      ${[['ALL','Todas'],['mes','Mes'],['s1','Sem 1'],['s2','Sem 2'],['s3','Sem 3'],['s4','Sem 4'],['g30','>30d'],['g45','>45d'],['g90','>90d']].map(o => { const col = ({s1:'#10B981',s2:'#34d399',s3:'#A3E635',s4:'#FFCD00',g30:'#F59E0B',g45:'#F97316',g90:'#EF4444'})[o[0]]||''; return `<button class="chip ${FILT.pendientes.nueva===o[0]?'active':''}" data-f="pendientes" data-k="nueva" data-v="${o[0]}" ${col?`style="border-color:${col}80;"`:''}>${o[1]}</button>`; }).join('')}
     </div>
     <div class="filters">
       <span class="filter-label">Ordenar por:</span>
