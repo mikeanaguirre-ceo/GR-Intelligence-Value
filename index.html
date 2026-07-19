@@ -2046,7 +2046,7 @@ function renderPendientes() {
         <th>Tarea</th>
         <th>Cliente</th>
         ${current === 'Todos' ? '<th>Persona</th>' : ''}
-        <th>Tipo</th>
+        <th>Producto</th>
         <th>Fecha</th>
         <th style="width:40px;text-align:center;">Acción</th>
       </tr></thead>
@@ -2082,7 +2082,7 @@ function renderPendientes() {
       <td>${t.title} ${prioTag} ${scopeTag}</td>
       <td><small>${t.client || '—'}</small>${stageBadges}</td>
       ${current === 'Todos' ? `<td><strong>${t.persona}</strong></td>` : ''}
-      <td><small>${t.type || '—'}</small></td>
+      <td><small>${t.prod || '—'}</small></td>
       <td><small>${t.date || '—'}</small></td>
       <td style="text-align:center;"><button class="task-edit-btn" title="Editar / cerrar / siguiente"
         data-tid="${t.id || ''}"
