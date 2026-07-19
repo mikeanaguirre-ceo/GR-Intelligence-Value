@@ -366,8 +366,6 @@ function renderKpis(){
   const totalPerdida=conPerdida.reduce((s,k)=>s+filt(k).length,0);
   let kpiHtml='';
   var _now=new Date();
-  var _m=stMeta(); var _metaCol=_m.onPace?'#34d399':(_m.pacing>=70?'#FFCD00':'#EF4444');
-  kpiHtml+=`<div class="kpi" title="Educación este mes ÷ meta de la semana (${_m.expected}) · meta mensual ${_m.goal}" style="border:2px solid ${_metaCol};background:${_metaCol}1f;box-shadow:0 0 0 1px ${_metaCol}33"><div class="kpi-n" style="color:${_metaCol}">${_m.eduPlus}</div><div class="kpi-l" style="font-weight:800">🎯 Nuevas</div><div class="kpi-p" style="color:${_metaCol}">${_m.pacing}%</div></div>`;
   sinPerdida.forEach(k=>{
     const n=filt(k).length;
     if(!n&&!ETAPAS_FIJAS.includes(k))return;
@@ -386,6 +384,8 @@ function renderKpis(){
       <div class="kpi-l">Perdida</div>
     </div>`;
   }
+  var _m=stMeta(); var _metaCol=_m.onPace?'#34d399':(_m.pacing>=70?'#FFCD00':'#EF4444');
+  kpiHtml+=`<div class="kpi" title="Educación este mes ÷ meta de la semana (${_m.expected}) · meta mensual ${_m.goal}" style="border:2px solid ${_metaCol};background:${_metaCol}1f;box-shadow:0 0 0 1px ${_metaCol}33"><div class="kpi-n" style="color:${_metaCol}">${_m.eduPlus}</div><div class="kpi-l" style="font-weight:800">🎯 Nuevas</div><div class="kpi-p" style="color:${_metaCol}">${_m.pacing}%</div></div>`;
   document.getElementById('kpis').innerHTML=kpiHtml;
 }
 function fK(seq,el){
@@ -401,7 +401,7 @@ function abrirEditarDeal(dealId){
   window.__editDealId=String(dealId);
   var pd=parseDeal(d.dealname);
   document.getElementById('md-title').textContent=pd.empresa||d.cliente||d.dealname;
-  document.getElementById('md-info').innerHTML='<b>Producto:</b> '+esc(d.prod||'—')+' &nbsp; <b>Prospecto:</b> '+esc(pd.persona||'—')+' &nbsp; <b>Monto:</b> $'+((d.amount||0).toLocaleString())+' &nbsp; <b>Etapa actual:</b> '+esc(d.etapa||'—');
+  document.getElementById('md-info').innerHTML='<b>Producto:</b> '+esc(d.prod||'—')+' &nbsp; <b>Prospecto:</b> '+esc(pd.persona||'—')+' &nbsp; <b>Monto:</b> $'+((d.amount||0).toLocaleString());
   var stgs=stStagesForSelect(); var curId=''; stgs.forEach(function(x){ if(x.label===d.etapa) curId=x.id; });
   document.getElementById('md-stage').innerHTML=stgs.map(function(x){return '<option value="'+x.id+'"'+(x.id===curId?' selected':'')+'>'+esc(x.label)+'</option>';}).join('');
   document.getElementById('md-close').value=String(d.closedate||'').slice(0,10);
