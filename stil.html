@@ -367,7 +367,7 @@ function renderKpis(){
   let kpiHtml='';
   var _now=new Date();
   var _m=stMeta(); var _metaCol=_m.onPace?'#34d399':(_m.pacing>=70?'#FFCD00':'#EF4444');
-  kpiHtml+=`<div class="kpi" title="Educación este mes ÷ meta de la semana (${_m.expected})" style="border-left:3px solid ${_metaCol};background:${_metaCol}12"><div class="kpi-n" style="color:${_metaCol}">${_m.eduPlus}</div><div class="kpi-l">Nuevas</div><div class="kpi-p" style="color:${_metaCol}">${_m.pacing}%</div></div>`;
+  kpiHtml+=`<div class="kpi" title="Educación este mes ÷ meta de la semana (${_m.expected}) · meta mensual ${_m.goal}" style="border:2px solid ${_metaCol};background:${_metaCol}1f;box-shadow:0 0 0 1px ${_metaCol}33"><div class="kpi-n" style="color:${_metaCol}">${_m.eduPlus}</div><div class="kpi-l" style="font-weight:800">🎯 Nuevas</div><div class="kpi-p" style="color:${_metaCol}">${_m.pacing}%</div></div>`;
   sinPerdida.forEach(k=>{
     const n=filt(k).length;
     if(!n&&!ETAPAS_FIJAS.includes(k))return;
