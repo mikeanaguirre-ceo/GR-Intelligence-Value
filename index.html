@@ -1552,7 +1552,7 @@ function renderPipeline() {
             </div>
             ${_perChips}
             ${d.closedate ? `<div class="kanban-card-date ${dateClass}">${d.closedate}</div>` : ''}
-            <button onclick="event.stopPropagation();abrirEditarDealGR('${d.id}')" style="margin-top:6px;width:100%;background:#1a2030;border:1px solid #2A3142;border-radius:6px;padding:3px 0;color:#7DB3F0;cursor:pointer;font-size:11px;font-weight:600;">✏️ Editar</button>
+            <div style="text-align:right;margin-top:2px"><span onclick="event.stopPropagation();abrirEditarDealGR('${d.id}')" title="Editar" style="cursor:pointer;font-size:13px;opacity:.5">✏️</span></div>
           </div>
         `;
       });
