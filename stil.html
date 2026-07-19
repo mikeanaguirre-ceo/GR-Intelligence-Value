@@ -393,6 +393,35 @@ function fK(seq,el){
   el.classList.add('on');fKanban=seq;renderKpis();renderKanban();
 }
 
+function toggleEtapa(key){ window.__expEtapa=(window.__expEtapa===key)?null:key; renderKanban(); }
+function stStagesForSelect(){ var st=((DATA.catalogos&&DATA.catalogos.stages)||[]).slice().sort(function(a,b){return a.prioridad-b.prioridad;}); var noP=st.filter(function(x){return !/Perdida/i.test(x.label);}); var pd=st.filter(function(x){return /Perdida/i.test(x.label);}); return noP.concat(pd); }
+function abrirEditarDeal(dealId){
+  var d=null; (DATA.deals||[]).forEach(function(x){ if(String(x.id)===String(dealId)) d=x; });
+  if(!d){ alert('Deal no encontrado en los datos actuales.'); return; }
+  window.__editDealId=String(dealId);
+  var pd=parseDeal(d.dealname);
+  document.getElementById('md-title').textContent=pd.empresa||d.cliente||d.dealname;
+  document.getElementById('md-info').innerHTML='<b>Producto:</b> '+esc(d.prod||'—')+' &nbsp; <b>Prospecto:</b> '+esc(pd.persona||'—')+' &nbsp; <b>Monto:</b> $'+((d.amount||0).toLocaleString())+' &nbsp; <b>Etapa actual:</b> '+esc(d.etapa||'—');
+  var stgs=stStagesForSelect(); var curId=''; stgs.forEach(function(x){ if(x.label===d.etapa) curId=x.id; });
+  document.getElementById('md-stage').innerHTML=stgs.map(function(x){return '<option value="'+x.id+'"'+(x.id===curId?' selected':'')+'>'+esc(x.label)+'</option>';}).join('');
+  document.getElementById('md-close').value=String(d.closedate||'').slice(0,10);
+  var stt=document.getElementById('md-status'); stt.textContent=''; document.getElementById('md-save').disabled=false;
+  document.getElementById('modal-edit').style.display='flex';
+}
+function cerrarModal(){ document.getElementById('modal-edit').style.display='none'; window.__editDealId=null; }
+async function guardarDeal(){
+  var dealId=window.__editDealId; if(!dealId) return;
+  var stage=document.getElementById('md-stage').value;
+  var close=document.getElementById('md-close').value;
+  var stt=document.getElementById('md-status'); var btn=document.getElementById('md-save');
+  stt.textContent='Guardando…'; stt.style.color='#9CA3AF'; btn.disabled=true;
+  try{
+    var r=await fetch('https://mikea.app.n8n.cloud/webhook/stil-deal',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:dealId,dealstage:stage,closedate:close})});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    stt.textContent='✓ Guardado. Actualizando…'; stt.style.color='#34d399';
+    setTimeout(function(){ cerrarModal(); cargarDatos(); }, 800);
+  }catch(e){ stt.textContent='Error al guardar: '+e.message; stt.style.color='#EF4444'; btn.disabled=false; }
+}
 function renderKanban(){
   renderPipeChips();
   const stilBS=window.__stilBS||{};
@@ -506,14 +535,31 @@ function renderEtapas(){
     }
     const w=sc[e.key]||{hoy:0,d7:0,d30:0,d90:0,total:0};
     const lbl=e.venta?`<span style="color:${e.col};font-weight:600">${e.l}</span>`:e.l;
-    t+=`<tr>
-      <td><span class="dot" style="background:${e.col}"></span>${lbl}</td>
+    var _exp=window.__expEtapa===e.key;
+    t+=`<tr onclick="toggleEtapa('${e.key}')" style="cursor:pointer">
+      <td><span style="display:inline-block;width:12px;color:#6B7280">${_exp?'▾':'▸'}</span><span class="dot" style="background:${e.col}"></span>${lbl}</td>
       <td style="text-align:center">${w.hoy||0}</td>
       <td style="text-align:center">${w.d7||0}</td>
       <td style="text-align:center">${w.d30||0}</td>
       <td style="text-align:center">${w.d90||0}</td>
       <td style="text-align:center;font-weight:700">${w.total}</td>
     </tr>`;
+    if(_exp){
+      var _ds=(dbs[e.key]||[]).filter(function(d){return esDeal(d.dealname)&&stPasaPipe(d);});
+      _ds.sort(function(a,b){return (b.amount||0)-(a.amount||0);});
+      if(!_ds.length){ t+=`<tr style="background:#0d111a"><td colspan="6" style="padding:6px 12px 6px 34px;color:#6B7280;font-size:12px">Sin oportunidades con el filtro actual.</td></tr>`; }
+      _ds.forEach(function(d){
+        var _pd=parseDeal(d.dealname); var _sc=semColorStil(d.semaforo);
+        t+=`<tr style="background:#0d111a"><td colspan="6" style="padding:6px 12px 6px 34px;"><div style="display:flex;align-items:center;gap:10px;">`+
+          `<span style="width:8px;height:8px;border-radius:50%;background:${_sc};display:inline-block;flex:none;"></span>`+
+          `<span style="font-weight:600;color:#E5E7EB;">${esc(_pd.empresa||d.dealname)}</span>`+
+          `<span style="color:#9CA3AF;font-size:12px;">${esc(_pd.persona||'')}</span>`+
+          `<span style="color:#6B7280;font-size:12px;">${esc(d.producto||'')}</span>`+
+          `<span style="margin-left:auto;color:#9CA3AF;font-size:12px;">$${(d.amount||0).toLocaleString()}</span>`+
+          `<button onclick="event.stopPropagation();abrirEditarDeal('${d.deal_id}')" style="background:#1f2937;border:1px solid #374151;border-radius:8px;padding:4px 10px;color:#93C5FD;cursor:pointer;font-size:12px;flex:none;">✏️ Editar</button>`+
+          `</div></td></tr>`;
+      });
+    }
   });
   const tots=Object.values(sc).reduce((a,w)=>({hoy:a.hoy+w.hoy,d7:a.d7+w.d7,d30:a.d30+w.d30,d90:a.d90+w.d90,total:a.total+w.total}),{hoy:0,d7:0,d30:0,d90:0,total:0});
   t+=`<tr class="tot"><td>TOTAL oportunidades</td><td style="text-align:center">${tots.hoy}</td><td style="text-align:center">${tots.d7}</td><td style="text-align:center">${tots.d30}</td><td style="text-align:center">${tots.d90}</td><td style="text-align:center;font-weight:700">${tots.total}</td></tr>`;
@@ -817,6 +863,24 @@ function renderPipelineMetrics(pool){
 
 cargarDatos();
 </script>
+<div id="modal-edit" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#111827;border:1px solid #374151;border-radius:16px;max-width:440px;width:100%;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.5);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div id="md-title" style="font-size:16px;font-weight:800;color:#F3F4F6;"></div>
+      <button onclick="cerrarModal()" style="background:none;border:none;color:#9CA3AF;font-size:22px;cursor:pointer;line-height:1;">×</button>
+    </div>
+    <div id="md-info" style="font-size:12px;color:#9CA3AF;margin-bottom:16px;line-height:1.7;"></div>
+    <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Etapa</label>
+    <select id="md-stage" style="width:100%;margin:5px 0 14px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #374151;color:#F3F4F6;font-size:14px;"></select>
+    <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Fecha de cierre</label>
+    <input id="md-close" type="date" style="width:100%;margin:5px 0 14px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #374151;color:#F3F4F6;font-size:14px;">
+    <div id="md-status" style="font-size:12px;margin:4px 0;min-height:16px;font-weight:700;"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
+      <button onclick="cerrarModal()" style="background:#1f2937;border:1px solid #374151;border-radius:9px;padding:9px 16px;color:#D1D5DB;cursor:pointer;">Cancelar</button>
+      <button id="md-save" onclick="guardarDeal()" style="background:#02ADBA;border:none;border-radius:9px;padding:9px 18px;color:#fff;font-weight:800;cursor:pointer;">Confirmar y guardar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
 
