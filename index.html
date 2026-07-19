@@ -842,6 +842,34 @@ const CAT_FALLBACK = {
   ]
 };
 function CAT(){ return (typeof DATA !== 'undefined' && DATA && DATA.catalogos) ? DATA.catalogos : CAT_FALLBACK; }
+function grEsc(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function grStagesForSelect(){ var st=((CAT().stages)||CAT_FALLBACK.stages||[]).slice().sort(function(a,b){return a.prioridad-b.prioridad;}); var noP=st.filter(function(x){return !/Perdida/i.test(x.label);}); var pd=st.filter(function(x){return /Perdida/i.test(x.label);}); return noP.concat(pd); }
+function abrirEditarDealGR(dealId){
+  var d=null; (DATA.deals||[]).forEach(function(x){ if(String(x.id)===String(dealId)) d=x; });
+  if(!d){ alert('Deal no encontrado en los datos actuales.'); return; }
+  window.__grEditId=String(dealId);
+  document.getElementById('grmd-title').textContent=d.cliente||d.name||'Deal';
+  document.getElementById('grmd-info').innerHTML='<b>Producto:</b> '+grEsc(d.prod||'—')+' &nbsp; <b>Monto:</b> $'+((d.amount||0).toLocaleString());
+  var stgs=grStagesForSelect(); var curId=''; stgs.forEach(function(x){ if(x.id===d.stage) curId=x.id; });
+  document.getElementById('grmd-stage').innerHTML=stgs.map(function(x){return '<option value="'+x.id+'"'+(x.id===curId?' selected':'')+'>'+grEsc(x.label)+'</option>';}).join('');
+  document.getElementById('grmd-close').value=String(d.closedate||'').slice(0,10);
+  document.getElementById('grmd-status').textContent=''; document.getElementById('grmd-save').disabled=false;
+  document.getElementById('gr-modal-edit').style.display='flex';
+}
+function cerrarModalGR(){ document.getElementById('gr-modal-edit').style.display='none'; window.__grEditId=null; }
+async function guardarDealGR(){
+  var dealId=window.__grEditId; if(!dealId) return;
+  var stage=document.getElementById('grmd-stage').value;
+  var close=document.getElementById('grmd-close').value;
+  var stt=document.getElementById('grmd-status'); var btn=document.getElementById('grmd-save');
+  stt.textContent='Guardando…'; stt.style.color='#9CA3AF'; btn.disabled=true;
+  try{
+    var r=await fetch('https://mikea.app.n8n.cloud/webhook/gr-deal',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:dealId,dealstage:stage,closedate:close})});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    stt.textContent='✓ Guardado. Actualizando…'; stt.style.color='#62D175';
+    setTimeout(function(){ cerrarModalGR(); location.reload(); }, 900);
+  }catch(e){ stt.textContent='Error al guardar: '+e.message; stt.style.color='#DB0540'; btn.disabled=false; }
+}
 function catPersonaIds(){ return (CAT().personas || CAT_FALLBACK.personas).map(function(p){return p.id;}); }
 function catColor(name){ return (CAT().paleta || CAT_FALLBACK.paleta)[name] || '#6B7280'; }
 function catStagesAct(){ return ((CAT().stages)||CAT_FALLBACK.stages).filter(function(s){return s.prioridad<=8;}); }
@@ -1524,6 +1552,7 @@ function renderPipeline() {
             </div>
             ${_perChips}
             ${d.closedate ? `<div class="kanban-card-date ${dateClass}">${d.closedate}</div>` : ''}
+            <button onclick="event.stopPropagation();abrirEditarDealGR('${d.id}')" style="margin-top:6px;width:100%;background:#1a2030;border:1px solid #2A3142;border-radius:6px;padding:3px 0;color:#7DB3F0;cursor:pointer;font-size:11px;font-weight:600;">✏️ Editar</button>
           </div>
         `;
       });
@@ -4266,6 +4295,24 @@ if (document.readyState === 'loading') {
 }
 
 </script>
+<div id="gr-modal-edit" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#141827;border:1px solid #2A3142;border-radius:16px;max-width:440px;width:100%;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.5);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div id="grmd-title" style="font-size:16px;font-weight:800;color:#F3F4F6;"></div>
+      <button onclick="cerrarModalGR()" style="background:none;border:none;color:#9CA3AF;font-size:22px;cursor:pointer;line-height:1;">×</button>
+    </div>
+    <div id="grmd-info" style="font-size:12px;color:#9CA3AF;margin-bottom:16px;line-height:1.7;"></div>
+    <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Etapa</label>
+    <select id="grmd-stage" style="width:100%;margin:5px 0 14px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;"></select>
+    <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Fecha de cierre</label>
+    <input id="grmd-close" type="date" style="width:100%;margin:5px 0 14px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;">
+    <div id="grmd-status" style="font-size:12px;margin:4px 0;min-height:16px;font-weight:700;"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
+      <button onclick="cerrarModalGR()" style="background:#1f2937;border:1px solid #2A3142;border-radius:9px;padding:9px 16px;color:#D1D5DB;cursor:pointer;">Cancelar</button>
+      <button id="grmd-save" onclick="guardarDealGR()" style="background:#02ADBA;border:none;border-radius:9px;padding:9px 18px;color:#fff;font-weight:800;cursor:pointer;">Confirmar y guardar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
 
