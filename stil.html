@@ -563,7 +563,7 @@ function renderEtapas(){
   });
   const tots=Object.values(sc).reduce((a,w)=>({hoy:a.hoy+w.hoy,d7:a.d7+w.d7,d30:a.d30+w.d30,d90:a.d90+w.d90,total:a.total+w.total}),{hoy:0,d7:0,d30:0,d90:0,total:0});
   t+=`<tr class="tot"><td>TOTAL oportunidades</td><td style="text-align:center">${tots.hoy}</td><td style="text-align:center">${tots.d7}</td><td style="text-align:center">${tots.d30}</td><td style="text-align:center">${tots.d90}</td><td style="text-align:center;font-weight:700">${tots.total}</td></tr>`;
-  const _tbe=document.getElementById('tbody-etapas'); if(_tbe)_tbe.innerHTML=t;
+  const _k=document.getElementById('kanban'); if(_k){ _k.style.display='block'; _k.innerHTML='<div class="tw"><table class="tbl"><thead><tr><th style="width:42%">ETAPA / OPORTUNIDAD</th><th>HOY</th><th>7D</th><th>30D</th><th>90D</th><th>TOTAL</th></tr></thead><tbody>'+t+'</tbody></table></div>'; }
 }
 
 function renderChips(){
