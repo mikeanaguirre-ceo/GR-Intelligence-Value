@@ -258,14 +258,15 @@ function renderPendientes(){
     '<span class="dcount">'+list.length+' tareas</span></div>';
   if(!list.length){ box.innerHTML=h+'<div class="nd" style="padding:36px 12px">Sin tareas con estos filtros. Si esperabas tareas y no salen, revisa que el nodo "Tareas Clientes STIL" en n8n tenga asignada su credencial de Clientes.</div>'; return; }
   var UE={vencida:'\uD83D\uDD34',hoy:'\uD83D\uDFE1',proxima:'\uD83D\uDFE2',futura:'\u26AA'};
-  h+='<div class="tw"><table class="tbl ptbl"><thead><tr><th style="width:30px"></th><th>TAREA</th><th>CLIENTE</th><th style="width:64px">PRODUCTO</th><th style="width:96px">FECHA</th><th style="width:52px;text-align:center">EDITAR</th></tr></thead><tbody>';
+  h+='<div class="tw"><table class="tbl ptbl"><thead><tr><th style="width:30px"></th><th>TAREA</th><th>CLIENTE</th><th style="width:120px">STAGE</th><th style="width:64px">PRODUCTO</th><th style="width:96px">FECHA</th><th style="width:52px;text-align:center">EDITAR</th></tr></thead><tbody>';
   list.slice(0,200).forEach(function(t){
     var badges=(t.dealStages||[]).slice(0,2).map(function(x){return '<span style="margin-left:5px;font-size:9px;background:#1f2937;color:#9CA3AF;padding:1px 5px;border-radius:6px">'+esc(x)+'</span>';}).join('');
     var did=(t.matchedDealIds&&t.matchedDealIds[0])||'';
     var edit=did?'<span class="edq" data-did="'+did+'" title="Editar oportunidad" style="cursor:pointer;font-size:14px;opacity:.75">\u270F\uFE0F</span>':'<span style="opacity:.2;font-size:14px">\u270F\uFE0F</span>';
     h+='<tr><td style="text-align:center">'+(UE[t.urgency]||'\u26AB')+'</td>'+
       '<td>'+esc(t.title||'\u2014')+'</td>'+
-      '<td>'+esc(t.client||'\u2014')+badges+'</td>'+
+      '<td>'+esc(t.client||'\u2014')+'</td>'+
+      '<td>'+(badges||'<span style="color:#6B7280">\u2014</span>')+'</td>'+
       '<td>'+esc(t.prod||'')+'</td>'+
       '<td>'+fmtFecha(t.date)+'</td>'+
       '<td style="text-align:center">'+edit+'</td></tr>';
