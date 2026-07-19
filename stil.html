@@ -440,6 +440,7 @@ function renderKanban(){
         ${persona?`<div class="dc-per">${esc(persona)}</div>`:''}
         ${d.puesto?`<div class="dc-per" style="color:var(--dim);font-size:9px">${esc(d.puesto)}</div>`:''}
         ${fecha?`<div class="dc-d${old?' r':''}">${fecha}</div>`:''}
+        <button onclick="abrirEditarDeal('${d.deal_id}')" style="margin-top:6px;width:100%;background:#1f2937;border:1px solid #374151;border-radius:7px;padding:4px 0;color:#93C5FD;cursor:pointer;font-size:11px;font-weight:600;">✏️ Editar</button>
       </div>`;
     }).join('')||'<div class="nd">Sin deals</div>';
     return `<div class="col">
