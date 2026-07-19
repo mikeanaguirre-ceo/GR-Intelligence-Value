@@ -118,6 +118,8 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
 .spinner{width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .err{background:#1a0808;border:1px solid var(--red);border-radius:10px;padding:14px 18px;color:#fca5a5;font-size:11px;margin:16px 0}
+.tbl.ptbl th,.tbl.ptbl td{text-align:left;font-size:12.5px;padding:8px 12px}
+.tbl.ptbl td small{font-size:12px}
 </style>
 </head>
 <body>
@@ -216,6 +218,7 @@ function renderPendientes(){
   box.classList.remove('loading');
   var porP=(DATA&&DATA.tareasPorPersona)||{};
   var all=[]; Object.keys(porP).forEach(function(k){ all=all.concat(porP[k]||[]); });
+  all=all.filter(function(t){ return !/^immu/i.test(String(t.title||'').trim()); });
   var _am={}; (DATA.deals||[]).forEach(function(d){ if(d.createdate) _am[String(d.id)]=d.createdate; });
   function nuevaPasaT(t){ if(FILTpd.nueva==='ALL') return true; var ids=t.matchedDealIds||[]; if(!ids.length) return false; return ids.some(function(id){ var a=_am[String(id)]; return a!==undefined && nuevaMatch(a,FILTpd.nueva); }); }
   function pasa(t){
@@ -255,14 +258,17 @@ function renderPendientes(){
     '<span class="dcount">'+list.length+' tareas</span></div>';
   if(!list.length){ box.innerHTML=h+'<div class="nd" style="padding:36px 12px">Sin tareas con estos filtros. Si esperabas tareas y no salen, revisa que el nodo "Tareas Clientes STIL" en n8n tenga asignada su credencial de Clientes.</div>'; return; }
   var UE={vencida:'\uD83D\uDD34',hoy:'\uD83D\uDFE1',proxima:'\uD83D\uDFE2',futura:'\u26AA'};
-  h+='<div class="tw"><table class="tbl"><thead><tr><th style="width:34px"></th><th>TAREA</th><th>CLIENTE</th><th style="width:60px">PROD</th><th style="width:90px">FECHA</th></tr></thead><tbody>';
+  h+='<div class="tw"><table class="tbl ptbl"><thead><tr><th style="width:30px"></th><th>TAREA</th><th>CLIENTE</th><th style="width:64px">PRODUCTO</th><th style="width:96px">FECHA</th><th style="width:52px;text-align:center">EDITAR</th></tr></thead><tbody>';
   list.slice(0,200).forEach(function(t){
     var badges=(t.dealStages||[]).slice(0,2).map(function(x){return '<span style="margin-left:5px;font-size:9px;background:#1f2937;color:#9CA3AF;padding:1px 5px;border-radius:6px">'+esc(x)+'</span>';}).join('');
+    var did=(t.matchedDealIds&&t.matchedDealIds[0])||'';
+    var edit=did?'<span class="edq" data-did="'+did+'" title="Editar oportunidad" style="cursor:pointer;font-size:14px;opacity:.75">\u270F\uFE0F</span>':'<span style="opacity:.2;font-size:14px">\u270F\uFE0F</span>';
     h+='<tr><td style="text-align:center">'+(UE[t.urgency]||'\u26AB')+'</td>'+
       '<td>'+esc(t.title||'\u2014')+'</td>'+
-      '<td><small>'+esc(t.client||'\u2014')+'</small>'+badges+'</td>'+
-      '<td><small>'+esc(t.prod||'')+'</small></td>'+
-      '<td><small>'+fmtFecha(t.date)+'</small></td></tr>';
+      '<td>'+esc(t.client||'\u2014')+badges+'</td>'+
+      '<td>'+esc(t.prod||'')+'</td>'+
+      '<td>'+fmtFecha(t.date)+'</td>'+
+      '<td style="text-align:center">'+edit+'</td></tr>';
   });
   h+='</tbody></table></div>';
   if(list.length>200) h+='<div class="nd" style="padding:10px;font-size:11px">Mostrando 200 de '+list.length+'</div>';
@@ -270,6 +276,7 @@ function renderPendientes(){
 }
 
 document.addEventListener('click',function(ev){
+  var eq=ev.target&&ev.target.closest?ev.target.closest('.edq'):null; if(eq){ var d=eq.getAttribute('data-did'); if(d) abrirEditarDeal(d); return; }
   var b=ev.target.closest?ev.target.closest('[data-pd]'):null; if(!b) return;
   FILTpd[b.getAttribute('data-pd')]=b.getAttribute('data-v'); renderPendientes();
 });
