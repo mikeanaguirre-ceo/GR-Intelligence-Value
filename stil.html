@@ -229,10 +229,6 @@ function renderPendientes(){
   var personas=Object.keys(porP);
   var sems=[['ALL','Todos'],['rojo','\uD83D\uDD34 Vencidas'],['amarillo','\uD83D\uDFE1 Próximas'],['verde','\uD83D\uDFE2 Al día']];
   var h='<div class="ptitle">Pendientes</div><div class="psub">Tareas por atender · modelo GR (portal Clientes)</div>';
-  h+='<div class="fbar"><span class="flbl">Persona:</span>';
-  h+='<span class="chip '+(FILTpd.persona==='Todos'?'on':'')+'" data-pd="persona" data-v="Todos">Todos</span>';
-  personas.forEach(function(p){ h+='<span class="chip '+(FILTpd.persona===p?'on':'')+'" data-pd="persona" data-v="'+p+'">'+esc(p)+' ('+(porP[p]||[]).length+')</span>'; });
-  h+='</div>';
   h+='<div class="fbar"><span class="flbl">Semáforo:</span>'+sems.map(function(x){return '<span class="chip '+(FILTpd.sem===x[0]?'on':'')+'" data-pd="sem" data-v="'+x[0]+'">'+x[1]+'</span>';}).join('')+'</div>';
   h+='<div class="fbar"><span class="flbl">Producto:</span><span class="chip '+(FILTpd.prod==='ALL'?'on':'')+'" data-pd="prod" data-v="ALL">Todos</span>'+prods.map(function(p){return '<span class="chip '+(FILTpd.prod===p?'on':'')+'" data-pd="prod" data-v="'+p+'">'+esc(p)+'</span>';}).join('')+'<span class="dcount">'+list.length+' tareas</span></div>';
   h+='<div class="fbar">'+nuevaChipsPD(FILTpd.nueva)+'</div>';
