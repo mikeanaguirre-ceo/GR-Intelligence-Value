@@ -1296,93 +1296,6 @@ function renderRecap() {
   </tr>`;
   html += `</tbody></table></div>`;
 
-  // === Detalle tareas completadas por persona ===
-  const filtroPersona = recapFilters.persona || 'Todos';
-  const personasActividad = Object.keys(recap.tareasCompletadas.detalle || {}).sort();
-  const resumenPorPersona = recap.tareasCompletadas.resumenPorPersona || {};
-
-  html += `<div class="section">
-    <div class="section-title">Detalle tareas completadas — por persona <span class="section-count">${recap.tareasCompletadas.total}</span></div>
-    <div class="filters">
-      <span class="filter-label">Ver detalle de:</span>
-      <button class="chip ${filtroPersona === 'Todos' ? 'active' : ''}" data-recapfilter="persona" data-rval="Todos">Todos</button>
-      ${personasActividad.map(p => {
-        const n = (recap.tareasCompletadas.porPersona[p] || 0);
-        return `<button class="chip ${filtroPersona === p ? 'active' : ''}" data-recapfilter="persona" data-rval="${p}">${p} (${n})</button>`;
-      }).join('')}
-    </div>`;
-
-  const personasAMostrar = filtroPersona === 'Todos' ? personasActividad : (personasActividad.includes(filtroPersona) ? [filtroPersona] : []);
-
-  personasAMostrar.forEach(p => {
-    const tareas = recap.tareasCompletadas.detalle[p] || [];
-    const summary = resumenPorPersona[p] || { total: tareas.length, porProd: {}, porAction: {} };
-
-    // Summary chips: breakdown por producto
-    const prodChips = Object.entries(summary.porProd).sort((a,b) => b[1] - a[1]).map(([prod, n]) =>
-      `<span class="tag tag-atraccion">${prod}: ${n}</span>`
-    ).join(' ');
-    const actChips = Object.entries(summary.porAction).sort((a,b) => b[1] - a[1]).map(([act, n]) =>
-      `<span class="tag tag-propuesta">${act}: ${n}</span>`
-    ).join(' ');
-
-    html += `
-      <div style="margin-top:16px;padding:12px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border);">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap;">
-          <strong style="font-size:14px;">${p}</strong>
-          <span style="color:var(--text-dim);">${summary.total} tareas</span>
-        </div>
-        <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">Por producto:</div>
-        <div style="margin-bottom:8px;">${prodChips || '<span style="color:var(--text-dim);">—</span>'}</div>
-        <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">Por acción:</div>
-        <div style="margin-bottom:12px;">${actChips || '<span style="color:var(--text-dim);">—</span>'}</div>
-      </div>
-    `;
-
-    // Si hay filtro persona específica (no Todos), mostrar tabla detalle
-    if (filtroPersona !== 'Todos') {
-      html += `<table class="tbl" style="margin-top:8px;">
-        <thead><tr><th>Cliente</th><th>Producto</th><th>Acción</th><th>Tarea</th><th>Completada</th><th style="width:44px;"></th></tr></thead>
-        <tbody>`;
-      tareas.slice(0, 200).forEach(function(t) {
-        // Buscar tarea en pendientes para obtener ID real
-        var found = null;
-        var tSlice = (t.title||'').slice(0,30);
-        if (TASKS && TASKS.tareas) {
-          Object.keys(TASKS.tareas).forEach(function(per) {
-            if (!found) (TASKS.tareas[per]||[]).forEach(function(pt) {
-              if (!found && tSlice && (pt.title||'').indexOf(tSlice) >= 0)
-                found = Object.assign({}, pt, {persona:per});
-            });
-          });
-        }
-        var idx = _recapTaskIndex.length;
-        _recapTaskIndex.push(found ? {
-          tid: found.id||'', did: (found.matchedDealIds&&found.matchedDealIds[0])||'',
-          oid: found.ownerId||'', client: t.client||'', title: found.title||t.title||'',
-          prod: found.prod||'', persona: found.persona||'', date: found.date||'',
-          stages: (found.dealStages||[]).join('|')
-        } : {
-          tid:'', did:'', oid:'', client: t.client||'', title: t.title||'',
-          completionDate: t.completedDate||''
-        });
-        html += '<tr>' +
-          '<td>' + (t.client||'—') + '</td>' +
-          '<td><span class="tag">' + (t.prod||'') + '</span></td>' +
-          '<td><span class="tag tag-atraccion">' + (t.action||'') + '</span></td>' +
-          '<td><small>' + (t.title||'') + '</small></td>' +
-          '<td><small>' + (t.completedDate||'—') + '</small></td>' +
-          '<td style="text-align:center;"><button onclick="openRecapTask(' + idx + ')" title="Editar / reabrir" style="background:none;border:1px solid var(--border,#2a2d35);border-radius:6px;padding:3px 8px;color:var(--text-dim,#9ca3af);cursor:pointer;font-size:13px;">✏️</button></td>' +
-          '</tr>';
-      });
-      if (tareas.length > 200) {
-        html += `<tr><td colspan="6" class="empty">Mostrando 200 de ${tareas.length}</td></tr>`;
-      }
-      html += `</tbody></table>`;
-    }
-  });
-  html += `</div>`;
-
   // === Deals creados con filtros: producto + owner + stage ===
   if (recap.dealsCreados.total > 0) {
     const dealsCreadosList = [];
@@ -1558,6 +1471,16 @@ const STAGE_ORDER = catStagesAct().map(function(s){return {key:s.id,label:s.labe
 const STAGE_ORDER_K = STAGE_ORDER.concat([{key:'1092009814',label:'Perdida',id:'1092009814'}]);
 function nuevaMatchAge(age,val){ if(val==='ALL') return true; if(age===null||age===undefined) return false; if(val==='s1')return age<=7; if(val==='s2')return age>=8&&age<=14; if(val==='s3')return age>=15&&age<=21; if(val==='s4')return age>=22&&age<=30; if(val==='g30')return age>30; if(val==='g45')return age>45; if(val==='g90')return age>90; return true; }
 function nuevaPasa(d,val){ if(val==='ALL') return true; var f=new Date(d.createdate); if(isNaN(f)) return false; var age=Math.floor((new Date()-f)/86400000); return nuevaMatchAge(age,val); }
+function metaNuevas(goal){
+  var now=new Date();
+  var prioMap={}; ((typeof CAT==='function'?CAT().stages:null)||CAT_FALLBACK.stages||[]).forEach(function(s){prioMap[s.id]=s.prioridad;});
+  var eduPlus=(DATA.deals||[]).filter(function(d){ var p=prioMap[d.stage]; if(p===undefined||p<6||p>10) return false; var f=new Date(d.createdate); return !isNaN(f)&&f.getMonth()===now.getMonth()&&f.getFullYear()===now.getFullYear(); }).length;
+  var week=Math.min(4,Math.max(1,Math.ceil(now.getDate()/7)));
+  var expected=Math.round(goal*week/4);
+  var pct=Math.round(eduPlus/goal*100);
+  return {goal:goal,eduPlus:eduPlus,week:week,expected:expected,pct:pct,onPace:eduPlus>=expected};
+}
+function metaNuevasHTML(goal){ var m=metaNuevas(goal); var col=m.onPace?'#62D175':(m.pct>=50?'#FFCD00':'#DB0540'); return '<span style="margin-left:auto;font-size:11px;font-weight:700;color:'+col+';white-space:nowrap;">Educación+: '+m.eduPlus+'/'+m.goal+' ('+m.pct+'%) · meta sem '+m.week+': '+m.expected+'</span>'; }
 function nuevaCol(d){ var f=new Date(d.createdate); if(isNaN(f)) return 'transparent'; var age=Math.floor((new Date()-f)/86400000); return age<=7?'#10B981':age<=15?'#34d399':age<=30?'#FFCD00':age<=45?'#F59E0B':age<=90?'#F97316':'#6B7280'; }
 function _dealAgeMap(){ var m={}; (DATA.deals||[]).forEach(function(d){ var f=new Date(d.createdate); if(!isNaN(f)) m[String(d.id)]=Math.floor((new Date()-f)/86400000); }); return m; }
 function nuevaPasaTask(t,val,am){ if(val==='ALL') return true; var ids=t.matchedDealIds||[]; if(!ids.length) return false; return ids.some(function(id){ var a=am[String(id)]; return a!==undefined && nuevaMatchAge(a,val); }); }
@@ -1603,16 +1526,17 @@ function renderPipeline() {
 
   let html = `
     <div class="section">
+      <div id="pipeline-metrics-gr-pip" style="margin:0 0 12px"></div>
       ${filtrosHTML('pipeline', poolPipe, 'deal')}
       <div class="filters">
         <span class="filter-label">Nuevas oportunidades:</span>
         ${[['ALL','Todas'],['s1','Sem 1'],['s2','Sem 2'],['s3','Sem 3'],['s4','Sem 4'],['g30','>30d'],['g45','>45d'],['g90','>90d']].map(o => { const col = ({s1:'#10B981',s2:'#34d399',s3:'#A3E635',s4:'#FFCD00',g30:'#F59E0B',g45:'#F97316',g90:'#EF4444'})[o[0]]||''; return `<button class="chip ${FILT.pipeline.nueva===o[0]?'active':''}" data-f="pipeline" data-k="nueva" data-v="${o[0]}" ${col?`style="border-color:${col}80;"`:''}>${o[1]}</button>`; }).join('')}
+        ${metaNuevasHTML(20)}
       </div>
       <div class="filters">
         <span class="filter-label">Otros:</span>
         <button class="chip ${FILT.pipeline.excludeP ? 'active' : ''}" data-f="pipeline" data-k="excludeP" data-v="toggle">Excluir P_</button>
       </div>
-      <div id="pipeline-metrics-gr-pip" style="margin:12px 0 4px"></div>
       <div class="section-title">
         <span class="section-count">${activos.length} deals activos</span>
         <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">Total: <strong style="color:var(--text);">${fmtK(total)}</strong></span>
@@ -1704,6 +1628,7 @@ function renderPipelineMetricsPipeline(){
   var filtered=allDeals.filter(function(d){
     if(d.stage==='closedwon'||d.stage==='1092009814') return false;
     if(FILT.pipeline.excludeP&&d.name&&d.name.startsWith('P_')) return false;
+    if(!nuevaPasa(d, FILT.pipeline.nueva)) return false;
     return pasaFiltro('pipeline', d, 'deal');
   });
   // stageMap usa el label EXACTO de cada stage en STAGE_ORDER del Kanban
