@@ -385,7 +385,7 @@ function renderKpis(){
     </div>`;
   }
   var _m=stMeta(); var _metaCol=_m.onPace?'#34d399':(_m.pacing>=70?'#FFCD00':'#EF4444');
-  kpiHtml+=`<div class="kpi" title="Educación este mes ÷ meta de la semana (${_m.expected}) · meta mensual ${_m.goal}" style="border:2px solid ${_metaCol};background:${_metaCol}1f;box-shadow:0 0 0 1px ${_metaCol}33"><div class="kpi-n" style="color:${_metaCol}">${_m.eduPlus}</div><div class="kpi-l" style="font-weight:800">🎯 Nuevas</div><div class="kpi-p" style="color:${_metaCol}">${_m.pacing}%</div></div>`;
+  kpiHtml+=`<div style="grid-column:1/-1;display:flex;justify-content:flex-end;border-top:1px solid var(--border);margin-top:6px;padding-top:10px"><div class="kpi" title="Educación este mes ÷ meta de la semana (${_m.expected}) · meta mensual ${_m.goal}" style="min-width:130px;border:2px solid ${_metaCol};background:${_metaCol}1f;box-shadow:0 0 0 1px ${_metaCol}33"><div class="kpi-n" style="color:${_metaCol}">${_m.eduPlus}</div><div class="kpi-l" style="font-weight:800">🎯 Nuevas</div><div class="kpi-p" style="color:${_metaCol}">${_m.pacing}%</div></div></div>`;
   document.getElementById('kpis').innerHTML=kpiHtml;
 }
 function fK(seq,el){
@@ -440,7 +440,7 @@ function renderKanban(){
         ${persona?`<div class="dc-per">${esc(persona)}</div>`:''}
         ${d.puesto?`<div class="dc-per" style="color:var(--dim);font-size:9px">${esc(d.puesto)}</div>`:''}
         ${fecha?`<div class="dc-d${old?' r':''}">${fecha}</div>`:''}
-        <button onclick="abrirEditarDeal('${d.deal_id}')" style="margin-top:6px;width:100%;background:#1f2937;border:1px solid #374151;border-radius:7px;padding:4px 0;color:#93C5FD;cursor:pointer;font-size:11px;font-weight:600;">✏️ Editar</button>
+        <div style="text-align:right;margin-top:2px"><span onclick="event.stopPropagation();abrirEditarDeal('${d.deal_id}')" title="Editar" style="cursor:pointer;font-size:13px;opacity:.5">✏️</span></div>
       </div>`;
     }).join('')||'<div class="nd">Sin deals</div>';
     return `<div class="col">
