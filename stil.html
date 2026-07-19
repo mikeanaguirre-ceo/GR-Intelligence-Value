@@ -259,6 +259,7 @@ document.addEventListener('click',function(ev){
 let __pool=[];
 
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function fmtFecha(s){ if(!s||s==='null') return ''; var d=new Date(s); if(isNaN(d)) return ''; var M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; return d.getUTCDate()+' '+M[d.getUTCMonth()]+' '+String(d.getUTCFullYear()).slice(2); }
 function esDeal(dn){if(!dn)return false;const d=dn.toUpperCase();return STIL_OK.some(p=>d.startsWith(p))}
 function normClas(c){const s=String(c||'').toLowerCase().trim();return s==='asked_to_circle_back_later'?'circle_back':s}
 function fmtLbl(s){return String(s||'').split('_').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ')}
@@ -425,7 +426,7 @@ function abrirEditarDeal(dealId){
   document.getElementById('md-info').innerHTML='<b>Producto:</b> '+esc(d.prod||'—')+' &nbsp; <b>Prospecto:</b> '+esc(pd.persona||'—')+' &nbsp; <b>Monto:</b> $'+((d.amount||0).toLocaleString());
   var stgs=stStagesForSelect(); var curId=''; stgs.forEach(function(x){ if(x.label===d.etapa) curId=x.id; });
   document.getElementById('md-stage').innerHTML=stgs.map(function(x){return '<option value="'+x.id+'"'+(x.id===curId?' selected':'')+'>'+esc(x.label)+'</option>';}).join('');
-  document.getElementById('md-close').value=String(d.closedate||'').slice(0,10);
+  document.getElementById('md-close').value=(d.closedate&&d.closedate!=='null')?String(d.closedate).slice(0,10):'';
   var stt=document.getElementById('md-status'); stt.textContent=''; document.getElementById('md-save').disabled=false;
   document.getElementById('modal-edit').style.display='flex';
   cargarActividades('https://mikea.app.n8n.cloud/webhook/stil-act', dealId, 'md-acts');
@@ -461,7 +462,7 @@ function renderKanban(){
         <div class="dc-co">${esc(empresa)}</div>
         ${persona?`<div class="dc-per">${esc(persona)}</div>`:''}
         ${d.puesto?`<div class="dc-per" style="color:var(--dim);font-size:9px">${esc(d.puesto)}</div>`:''}
-        ${fecha?`<div class="dc-d${old?' r':''}">${fecha}</div>`:''}
+        ${fecha?`<div class="dc-d${old?' r':''}">${fmtFecha(fecha)}</div>`:''}
         <div style="text-align:right;margin-top:2px"><span onclick="event.stopPropagation();abrirEditarDeal('${d.deal_id}')" title="Editar" style="cursor:pointer;font-size:13px;opacity:.5">✏️</span></div>
       </div>`;
     }).join('')||'<div class="nd">Sin deals</div>';
