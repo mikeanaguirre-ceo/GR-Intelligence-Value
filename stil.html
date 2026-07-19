@@ -717,6 +717,8 @@ function fK(seq,el){
 function toggleEtapa(key){ window.__expEtapa=(window.__expEtapa===key)?null:key; renderKanban(); }
 function stStagesForSelect(){ var st=((DATA.catalogos&&DATA.catalogos.stages)||[]).slice().sort(function(a,b){return a.prioridad-b.prioridad;}); var noP=st.filter(function(x){return !/Perdida/i.test(x.label);}); var pd=st.filter(function(x){return /Perdida/i.test(x.label);}); return noP.concat(pd); }
 var OWNERS={'77808624':'Migue','82004391':'Martha'};
+function personaFromSubject(subj){ var m=String(subj||"").match(/\(([^()]*)\)\s*$/); if(!m) return null; var n=m[1].trim().replace(/^firma\s*=\s*/i,""); if(!n) return null; if(/^miguel\s+aguirre$/i.test(n)) n="Mike"; return n; }
+function persResp(x,map){ var r=personaFromSubject((x.metadata||{}).subject); if(r) return r; var oid=String((x.engagement||{}).ownerId||""); return map[oid]||(oid?("Owner "+oid):"Sin asignar"); }
 async function cargarActividades(endpoint,dealId,containerId){
   var box=document.getElementById(containerId); if(!box) return;
   box.innerHTML='<div style="color:#6B7280;font-size:11px">Cargando tareas…</div>';
@@ -726,10 +728,10 @@ async function cargarActividades(endpoint,dealId,containerId){
     var tasks=((data&&data.results)||[]).filter(function(x){return (x.engagement&&x.engagement.type)==='TASK';});
     if(!tasks.length){ box.innerHTML='<div style="color:#6B7280;font-size:11px">Sin tareas asociadas a esta oportunidad.</div>'; return; }
     var byOwner={};
-    tasks.forEach(function(x){ var oid=String((x.engagement||{}).ownerId||'—'); (byOwner[oid]=byOwner[oid]||[]).push(x); });
+    tasks.forEach(function(x){ var r=persResp(x,OWNERS); (byOwner[r]=byOwner[r]||[]).push(x); });
     var html='';
     Object.keys(byOwner).forEach(function(oid){
-      var nm=OWNERS[oid]||('Persona '+oid);
+      var nm=oid;
       var ts=byOwner[oid].sort(function(a,b){return (b.engagement.timestamp||0)-(a.engagement.timestamp||0);});
       html+='<div style="font-weight:800;color:#F3F4F6;font-size:13px;margin:9px 0 4px">'+esc(nm)+' <span style="color:#9CA3AF;font-weight:600;font-size:12px">· '+ts.length+' tarea'+(ts.length!==1?'s':'')+'</span></div>';
       ts.forEach(function(x){ var e=x.engagement||{}; var m=x.metadata||{}; var done=String(m.status||'').toUpperCase()==='COMPLETED'; var dts=e.timestamp||0; var now=Date.now(); var col=done?'#6B7280':(dts&&dts<now?'#DB0540':(dts&&(dts-now)<3*86400000?'#FFCD00':'#62D175')); var subj=String(m.subject||m.body||'Tarea').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').trim().slice(0,90); var dd=dts?new Date(dts).toISOString().slice(0,10):''; html+='<div style="display:flex;align-items:center;gap:9px;font-size:13px;padding:5px 0;line-height:1.4;border-bottom:1px solid rgba(255,255,255,.05)"><span style="width:10px;height:10px;border-radius:50%;background:'+col+';flex:none"></span><span style="flex:1;color:'+(done?'#6B7280':'#E5E7EB')+';'+(done?'text-decoration:line-through':'')+'">'+esc(subj)+'</span><span style="color:#9CA3AF;font-size:11px;flex:none">'+dd+'</span></div>'; });
