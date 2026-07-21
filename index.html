@@ -1588,13 +1588,14 @@ function renderPipeline() {
           ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;">${d.personas.slice(0,3).map(p=>`<span style="font-size:10px;padding:1px 7px;border-radius:8px;background:rgba(125,42,228,.16);color:#C4A5F0;">${p}</span>`).join('')}</div>`
           : '';
         const _c = d.contacto;
-        const _contactoHtml = (_c && (_c.nombre||_c.telefono||_c.puesto||_c.linkedin))
+        const _contactoHtml = (_c && (_c.nombre||_c.telefono||_c.puesto||_c.linkedin||_c.linkedin_empresa))
           ? `<div style="margin-top:6px;padding-top:5px;border-top:1px solid var(--border,#2a2d35);font-size:10px;color:var(--text-dim);line-height:1.5;">`
             + (_c.nombre?`<span style="color:var(--text,#e5e7eb);font-weight:600;">${_c.nombre}</span>`:``)
             + (_c.puesto?` &middot; ${_c.puesto}`:``)
-            + ((_c.telefono||_c.linkedin)?`<br>`:``)
+            + ((_c.telefono||_c.linkedin||_c.linkedin_empresa)?`<br>`:``)
             + (_c.telefono?`<a href="tel:${String(_c.telefono).replace(/[^0-9+]/g,'')}" onclick="event.stopPropagation();" style="color:#62D175;text-decoration:none;">${_c.telefono}</a>`:``)
-            + (_c.linkedin?`${_c.telefono?' &middot; ':''}<a href="${_c.linkedin}" target="_blank" onclick="event.stopPropagation();" style="color:#02ADBA;text-decoration:none;">LinkedIn</a>`:``)
+            + (_c.linkedin?`${_c.telefono?' &middot; ':''}<a href="${_c.linkedin}" target="_blank" title="LinkedIn persona" onclick="event.stopPropagation();" style="display:inline-flex;vertical-align:middle;"><svg width="13" height="13" viewBox="0 0 24 24" fill="#0A66C2"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13zM7.12 20.45H3.55V9h3.57v11.45zM22.22 0H1.77C.8 0 0 .78 0 1.73v20.54C0 23.22.8 24 1.77 24h20.45c.98 0 1.78-.78 1.78-1.73V1.73C24 .78 23.2 0 22.22 0z"/></svg></a>`:``)
+            + (_c.linkedin_empresa?`${(_c.telefono||_c.linkedin)?'&nbsp;':''}<a href="${_c.linkedin_empresa}" target="_blank" title="LinkedIn empresa" onclick="event.stopPropagation();" style="display:inline-flex;vertical-align:middle;margin-left:4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="#02ADBA"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13zM7.12 20.45H3.55V9h3.57v11.45zM22.22 0H1.77C.8 0 0 .78 0 1.73v20.54C0 23.22.8 24 1.77 24h20.45c.98 0 1.78-.78 1.78-1.73V1.73C24 .78 23.2 0 22.22 0z"/></svg></a>`:``)
             + `</div>`
           : '';
         html += `
@@ -2366,11 +2367,12 @@ function openTaskEditor(ds) {
     op.style.background = 'rgba(99,102,241,.10)'; op.style.color = '#A5B4FC';
     var _dealC = (DATA.deals||[]).concat(DATA.won||[]).find(function(x){return String(x.id)===String(ds.did);});
     var _cc = _dealC && _dealC.contacto ? _dealC.contacto : null;
-    var _ccHtml = (_cc && (_cc.nombre||_cc.telefono||_cc.puesto||_cc.linkedin)) ? '<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:#C7D2FE;">'
+    var _ccHtml = (_cc && (_cc.nombre||_cc.telefono||_cc.puesto||_cc.linkedin||_cc.linkedin_empresa)) ? '<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:#C7D2FE;">'
       + (_cc.nombre?'<strong>'+_cc.nombre+'</strong>':'') + (_cc.puesto?' · '+_cc.puesto:'')
-      + ((_cc.telefono||_cc.linkedin)?'<br>':'')
+      + ((_cc.telefono||_cc.linkedin||_cc.linkedin_empresa)?'<br>':'')
       + (_cc.telefono?'<a href="tel:'+String(_cc.telefono).replace(/[^0-9+]/g,'')+'" style="color:#62D175;text-decoration:none;">'+_cc.telefono+'</a>':'')
-      + (_cc.linkedin?((_cc.telefono?' · ':'')+'<a href="'+_cc.linkedin+'" target="_blank" style="color:#02ADBA;text-decoration:none;">LinkedIn</a>'):'')
+      + (_cc.linkedin?((_cc.telefono?' · ':'')+'<a href="'+_cc.linkedin+'" target="_blank" title="LinkedIn persona" style="display:inline-flex;vertical-align:middle;"><svg width="14" height="14" viewBox="0 0 24 24" fill="#0A66C2"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13zM7.12 20.45H3.55V9h3.57v11.45zM22.22 0H1.77C.8 0 0 .78 0 1.73v20.54C0 23.22.8 24 1.77 24h20.45c.98 0 1.78-.78 1.78-1.73V1.73C24 .78 23.2 0 22.22 0z"/></svg></a>'):'')
+      + (_cc.linkedin_empresa?(((_cc.telefono||_cc.linkedin)?'&nbsp;':'')+'<a href="'+_cc.linkedin_empresa+'" target="_blank" title="LinkedIn empresa" style="display:inline-flex;vertical-align:middle;margin-left:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="#02ADBA"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13zM7.12 20.45H3.55V9h3.57v11.45zM22.22 0H1.77C.8 0 0 .78 0 1.73v20.54C0 23.22.8 24 1.77 24h20.45c.98 0 1.78-.78 1.78-1.73V1.73C24 .78 23.2 0 22.22 0z"/></svg></a>'):'')
       + '</div>' : '';
     op.innerHTML = 'Oportunidad: <strong>' + (_taskCtx.client || '—') + '</strong>' + (_taskCtx.stages.length ? ' · ' + _taskCtx.stages.join(', ') : '') + _ccHtml;
   } else {
