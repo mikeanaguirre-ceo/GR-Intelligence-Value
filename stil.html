@@ -205,6 +205,7 @@ function grDayKey(d) {
 </script>
 <script>
 const EP='https://mikea.app.n8n.cloud/webhook/stil-prospeccion';
+const EPA='https://mikea.app.n8n.cloud/webhook/stil-task-assoc';
 const STIL_OK=['P_STL_','STIL_CB_','STIL_NAC_','STIL_AM_'];
 const ETAPAS_FIJAS=['Señal Detectada','Reply Recibido','Contactado','En Conversación','Atracción','Educación'];
 const EL={'Senal Detectada':'Señal Detectada','Reply Recibido':'Reply Recibido',Contactado:'Contactado','En Conversacion':'En Conversación',Atraccion:'Atracción',Educacion:'Educación','Qualified To Buy':'Qualified To Buy','Propuesta Enviada':'Propuesta Enviada','Aprobacion Verbal':'Aprobación Verbal','Decision Maker Bought-In':'Decision Maker Bought-In',Ganada:'Ganada',Perdida:'Perdida',Renovacion:'Renovación'};
@@ -512,8 +513,12 @@ function renderPendientes(){
   function _bestDeal(title){ var tn=_norm(title); if(tn.length<4) return null; var best=null,bl=0; _dcli.forEach(function(o){ if(o.n.length>bl && tn.indexOf(o.n)>=0){ best=o.d; bl=o.n.length; } }); return best; }
   var _KNOWN={stil:1,cb:1,nac:1,am:1,immu:1,immmu:1,p:1,stl:1,revisar:1,producto:1,seguimiento:1};
   function _cleanCompany(title){ var x=String(title||'').replace(/\s*\([^()]*\)\s*$/,'').trim(); x=x.replace(/^REVISAR PRODUCTO\s*-\s*/i,'').replace(/^Seguimiento\s+/i,'').replace(/^La tarea est[aá] terminada[.:].*?:\s*/i,''); var dash=x.split(' - ')[0]; if(dash&&dash.trim().length>=3) x=dash.trim(); if(x.indexOf('_')>=0){ var parts=x.split('_').filter(Boolean).filter(function(w){return !_KNOWN[w.toLowerCase()];}); if(parts.length) x=parts[0]; } return x.replace(/([a-z])([A-Z])/g,'$1 $2').trim()||title; }
+  var _AM=window.__assocMap||{};
+  var _dealById={}; _deals.forEach(function(d){ _dealById[String(d.id)]=d; });
   all.forEach(function(t){
-    var d=_bestDeal(t.title);
+    var aid=_AM[String(t.id)];
+    var d=(aid&&_dealById[String(aid)])?_dealById[String(aid)]:null;  // vinculo real HubSpot
+    if(!d) d=_bestDeal(t.title);                                       // fallback por nombre
     if(d){ t.client=d.cliente; t.matchedDealIds=[d.id]; t.dealStages=[d.stageLabel||d.etapa].filter(Boolean); }
     else { t.client=_cleanCompany(t.title); }
   });
@@ -611,6 +616,7 @@ async function cargarDatos(fresh){
     if(!r.ok)throw new Error('HTTP '+r.status);
     DATA=await r.json();
     window.__clById={}; (DATA.deals||[]).forEach(function(x){ if(x.closedate&&x.closedate!=='null') window.__clById[String(x.id)]=x.closedate; });
+    try{ const ra=await fetch(EPA); if(ra.ok){ const jm=await ra.json(); window.__assocMap=(jm&&typeof jm==='object')?jm:{}; } }catch(e){ window.__assocMap=window.__assocMap||{}; }
     document.getElementById('utime').textContent=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
     renderPipeline();
     renderProspeccion();
