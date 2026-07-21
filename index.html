@@ -1587,6 +1587,16 @@ function renderPipeline() {
         const _perChips = (d.personas && d.personas.length)
           ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;">${d.personas.slice(0,3).map(p=>`<span style="font-size:10px;padding:1px 7px;border-radius:8px;background:rgba(125,42,228,.16);color:#C4A5F0;">${p}</span>`).join('')}</div>`
           : '';
+        const _c = d.contacto;
+        const _contactoHtml = (_c && (_c.nombre||_c.telefono||_c.puesto||_c.linkedin))
+          ? `<div style="margin-top:6px;padding-top:5px;border-top:1px solid var(--border,#2a2d35);font-size:10px;color:var(--text-dim);line-height:1.5;">`
+            + (_c.nombre?`<span style="color:var(--text,#e5e7eb);font-weight:600;">${_c.nombre}</span>`:``)
+            + (_c.puesto?` &middot; ${_c.puesto}`:``)
+            + ((_c.telefono||_c.linkedin)?`<br>`:``)
+            + (_c.telefono?`<a href="tel:${String(_c.telefono).replace(/[^0-9+]/g,'')}" onclick="event.stopPropagation();" style="color:#62D175;text-decoration:none;">${_c.telefono}</a>`:``)
+            + (_c.linkedin?`${_c.telefono?' &middot; ':''}<a href="${_c.linkedin}" target="_blank" onclick="event.stopPropagation();" style="color:#02ADBA;text-decoration:none;">LinkedIn</a>`:``)
+            + `</div>`
+          : '';
         html += `
           <div class="kanban-card" style="border-left:3px solid ${_semCol};">
             <div class="kanban-card-name">${clienteDisplay}</div>
@@ -1597,6 +1607,7 @@ function renderPipeline() {
               <span title="Antigüedad de creación" style="width:8px;height:8px;border-radius:50%;background:${nuevaCol(d)};display:inline-block;margin-left:auto;"></span>
             </div>
             ${_perChips}
+            ${_contactoHtml}
             ${d.closedate ? `<div class="kanban-card-date ${dateClass}">${fmtFecha(d.closedate)}</div>` : ''}
             <div style="text-align:right;margin-top:2px"><span onclick="event.stopPropagation();abrirEditarDealGR('${d.id}')" title="Editar" style="cursor:pointer;font-size:13px;opacity:.5">✏️</span></div>
           </div>
@@ -2353,7 +2364,15 @@ function openTaskEditor(ds) {
   const op = document.getElementById('tm-oportunidad');
   if (ds.did) {
     op.style.background = 'rgba(99,102,241,.10)'; op.style.color = '#A5B4FC';
-    op.innerHTML = 'Oportunidad: <strong>' + (_taskCtx.client || '—') + '</strong>' + (_taskCtx.stages.length ? ' · ' + _taskCtx.stages.join(', ') : '');
+    var _dealC = (DATA.deals||[]).concat(DATA.won||[]).find(function(x){return String(x.id)===String(ds.did);});
+    var _cc = _dealC && _dealC.contacto ? _dealC.contacto : null;
+    var _ccHtml = (_cc && (_cc.nombre||_cc.telefono||_cc.puesto||_cc.linkedin)) ? '<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:#C7D2FE;">'
+      + (_cc.nombre?'<strong>'+_cc.nombre+'</strong>':'') + (_cc.puesto?' · '+_cc.puesto:'')
+      + ((_cc.telefono||_cc.linkedin)?'<br>':'')
+      + (_cc.telefono?'<a href="tel:'+String(_cc.telefono).replace(/[^0-9+]/g,'')+'" style="color:#62D175;text-decoration:none;">'+_cc.telefono+'</a>':'')
+      + (_cc.linkedin?((_cc.telefono?' · ':'')+'<a href="'+_cc.linkedin+'" target="_blank" style="color:#02ADBA;text-decoration:none;">LinkedIn</a>'):'')
+      + '</div>' : '';
+    op.innerHTML = 'Oportunidad: <strong>' + (_taskCtx.client || '—') + '</strong>' + (_taskCtx.stages.length ? ' · ' + _taskCtx.stages.join(', ') : '') + _ccHtml;
   } else {
     op.style.background = 'rgba(220,38,38,.12)'; op.style.color = '#FCA5A5';
     op.innerHTML = '⚠️ Sin oportunidad asociada — el REA pide que toda tarea tenga deal. Asóciala en HubSpot.';
