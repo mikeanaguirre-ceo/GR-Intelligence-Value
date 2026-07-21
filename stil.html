@@ -141,7 +141,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div class="live-b"><div class="ldot"></div>LIVE</div>
-    <button class="btn-ref" onclick="cargarDatos()">↺ Actualizar</button>
+    <button class="btn-ref" onclick="cargarDatos(true)">↺ Actualizar</button>
     <span class="utime" id="utime"></span>
   </div>
 </div>
@@ -500,7 +500,7 @@ async function doTaskAction(kind) {
     if (!r.ok) throw new Error('HTTP ' + r.status);
     document.getElementById('task-modal').style.display = 'none';
     taskToast(kind === 'update' ? 'Tarea actualizada' : kind === 'close' ? 'Tarea cerrada' : 'Tarea nueva creada', true);
-    setTimeout(cargarDatos, 700);
+    setTimeout(function(){ cargarDatos(true); }, 1500);
   } catch (e) {
     taskToast('Error: ' + e.message, false);
   }
@@ -519,9 +519,12 @@ function renderPendientes(){
   function _norm(x){ return String(x||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
   var _dcli=_deals.map(function(d){ return {d:d, n:_norm(d.cliente)}; }).filter(function(o){ return o.n.length>=4; });
   function _bestDeal(title){ var tn=_norm(title); if(tn.length<4) return null; var best=null,bl=0; _dcli.forEach(function(o){ if(o.n.length>bl && tn.indexOf(o.n)>=0){ best=o.d; bl=o.n.length; } }); return best; }
+  var _KNOWN={stil:1,cb:1,nac:1,am:1,immu:1,immmu:1,p:1,stl:1,revisar:1,producto:1,seguimiento:1};
+  function _cleanCompany(title){ var x=String(title||'').replace(/\s*\([^()]*\)\s*$/,'').trim(); x=x.replace(/^REVISAR PRODUCTO\s*-\s*/i,'').replace(/^Seguimiento\s+/i,'').replace(/^La tarea est[aá] terminada[.:].*?:\s*/i,''); var dash=x.split(' - ')[0]; if(dash&&dash.trim().length>=3) x=dash.trim(); if(x.indexOf('_')>=0){ var parts=x.split('_').filter(Boolean).filter(function(w){return !_KNOWN[w.toLowerCase()];}); if(parts.length) x=parts[0]; } return x.replace(/([a-z])([A-Z])/g,'$1 $2').trim()||title; }
   all.forEach(function(t){
     var d=_bestDeal(t.title);
     if(d){ t.client=d.cliente; t.matchedDealIds=[d.id]; t.dealStages=[d.stageLabel||d.etapa].filter(Boolean); }
+    else { t.client=_cleanCompany(t.title); }
   });
 
   var _am={}; (DATA.deals||[]).forEach(function(d){ if(d.createdate) _am[String(d.id)]=d.createdate; });
@@ -611,9 +614,9 @@ window.addEventListener('popstate',function(e){
   if(pg)pg.classList.add('on');
 });
 
-async function cargarDatos(){
+async function cargarDatos(fresh){
   try{
-    const r=await fetch(EP);
+    const r=await fetch(EP + (fresh?('?fresh=1&_='+Date.now()):''));
     if(!r.ok)throw new Error('HTTP '+r.status);
     DATA=await r.json();
     document.getElementById('utime').textContent=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
@@ -774,7 +777,7 @@ async function guardarDeal(){
     var r=await fetch('https://mikea.app.n8n.cloud/webhook/stil-deal',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:dealId,dealstage:stage,closedate:close})});
     if(!r.ok) throw new Error('HTTP '+r.status);
     stt.textContent='✓ Guardado. Actualizando…'; stt.style.color='#34d399';
-    setTimeout(function(){ cerrarModal(); cargarDatos(); }, 800);
+    setTimeout(function(){ cerrarModal(); cargarDatos(true); }, 1500);
   }catch(e){ stt.textContent='Error al guardar: '+e.message; stt.style.color='#EF4444'; btn.disabled=false; }
 }
 function renderKanban(){
