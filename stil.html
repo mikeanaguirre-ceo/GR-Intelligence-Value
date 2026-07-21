@@ -247,17 +247,7 @@ function parseSubject(title) {
   return { prefix, accion };
 }
 
-function buildSubject(ctx, prod, accion, responsable) {
-  let empresaPart;
-  if (ctx.prefix && ctx.prefix.indexOf('_') >= 0) empresaPart = ctx.prefix.slice(ctx.prefix.indexOf('_') + 1);
-  else if (ctx.prefix) empresaPart = ctx.prefix;
-  else empresaPart = (ctx.client || '').replace(/\s+/g, '');
-  const newPrefix = prod ? (prod + '_' + empresaPart) : empresaPart;
-  let s = newPrefix;
-  if (accion) s += ' — ' + accion;
-  if (responsable) s += ' (' + responsable + ')';
-  return s;
-}
+function buildSubject(ctx, prod, accion, responsable) { return accion; }
 
 function computeOwner(ctx) { return '82004391'; }
 
@@ -425,7 +415,7 @@ function openTaskEditor(ds) {
   }
   document.getElementById('tm-prod').value = ds.prod || '';
   document.getElementById('tm-client').value = _taskCtx.client || '';
-  document.getElementById('tm-accion').value = parsed.accion;
+  document.getElementById('tm-accion').value = parsed.accion || title;
   const respSel = document.getElementById('tm-resp'), respOtro = document.getElementById('tm-resp-otro');
   if (ds.persona && PERSONAS.includes(ds.persona)) { respSel.value = ds.persona; respOtro.style.display = 'none'; }
   else if (ds.persona) { respSel.value = '__OTRO__'; respOtro.style.display = 'block'; respOtro.value = ds.persona; }
@@ -619,6 +609,7 @@ async function cargarDatos(fresh){
     const r=await fetch(EP + (fresh?('?fresh=1&_='+Date.now()):''));
     if(!r.ok)throw new Error('HTTP '+r.status);
     DATA=await r.json();
+    window.__clById={}; (DATA.deals||[]).forEach(function(x){ if(x.closedate&&x.closedate!=='null') window.__clById[String(x.id)]=x.closedate; });
     document.getElementById('utime').textContent=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
     renderPipeline();
     renderProspeccion();
@@ -791,7 +782,8 @@ function renderKanban(){
     vis+=ds.length;
     const cards=ds.map(d=>{
       const{empresa,persona}=parseDeal(d.dealname);
-      const fecha=d.created?new Date(d.created).toISOString().split('T')[0]:'';
+      const _cld=(window.__clById&&window.__clById[String(d.deal_id)])||null;
+      const fecha=_cld?String(_cld).slice(0,10):(d.created?new Date(d.created).toISOString().split('T')[0]:'');
       const old=fecha&&(Date.now()-new Date(fecha))>60*864e5;
       return `<div class="dc" style="border-left:3px solid ${semColorStil(d.semaforo)}">
         <div class="dc-co">${esc(empresa)}</div>
