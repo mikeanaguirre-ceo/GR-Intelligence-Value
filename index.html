@@ -757,6 +757,7 @@ const PROSPECCION_URL = 'https://mikea.app.n8n.cloud/webhook/gr-prospeccion';
 const EMPRESAS_URL = 'https://mikea.app.n8n.cloud/webhook/gr-empresas';
 // --- Acciones de tareas (workflow "GR — Acciones Tareas Dashboard") ---
 const TASK_UPDATE_URL = 'https://mikea.app.n8n.cloud/webhook/gr-task-update';
+const GR_ASSOC_URL = 'https://mikea.app.n8n.cloud/webhook/gr-task-assoc';
 const TASK_CLOSE_URL  = 'https://mikea.app.n8n.cloud/webhook/gr-task-close';
 const TASK_NEXT_URL   = 'https://mikea.app.n8n.cloud/webhook/gr-task-next';
 // Responsables conocidos (ownerId HubSpot -> nombre). Ampliable.
@@ -1150,6 +1151,26 @@ async function loadData() {
       tareas: DATA.tareas || {},
       statsTareas: DATA.statsTareas || {}
     };
+
+    // Re-ligar cada tarea a su oportunidad por el VINCULO REAL de HubSpot (asociacion, 2 portales).
+    // Si la tarea no tiene asociacion, se conserva lo que mando el backend (fallback).
+    try {
+      const ra = await fetch(GR_ASSOC_URL);
+      if (ra && ra.ok) {
+        const am = await ra.json();
+        if (am && typeof am === 'object') {
+          window.__assocMap = am;
+          const _byId = {}; (DATA.deals || []).forEach(function(d){ _byId[String(d.id)] = d; });
+          Object.keys(TASKS.tareas).forEach(function(p){
+            (TASKS.tareas[p] || []).forEach(function(t){
+              const aid = am[String(t.id)];
+              const d = aid ? _byId[String(aid)] : null;
+              if (d) { t.client = d.cliente || d.name || t.client; t.matchedDealIds = [d.id]; t.dealStages = [d.stageLabel || d.stage].filter(Boolean); }
+            });
+          });
+        }
+      }
+    } catch (e) { /* fallback: valores del backend */ }
 
     updateTimer();
     updateFooter();
