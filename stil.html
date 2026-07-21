@@ -514,13 +514,14 @@ function renderPendientes(){
   var porP=(DATA&&DATA.tareasPorPersona)||{};
   var all=[]; Object.keys(porP).forEach(function(k){ all=all.concat(porP[k]||[]); });
   all=all.filter(function(t){ return !/^immu/i.test(String(t.title||'').trim()); });
-  // Re-ligar tareas a su oportunidad real (el titulo no siempre parsea bien en backend)
+  // Re-ligar cada tarea a su oportunidad real por el CLIENTE del deal (normalizado: ignora may/min, espacios y guiones)
   var _deals=(DATA&&DATA.deals)||[];
-  function _bestDeal(title){ var tl=String(title||'').toLowerCase(); var best=null,bl=0; _deals.forEach(function(d){ var e=String(d.empresa||'').trim(); if(e.length>=4 && tl.indexOf(e.toLowerCase())>=0 && e.length>bl){ best=d; bl=e.length; } }); return best; }
+  function _norm(x){ return String(x||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+  var _dcli=_deals.map(function(d){ return {d:d, n:_norm(d.cliente)}; }).filter(function(o){ return o.n.length>=4; });
+  function _bestDeal(title){ var tn=_norm(title); if(tn.length<4) return null; var best=null,bl=0; _dcli.forEach(function(o){ if(o.n.length>bl && tn.indexOf(o.n)>=0){ best=o.d; bl=o.n.length; } }); return best; }
   all.forEach(function(t){
-    var cli=String(t.client||''); var noDeal=(!t.matchedDealIds||!t.matchedDealIds.length);
-    var badCli=(!cli)||/_/.test(cli)||/^(seguimiento|revisar|stil\b)/i.test(cli);
-    if(noDeal||badCli){ var d=_bestDeal(t.title); if(d){ t.client=d.empresa; t.matchedDealIds=[d.deal_id||d.id]; t.dealStages=[d.etapa].filter(Boolean); } }
+    var d=_bestDeal(t.title);
+    if(d){ t.client=d.cliente; t.matchedDealIds=[d.id]; t.dealStages=[d.stageLabel||d.etapa].filter(Boolean); }
   });
 
   var _am={}; (DATA.deals||[]).forEach(function(d){ if(d.createdate) _am[String(d.id)]=d.createdate; });
