@@ -2248,7 +2248,7 @@ function ensureTaskModal() {
   const lab = 'font-size:12px;color:var(--text-dim,#9ca3af);';
   m.innerHTML =
     '<div style="background:var(--card,#16181d);border:1px solid var(--border,#2a2d35);border-radius:14px;max-width:480px;width:100%;padding:20px;max-height:92vh;overflow:auto;">' +
-      '<div id="tm-heading" style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text,#e5e7eb);">Editar tarea</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><div id="tm-heading" style="font-size:16px;font-weight:700;color:var(--text,#e5e7eb);">Editar tarea</div><button id="tm-x" style="background:none;border:none;color:#9CA3AF;font-size:24px;cursor:pointer;line-height:1;padding:0 4px;">\u00d7</button></div>' +
       '<div id="tm-oportunidad" style="font-size:12px;margin-bottom:14px;padding:8px 10px;border-radius:8px;background:rgba(99,102,241,.10);color:#A5B4FC;"></div>' +
       '<div style="display:flex;gap:10px;margin-bottom:12px;">' +
         '<div style="flex:1;"><label style="' + lab + '">Producto</label><select id="tm-prod" style="margin-top:6px;' + f + '"></select></div>' +
@@ -2294,6 +2294,7 @@ function ensureTaskModal() {
   m.querySelectorAll('.tm-quick').forEach(b => b.addEventListener('click', () => setDateQuick(parseInt(b.dataset.q, 10))));
   m.addEventListener('click', e => { if (e.target === m) m.style.display = 'none'; });
   document.getElementById('tm-cancel').addEventListener('click', () => m.style.display = 'none');
+  document.getElementById('tm-x').addEventListener('click', () => m.style.display = 'none');
   document.getElementById('tm-save').addEventListener('click', () => doTaskAction('update'));
   document.getElementById('tm-close').addEventListener('click', () => doTaskAction('close'));
   document.getElementById('tm-reopen').addEventListener('click', () => doTaskAction('reopen'));
