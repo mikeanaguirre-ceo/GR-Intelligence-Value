@@ -410,7 +410,15 @@ function openTaskEditor(ds) {
   const op = document.getElementById('tm-oportunidad');
   if (ds.did) {
     op.style.background = 'rgba(99,102,241,.10)'; op.style.color = '#A5B4FC';
-    op.innerHTML = 'Oportunidad: <strong>' + (_taskCtx.client || '—') + '</strong>' + (_taskCtx.stages.length ? ' · ' + _taskCtx.stages.join(', ') : '');
+    var _dealC = (DATA.deals||[]).find(function(x){return String(x.id)===String(ds.did);});
+    var _cc = _dealC && _dealC.contacto ? _dealC.contacto : null;
+    var _ccHtml = (_cc && (_cc.nombre||_cc.telefono||_cc.puesto||_cc.linkedin)) ? '<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:#C7D2FE;">'
+      + (_cc.nombre?'<strong>'+_cc.nombre+'</strong>':'') + (_cc.puesto?' · '+_cc.puesto:'')
+      + ((_cc.telefono||_cc.linkedin)?'<br>':'')
+      + (_cc.telefono?'<a href="tel:'+String(_cc.telefono).replace(/[^0-9+]/g,'')+'" style="color:#62D175;text-decoration:none;">'+_cc.telefono+'</a>':'')
+      + (_cc.linkedin?((_cc.telefono?' · ':'')+'<a href="'+_cc.linkedin+'" target="_blank" style="color:#02ADBA;text-decoration:none;">LinkedIn</a>'):'')
+      + '</div>' : '';
+    op.innerHTML = 'Oportunidad: <strong>' + (_taskCtx.client || '—') + '</strong>' + (_taskCtx.stages.length ? ' · ' + _taskCtx.stages.join(', ') : '') + _ccHtml;
   } else {
     op.style.background = 'rgba(220,38,38,.12)'; op.style.color = '#FCA5A5';
     op.innerHTML = '⚠️ Sin oportunidad asociada — el REA pide que toda tarea tenga deal. Asóciala en HubSpot.';
@@ -793,10 +801,14 @@ function renderKanban(){
       const _cld=(window.__clById&&window.__clById[String(d.deal_id)])||null;
       const fecha=_cld?String(_cld).slice(0,10):(d.created?new Date(d.created).toISOString().split('T')[0]:'');
       const old=fecha&&(Date.now()-new Date(fecha))>60*864e5;
+      const _dc=(DATA.deals||[]).find(function(x){return String(x.id)===String(d.deal_id);});
+      const _c=_dc&&_dc.contacto?_dc.contacto:null;
+      const _contactoHtml=(_c&&(_c.telefono||_c.linkedin))?`<div style="margin-top:4px;font-size:9px;line-height:1.5">`+(_c.telefono?`<a href="tel:${String(_c.telefono).replace(/[^0-9+]/g,'')}" onclick="event.stopPropagation();" style="color:#62D175;text-decoration:none">${esc(_c.telefono)}</a>`:``)+(_c.linkedin?`${_c.telefono?' &middot; ':''}<a href="${esc(_c.linkedin)}" target="_blank" onclick="event.stopPropagation();" style="color:#02ADBA;text-decoration:none">LinkedIn</a>`:``)+`</div>`:'';
       return `<div class="dc" style="border-left:3px solid ${semColorStil(d.semaforo)}">
         <div class="dc-co">${esc(empresa)}</div>
         ${persona?`<div class="dc-per">${esc(persona)}</div>`:''}
         ${d.puesto?`<div class="dc-per" style="color:var(--dim);font-size:9px">${esc(d.puesto)}</div>`:''}
+        ${_contactoHtml}
         ${fecha?`<div class="dc-d${old?' r':''}">${fmtFecha(fecha)}</div>`:''}
         <div style="text-align:right;margin-top:2px"><span onclick="event.stopPropagation();abrirEditarDeal('${d.deal_id}')" title="Editar" style="cursor:pointer;font-size:13px;opacity:.5">✏️</span></div>
       </div>`;
