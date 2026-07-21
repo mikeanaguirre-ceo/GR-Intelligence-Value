@@ -615,6 +615,7 @@ async function cargarDatos(fresh){
     const r=await fetch(EP + (fresh?('?fresh=1&_='+Date.now()):''));
     if(!r.ok)throw new Error('HTTP '+r.status);
     DATA=await r.json();
+    (function(){ function _cc(x){ return String(x||'').replace(/^\s*(P\s+)?(STIL|STL)\s+(CB|NAC|AM)\s+/i,'').trim()||x; } (DATA.deals||[]).forEach(function(d){ if(d.cliente) d.cliente=_cc(d.cliente); }); })();
     window.__clById={}; (DATA.deals||[]).forEach(function(x){ if(x.closedate&&x.closedate!=='null') window.__clById[String(x.id)]=x.closedate; });
     try{ const ra=await fetch(EPA); if(ra.ok){ const jm=await ra.json(); window.__assocMap=(jm&&typeof jm==='object')?jm:{}; } }catch(e){ window.__assocMap=window.__assocMap||{}; }
     document.getElementById('utime').textContent=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
@@ -629,7 +630,7 @@ async function cargarDatos(fresh){
 // ── Parsear dealname ──
 function parseDeal(dn){
   let s=dn||'';
-  s=s.replace(/^(P_STL_(CB|NAC)_STIL_|STIL_(CB|NAC)_(STIL|AM)_)/i,'');
+  s=s.replace(/^(P_)?(STL|STIL)_(CB|NAC|AM)_((STIL|AM|TW|AEO\+SEO|AEO|3V|GENIA|ITS|IT|LT)_)?/i,'');
   const parts=s.split('_');
   if(parts.length>=2){
     const praw=parts[parts.length-1];
