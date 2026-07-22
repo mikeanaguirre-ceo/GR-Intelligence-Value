@@ -2515,9 +2515,14 @@ function renderLimpieza(){
     fEl.querySelectorAll('[data-limp-chip]').forEach(function(c){c.addEventListener('click',function(){LIMP_FILTER=c.getAttribute('data-limp-chip');renderLimpieza();});});
   }
   var esDeal=(active.tipo==='deal');
+  var _cat=(typeof CAT==='function')?(CAT()||{}):{};
+  var _stMap={}; ((_cat.stages)||[]).forEach(function(s){ _stMap[String(s.id)]=s.corto||s.label||s.id; });
+  var stLabel=function(id){ return _stMap[String(id||'')]||(id||'—'); };
+  var prodDeName=function(nm){ var t=String(nm||'').split('_'); var p=(t[0]==='P'?t[1]:t[0])||''; p=p.replace(/\+.*$/,''); return p||'—'; };
+  var ageOf=function(cd){ if(!cd) return '—'; var f=new Date(cd); if(isNaN(f)) return '—'; return Math.floor((Date.now()-f)/86400000)+'d'; };
   var thead=esDeal
-    ? '<tr><th>Deal</th><th>Producto</th><th>Stage</th><th style="width:1%"></th></tr>'
-    : '<tr><th>Nombre</th><th>Empresa</th><th>Email</th><th>Empresa con deals</th><th style="width:1%"></th></tr>';
+    ? '<tr><th>Deal</th><th>Producto</th><th>Stage</th><th style="text-align:center;">Días alta</th><th style="width:1%"></th></tr>'
+    : '<tr><th>Nombre</th><th>Puesto</th><th>Empresa</th><th>Teléfono</th><th>Empresa con deals</th><th style="width:1%"></th></tr>';
   var rows=active.arr.map(function(it){
     var marked=!!LIMP_MARKED[it.id];
     var orig=esDeal?(it.nombre||''):(it.apellido||'');
@@ -2528,10 +2533,10 @@ function renderLimpieza(){
       :'<button class="btn-action limp-mark" data-tipo="'+active.tipo+'" data-id="'+it.id+'" data-orig="'+encodeURIComponent(orig)+'">Marcar</button>';
     var nombreCell='<a href="'+hsUrl+'" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600">'+(it.nombre||'(sin nombre)')+'</a>';
     if(esDeal){
-      return '<tr'+(marked?' style="opacity:.5"':'')+'><td>'+nombreCell+'</td><td><span class="tag tag-atraccion">'+(it.producto||it.prod||'—')+'</span></td><td style="color:var(--text-dim);font-size:12px">'+(it.stage||'—')+'</td><td>'+accion+'</td></tr>';
+      return '<tr'+(marked?' style="opacity:.5"':'')+'><td>'+nombreCell+'</td><td><span class="tag tag-atraccion">'+prodDeName(it.nombre)+'</span></td><td style="color:var(--text-dim);font-size:12px">'+stLabel(it.stage)+'</td><td style="text-align:center;font-size:12px;color:var(--text-dim)">'+ageOf(it.createdate)+'</td><td>'+accion+'</td></tr>';
     }
     var badge=it.empresaConDeals?'<span style="color:var(--yellow);font-size:11px">● sí</span>':'<span style="color:var(--text-mute);font-size:11px">—</span>';
-    return '<tr'+(marked?' style="opacity:.5"':'')+'><td>'+nombreCell+'</td><td style="font-size:12px;color:var(--text-dim)">'+(it.empresa||'—')+'</td><td style="font-size:12px;color:var(--text-dim)">'+(it.email||'—')+'</td><td>'+badge+'</td><td>'+accion+'</td></tr>';
+    return '<tr'+(marked?' style="opacity:.5"':'')+'><td>'+nombreCell+'</td><td style="font-size:12px;color:var(--text-dim)">'+(it.puesto||'—')+'</td><td style="font-size:12px;color:var(--text-dim)">'+(it.empresa||'—')+'</td><td style="font-size:12px;color:var(--text-dim)">'+(it.telefono||'—')+'</td><td>'+badge+'</td><td>'+accion+'</td></tr>';
   }).join('');
   var tabla=active.arr.length?('<table class="tbl"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table>'):'<div class="empty">Sin registros en esta categoría 🎉</div>';
   if(cEl){
