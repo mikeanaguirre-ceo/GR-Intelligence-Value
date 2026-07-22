@@ -2514,20 +2514,28 @@ function renderLimpieza(){
     fEl.innerHTML='<div class="filters"><span class="filter-label">🧹 Limpieza:</span>'+chips+'</div>'+note;
     fEl.querySelectorAll('[data-limp-chip]').forEach(function(c){c.addEventListener('click',function(){LIMP_FILTER=c.getAttribute('data-limp-chip');renderLimpieza();});});
   }
-  var cards=active.arr.map(function(it){
+  var esDeal=(active.tipo==='deal');
+  var thead=esDeal
+    ? '<tr><th>Deal</th><th>Producto</th><th>Stage</th><th style="width:1%"></th></tr>'
+    : '<tr><th>Nombre</th><th>Empresa</th><th>Email</th><th>Empresa con deals</th><th style="width:1%"></th></tr>';
+  var rows=active.arr.map(function(it){
     var marked=!!LIMP_MARKED[it.id];
-    var orig=active.tipo==='deal'?(it.nombre||''):(it.apellido||'');
-    var hsType=active.tipo==='deal'?'0-3':'0-1';
+    var orig=esDeal?(it.nombre||''):(it.apellido||'');
+    var hsType=esDeal?'0-3':'0-1';
     var hsUrl='https://app.hubspot.com/contacts/49671716/record/'+hsType+'/'+it.id;
-    var meta=active.tipo==='deal'?'':('<div style="font-size:12px;color:var(--text-dim)">'+(it.empresa||'—')+(it.email?(' · '+it.email):'')+(it.empresaConDeals?' · <span style="color:var(--yellow)">empresa con deals</span>':'')+'</div>');
-    var actions=marked
-      ?'<span style="color:var(--mint);font-weight:700;font-size:12px">✓ Marcado</span> <button class="btn-action limp-undo" data-tipo="'+active.tipo+'" data-id="'+it.id+'" data-orig="'+encodeURIComponent(orig)+'">Deshacer</button>'
-      :'<button class="btn-action limp-mark" data-tipo="'+active.tipo+'" data-id="'+it.id+'" data-orig="'+encodeURIComponent(orig)+'">Marcar para borrar</button>';
-    return '<div class="limp-card" data-limp-id="'+it.id+'" style="display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;'+(marked?'opacity:.55;':'')+'"><div style="min-width:0"><div style="font-weight:600"><a href="'+hsUrl+'" target="_blank" style="color:var(--text);text-decoration:none">'+(it.nombre||'(sin nombre)')+'</a></div>'+meta+'</div><div class="limp-actions" style="flex-shrink:0">'+actions+'</div></div>';
+    var accion=marked
+      ?'<span style="color:var(--mint);font-weight:700;font-size:11px">✓</span> <button class="btn-action limp-undo" data-tipo="'+active.tipo+'" data-id="'+it.id+'" data-orig="'+encodeURIComponent(orig)+'">Deshacer</button>'
+      :'<button class="btn-action limp-mark" data-tipo="'+active.tipo+'" data-id="'+it.id+'" data-orig="'+encodeURIComponent(orig)+'">Marcar</button>';
+    var nombreCell='<a href="'+hsUrl+'" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600">'+(it.nombre||'(sin nombre)')+'</a>';
+    if(esDeal){
+      return '<tr'+(marked?' style="opacity:.5"':'')+'><td>'+nombreCell+'</td><td><span class="tag tag-atraccion">'+(it.producto||it.prod||'—')+'</span></td><td style="color:var(--text-dim);font-size:12px">'+(it.stage||'—')+'</td><td>'+accion+'</td></tr>';
+    }
+    var badge=it.empresaConDeals?'<span style="color:var(--yellow);font-size:11px">● sí</span>':'<span style="color:var(--text-mute);font-size:11px">—</span>';
+    return '<tr'+(marked?' style="opacity:.5"':'')+'><td>'+nombreCell+'</td><td style="font-size:12px;color:var(--text-dim)">'+(it.empresa||'—')+'</td><td style="font-size:12px;color:var(--text-dim)">'+(it.email||'—')+'</td><td>'+badge+'</td><td>'+accion+'</td></tr>';
   }).join('');
-  if(!cards) cards='<div class="empty">Sin registros en esta categoría 🎉</div>';
+  var tabla=active.arr.length?('<table class="tbl"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table>'):'<div class="empty">Sin registros en esta categoría 🎉</div>';
   if(cEl){
-    cEl.innerHTML='<div class="section-title" style="margin-top:8px"><span class="section-count">🧹 '+active.label+' · '+active.arr.length+'</span><span style="margin-left:auto;color:var(--text-mute);font-size:11px">solo marca la etiqueta BORRAR · el borrado lo haces tú en HubSpot</span></div>'+cards;
+    cEl.innerHTML='<div class="section-title" style="margin-top:8px"><span class="section-count">🧹 '+active.label+' · '+active.arr.length+'</span><span style="margin-left:auto;color:var(--text-mute);font-size:11px">solo marca BORRAR · el borrado lo haces tú en HubSpot</span></div>'+tabla;
     cEl.querySelectorAll('.limp-mark').forEach(function(b){b.addEventListener('click',function(){markBorrar(b.getAttribute('data-tipo'),b.getAttribute('data-id'),decodeURIComponent(b.getAttribute('data-orig')),false,b);});});
     cEl.querySelectorAll('.limp-undo').forEach(function(b){b.addEventListener('click',function(){markBorrar(b.getAttribute('data-tipo'),b.getAttribute('data-id'),decodeURIComponent(b.getAttribute('data-orig')),true,b);});});
   }
@@ -2719,13 +2727,14 @@ function renderAlertas() {
   } else {
     var focoTarea = (FILT.alertas.accion === 'tareaVencida');
     var persListA = function(a){ try{ var ps=personasDeItem(a); return (ps&&ps.length)?ps.join(', '):'—'; }catch(e){ return '—'; } };
+    var _ageMap = (typeof _dealAgeMap==='function') ? _dealAgeMap() : {};
     if (focoTarea) {
       html += `<table class="tbl"><thead><tr>
         <th>Tarea</th><th>Cliente</th><th>Stage</th><th>Persona</th><th>Producto</th><th>Fecha</th><th>Acción</th>
       </tr></thead><tbody>`;
     } else {
       html += `<table class="tbl"><thead><tr>
-        <th>Deal</th><th>Producto</th><th>Stage</th><th>Persona</th><th style="text-align:center;">Días retraso</th><th>Motivo</th><th>Resolver</th>
+        <th>Deal</th><th>Producto</th><th>Stage</th><th>Persona</th><th style="text-align:center;">Días retraso</th><th style="text-align:center;">Días alta</th><th>Motivo</th><th>Resolver</th>
       </tr></thead><tbody>`;
     }
     filtered.slice(0, 200).forEach(a => {
@@ -2734,6 +2743,9 @@ function renderAlertas() {
       const dealUrl = `https://app.hubspot.com/contacts/49671716/record/0-3/${a.dealId}`;
       const diasTxt = a.days !== null && a.days !== undefined ? `${a.days}d` : '—';
       const diasColor = a.days >= 7 ? '#FCA5A5' : a.days >= 3 ? '#FCD34D' : 'var(--text-dim)';
+      var _altaN=(function(){ var cd=_ageMap[String(a.dealId)]; if(!cd) return null; var f=new Date(cd); return isNaN(f)?null:Math.floor((Date.now()-f)/86400000); })();
+      var altaTxt=(_altaN==null)?'—':(_altaN+'d');
+      var altaColor=(_altaN!=null&&_altaN>=90)?'#FCA5A5':(_altaN!=null&&_altaN>=45)?'#FCD34D':'var(--text-dim)';
       const escA = (s) => String(s == null ? '' : s).replace(/"/g, '&quot;');
       const puedeResolver = (a.categoria === 'Cerrar' || a.categoria === 'ReActivar');
       let resolverCell;
@@ -2762,6 +2774,7 @@ function renderAlertas() {
           <td><span style="color:var(--text-dim);font-size:12px;">${a.stage || '—'}</span></td>
           <td style="font-size:12px;">${persListA(a)}</td>
           <td style="text-align:center;color:${diasColor};font-weight:600;">${diasTxt}</td>
+          <td style="text-align:center;color:${altaColor};font-weight:600;">${altaTxt}</td>
           <td style="color:var(--text-dim);font-size:12px;">${a.motivo || ''}</td>
           ${resolverCell}
         </tr>`;
