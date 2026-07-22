@@ -2473,37 +2473,44 @@ let LIMP = null;
 let LIMP_FILTER = 'c2';
 let LIMP_MARKED = {};
 
+function limpBuckets(){
+  return [
+    {k:'c2',label:'Contactos sin deal',warn:false,note:'Contactos sin ninguna oportunidad, y cuya empresa tampoco tiene oportunidades abiertas. Son los candidatos más claros a borrar.',tipo:'contact',arr:(LIMP.contactos||{}).c2||[]},
+    {k:'c3',label:'Sin deal · empresa activa',warn:true,note:'Contactos sin oportunidad propia, PERO su empresa SÍ tiene oportunidades abiertas. Revisa antes de marcar: pueden ser un segundo contacto útil de una cuenta viva. No los borres a ciegas.',tipo:'contact',arr:(LIMP.contactos||{}).c3||[]},
+    {k:'c4',label:'Sin email',warn:false,note:'Contactos sin correo electrónico. No se les puede contactar por email, así que aportan poco y saturan el CRM.',tipo:'contact',arr:(LIMP.contactos||{}).c4||[]},
+    {k:'d1',label:'Deals sin contacto',warn:false,note:'Oportunidades (deals) sin ningún contacto asociado. No se pueden trabajar porque no hay a quién escribirle.',tipo:'deal',arr:(LIMP.deals||{}).d1||[]},
+    {k:'d2',label:'Deals perdidos',warn:false,note:'Oportunidades marcadas como Perdida que nunca pasaron de la fase de prospección (no llegaron a Atracción). Se dieron por perdidas antes de arrancar; prácticamente basura de prospección.',tipo:'deal',arr:(LIMP.deals||{}).d2||[]}
+  ];
+}
+
 async function loadLimpieza(){
-  var cont=document.getElementById('limpieza-mount');
-  if(cont && !LIMP) cont.innerHTML='<div class="loading">Cargando candidatos de limpieza…</div>';
+  var cEl=document.getElementById('limpieza-cards');
+  if(cEl && !LIMP) cEl.innerHTML='<div class="loading">Cargando candidatos de limpieza…</div>';
   try{
     var r=await fetch(LIMPIEZA_URL);
     if(!r.ok) throw new Error('HTTP '+r.status);
     LIMP=await r.json();
-    var R=LIMP.resumen||{};
-    var n=(R.c2_borrables||0)+(R.c4_sinEmail||0)+(R.d1_dealsSinContacto||0)+(R.d2_dealsPerdidos||0);
-    var badge=document.getElementById('limpieza-count'); if(badge) badge.textContent=n;
     if(currentTab==='alertas') renderLimpieza();
   }catch(e){
-    if(cont) cont.innerHTML='<div class="error">Error cargando limpieza: '+e.message+'<br>URL: '+LIMPIEZA_URL+'</div>';
+    if(cEl) cEl.innerHTML='<div class="error">Error cargando limpieza: '+e.message+'<br>URL: '+LIMPIEZA_URL+'</div>';
   }
 }
 
 function renderLimpieza(){
-  var cont=document.getElementById('limpieza-mount');
-  if(!cont) return;
-  if(!LIMP){ loadLimpieza(); return; }
-  var buckets=[
-    {k:'c2',label:'Contactos sin deal',sub:'empresa sin oportunidades',note:'Contactos sin ninguna oportunidad, y cuya empresa tampoco tiene oportunidades abiertas. Son los candidatos más claros a borrar.',tipo:'contact',arr:(LIMP.contactos||{}).c2||[],cls:'kpi-pink'},
-    {k:'c3',label:'Sin deal · empresa activa',sub:'REVISAR — su empresa sí tiene deals',warn:true,note:'Contactos sin oportunidad propia, PERO su empresa SÍ tiene oportunidades abiertas. Revisa antes de marcar: pueden ser un segundo contacto útil de una cuenta viva. No los borres a ciegas.',tipo:'contact',arr:(LIMP.contactos||{}).c3||[],cls:'kpi-yellow'},
-    {k:'c4',label:'Contactos sin email',sub:'no se puede contactar',note:'Contactos sin correo electrónico. No se les puede contactar por email, así que aportan poco y saturan el CRM.',tipo:'contact',arr:(LIMP.contactos||{}).c4||[],cls:'kpi-pink'},
-    {k:'d1',label:'Deals sin contacto',sub:'no se puede trabajar',note:'Oportunidades (deals) sin ningún contacto asociado. No se pueden trabajar porque no hay a quién escribirle.',tipo:'deal',arr:(LIMP.deals||{}).d1||[],cls:'kpi-cyan'},
-    {k:'d2',label:'Deals perdidos',sub:'perdidos en prospección',note:'Oportunidades marcadas como Perdida que nunca pasaron de la fase de prospección (no llegaron a Atracción). Se dieron por perdidas antes de arrancar; prácticamente basura de prospección.',tipo:'deal',arr:(LIMP.deals||{}).d2||[],cls:'kpi-purple'}
-  ];
+  var fEl=document.getElementById('limpieza-filters');
+  var cEl=document.getElementById('limpieza-cards');
+  if(!fEl && !cEl) return;
+  if(!LIMP){ if(cEl) cEl.innerHTML='<div class="loading">Cargando candidatos de limpieza…</div>'; loadLimpieza(); return; }
+  var buckets=limpBuckets();
   if(!buckets.some(function(b){return b.k===LIMP_FILTER;})) LIMP_FILTER='c2';
-  var kpis=buckets.map(function(b){return '<div class="kpi '+b.cls+'"><div class="kpi-label">'+b.label+'</div><div class="kpi-value">'+b.arr.length+'</div><div class="kpi-sub">'+b.sub+'</div></div>';}).join('');
-  var chips=buckets.map(function(b){return '<button class="chip'+(LIMP_FILTER===b.k?' active':'')+'" data-limp-chip="'+b.k+'">'+b.label+' ('+b.arr.length+')</button>';}).join(' ');
   var active=buckets.filter(function(b){return b.k===LIMP_FILTER;})[0]||buckets[0];
+  var chips=buckets.map(function(b){return '<button class="chip'+(LIMP_FILTER===b.k?' active':'')+'" data-limp-chip="'+b.k+'">'+b.label+' <b>'+b.arr.length+'</b></button>';}).join(' ');
+  var _nc=active.warn?'var(--yellow)':'var(--cyan)';var _nbg=active.warn?'rgba(245,158,11,.08)':'var(--bg-3)';var _ntx=active.warn?'#FCD34D':'var(--text-dim)';
+  var note=active.note?('<div style="background:'+_nbg+';border:1px solid var(--border);border-left:3px solid '+_nc+';border-radius:8px;padding:8px 11px;margin:6px 0 2px;font-size:12px;line-height:1.45;color:'+_ntx+'">'+(active.warn?'⚠️ ':'ℹ️ ')+active.note+'</div>'):'';
+  if(fEl){
+    fEl.innerHTML='<div class="filters"><span class="filter-label">🧹 Limpieza:</span>'+chips+'</div>'+note;
+    fEl.querySelectorAll('[data-limp-chip]').forEach(function(c){c.addEventListener('click',function(){LIMP_FILTER=c.getAttribute('data-limp-chip');renderLimpieza();});});
+  }
   var cards=active.arr.map(function(it){
     var marked=!!LIMP_MARKED[it.id];
     var orig=active.tipo==='deal'?(it.nombre||''):(it.apellido||'');
@@ -2516,11 +2523,11 @@ function renderLimpieza(){
     return '<div class="limp-card" data-limp-id="'+it.id+'" style="display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;'+(marked?'opacity:.55;':'')+'"><div style="min-width:0"><div style="font-weight:600"><a href="'+hsUrl+'" target="_blank" style="color:var(--text);text-decoration:none">'+(it.nombre||'(sin nombre)')+'</a></div>'+meta+'</div><div class="limp-actions" style="flex-shrink:0">'+actions+'</div></div>';
   }).join('');
   if(!cards) cards='<div class="empty">Sin registros en esta categoría 🎉</div>';
-  var _nc=active.warn?'var(--yellow)':'var(--cyan)';var _nbg=active.warn?'rgba(245,158,11,.08)':'var(--bg-3)';var _ntx=active.warn?'#FCD34D':'var(--text-dim)';var warn=active.note?('<div style="background:'+_nbg+';border:1px solid var(--border);border-left:3px solid '+_nc+';border-radius:8px;padding:10px 12px;margin:0 0 14px;font-size:12.5px;line-height:1.5;color:'+_ntx+'">'+(active.warn?'⚠️ ':'ℹ️ ')+active.note+'</div>'):'';
-  cont.innerHTML='<div style="margin:4px 0 14px"><div style="font-size:18px;font-weight:800">🧹 Limpieza del CRM</div><div style="font-size:12px;color:var(--text-mute);margin-top:2px">Revisa uno por uno y marca para borrar. Solo marca (etiqueta BORRAR); el borrado lo haces tú en HubSpot filtrando “contiene BORRAR”. Datos: '+String(LIMP.generadoEn||'').slice(0,16).replace('T',' ')+'</div></div><div class="kpi-grid">'+kpis+'</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">'+chips+'</div>'+warn+'<div>'+cards+'</div>';
-  cont.querySelectorAll('[data-limp-chip]').forEach(function(c){c.addEventListener('click',function(){LIMP_FILTER=c.getAttribute('data-limp-chip');renderLimpieza();});});
-  cont.querySelectorAll('.limp-mark').forEach(function(b){b.addEventListener('click',function(){markBorrar(b.getAttribute('data-tipo'),b.getAttribute('data-id'),decodeURIComponent(b.getAttribute('data-orig')),false,b);});});
-  cont.querySelectorAll('.limp-undo').forEach(function(b){b.addEventListener('click',function(){markBorrar(b.getAttribute('data-tipo'),b.getAttribute('data-id'),decodeURIComponent(b.getAttribute('data-orig')),true,b);});});
+  if(cEl){
+    cEl.innerHTML='<div class="section-title" style="margin-top:8px"><span class="section-count">🧹 '+active.label+' · '+active.arr.length+'</span><span style="margin-left:auto;color:var(--text-mute);font-size:11px">solo marca la etiqueta BORRAR · el borrado lo haces tú en HubSpot</span></div>'+cards;
+    cEl.querySelectorAll('.limp-mark').forEach(function(b){b.addEventListener('click',function(){markBorrar(b.getAttribute('data-tipo'),b.getAttribute('data-id'),decodeURIComponent(b.getAttribute('data-orig')),false,b);});});
+    cEl.querySelectorAll('.limp-undo').forEach(function(b){b.addEventListener('click',function(){markBorrar(b.getAttribute('data-tipo'),b.getAttribute('data-id'),decodeURIComponent(b.getAttribute('data-orig')),true,b);});});
+  }
 }
 
 async function markBorrar(tipo,id,nombreActual,quitar,btn){
@@ -2538,8 +2545,15 @@ function renderAlertasConLimpieza(){
   try{ renderAlertas(); }catch(e){}
   var p=document.getElementById('p-alertas');
   if(!p) return;
-  var mount=document.getElementById('limpieza-mount');
-  if(!mount){ mount=document.createElement('div'); mount.id='limpieza-mount'; mount.style.marginTop='28px'; mount.style.borderTop='1px solid var(--border)'; mount.style.paddingTop='22px'; p.appendChild(mount); }
+  var fEl=document.getElementById('limpieza-filters');
+  if(!fEl){
+    fEl=document.createElement('div'); fEl.id='limpieza-filters';
+    var ordenar=null; var fs=p.querySelectorAll('.filters');
+    for(var i=0;i<fs.length;i++){ if((fs[i].textContent||'').indexOf('Ordenar por')===0){ ordenar=fs[i]; break; } }
+    if(ordenar && ordenar.parentNode){ ordenar.parentNode.insertBefore(fEl, ordenar); } else { p.appendChild(fEl); }
+  }
+  var cEl=document.getElementById('limpieza-cards');
+  if(!cEl){ cEl=document.createElement('div'); cEl.id='limpieza-cards'; cEl.style.marginTop='24px'; cEl.style.borderTop='1px solid var(--border)'; cEl.style.paddingTop='18px'; p.appendChild(cEl); }
   renderLimpieza();
 }
 
