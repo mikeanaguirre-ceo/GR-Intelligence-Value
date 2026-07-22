@@ -714,7 +714,6 @@ body {
     <button class="tab" data-tab="clientes">Clientes</button>
     <button class="tab" data-tab="pendientes">Pendientes</button>
     <button class="tab" data-tab="alertas">Alertas <span class="badge-red" id="alerts-count">—</span></button>
-    <button class="tab" data-tab="limpieza">🧹 Limpieza <span class="badge-red" id="limpieza-count">—</span></button>
     <button class="tab" data-tab="prospeccion">Prospección</button>
     <button class="tab" data-tab="amplemarket">Amplemarket</button>
     <button class="tab" data-tab="forecast">Forecast</button>
@@ -729,7 +728,6 @@ body {
     <section class="panel" id="p-clientes"></section>
     <section class="panel" id="p-pendientes"></section>
     <section class="panel" id="p-alertas"></section>
-    <section class="panel" id="p-limpieza"></section>
     <section class="panel" id="p-prospeccion"></section>
     <section class="panel" id="p-amplemarket"></section>
     <section class="panel" id="p-forecast"></section>
@@ -1289,8 +1287,7 @@ function renderCurrentTab() {
     won: renderWon,
     clientes: renderClientes,
     pendientes: renderPendientes,
-    alertas: renderAlertas,
-    limpieza: renderLimpieza,
+    alertas: renderAlertasConLimpieza,
     prospeccion: renderProspeccion,
     amplemarket: renderAmplemarket,
     forecast: renderForecast,
@@ -2477,7 +2474,7 @@ let LIMP_FILTER = 'c2';
 let LIMP_MARKED = {};
 
 async function loadLimpieza(){
-  var cont=document.getElementById('p-limpieza');
+  var cont=document.getElementById('limpieza-mount');
   if(cont && !LIMP) cont.innerHTML='<div class="loading">Cargando candidatos de limpieza…</div>';
   try{
     var r=await fetch(LIMPIEZA_URL);
@@ -2486,22 +2483,22 @@ async function loadLimpieza(){
     var R=LIMP.resumen||{};
     var n=(R.c2_borrables||0)+(R.c4_sinEmail||0)+(R.d1_dealsSinContacto||0)+(R.d2_dealsPerdidos||0);
     var badge=document.getElementById('limpieza-count'); if(badge) badge.textContent=n;
-    if(currentTab==='limpieza') renderLimpieza();
+    if(currentTab==='alertas') renderLimpieza();
   }catch(e){
     if(cont) cont.innerHTML='<div class="error">Error cargando limpieza: '+e.message+'<br>URL: '+LIMPIEZA_URL+'</div>';
   }
 }
 
 function renderLimpieza(){
-  var cont=document.getElementById('p-limpieza');
+  var cont=document.getElementById('limpieza-mount');
   if(!cont) return;
   if(!LIMP){ loadLimpieza(); return; }
   var buckets=[
-    {k:'c2',label:'Contactos sin deal',sub:'empresa sin oportunidades',tipo:'contact',arr:(LIMP.contactos||{}).c2||[],cls:'kpi-pink'},
-    {k:'c3',label:'Sin deal · empresa activa',sub:'REVISAR — su empresa sí tiene deals',tipo:'contact',arr:(LIMP.contactos||{}).c3||[],cls:'kpi-yellow'},
-    {k:'c4',label:'Contactos sin email',sub:'no se puede contactar',tipo:'contact',arr:(LIMP.contactos||{}).c4||[],cls:'kpi-pink'},
-    {k:'d1',label:'Deals sin contacto',sub:'no se puede trabajar',tipo:'deal',arr:(LIMP.deals||{}).d1||[],cls:'kpi-cyan'},
-    {k:'d2',label:'Deals perdidos',sub:'perdidos en prospección',tipo:'deal',arr:(LIMP.deals||{}).d2||[],cls:'kpi-purple'}
+    {k:'c2',label:'Contactos sin deal',sub:'empresa sin oportunidades',note:'Contactos sin ninguna oportunidad, y cuya empresa tampoco tiene oportunidades abiertas. Son los candidatos más claros a borrar.',tipo:'contact',arr:(LIMP.contactos||{}).c2||[],cls:'kpi-pink'},
+    {k:'c3',label:'Sin deal · empresa activa',sub:'REVISAR — su empresa sí tiene deals',warn:true,note:'Contactos sin oportunidad propia, PERO su empresa SÍ tiene oportunidades abiertas. Revisa antes de marcar: pueden ser un segundo contacto útil de una cuenta viva. No los borres a ciegas.',tipo:'contact',arr:(LIMP.contactos||{}).c3||[],cls:'kpi-yellow'},
+    {k:'c4',label:'Contactos sin email',sub:'no se puede contactar',note:'Contactos sin correo electrónico. No se les puede contactar por email, así que aportan poco y saturan el CRM.',tipo:'contact',arr:(LIMP.contactos||{}).c4||[],cls:'kpi-pink'},
+    {k:'d1',label:'Deals sin contacto',sub:'no se puede trabajar',note:'Oportunidades (deals) sin ningún contacto asociado. No se pueden trabajar porque no hay a quién escribirle.',tipo:'deal',arr:(LIMP.deals||{}).d1||[],cls:'kpi-cyan'},
+    {k:'d2',label:'Deals perdidos',sub:'perdidos en prospección',note:'Oportunidades marcadas como Perdida que nunca pasaron de la fase de prospección (no llegaron a Atracción). Se dieron por perdidas antes de arrancar; prácticamente basura de prospección.',tipo:'deal',arr:(LIMP.deals||{}).d2||[],cls:'kpi-purple'}
   ];
   if(!buckets.some(function(b){return b.k===LIMP_FILTER;})) LIMP_FILTER='c2';
   var kpis=buckets.map(function(b){return '<div class="kpi '+b.cls+'"><div class="kpi-label">'+b.label+'</div><div class="kpi-value">'+b.arr.length+'</div><div class="kpi-sub">'+b.sub+'</div></div>';}).join('');
@@ -2519,7 +2516,7 @@ function renderLimpieza(){
     return '<div class="limp-card" data-limp-id="'+it.id+'" style="display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;'+(marked?'opacity:.55;':'')+'"><div style="min-width:0"><div style="font-weight:600"><a href="'+hsUrl+'" target="_blank" style="color:var(--text);text-decoration:none">'+(it.nombre||'(sin nombre)')+'</a></div>'+meta+'</div><div class="limp-actions" style="flex-shrink:0">'+actions+'</div></div>';
   }).join('');
   if(!cards) cards='<div class="empty">Sin registros en esta categoría 🎉</div>';
-  var warn=active.k==='c3'?'<div class="error" style="color:#FCD34D;background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3)">⚠️ Estos contactos NO tienen deal, pero su empresa SÍ tiene oportunidades. Revisa antes de marcar: pueden ser contactos útiles de una cuenta viva.</div>':'';
+  var _nc=active.warn?'var(--yellow)':'var(--cyan)';var _nbg=active.warn?'rgba(245,158,11,.08)':'var(--bg-3)';var _ntx=active.warn?'#FCD34D':'var(--text-dim)';var warn=active.note?('<div style="background:'+_nbg+';border:1px solid var(--border);border-left:3px solid '+_nc+';border-radius:8px;padding:10px 12px;margin:0 0 14px;font-size:12.5px;line-height:1.5;color:'+_ntx+'">'+(active.warn?'⚠️ ':'ℹ️ ')+active.note+'</div>'):'';
   cont.innerHTML='<div style="margin:4px 0 14px"><div style="font-size:18px;font-weight:800">🧹 Limpieza del CRM</div><div style="font-size:12px;color:var(--text-mute);margin-top:2px">Revisa uno por uno y marca para borrar. Solo marca (etiqueta BORRAR); el borrado lo haces tú en HubSpot filtrando “contiene BORRAR”. Datos: '+String(LIMP.generadoEn||'').slice(0,16).replace('T',' ')+'</div></div><div class="kpi-grid">'+kpis+'</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">'+chips+'</div>'+warn+'<div>'+cards+'</div>';
   cont.querySelectorAll('[data-limp-chip]').forEach(function(c){c.addEventListener('click',function(){LIMP_FILTER=c.getAttribute('data-limp-chip');renderLimpieza();});});
   cont.querySelectorAll('.limp-mark').forEach(function(b){b.addEventListener('click',function(){markBorrar(b.getAttribute('data-tipo'),b.getAttribute('data-id'),decodeURIComponent(b.getAttribute('data-orig')),false,b);});});
@@ -2535,6 +2532,15 @@ async function markBorrar(tipo,id,nombreActual,quitar,btn){
     taskToast(quitar?'Marca quitada':'Marcado para borrar',true);
     renderLimpieza();
   }catch(e){ if(btn){btn.disabled=false;btn.textContent=quitar?'Deshacer':'Marcar para borrar';} taskToast('Error: '+e.message,false); }
+}
+
+function renderAlertasConLimpieza(){
+  try{ renderAlertas(); }catch(e){}
+  var p=document.getElementById('p-alertas');
+  if(!p) return;
+  var mount=document.getElementById('limpieza-mount');
+  if(!mount){ mount=document.createElement('div'); mount.id='limpieza-mount'; mount.style.marginTop='28px'; mount.style.borderTop='1px solid var(--border)'; mount.style.paddingTop='22px'; p.appendChild(mount); }
+  renderLimpieza();
 }
 
 setTimeout(function(){ try{ loadLimpieza(); }catch(e){} }, 1800);
