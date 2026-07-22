@@ -2541,20 +2541,33 @@ async function markBorrar(tipo,id,nombreActual,quitar,btn){
   }catch(e){ if(btn){btn.disabled=false;btn.textContent=quitar?'Deshacer':'Marcar para borrar';} taskToast('Error: '+e.message,false); }
 }
 
+let ALERTAS_MODE='alertas';
+
+function limpSwitchHTML(){
+  return '<div class="filters" style="margin-bottom:14px;gap:6px">'
+    +'<button class="chip'+(ALERTAS_MODE==='alertas'?' active':'')+'" data-amode="alertas" style="font-weight:700">🔔 Alertas</button>'
+    +'<button class="chip'+(ALERTAS_MODE==='limpieza'?' active':'')+'" data-amode="limpieza" style="font-weight:700">🧹 Limpieza</button>'
+    +'</div>';
+}
+
+function wireModeSwitch(){
+  var p=document.getElementById('p-alertas'); if(!p) return;
+  p.querySelectorAll('[data-amode]').forEach(function(b){ b.addEventListener('click',function(){ ALERTAS_MODE=b.getAttribute('data-amode'); renderAlertasConLimpieza(); }); });
+}
+
 function renderAlertasConLimpieza(){
-  try{ renderAlertas(); }catch(e){}
-  var p=document.getElementById('p-alertas');
-  if(!p) return;
-  var fEl=document.getElementById('limpieza-filters');
-  if(!fEl){
-    fEl=document.createElement('div'); fEl.id='limpieza-filters';
-    var ordenar=null; var fs=p.querySelectorAll('.filters');
-    for(var i=0;i<fs.length;i++){ var _l=fs[i].querySelector('.filter-label'); var _t=(_l?_l.textContent:'').replace(/\s+/g,' ').trim(); if(_t.indexOf('Ordenar por')===0){ ordenar=fs[i]; break; } }
-    if(ordenar && ordenar.parentNode){ ordenar.parentNode.insertBefore(fEl, ordenar); } else { p.appendChild(fEl); }
+  var p=document.getElementById('p-alertas'); if(!p) return;
+  if(ALERTAS_MODE==='limpieza'){
+    p.innerHTML=limpSwitchHTML()+'<div id="limpieza-filters"></div><div id="limpieza-cards" style="margin-top:14px"></div>';
+    wireModeSwitch();
+    renderLimpieza();
+  } else {
+    try{ renderAlertas(); }catch(e){}
+    var bar=document.createElement('div');
+    bar.innerHTML=limpSwitchHTML();
+    if(bar.firstChild) p.insertBefore(bar.firstChild, p.firstChild);
+    wireModeSwitch();
   }
-  var cEl=document.getElementById('limpieza-cards');
-  if(!cEl){ cEl=document.createElement('div'); cEl.id='limpieza-cards'; cEl.style.marginTop='24px'; cEl.style.borderTop='1px solid var(--border)'; cEl.style.paddingTop='18px'; p.appendChild(cEl); }
-  renderLimpieza();
 }
 
 setTimeout(function(){ try{ loadLimpieza(); }catch(e){} }, 1800);
