@@ -2549,7 +2549,7 @@ function renderAlertasConLimpieza(){
   if(!fEl){
     fEl=document.createElement('div'); fEl.id='limpieza-filters';
     var ordenar=null; var fs=p.querySelectorAll('.filters');
-    for(var i=0;i<fs.length;i++){ if((fs[i].textContent||'').indexOf('Ordenar por')===0){ ordenar=fs[i]; break; } }
+    for(var i=0;i<fs.length;i++){ var _l=fs[i].querySelector('.filter-label'); var _t=(_l?_l.textContent:'').replace(/\s+/g,' ').trim(); if(_t.indexOf('Ordenar por')===0){ ordenar=fs[i]; break; } }
     if(ordenar && ordenar.parentNode){ ordenar.parentNode.insertBefore(fEl, ordenar); } else { p.appendChild(fEl); }
   }
   var cEl=document.getElementById('limpieza-cards');
