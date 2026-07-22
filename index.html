@@ -714,6 +714,7 @@ body {
     <button class="tab" data-tab="clientes">Clientes</button>
     <button class="tab" data-tab="pendientes">Pendientes</button>
     <button class="tab" data-tab="alertas">Alertas <span class="badge-red" id="alerts-count">—</span></button>
+    <button class="tab" data-tab="limpieza">🧹 Limpieza <span class="badge-red" id="limpieza-count">—</span></button>
     <button class="tab" data-tab="prospeccion">Prospección</button>
     <button class="tab" data-tab="amplemarket">Amplemarket</button>
     <button class="tab" data-tab="forecast">Forecast</button>
@@ -728,6 +729,7 @@ body {
     <section class="panel" id="p-clientes"></section>
     <section class="panel" id="p-pendientes"></section>
     <section class="panel" id="p-alertas"></section>
+    <section class="panel" id="p-limpieza"></section>
     <section class="panel" id="p-prospeccion"></section>
     <section class="panel" id="p-amplemarket"></section>
     <section class="panel" id="p-forecast"></section>
@@ -760,6 +762,9 @@ const TASK_UPDATE_URL = 'https://mikea.app.n8n.cloud/webhook/gr-task-update';
 const GR_ASSOC_URL = 'https://mikea.app.n8n.cloud/webhook/gr-task-assoc';
 const TASK_CLOSE_URL  = 'https://mikea.app.n8n.cloud/webhook/gr-task-close';
 const TASK_NEXT_URL   = 'https://mikea.app.n8n.cloud/webhook/gr-task-next';
+// --- Limpieza CRM (workflows "GR — Limpieza (datos)" y "GR — Marcar BORRAR") ---
+const LIMPIEZA_URL = 'https://mikea.app.n8n.cloud/webhook/gr-limpieza';
+const MARK_BORRAR_URL = 'https://mikea.app.n8n.cloud/webhook/gr-mark-borrar';
 // Responsables conocidos (ownerId HubSpot -> nombre). Ampliable.
 const OWNERS = { '77808624': 'Migue', '82004391': 'Martha' };
 let AM_DATA = null;
@@ -1285,6 +1290,7 @@ function renderCurrentTab() {
     clientes: renderClientes,
     pendientes: renderPendientes,
     alertas: renderAlertas,
+    limpieza: renderLimpieza,
     prospeccion: renderProspeccion,
     amplemarket: renderAmplemarket,
     forecast: renderForecast,
@@ -2461,6 +2467,77 @@ async function doTaskAction(kind) {
     taskToast('Error: ' + e.message, false);
   }
 }
+
+// ============================================================
+// LIMPIEZA CRM (bandeja) - solo marca etiqueta BORRAR (reversible)
+// Datos: LIMPIEZA_URL (GR — Limpieza datos) | Marca: MARK_BORRAR_URL (GR — Marcar BORRAR)
+// ============================================================
+let LIMP = null;
+let LIMP_FILTER = 'c2';
+let LIMP_MARKED = {};
+
+async function loadLimpieza(){
+  var cont=document.getElementById('p-limpieza');
+  if(cont && !LIMP) cont.innerHTML='<div class="loading">Cargando candidatos de limpieza…</div>';
+  try{
+    var r=await fetch(LIMPIEZA_URL);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    LIMP=await r.json();
+    var R=LIMP.resumen||{};
+    var n=(R.c2_borrables||0)+(R.c4_sinEmail||0)+(R.d1_dealsSinContacto||0)+(R.d2_dealsPerdidos||0);
+    var badge=document.getElementById('limpieza-count'); if(badge) badge.textContent=n;
+    if(currentTab==='limpieza') renderLimpieza();
+  }catch(e){
+    if(cont) cont.innerHTML='<div class="error">Error cargando limpieza: '+e.message+'<br>URL: '+LIMPIEZA_URL+'</div>';
+  }
+}
+
+function renderLimpieza(){
+  var cont=document.getElementById('p-limpieza');
+  if(!cont) return;
+  if(!LIMP){ loadLimpieza(); return; }
+  var buckets=[
+    {k:'c2',label:'Contactos sin deal',sub:'empresa sin oportunidades',tipo:'contact',arr:(LIMP.contactos||{}).c2||[],cls:'kpi-pink'},
+    {k:'c3',label:'Sin deal · empresa activa',sub:'REVISAR — su empresa sí tiene deals',tipo:'contact',arr:(LIMP.contactos||{}).c3||[],cls:'kpi-yellow'},
+    {k:'c4',label:'Contactos sin email',sub:'no se puede contactar',tipo:'contact',arr:(LIMP.contactos||{}).c4||[],cls:'kpi-pink'},
+    {k:'d1',label:'Deals sin contacto',sub:'no se puede trabajar',tipo:'deal',arr:(LIMP.deals||{}).d1||[],cls:'kpi-cyan'},
+    {k:'d2',label:'Deals perdidos',sub:'perdidos en prospección',tipo:'deal',arr:(LIMP.deals||{}).d2||[],cls:'kpi-purple'}
+  ];
+  if(!buckets.some(function(b){return b.k===LIMP_FILTER;})) LIMP_FILTER='c2';
+  var kpis=buckets.map(function(b){return '<div class="kpi '+b.cls+'"><div class="kpi-label">'+b.label+'</div><div class="kpi-value">'+b.arr.length+'</div><div class="kpi-sub">'+b.sub+'</div></div>';}).join('');
+  var chips=buckets.map(function(b){return '<button class="chip'+(LIMP_FILTER===b.k?' active':'')+'" data-limp-chip="'+b.k+'">'+b.label+' ('+b.arr.length+')</button>';}).join(' ');
+  var active=buckets.filter(function(b){return b.k===LIMP_FILTER;})[0]||buckets[0];
+  var cards=active.arr.map(function(it){
+    var marked=!!LIMP_MARKED[it.id];
+    var orig=active.tipo==='deal'?(it.nombre||''):(it.apellido||'');
+    var hsType=active.tipo==='deal'?'0-3':'0-1';
+    var hsUrl='https://app.hubspot.com/contacts/49671716/record/'+hsType+'/'+it.id;
+    var meta=active.tipo==='deal'?'':('<div style="font-size:12px;color:var(--text-dim)">'+(it.empresa||'—')+(it.email?(' · '+it.email):'')+(it.empresaConDeals?' · <span style="color:var(--yellow)">empresa con deals</span>':'')+'</div>');
+    var actions=marked
+      ?'<span style="color:var(--mint);font-weight:700;font-size:12px">✓ Marcado</span> <button class="btn-action limp-undo" data-tipo="'+active.tipo+'" data-id="'+it.id+'" data-orig="'+encodeURIComponent(orig)+'">Deshacer</button>'
+      :'<button class="btn-action limp-mark" data-tipo="'+active.tipo+'" data-id="'+it.id+'" data-orig="'+encodeURIComponent(orig)+'">Marcar para borrar</button>';
+    return '<div class="limp-card" data-limp-id="'+it.id+'" style="display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;'+(marked?'opacity:.55;':'')+'"><div style="min-width:0"><div style="font-weight:600"><a href="'+hsUrl+'" target="_blank" style="color:var(--text);text-decoration:none">'+(it.nombre||'(sin nombre)')+'</a></div>'+meta+'</div><div class="limp-actions" style="flex-shrink:0">'+actions+'</div></div>';
+  }).join('');
+  if(!cards) cards='<div class="empty">Sin registros en esta categoría 🎉</div>';
+  var warn=active.k==='c3'?'<div class="error" style="color:#FCD34D;background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3)">⚠️ Estos contactos NO tienen deal, pero su empresa SÍ tiene oportunidades. Revisa antes de marcar: pueden ser contactos útiles de una cuenta viva.</div>':'';
+  cont.innerHTML='<div style="margin:4px 0 14px"><div style="font-size:18px;font-weight:800">🧹 Limpieza del CRM</div><div style="font-size:12px;color:var(--text-mute);margin-top:2px">Revisa uno por uno y marca para borrar. Solo marca (etiqueta BORRAR); el borrado lo haces tú en HubSpot filtrando “contiene BORRAR”. Datos: '+String(LIMP.generadoEn||'').slice(0,16).replace('T',' ')+'</div></div><div class="kpi-grid">'+kpis+'</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">'+chips+'</div>'+warn+'<div>'+cards+'</div>';
+  cont.querySelectorAll('[data-limp-chip]').forEach(function(c){c.addEventListener('click',function(){LIMP_FILTER=c.getAttribute('data-limp-chip');renderLimpieza();});});
+  cont.querySelectorAll('.limp-mark').forEach(function(b){b.addEventListener('click',function(){markBorrar(b.getAttribute('data-tipo'),b.getAttribute('data-id'),decodeURIComponent(b.getAttribute('data-orig')),false,b);});});
+  cont.querySelectorAll('.limp-undo').forEach(function(b){b.addEventListener('click',function(){markBorrar(b.getAttribute('data-tipo'),b.getAttribute('data-id'),decodeURIComponent(b.getAttribute('data-orig')),true,b);});});
+}
+
+async function markBorrar(tipo,id,nombreActual,quitar,btn){
+  if(btn){btn.disabled=true;btn.textContent=quitar?'Quitando…':'Marcando…';}
+  try{
+    var r=await fetch(MARK_BORRAR_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tipo:tipo,id:id,nombreActual:nombreActual,quitar:!!quitar})});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    if(quitar){delete LIMP_MARKED[id];}else{LIMP_MARKED[id]=true;}
+    taskToast(quitar?'Marca quitada':'Marcado para borrar',true);
+    renderLimpieza();
+  }catch(e){ if(btn){btn.disabled=false;btn.textContent=quitar?'Deshacer':'Marcar para borrar';} taskToast('Error: '+e.message,false); }
+}
+
+setTimeout(function(){ try{ loadLimpieza(); }catch(e){} }, 1800);
 
 // --- ALERTAS v15 ---
 // 16 acciones agrupadas en 3 categorías (Cerrar / ReActivar / Higienizar)
