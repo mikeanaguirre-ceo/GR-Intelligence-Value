@@ -2744,7 +2744,7 @@ function renderAlertas() {
   var _accCounts = {}; _accBase.forEach(function(a){ _accCounts[a.accion]=(_accCounts[a.accion]||0)+1; });
   html += '<div class="filters"><span class="filter-label">Acción:</span>';
   html += _chip('alertas','accion','ALL','Todas ('+_accBase.length+')', FILT.alertas.accion==='ALL');
-  ACCION_DEFS.forEach(function(d){ var c=_accCounts[d.id]||0; if(c>0||FILT.alertas.accion===d.id){ html += _chip('alertas','accion',d.id, d.icon+' '+d.label+' ('+c+')', FILT.alertas.accion===d.id); } });
+  ACCION_DEFS.forEach(function(d){ var c=_accCounts[d.id]||0; html += _chip('alertas','accion',d.id, d.icon+' '+d.label+' ('+c+')', FILT.alertas.accion===d.id); });
   html += '</div>';
 
   html += `<div class="filters">
@@ -4651,7 +4651,8 @@ async function abrirFixGR(accion,dealId,extra){
       var r=await fetch(GRF_COMPANY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:GRF.dealId,empresa:(extra&&extra.empresa)||''})});
       var data=await r.json(); GRF.data=data;
       var cts=(data&&data.contactos)||[];
-      if(!cts.length){ grfSet('Vincular contacto','<div style="color:#FCD34D">No encontré contactos en esta empresa'+(data&&data.empresa?(' ('+grfEsc(data.empresa.nombre)+')'):'')+'.</div>', false); return; }
+      if(!cts.length){ grfSet('Vincular contacto','<div style="color:#FCD34D;margin-bottom:12px">No encontré contactos'+(data&&data.empresa?(' en '+grfEsc(data.empresa.nombre)):'')+'. Sin contacto no se puede trabajar esta oportunidad.</div>'
+        +'<button class="btn-action" onclick="grfMarcarDeal(\''+GRF.dealId+'\',\''+encodeURIComponent((extra&&extra.nombre)||'')+'\',this)">Marcar oportunidad para borrar</button>', false); return; }
       grfSet('Vincular contacto',
         '<div style="color:#9CA3AF;margin-bottom:10px">Empresa: <b>'+grfEsc((data.empresa&&data.empresa.nombre)||'—')+'</b>. Marca uno o varios contactos para vincular a esta oportunidad.</div>'
         +cts.map(function(c){ var nd=Number(c.deals||0); var badge=nd>0?('<span style="color:#62D175;font-size:11px;font-weight:700"> · '+nd+' oportunidad'+(nd!==1?'es':'')+'</span>'):'<span style="color:#6B7280;font-size:11px"> · sin oportunidades</span>'; return '<label style="display:flex;gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><input type="checkbox" class="grf-ct" value="'+c.id+'"><span><b>'+grfEsc(c.nombre)+'</b>'+(c.puesto?('<span style="color:#9CA3AF"> · '+grfEsc(c.puesto)+'</span>'):'')+badge+(c.email?('<br><span style="color:#6B7280;font-size:12px">'+grfEsc(c.email)+'</span>'):'')+'</span></label>'; }).join(''), true);
@@ -4672,22 +4673,29 @@ async function abrirFixGR(accion,dealId,extra){
     return;
   }
   if(accion==='resolverDuplicado'){
-    grfSet('Resolver duplicado','<div style="color:#9CA3AF">Buscando duplicados y contando actividad…</div>', false);
+    grfSet('Resolver duplicado','<div style="color:#9CA3AF">Buscando todas las oportunidades de la empresa y contando actividad…</div>', false);
     try{
-      var base=grfDealDe(dealId); var cli=(base&&base.cliente)||'';
-      var cands=((typeof DATA!=='undefined'&&DATA&&DATA.deals)?DATA.deals:[]).filter(function(x){ return String(x.cliente||'')===String(cli) && cli; });
-      if(cands.length<2){ cands=[base].filter(Boolean); }
+      var rc=await fetch(GRF_COMPANY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:GRF.dealId,empresa:(extra&&extra.empresa)||''})});
+      var dc=await rc.json();
+      var cands=(dc&&dc.deals)||[];
+      var cli=(dc&&dc.empresa&&dc.empresa.nombre)||((extra&&extra.empresa)||'');
+      if(!cands.length){ grfSet('Resolver duplicado','<div style="color:#FCD34D">No encontré oportunidades de esta empresa para comparar.</div>', false); return; }
       var ids=cands.map(function(x){return String(x.id);});
       var ra=await fetch(GRF_ACTIVITY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealIds:ids})});
       var da=await ra.json(); GRF.data=da;
       var byId={}; ((da&&da.filas)||[]).forEach(function(f){ byId[String(f.dealId)]=f; });
+      var mejorId=String((da&&da.sugerido)||(ids[0]||''));
       var filas=cands.map(function(x){ var f=byId[String(x.id)]||{tareas:0,notas:0,actividades:0,total:0};
-        var mejor=(da&&String(da.sugerido)===String(x.id));
-        return '<tr style="'+(mejor?'background:rgba(98,209,117,.08)':'')+'"><td style="padding:7px 6px"><a href="https://app.hubspot.com/contacts/49671716/record/0-3/'+x.id+'" target="_blank" style="color:#02ADBA;text-decoration:none">'+grfEsc(x.name||x.cliente||x.id)+'</a>'+(mejor?' <span style="color:#62D175;font-size:11px;font-weight:700">← conservar</span>':'')+'</td>'
+        var mejor=(String(x.id)===mejorId);
+        return '<tr style="'+(mejor?'background:rgba(98,209,117,.10)':'')+'"><td style="padding:7px 6px"><a href="https://app.hubspot.com/contacts/49671716/record/0-3/'+x.id+'" target="_blank" style="color:#02ADBA;text-decoration:none">'+grfEsc(x.nombre||x.id)+'</a>'
+        +'<div style="color:#6B7280;font-size:11px">'+(x.contactos||0)+' contacto'+((x.contactos||0)!==1?'s':'')+(x.createdate?(' · alta '+fmtFecha(x.createdate)):'')+'</div>'
+        +(mejor?'<span style="color:#62D175;font-size:11px;font-weight:700">← más actividad, conservar</span>':'')+'</td>'
         +'<td style="text-align:center;padding:7px 6px">'+f.tareas+'</td><td style="text-align:center;padding:7px 6px">'+f.notas+'</td><td style="text-align:center;padding:7px 6px">'+f.actividades+'</td><td style="text-align:center;padding:7px 6px;font-weight:800">'+f.total+'</td>'
-        +'<td style="padding:7px 6px"><button class="btn-action" onclick="grfMarcarDeal(\''+x.id+'\',\''+encodeURIComponent(x.name||x.cliente||'')+'\',this)">Marcar borrar</button></td></tr>'; }).join('');
+        +'<td style="padding:7px 6px;white-space:nowrap"><button class="btn-action" onclick="grfMarcarDeal(\''+x.id+'\',\''+encodeURIComponent(x.nombre||'')+'\',this)">Marcar borrar</button> '
+        +'<button class="btn-action" onclick="grfConservar(\''+x.id+'\')">Conservar esta</button></td></tr>'; }).join('');
+      window.__grDup=cands.map(function(x){ return {id:String(x.id), nombre:x.nombre||''}; });
       grfSet('Resolver duplicado',
-        '<div style="color:#9CA3AF;margin-bottom:10px">Oportunidades de <b>'+grfEsc(cli||'—')+'</b>. La de mayor actividad es la que conviene conservar; marca las otras para borrar.</div>'
+        '<div style="color:#9CA3AF;margin-bottom:10px">Todas las oportunidades de <b>'+grfEsc(cli||'—')+'</b> ('+cands.length+'). Compara la actividad y decide cuál conservar: «Conservar esta» marca todas las demás para borrar.</div>'
         +'<table class="tbl" style="width:100%"><thead><tr><th>Oportunidad</th><th style="text-align:center">Tareas</th><th style="text-align:center">Notas</th><th style="text-align:center">Activ.</th><th style="text-align:center">Total</th><th></th></tr></thead><tbody>'+filas+'</tbody></table>', false);
     }catch(e){ grfSet('Resolver duplicado','<div style="color:#DB0540">Error: '+grfEsc(e.message)+'</div>', false); }
     return;
@@ -4709,6 +4717,20 @@ async function grfMarcarDeal(id,nombreEnc,btn){
     if(btn){ btn.textContent='✓ Marcado'; }
     grfStatus('Marcado para borrar. El borrado lo haces tú en HubSpot.','#62D175');
   }catch(e){ if(btn){ btn.disabled=false; btn.textContent='Marcar borrar'; } grfStatus('Error: '+e.message,'#DB0540'); }
+}
+
+async function grfConservar(keepId){
+  var lista=(window.__grDup||[]).filter(function(x){ return String(x.id)!==String(keepId); });
+  if(!lista.length){ grfStatus('No hay otras oportunidades que marcar.','#FCD34D'); return; }
+  grfStatus('Marcando '+lista.length+' oportunidad(es)…','#9CA3AF');
+  var ok=0;
+  for(var i=0;i<lista.length;i++){
+    try{
+      var r=await fetch(GRF_MARK,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({tipo:'deal',id:lista[i].id,nombreActual:lista[i].nombre,quitar:false})});
+      if(r.ok) ok++;
+    }catch(e){}
+  }
+  grfStatus('✓ '+ok+' de '+lista.length+' marcadas para borrar. El borrado lo haces tú en HubSpot.','#62D175');
 }
 
 async function grfGuardar(){
