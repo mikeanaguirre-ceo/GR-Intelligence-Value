@@ -1281,6 +1281,109 @@ cargarDatos();
     </div>
   </div>
 </div>
+<script>
+/* ===== STIL — Limpieza CRM (mark-only) ===== */
+var STL_LIMP_URL='https://mikea.app.n8n.cloud/webhook/stil-limpieza';
+var STL_MARK_URL='https://mikea.app.n8n.cloud/webhook/stil-mark-borrar';
+var STL_COMPANY_URL='https://mikea.app.n8n.cloud/webhook/stil-company';
+var SLIMP=null, SLIMP_F='c2', SLIMP_M={};
+
+(function(){
+  try{
+    var nav=document.querySelector('.nav');
+    if(nav && !document.querySelector('.ntab[onclick*="limpieza"]')){
+      var t=document.createElement('div');
+      t.className='ntab';
+      t.setAttribute('onclick',"switchTab('limpieza',this); slimpRender();");
+      t.textContent='🧹 Limpieza';
+      nav.appendChild(t);
+    }
+    if(!document.getElementById('page-limpieza')){
+      var pg=document.createElement('div');
+      pg.id='page-limpieza'; pg.className='page';
+      pg.innerHTML='<div id="slimp-filters" style="margin:6px 0 12px"></div><div id="slimp-body"></div>';
+      var ref=document.getElementById('page-pipeline');
+      if(ref && ref.parentNode) ref.parentNode.appendChild(pg); else document.body.appendChild(pg);
+    }
+  }catch(e){}
+})();
+
+function slimpBuckets(){
+  var C=(SLIMP&&SLIMP.contactos)||{}, D=(SLIMP&&SLIMP.deals)||{};
+  var c2=C.c2||[], c3=C.c3||[], c4=C.c4||[];
+  var seen={}, todos=[];
+  c2.concat(c3).concat(c4).forEach(function(x){ if(x&&!seen[x.id]){seen[x.id]=1;todos.push(x);} });
+  return [
+    {k:'ctodos',label:'Todos los contactos',tipo:'contact',arr:todos,warn:false,note:'Unión de las categorías de contactos, sin duplicados.'},
+    {k:'c2',label:'Contactos sin deal',tipo:'contact',arr:c2,warn:false,note:'Contactos sin ninguna oportunidad, y cuya empresa tampoco tiene oportunidades abiertas. Los candidatos más claros a borrar.'},
+    {k:'c3',label:'Sin deal · empresa activa',tipo:'contact',arr:c3,warn:true,note:'Sin oportunidad propia, PERO su empresa SÍ tiene oportunidades. Revisa antes de marcar: pueden ser un segundo contacto útil.'},
+    {k:'c4',label:'Sin email',tipo:'contact',arr:c4,warn:false,note:'Contactos sin correo. No se les puede contactar por email.'},
+    {k:'d1',label:'Deals sin contacto',tipo:'deal',arr:D.d1||[],warn:false,note:'Oportunidades sin ningún contacto asociado: no hay a quién escribirle.'},
+    {k:'d2',label:'Deals perdidos',tipo:'deal',arr:D.d2||[],warn:false,note:'Oportunidades marcadas como Perdida que nunca avanzaron en el funnel.'}
+  ];
+}
+
+async function slimpLoad(){
+  var b=document.getElementById('slimp-body');
+  if(b) b.innerHTML='<div style="color:#9CA3AF;padding:14px">Cargando candidatos de limpieza…</div>';
+  try{
+    var r=await fetch(STL_LIMP_URL);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    SLIMP=await r.json();
+    slimpRender();
+  }catch(e){
+    if(b) b.innerHTML='<div style="color:#EF4444;padding:14px">Error cargando limpieza: '+e.message+'</div>';
+  }
+}
+
+function slimpRender(){
+  var f=document.getElementById('slimp-filters'), b=document.getElementById('slimp-body');
+  if(!f||!b) return;
+  if(!SLIMP){ slimpLoad(); return; }
+  var bk=slimpBuckets();
+  if(!bk.some(function(x){return x.k===SLIMP_F;})) SLIMP_F='c2';
+  var a=bk.filter(function(x){return x.k===SLIMP_F;})[0]||bk[0];
+  f.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">'
+    +'<span style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-right:4px">🧹 Limpieza:</span>'
+    +bk.map(function(x){ return '<button data-slimp="'+x.k+'" style="border:1px solid '+(SLIMP_F===x.k?'#02ADBA':'#2A3142')+';background:'+(SLIMP_F===x.k?'rgba(2,173,186,.15)':'#141827')+';color:#D1D5DB;border-radius:20px;padding:5px 11px;font-size:12px;cursor:pointer">'+x.label+' <b>'+x.arr.length+'</b></button>'; }).join('')
+    +'</div>'
+    +(a.note?('<div style="background:'+(a.warn?'rgba(245,158,11,.08)':'#0d111a')+';border:1px solid #2A3142;border-left:3px solid '+(a.warn?'#F59E0B':'#02ADBA')+';border-radius:8px;padding:8px 11px;margin-top:8px;font-size:12px;color:'+(a.warn?'#FCD34D':'#9CA3AF')+'">'+(a.warn?'⚠️ ':'ℹ️ ')+a.note+'</div>'):'');
+  f.querySelectorAll('[data-slimp]').forEach(function(x){ x.addEventListener('click',function(){ SLIMP_F=x.getAttribute('data-slimp'); slimpRender(); }); });
+
+  var esDeal=(a.tipo==='deal');
+  var edad=function(cd){ if(!cd) return '—'; var d=new Date(cd); if(isNaN(d)) return '—'; return Math.floor((Date.now()-d)/86400000)+'d'; };
+  var head=esDeal
+    ? '<tr><th style="text-align:left">Deal</th><th style="text-align:center">Días alta</th><th></th></tr>'
+    : '<tr><th style="text-align:left">Nombre</th><th style="text-align:left">Puesto</th><th style="text-align:left">Empresa</th><th style="text-align:left">Teléfono</th><th></th></tr>';
+  var rows=a.arr.map(function(it){
+    var m=!!SLIMP_M[it.id];
+    var orig=esDeal?(it.nombre||''):(it.apellido||'');
+    var url='https://app.hubspot.com/contacts/51496709/record/'+(esDeal?'0-3':'0-1')+'/'+it.id;
+    var btn=m
+      ?'<span style="color:#34d399;font-weight:700;font-size:11px">✓</span> <button class="slimp-undo" data-t="'+a.tipo+'" data-id="'+it.id+'" data-o="'+encodeURIComponent(orig)+'" style="background:#1f2937;border:1px solid #374151;border-radius:7px;padding:5px 9px;color:#D1D5DB;font-size:11px;cursor:pointer">Deshacer</button>'
+      :'<button class="slimp-mark" data-t="'+a.tipo+'" data-id="'+it.id+'" data-o="'+encodeURIComponent(orig)+'" style="background:#1f2937;border:1px solid #374151;border-radius:7px;padding:5px 9px;color:#D1D5DB;font-size:11px;cursor:pointer">Marcar</button>';
+    var nm='<a href="'+url+'" target="_blank" style="color:#02ADBA;text-decoration:none;font-weight:600">'+esc(it.nombre||'(sin nombre)')+'</a>';
+    if(esDeal) return '<tr'+(m?' style="opacity:.5"':'')+'><td style="padding:7px 6px">'+nm+'</td><td style="text-align:center;padding:7px 6px;color:#9CA3AF;font-size:12px">'+edad(it.createdate)+'</td><td style="padding:7px 6px">'+btn+'</td></tr>';
+    return '<tr'+(m?' style="opacity:.5"':'')+'><td style="padding:7px 6px">'+nm+'</td><td style="padding:7px 6px;color:#9CA3AF;font-size:12px">'+esc(it.puesto||'—')+'</td><td style="padding:7px 6px;color:#9CA3AF;font-size:12px">'+esc(it.empresa||'—')+'</td><td style="padding:7px 6px;color:#9CA3AF;font-size:12px">'+esc(it.telefono||'—')+'</td><td style="padding:7px 6px">'+btn+'</td></tr>';
+  }).join('');
+  b.innerHTML=a.arr.length
+    ? ('<div style="font-size:12px;color:#6B7280;margin:0 0 6px">Solo marca la etiqueta BORRAR · el borrado lo haces tú en HubSpot filtrando “contiene BORRAR”.</div><table style="width:100%;border-collapse:collapse;font-size:13px"><thead style="color:#6B7280;font-size:11px;text-transform:uppercase">'+head+'</thead><tbody>'+rows+'</tbody></table>')
+    : '<div style="color:#6B7280;padding:14px">Sin registros en esta categoría 🎉</div>';
+  b.querySelectorAll('.slimp-mark').forEach(function(x){ x.addEventListener('click',function(){ slimpMark(x.getAttribute('data-t'),x.getAttribute('data-id'),decodeURIComponent(x.getAttribute('data-o')),false,x); }); });
+  b.querySelectorAll('.slimp-undo').forEach(function(x){ x.addEventListener('click',function(){ slimpMark(x.getAttribute('data-t'),x.getAttribute('data-id'),decodeURIComponent(x.getAttribute('data-o')),true,x); }); });
+}
+
+async function slimpMark(tipo,id,nombre,quitar,btn){
+  if(btn){ btn.disabled=true; btn.textContent=quitar?'Quitando…':'Marcando…'; }
+  try{
+    var r=await fetch(STL_MARK_URL,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({tipo:tipo,id:id,nombreActual:nombre,quitar:!!quitar})});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    if(quitar) delete SLIMP_M[id]; else SLIMP_M[id]=true;
+    slimpRender();
+  }catch(e){ if(btn){ btn.disabled=false; btn.textContent=quitar?'Deshacer':'Marcar'; } alert('Error: '+e.message); }
+}
+</script>
+
 </body>
 </html>
 
