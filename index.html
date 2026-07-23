@@ -2620,7 +2620,7 @@ function renderAlertasConLimpieza(){
   }
 }
 
-setTimeout(function(){ try{ loadLimpieza(); }catch(e){} }, 1800);
+/* Limpieza se carga solo al abrir su pestana (evita 2 llamadas pesadas simultaneas al cargar) */
 
 // --- ALERTAS v15 ---
 // 16 acciones agrupadas en 3 categorías (Cerrar / ReActivar / Higienizar)
