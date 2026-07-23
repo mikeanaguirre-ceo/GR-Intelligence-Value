@@ -847,7 +847,7 @@ const CAT_FALLBACK = {
 };
 function CAT(){ return (typeof DATA !== 'undefined' && DATA && DATA.catalogos) ? DATA.catalogos : CAT_FALLBACK; }
 function grEsc(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmtFecha(s){ if(!s||s==='null') return ''; var d=new Date(s); if(isNaN(d)) return ''; var M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; return d.getUTCDate()+' '+M[d.getUTCMonth()]+' '+String(d.getUTCFullYear()).slice(2); }
+function fmtFecha(s){ if(!s||s==='null') return ''; var d=new Date(s); if(isNaN(d)) return ''; var M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; return d.getUTCDate()+' '+M[d.getUTCMonth()]+' '+d.getUTCFullYear(); }
 function grStagesForSelect(){ var st=((CAT().stages)||CAT_FALLBACK.stages||[]).slice().sort(function(a,b){return a.prioridad-b.prioridad;}); var noP=st.filter(function(x){return !/Perdida/i.test(x.label);}); var pd=st.filter(function(x){return /Perdida/i.test(x.label);}); return noP.concat(pd); }
 var GR_OWNERS={'77808624':'Migue','82004391':'Martha'};
 function personaFromSubject(subj){ var m=String(subj||"").match(/\(([^()]*)\)\s*$/); if(!m) return null; var n=m[1].trim().replace(/^firma\s*=\s*/i,""); if(!n) return null; if(/^miguel\s+aguirre$/i.test(n)) n="Mike"; return n; }
@@ -881,11 +881,28 @@ function abrirEditarDealGR(dealId){
   var stgs=grStagesForSelect(); var curId=''; stgs.forEach(function(x){ if(x.id===d.stage) curId=x.id; });
   document.getElementById('grmd-stage').innerHTML=stgs.map(function(x){return '<option value="'+x.id+'"'+(x.id===curId?' selected':'')+'>'+grEsc(x.label)+'</option>';}).join('');
   document.getElementById('grmd-close').value=(d.closedate&&d.closedate!=='null')?String(d.closedate).slice(0,10):'';
+  grmdPretty();
+  grmdCargarContactos(d.cliente||d.name||'');
   document.getElementById('grmd-status').textContent=''; document.getElementById('grmd-save').disabled=false;
   document.getElementById('gr-modal-edit').style.display='flex';
   cargarActividadesGR(dealId, 'grmd-acts');
 }
 function cerrarModalGR(){ document.getElementById('gr-modal-edit').style.display='none'; window.__grEditId=null; }
+window.__grContactos=[];
+function grmdPretty(){ var el=document.getElementById('grmd-close'); var out=document.getElementById('grmd-close-pretty'); if(!el||!out) return; var v=el.value; if(!v){ out.textContent=''; return; } var pr=fmtFecha(v+'T00:00:00Z'); out.textContent=pr?('\u2192 '+pr):''; }
+function grmdSyncPhone(){ var sel=document.getElementById('grmd-contact'); var ph=document.getElementById('grmd-phone'); if(!sel||!ph) return; var c=(window.__grContactos||[]).filter(function(x){return String(x.id)===String(sel.value);})[0]; ph.value=c?(c.telefono||''):''; ph.setAttribute('data-orig', ph.value); }
+async function grmdCargarContactos(empresa){
+  var sel=document.getElementById('grmd-contact'); var ph=document.getElementById('grmd-phone');
+  if(!sel) return; window.__grContactos=[]; sel.innerHTML='<option value="">Cargando…</option>'; if(ph) ph.value='';
+  if(!empresa){ sel.innerHTML='<option value="">(sin empresa)</option>'; return; }
+  try{
+    var r=await fetch('https://mikea.app.n8n.cloud/webhook/gr-company',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({empresa:empresa})});
+    var data=await r.json(); var cts=(data&&data.contactos)||[]; window.__grContactos=cts;
+    if(!cts.length){ sel.innerHTML='<option value="">(sin contactos)</option>'; return; }
+    sel.innerHTML=cts.map(function(c){ return '<option value="'+c.id+'">'+grEsc(c.nombre)+(c.puesto?(' \u00b7 '+grEsc(c.puesto)):'')+'</option>'; }).join('');
+    grmdSyncPhone();
+  }catch(e){ sel.innerHTML='<option value="">(error al cargar)</option>'; }
+}
 async function guardarDealGR(){
   var dealId=window.__grEditId; if(!dealId) return;
   var stage=document.getElementById('grmd-stage').value;
@@ -895,6 +912,10 @@ async function guardarDealGR(){
   try{
     var r=await fetch('https://mikea.app.n8n.cloud/webhook/gr-deal',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:dealId,dealstage:stage,closedate:close})});
     if(!r.ok) throw new Error('HTTP '+r.status);
+    try{ var _sel=document.getElementById('grmd-contact'); var _ph=document.getElementById('grmd-phone');
+      if(_sel&&_ph&&_sel.value&&_ph.value!==(_ph.getAttribute('data-orig')||'')){
+        await fetch('https://mikea.app.n8n.cloud/webhook/gr-update-deal',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({contactId:_sel.value,properties:{phone:_ph.value}})});
+      } }catch(e){}
     stt.textContent='✓ Guardado. Actualizando…'; stt.style.color='#62D175';
     setTimeout(function(){ cerrarModalGR(); location.reload(); }, 900);
   }catch(e){ stt.textContent='Error al guardar: '+e.message; stt.style.color='#DB0540'; btn.disabled=false; }
@@ -3082,7 +3103,8 @@ function fmtDate(iso) {
   if (!iso) return '—';
   const d = new Date(iso);
   const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  return `${d.getDate()} ${months[d.getMonth()]}`;
+  if (isNaN(d)) return '—';
+  return `${d.getDate()} ${months[d.getMonth()].toLowerCase()} ${d.getFullYear()}`;
 }
 
 // === DRILLDOWN INLINE: toggle + render ===
@@ -4515,7 +4537,12 @@ if (document.readyState === 'loading') {
     <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Etapa</label>
     <select id="grmd-stage" style="width:100%;margin:5px 0 14px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;"></select>
     <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Fecha de cierre</label>
-    <input id="grmd-close" type="date" style="width:100%;margin:5px 0 14px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;">
+    <input id="grmd-close" type="date" onfocus="try{this.showPicker&&this.showPicker()}catch(e){}" onclick="try{this.showPicker&&this.showPicker()}catch(e){}" oninput="grmdPretty()" style="width:100%;margin:5px 0 2px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;">
+    <div id="grmd-close-pretty" style="font-size:12px;color:#02ADBA;font-weight:700;margin:0 0 14px;min-height:15px;"></div>
+    <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Contacto</label>
+    <select id="grmd-contact" onchange="grmdSyncPhone()" style="width:100%;margin:5px 0 8px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;"></select>
+    <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Teléfono</label>
+    <input id="grmd-phone" type="tel" placeholder="+52 ..." style="width:100%;margin:5px 0 14px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;">
     <div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Tareas por persona</div>
     <div id="grmd-acts" style="max-height:220px;overflow:auto;margin:6px 0 14px;border:1px solid #2A3142;border-radius:10px;padding:10px 12px;background:#0d111a;"></div>
     <div id="grmd-status" style="font-size:12px;margin:4px 0;min-height:16px;font-weight:700;"></div>
