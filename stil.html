@@ -1362,6 +1362,9 @@ function slimpRender(){
     var btn=m
       ?'<span style="color:#34d399;font-weight:700;font-size:11px">✓</span> <button class="slimp-undo" data-t="'+a.tipo+'" data-id="'+it.id+'" data-o="'+encodeURIComponent(orig)+'" style="background:#1f2937;border:1px solid #374151;border-radius:7px;padding:5px 9px;color:#D1D5DB;font-size:11px;cursor:pointer">Deshacer</button>'
       :'<button class="slimp-mark" data-t="'+a.tipo+'" data-id="'+it.id+'" data-o="'+encodeURIComponent(orig)+'" style="background:#1f2937;border:1px solid #374151;border-radius:7px;padding:5px 9px;color:#D1D5DB;font-size:11px;cursor:pointer">Marcar</button>';
+    var vb='<button class="slimp-vinc" data-t="'+a.tipo+'" data-id="'+it.id+'" data-emp="'+encodeURIComponent(it.empresa||'')+'" data-nom="'+encodeURIComponent(it.nombre||'')+'" style="background:#0f3c40;border:1px solid #02ADBA;border-radius:7px;padding:5px 9px;color:#7fe3ea;font-size:11px;cursor:pointer;margin-right:5px">Vincular</button>';
+    if(!esDeal && !it.empresa) vb='';
+    btn=vb+btn;
     var nm='<a href="'+url+'" target="_blank" style="color:#02ADBA;text-decoration:none;font-weight:600">'+esc(it.nombre||'(sin nombre)')+'</a>';
     if(esDeal) return '<tr'+(m?' style="opacity:.5"':'')+'><td style="padding:7px 6px">'+nm+'</td><td style="text-align:center;padding:7px 6px;color:#9CA3AF;font-size:12px">'+edad(it.createdate)+'</td><td style="padding:7px 6px">'+btn+'</td></tr>';
     return '<tr'+(m?' style="opacity:.5"':'')+'><td style="padding:7px 6px">'+nm+'</td><td style="padding:7px 6px;color:#9CA3AF;font-size:12px">'+esc(it.puesto||'—')+'</td><td style="padding:7px 6px;color:#9CA3AF;font-size:12px">'+esc(it.empresa||'—')+'</td><td style="padding:7px 6px;color:#9CA3AF;font-size:12px">'+esc(it.telefono||'—')+'</td><td style="padding:7px 6px">'+btn+'</td></tr>';
@@ -1371,6 +1374,57 @@ function slimpRender(){
     : '<div style="color:#6B7280;padding:14px">Sin registros en esta categoría 🎉</div>';
   b.querySelectorAll('.slimp-mark').forEach(function(x){ x.addEventListener('click',function(){ slimpMark(x.getAttribute('data-t'),x.getAttribute('data-id'),decodeURIComponent(x.getAttribute('data-o')),false,x); }); });
   b.querySelectorAll('.slimp-undo').forEach(function(x){ x.addEventListener('click',function(){ slimpMark(x.getAttribute('data-t'),x.getAttribute('data-id'),decodeURIComponent(x.getAttribute('data-o')),true,x); }); });
+  b.querySelectorAll('.slimp-vinc').forEach(function(x){ x.addEventListener('click',function(){ slimpVincular(x.getAttribute('data-t'),x.getAttribute('data-id'),decodeURIComponent(x.getAttribute('data-emp')),decodeURIComponent(x.getAttribute('data-nom'))); }); });
+}
+
+var STL_ASSOC_URL='https://mikea.app.n8n.cloud/webhook/stil-associate';
+var SVINC={tipo:null,id:null};
+function slimpModal(){
+  var m=document.getElementById('slimp-modal');
+  if(m) return m;
+  m=document.createElement('div'); m.id='slimp-modal';
+  m.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1200;align-items:center;justify-content:center;padding:16px;';
+  m.innerHTML='<div style="background:#141827;border:1px solid #2A3142;border-radius:16px;max-width:560px;width:100%;padding:20px;max-height:86vh;overflow:auto">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div id="sv-title" style="font-size:15px;font-weight:800;color:#F3F4F6"></div>'
+    +'<button onclick="document.getElementById(\'slimp-modal\').style.display=\'none\'" style="background:none;border:none;color:#9CA3AF;font-size:22px;cursor:pointer">&times;</button></div>'
+    +'<div id="sv-body" style="font-size:13px;color:#D1D5DB"></div>'
+    +'<div id="sv-status" style="font-size:12px;margin-top:8px;min-height:16px;font-weight:700"></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">'
+    +'<button onclick="document.getElementById(\'slimp-modal\').style.display=\'none\'" style="background:#1f2937;border:1px solid #374151;border-radius:9px;padding:9px 16px;color:#D1D5DB;cursor:pointer">Cerrar</button>'
+    +'<button id="sv-save" onclick="slimpGuardarVinc()" style="background:#02ADBA;border:none;border-radius:9px;padding:9px 18px;color:#fff;font-weight:800;cursor:pointer">Vincular</button></div></div>';
+  document.body.appendChild(m); return m;
+}
+async function slimpVincular(tipo,id,empresa,nombre){
+  SVINC={tipo:tipo,id:id};
+  slimpModal();
+  document.getElementById('sv-title').textContent=(tipo==='deal')?'Vincular contacto':'Vincular a oportunidad';
+  document.getElementById('sv-body').innerHTML='<div style="color:#9CA3AF">Cargando…</div>';
+  document.getElementById('sv-status').textContent='';
+  document.getElementById('slimp-modal').style.display='flex';
+  try{
+    var body=(tipo==='deal')?{dealId:id}:{empresa:empresa};
+    var r=await fetch(STL_COMPANY_URL,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+    var d=await r.json();
+    var lista=(tipo==='deal')?((d&&d.contactos)||[]):((d&&d.deals)||[]);
+    if(!lista.length){ document.getElementById('sv-body').innerHTML='<div style="color:#FCD34D">No encontré '+((tipo==='deal')?'contactos':'oportunidades')+' de esta empresa. Si no aporta, márcalo para borrar.</div>'; document.getElementById('sv-save').style.display='none'; return; }
+    document.getElementById('sv-save').style.display='';
+    document.getElementById('sv-body').innerHTML='<div style="color:#9CA3AF;margin-bottom:10px">'+esc(nombre||'')+' · Empresa: <b>'+esc((d.empresa&&d.empresa.nombre)||empresa||'—')+'</b>. Marca uno o varios.</div>'
+      +lista.map(function(x){ var sub=(tipo==='deal')?((x.puesto?esc(x.puesto)+' · ':'')+(Number(x.deals||0)+' oportunidad'+(Number(x.deals||0)!==1?'es':''))):((Number(x.contactos||0))+' contacto'+(Number(x.contactos||0)!==1?'s':''));
+        return '<label style="display:flex;gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><input type="checkbox" class="sv-ck" value="'+x.id+'"><span><b>'+esc(x.nombre)+'</b><br><span style="color:#6B7280;font-size:12px">'+sub+'</span></span></label>'; }).join('');
+  }catch(e){ document.getElementById('sv-body').innerHTML='<div style="color:#EF4444">Error: '+e.message+'</div>'; }
+}
+async function slimpGuardarVinc(){
+  var ids=[].slice.call(document.querySelectorAll('.sv-ck:checked')).map(function(x){return x.value;});
+  var st=document.getElementById('sv-status');
+  if(!ids.length){ st.textContent='Marca al menos uno.'; st.style.color='#FCD34D'; return; }
+  st.textContent='Vinculando…'; st.style.color='#9CA3AF';
+  var ok=0;
+  for(var i=0;i<ids.length;i++){
+    var body=(SVINC.tipo==='deal')?{contactId:ids[i],dealId:SVINC.id}:{contactId:SVINC.id,dealId:ids[i]};
+    try{ var r=await fetch(STL_ASSOC_URL,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); if(r.ok) ok++; }catch(e){}
+  }
+  st.textContent='✓ '+ok+' de '+ids.length+' vinculados.'; st.style.color='#34d399';
+  SLIMP=null; setTimeout(function(){ document.getElementById('slimp-modal').style.display='none'; slimpLoad(); }, 1200);
 }
 
 async function slimpMark(tipo,id,nombre,quitar,btn){
