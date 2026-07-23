@@ -597,7 +597,7 @@ document.addEventListener('click',function(ev){
 let __pool=[];
 
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function fmtFecha(s){ if(!s||s==='null') return ''; var d=new Date(s); if(isNaN(d)) return ''; var M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; return d.getUTCDate()+' '+M[d.getUTCMonth()]+' '+String(d.getUTCFullYear()).slice(2); }
+function fmtFecha(s){ if(!s||s==='null') return ''; var d=new Date(s); if(isNaN(d)) return ''; var M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; return d.getUTCDate()+' '+M[d.getUTCMonth()]+' '+d.getUTCFullYear(); }
 function esDeal(dn){if(!dn)return false;const d=dn.toUpperCase();return STIL_OK.some(p=>d.startsWith(p))}
 function normClas(c){const s=String(c||'').toLowerCase().trim();return s==='asked_to_circle_back_later'?'circle_back':s}
 function fmtLbl(s){return String(s||'').split('_').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ')}
@@ -655,7 +655,7 @@ function rel(iso){
   const a=Math.floor((Date.now()-f)/86400000);
   const k=grDayKey(new Date(f));
   if(k===grDayKey(new Date()))return 'hoy';if(k===grDayKey(new Date(Date.now()-86400000)))return 'ayer';if(a<30)return 'hace '+a+'d';
-  return f.toLocaleDateString('es-MX',{day:'2-digit',month:'short'});
+  return f.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
 }
 
 function seqMatch(dn,seq){
@@ -770,11 +770,28 @@ function abrirEditarDeal(dealId){
   var stgs=stStagesForSelect(); var curId=''; stgs.forEach(function(x){ if(x.label===d.etapa) curId=x.id; });
   document.getElementById('md-stage').innerHTML=stgs.map(function(x){return '<option value="'+x.id+'"'+(x.id===curId?' selected':'')+'>'+esc(x.label)+'</option>';}).join('');
   document.getElementById('md-close').value=(d.closedate&&d.closedate!=='null')?String(d.closedate).slice(0,10):'';
+  stPretty();
+  stCargarContactos(dealId, pd.empresa||d.cliente||'');
   var stt=document.getElementById('md-status'); stt.textContent=''; document.getElementById('md-save').disabled=false;
   document.getElementById('modal-edit').style.display='flex';
   cargarActividades('https://mikea.app.n8n.cloud/webhook/stil-act', dealId, 'md-acts');
 }
 function cerrarModal(){ document.getElementById('modal-edit').style.display='none'; window.__editDealId=null; }
+window.__stContactos=[];
+function stPretty(){ var el=document.getElementById('md-close'); var out=document.getElementById('md-close-pretty'); if(!el||!out) return; var v=el.value; if(!v){ out.textContent=''; return; } var pr=fmtFecha(v+'T00:00:00Z'); out.textContent=pr?('\u2192 '+pr):''; }
+function stSyncPhone(){ var sel=document.getElementById('md-contact'); var ph=document.getElementById('md-phone'); if(!sel||!ph) return; var c=(window.__stContactos||[]).filter(function(x){return String(x.id)===String(sel.value);})[0]; ph.value=c?(c.telefono||''):''; ph.setAttribute('data-orig', ph.value); }
+async function stCargarContactos(dealId, empresa){
+  var sel=document.getElementById('md-contact'); var ph=document.getElementById('md-phone');
+  if(!sel) return; window.__stContactos=[]; sel.innerHTML='<option value="">Cargando…</option>'; if(ph) ph.value='';
+  if(!dealId && !empresa){ sel.innerHTML='<option value="">(sin empresa)</option>'; return; }
+  try{
+    var r=await fetch('https://mikea.app.n8n.cloud/webhook/stil-company',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:dealId||'',empresa:empresa||''})});
+    var data=await r.json(); var cts=(data&&data.contactos)||[]; window.__stContactos=cts;
+    if(!cts.length){ sel.innerHTML='<option value="">(sin contactos)</option>'; return; }
+    sel.innerHTML=cts.map(function(c){ return '<option value="'+c.id+'">'+esc(c.nombre)+(c.puesto?(' \u00b7 '+esc(c.puesto)):'')+'</option>'; }).join('');
+    stSyncPhone();
+  }catch(e){ sel.innerHTML='<option value="">(error al cargar)</option>'; }
+}
 async function guardarDeal(){
   var dealId=window.__editDealId; if(!dealId) return;
   var stage=document.getElementById('md-stage').value;
@@ -784,6 +801,10 @@ async function guardarDeal(){
   try{
     var r=await fetch('https://mikea.app.n8n.cloud/webhook/stil-deal',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:dealId,dealstage:stage,closedate:close})});
     if(!r.ok) throw new Error('HTTP '+r.status);
+    try{ var _sel=document.getElementById('md-contact'); var _ph=document.getElementById('md-phone');
+      if(_sel&&_ph&&_sel.value&&_ph.value!==(_ph.getAttribute('data-orig')||'')){
+        await fetch('https://mikea.app.n8n.cloud/webhook/stil-update',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({contactId:_sel.value,properties:{phone:_ph.value}})});
+      } }catch(e){}
     stt.textContent='✓ Guardado. Actualizando…'; stt.style.color='#34d399';
     setTimeout(function(){ cerrarModal(); cargarDatos(true); }, 1500);
   }catch(e){ stt.textContent='Error al guardar: '+e.message; stt.style.color='#EF4444'; btn.disabled=false; }
@@ -1245,7 +1266,12 @@ cargarDatos();
     <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Etapa</label>
     <select id="md-stage" style="width:100%;margin:5px 0 14px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #374151;color:#F3F4F6;font-size:14px;"></select>
     <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Fecha de cierre</label>
-    <input id="md-close" type="date" style="width:100%;margin:5px 0 14px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #374151;color:#F3F4F6;font-size:14px;">
+    <input id="md-close" type="date" onfocus="try{this.showPicker&&this.showPicker()}catch(e){}" onclick="try{this.showPicker&&this.showPicker()}catch(e){}" oninput="stPretty()" style="width:100%;margin:5px 0 2px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #374151;color:#F3F4F6;font-size:14px;">
+    <div id="md-close-pretty" style="font-size:12px;color:#02ADBA;font-weight:700;margin:0 0 14px;min-height:15px;"></div>
+    <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Contacto</label>
+    <select id="md-contact" onchange="stSyncPhone()" style="width:100%;margin:5px 0 8px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #374151;color:#F3F4F6;font-size:14px;"></select>
+    <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Teléfono</label>
+    <input id="md-phone" type="tel" placeholder="+52 ..." style="width:100%;margin:5px 0 14px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #374151;color:#F3F4F6;font-size:14px;">
     <div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Tareas por persona</div>
     <div id="md-acts" style="max-height:220px;overflow:auto;margin:6px 0 14px;border:1px solid #2A3142;border-radius:10px;padding:10px 12px;background:#0d111a;"></div>
     <div id="md-status" style="font-size:12px;margin:4px 0;min-height:16px;font-weight:700;"></div>
