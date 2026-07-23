@@ -882,7 +882,7 @@ function abrirEditarDealGR(dealId){
   document.getElementById('grmd-stage').innerHTML=stgs.map(function(x){return '<option value="'+x.id+'"'+(x.id===curId?' selected':'')+'>'+grEsc(x.label)+'</option>';}).join('');
   document.getElementById('grmd-close').value=(d.closedate&&d.closedate!=='null')?String(d.closedate).slice(0,10):'';
   grmdPretty();
-  grmdCargarContactos(d.cliente||d.name||'');
+  grmdCargarContactos(dealId, d.cliente||d.name||'');
   document.getElementById('grmd-status').textContent=''; document.getElementById('grmd-save').disabled=false;
   document.getElementById('gr-modal-edit').style.display='flex';
   cargarActividadesGR(dealId, 'grmd-acts');
@@ -891,12 +891,12 @@ function cerrarModalGR(){ document.getElementById('gr-modal-edit').style.display
 window.__grContactos=[];
 function grmdPretty(){ var el=document.getElementById('grmd-close'); var out=document.getElementById('grmd-close-pretty'); if(!el||!out) return; var v=el.value; if(!v){ out.textContent=''; return; } var pr=fmtFecha(v+'T00:00:00Z'); out.textContent=pr?('\u2192 '+pr):''; }
 function grmdSyncPhone(){ var sel=document.getElementById('grmd-contact'); var ph=document.getElementById('grmd-phone'); if(!sel||!ph) return; var c=(window.__grContactos||[]).filter(function(x){return String(x.id)===String(sel.value);})[0]; ph.value=c?(c.telefono||''):''; ph.setAttribute('data-orig', ph.value); }
-async function grmdCargarContactos(empresa){
+async function grmdCargarContactos(dealId, empresa){
   var sel=document.getElementById('grmd-contact'); var ph=document.getElementById('grmd-phone');
   if(!sel) return; window.__grContactos=[]; sel.innerHTML='<option value="">Cargando…</option>'; if(ph) ph.value='';
-  if(!empresa){ sel.innerHTML='<option value="">(sin empresa)</option>'; return; }
+  if(!dealId && !empresa){ sel.innerHTML='<option value="">(sin empresa)</option>'; return; }
   try{
-    var r=await fetch('https://mikea.app.n8n.cloud/webhook/gr-company',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({empresa:empresa})});
+    var r=await fetch('https://mikea.app.n8n.cloud/webhook/gr-company',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:dealId||'',empresa:empresa||''})});
     var data=await r.json(); var cts=(data&&data.contactos)||[]; window.__grContactos=cts;
     if(!cts.length){ sel.innerHTML='<option value="">(sin contactos)</option>'; return; }
     sel.innerHTML=cts.map(function(c){ return '<option value="'+c.id+'">'+grEsc(c.nombre)+(c.puesto?(' \u00b7 '+grEsc(c.puesto)):'')+'</option>'; }).join('');
