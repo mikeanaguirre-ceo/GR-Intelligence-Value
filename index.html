@@ -2549,9 +2549,13 @@ function renderLimpieza(){
     var orig=esDeal?(it.nombre||''):(it.apellido||'');
     var hsType=esDeal?'0-3':'0-1';
     var hsUrl='https://app.hubspot.com/contacts/49671716/record/'+hsType+'/'+it.id;
-    var accion=marked
+    var vinc=esDeal
+      ?'<button class="btn-action grf-open" data-acc="vincularContacto" data-did="'+it.id+'" data-nom="'+encodeURIComponent(it.nombre||'')+'">Vincular</button> '
+      :'<button class="btn-action grf-open" data-acc="vincularDeals" data-cid="'+it.id+'" data-emp="'+encodeURIComponent(it.empresa||'')+'" data-nom="'+encodeURIComponent(it.nombre||'')+'">Vincular</button> ';
+    if(!esDeal && !it.empresa) vinc='';
+    var accion=vinc+(marked
       ?'<span style="color:var(--mint);font-weight:700;font-size:11px">✓</span> <button class="btn-action limp-undo" data-tipo="'+active.tipo+'" data-id="'+it.id+'" data-orig="'+encodeURIComponent(orig)+'">Deshacer</button>'
-      :'<button class="btn-action limp-mark" data-tipo="'+active.tipo+'" data-id="'+it.id+'" data-orig="'+encodeURIComponent(orig)+'">Marcar</button>';
+      :'<button class="btn-action limp-mark" data-tipo="'+active.tipo+'" data-id="'+it.id+'" data-orig="'+encodeURIComponent(orig)+'">Marcar</button>');
     var nombreCell='<a href="'+hsUrl+'" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600">'+(it.nombre||'(sin nombre)')+'</a>';
     if(esDeal){
       return '<tr'+(marked?' style="opacity:.5"':'')+'><td>'+nombreCell+'</td><td><span class="tag tag-atraccion">'+prodDeName(it.nombre)+'</span></td><td style="color:var(--text-dim);font-size:12px">'+stLabel(it.stage)+'</td><td style="text-align:center;font-size:12px;color:var(--text-dim)">'+ageOf(it.createdate)+'</td><td>'+accion+'</td></tr>';
@@ -2778,6 +2782,8 @@ function renderAlertas() {
       if (puedeResolver && a.dealId) {
         const personaA = (a.owner && PERSONAS.includes(a.owner)) ? a.owner : '';
         resolverCell = `<td><button data-alertaction="1" data-did="${escA(a.dealId)}" data-oid="${escA(a.ownerId || '')}" data-client="${escA(a.dealName)}" data-prod="${escA(a.prod || '')}" data-stages="${escA(a.stage || '')}" data-persona="${escA(personaA)}" style="background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border:none;padding:6px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">Generar siguiente acción</button></td>`;
+      } else if (a.dealId && ['vincularContacto','definirMonto','etiquetarProducto','resolverDuplicado'].indexOf(a.accion) >= 0) {
+        resolverCell = `<td><button class="btn-action grf-open" data-acc="${a.accion}" data-did="${escA(a.dealId)}" data-nom="${encodeURIComponent(a.dealName || '')}">Resolver</button></td>`;
       } else {
         resolverCell = `<td><span style="color:var(--text-mute);font-size:11px;">—</span></td>`;
       }
@@ -4552,6 +4558,197 @@ if (document.readyState === 'loading') {
     </div>
   </div>
 </div>
+<script>
+/* ===== FASE 3 — Acciones de Alertas y Limpieza (vincular / etiquetar / monto / duplicados) ===== */
+var GRF_UPDATE='https://mikea.app.n8n.cloud/webhook/gr-update-deal';
+var GRF_ASSOC='https://mikea.app.n8n.cloud/webhook/gr-associate';
+var GRF_COMPANY='https://mikea.app.n8n.cloud/webhook/gr-company';
+var GRF_ACTIVITY='https://mikea.app.n8n.cloud/webhook/gr-deal-activity';
+var GRF_MARK='https://mikea.app.n8n.cloud/webhook/gr-mark-borrar';
+
+/* Monto sugerido por producto (REA). Editable siempre. */
+var GRF_MONTO={TW:40000,AEO:15000,HS:15000,'360':1700,WB:10000,AM:10200,GenIA:20000,ITS:100000,LT:50000,BD:10000,PT:10000};
+
+var GRF={accion:null,dealId:null,ctx:null,data:null};
+
+function grfEsc(s){ try{ return grEsc(s); }catch(e){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); } }
+
+function grfModal(){
+  var m=document.getElementById('gr-modal-fix');
+  if(m) return m;
+  m=document.createElement('div');
+  m.id='gr-modal-fix';
+  m.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1100;align-items:center;justify-content:center;padding:16px;';
+  m.innerHTML='<div style="background:#141827;border:1px solid #2A3142;border-radius:16px;max-width:620px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.5);max-height:88vh;overflow:auto;">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'
+    +'<div id="grf-title" style="font-size:16px;font-weight:800;color:#F3F4F6;"></div>'
+    +'<button onclick="grfCerrar()" style="background:none;border:none;color:#9CA3AF;font-size:22px;cursor:pointer;line-height:1;">&times;</button></div>'
+    +'<div id="grf-body" style="font-size:13px;color:#D1D5DB;"></div>'
+    +'<div id="grf-status" style="font-size:12px;margin:10px 0 0;min-height:16px;font-weight:700;"></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">'
+    +'<button onclick="grfCerrar()" style="background:#1f2937;border:1px solid #2A3142;border-radius:9px;padding:9px 16px;color:#D1D5DB;cursor:pointer;">Cerrar</button>'
+    +'<button id="grf-save" onclick="grfGuardar()" style="background:#02ADBA;border:none;border-radius:9px;padding:9px 18px;color:#fff;font-weight:800;cursor:pointer;">Guardar</button>'
+    +'</div></div>';
+  document.body.appendChild(m);
+  return m;
+}
+function grfCerrar(){ var m=document.getElementById('gr-modal-fix'); if(m) m.style.display='none'; GRF={accion:null,dealId:null,ctx:null,data:null}; }
+function grfSet(t,h,showSave){ grfModal(); document.getElementById('grf-title').textContent=t; document.getElementById('grf-body').innerHTML=h; document.getElementById('grf-status').textContent=''; var b=document.getElementById('grf-save'); b.style.display=showSave?'':'none'; b.disabled=false; document.getElementById('gr-modal-fix').style.display='flex'; }
+function grfStatus(msg,color){ var s=document.getElementById('grf-status'); if(s){ s.textContent=msg; s.style.color=color||'#9CA3AF'; } }
+
+function grfDealDe(id){ var d=null; ((typeof DATA!=='undefined'&&DATA&&DATA.deals)?DATA.deals:[]).forEach(function(x){ if(String(x.id)===String(id)) d=x; }); return d; }
+function grfProductos(){ try{ return ((CAT().productos)||[]).map(function(p){return p.id;}); }catch(e){ return ['TW','AM','AEO','360','GenIA','ITS','LT','BD','WB','HS','PT']; } }
+
+/* nombre del deal con el producto sustituido: P_XX_Empresa_Persona o XX_Empresa_Persona */
+function grfNombreConProducto(nombre,prod){
+  var n=String(nombre||'').trim();
+  if(!n) return prod;
+  var t=n.split('_');
+  if(t.length<2){ return prod+'_'+n; }
+  if(t[0]==='P'){ t[1]=prod; } else { t[0]=prod; }
+  return t.join('_');
+}
+
+async function abrirFixGR(accion,dealId,extra){
+  GRF={accion:accion,dealId:String(dealId||''),ctx:extra||{},data:null};
+  var d=grfDealDe(dealId);
+  var nombre=(extra&&extra.nombre)||(d&&(d.name||d.cliente))||'';
+  if(accion==='etiquetarProducto'){
+    var prods=grfProductos();
+    grfSet('Etiquetar producto',
+      '<div style="color:#9CA3AF;margin-bottom:10px">El producto se define por el nombre de la oportunidad. Elige el producto y revisa el nombre resultante antes de guardar.</div>'
+      +'<div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase">Producto</div>'
+      +'<select id="grf-prod" onchange="grfPreviewProd()" style="width:100%;margin:5px 0 12px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;">'
+      +prods.map(function(p){return '<option value="'+grfEsc(p)+'">'+grfEsc(p)+'</option>';}).join('')+'</select>'
+      +'<div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase">Nombre actual</div>'
+      +'<div style="color:#9CA3AF;margin:4px 0 10px">'+grfEsc(nombre||'—')+'</div>'
+      +'<div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase">Quedará como</div>'
+      +'<div id="grf-preview" style="color:#62D175;font-weight:700;margin:4px 0"></div>', true);
+    GRF.ctx.nombre=nombre; grfPreviewProd(); return;
+  }
+  if(accion==='definirMonto'){
+    var prod=(d&&d.prod)||'';
+    var sug=GRF_MONTO[prod]||0;
+    grfSet('Definir monto',
+      '<div style="color:#9CA3AF;margin-bottom:10px">Monto sugerido según el producto <b>'+grfEsc(prod||'—')+'</b> (puedes cambiarlo).</div>'
+      +'<div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase">Monto (USD)</div>'
+      +'<input id="grf-monto" type="number" value="'+(sug||'')+'" style="width:100%;margin:5px 0 6px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;">'
+      +(sug?('<div style="font-size:12px;color:#02ADBA">Sugerido REA: $'+sug.toLocaleString('es-MX')+'</div>'):''), true);
+    return;
+  }
+  if(accion==='vincularContacto'){
+    grfSet('Vincular contacto','<div style="color:#9CA3AF">Cargando contactos de la empresa…</div>', false);
+    try{
+      var r=await fetch(GRF_COMPANY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:GRF.dealId,empresa:(extra&&extra.empresa)||''})});
+      var data=await r.json(); GRF.data=data;
+      var cts=(data&&data.contactos)||[];
+      if(!cts.length){ grfSet('Vincular contacto','<div style="color:#FCD34D">No encontré contactos en esta empresa'+(data&&data.empresa?(' ('+grfEsc(data.empresa.nombre)+')'):'')+'.</div>', false); return; }
+      grfSet('Vincular contacto',
+        '<div style="color:#9CA3AF;margin-bottom:10px">Empresa: <b>'+grfEsc((data.empresa&&data.empresa.nombre)||'—')+'</b>. Marca uno o varios contactos para vincular a esta oportunidad.</div>'
+        +cts.map(function(c){ return '<label style="display:flex;gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><input type="checkbox" class="grf-ct" value="'+c.id+'"><span><b>'+grfEsc(c.nombre)+'</b>'+(c.puesto?('<span style="color:#9CA3AF"> · '+grfEsc(c.puesto)+'</span>'):'')+(c.email?('<br><span style="color:#6B7280;font-size:12px">'+grfEsc(c.email)+'</span>'):'')+'</span></label>'; }).join(''), true);
+    }catch(e){ grfSet('Vincular contacto','<div style="color:#DB0540">Error al cargar: '+grfEsc(e.message)+'</div>', false); }
+    return;
+  }
+  if(accion==='vincularDeals'){
+    grfSet('Vincular a oportunidad','<div style="color:#9CA3AF">Cargando oportunidades de la empresa…</div>', false);
+    try{
+      var r2=await fetch(GRF_COMPANY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({empresa:(extra&&extra.empresa)||''})});
+      var d2=await r2.json(); GRF.data=d2;
+      var dls=(d2&&d2.deals)||[];
+      if(!dls.length){ grfSet('Vincular a oportunidad','<div style="color:#FCD34D">Esta empresa no tiene oportunidades. Si no aporta, puedes marcarlo para borrar.</div>', false); return; }
+      grfSet('Vincular a oportunidad',
+        '<div style="color:#9CA3AF;margin-bottom:10px">Contacto: <b>'+grfEsc((extra&&extra.nombre)||'')+'</b> · Empresa: <b>'+grfEsc((d2.empresa&&d2.empresa.nombre)||'—')+'</b>. Marca las oportunidades a las que lo quieres ligar.</div>'
+        +dls.map(function(x){ return '<label style="display:flex;gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><input type="checkbox" class="grf-dl" value="'+x.id+'"><span><b>'+grfEsc(x.nombre)+'</b><br><span style="color:#6B7280;font-size:12px">'+(x.monto?('$'+Number(x.monto).toLocaleString('es-MX')):'')+(x.createdate?(' · alta '+fmtFecha(x.createdate)):'')+'</span></span></label>'; }).join(''), true);
+    }catch(e){ grfSet('Vincular a oportunidad','<div style="color:#DB0540">Error al cargar: '+grfEsc(e.message)+'</div>', false); }
+    return;
+  }
+  if(accion==='resolverDuplicado'){
+    grfSet('Resolver duplicado','<div style="color:#9CA3AF">Buscando duplicados y contando actividad…</div>', false);
+    try{
+      var base=grfDealDe(dealId); var cli=(base&&base.cliente)||'';
+      var cands=((typeof DATA!=='undefined'&&DATA&&DATA.deals)?DATA.deals:[]).filter(function(x){ return String(x.cliente||'')===String(cli) && cli; });
+      if(cands.length<2){ cands=[base].filter(Boolean); }
+      var ids=cands.map(function(x){return String(x.id);});
+      var ra=await fetch(GRF_ACTIVITY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealIds:ids})});
+      var da=await ra.json(); GRF.data=da;
+      var byId={}; ((da&&da.filas)||[]).forEach(function(f){ byId[String(f.dealId)]=f; });
+      var filas=cands.map(function(x){ var f=byId[String(x.id)]||{tareas:0,notas:0,actividades:0,total:0};
+        var mejor=(da&&String(da.sugerido)===String(x.id));
+        return '<tr style="'+(mejor?'background:rgba(98,209,117,.08)':'')+'"><td style="padding:7px 6px"><a href="https://app.hubspot.com/contacts/49671716/record/0-3/'+x.id+'" target="_blank" style="color:#02ADBA;text-decoration:none">'+grfEsc(x.name||x.cliente||x.id)+'</a>'+(mejor?' <span style="color:#62D175;font-size:11px;font-weight:700">← conservar</span>':'')+'</td>'
+        +'<td style="text-align:center;padding:7px 6px">'+f.tareas+'</td><td style="text-align:center;padding:7px 6px">'+f.notas+'</td><td style="text-align:center;padding:7px 6px">'+f.actividades+'</td><td style="text-align:center;padding:7px 6px;font-weight:800">'+f.total+'</td>'
+        +'<td style="padding:7px 6px"><button class="btn-action" onclick="grfMarcarDeal(\''+x.id+'\',\''+encodeURIComponent(x.name||x.cliente||'')+'\',this)">Marcar borrar</button></td></tr>'; }).join('');
+      grfSet('Resolver duplicado',
+        '<div style="color:#9CA3AF;margin-bottom:10px">Oportunidades de <b>'+grfEsc(cli||'—')+'</b>. La de mayor actividad es la que conviene conservar; marca las otras para borrar.</div>'
+        +'<table class="tbl" style="width:100%"><thead><tr><th>Oportunidad</th><th style="text-align:center">Tareas</th><th style="text-align:center">Notas</th><th style="text-align:center">Activ.</th><th style="text-align:center">Total</th><th></th></tr></thead><tbody>'+filas+'</tbody></table>', false);
+    }catch(e){ grfSet('Resolver duplicado','<div style="color:#DB0540">Error: '+grfEsc(e.message)+'</div>', false); }
+    return;
+  }
+  grfSet('Acción','<div style="color:#9CA3AF">Esta acción todavía no tiene editor.</div>', false);
+}
+
+function grfPreviewProd(){
+  var sel=document.getElementById('grf-prod'); var pv=document.getElementById('grf-preview');
+  if(!sel||!pv) return;
+  pv.textContent=grfNombreConProducto((GRF.ctx&&GRF.ctx.nombre)||'', sel.value);
+}
+
+async function grfMarcarDeal(id,nombreEnc,btn){
+  if(btn){ btn.disabled=true; btn.textContent='Marcando…'; }
+  try{
+    var r=await fetch(GRF_MARK,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({tipo:'deal',id:id,nombreActual:decodeURIComponent(nombreEnc||''),quitar:false})});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    if(btn){ btn.textContent='✓ Marcado'; }
+    grfStatus('Marcado para borrar. El borrado lo haces tú en HubSpot.','#62D175');
+  }catch(e){ if(btn){ btn.disabled=false; btn.textContent='Marcar borrar'; } grfStatus('Error: '+e.message,'#DB0540'); }
+}
+
+async function grfGuardar(){
+  var btn=document.getElementById('grf-save'); if(btn) btn.disabled=true;
+  grfStatus('Guardando…','#9CA3AF');
+  try{
+    if(GRF.accion==='etiquetarProducto'){
+      var prod=document.getElementById('grf-prod').value;
+      var nuevo=grfNombreConProducto((GRF.ctx&&GRF.ctx.nombre)||'', prod);
+      var r=await fetch(GRF_UPDATE,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:GRF.dealId,properties:{dealname:nuevo}})});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+    } else if(GRF.accion==='definirMonto'){
+      var m=document.getElementById('grf-monto').value;
+      if(m===''||isNaN(Number(m))) throw new Error('Monto inválido');
+      var r2=await fetch(GRF_UPDATE,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:GRF.dealId,properties:{amount:String(Number(m))}})});
+      if(!r2.ok) throw new Error('HTTP '+r2.status);
+    } else if(GRF.accion==='vincularContacto'){
+      var ids=[].slice.call(document.querySelectorAll('.grf-ct:checked')).map(function(x){return x.value;});
+      if(!ids.length) throw new Error('Marca al menos un contacto');
+      for(var i=0;i<ids.length;i++){
+        var rr=await fetch(GRF_ASSOC,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({contactId:ids[i],dealId:GRF.dealId})});
+        if(!rr.ok) throw new Error('HTTP '+rr.status);
+      }
+    } else if(GRF.accion==='vincularDeals'){
+      var dids=[].slice.call(document.querySelectorAll('.grf-dl:checked')).map(function(x){return x.value;});
+      if(!dids.length) throw new Error('Marca al menos una oportunidad');
+      var cid=(GRF.ctx&&GRF.ctx.contactId)||'';
+      if(!cid) throw new Error('Falta el contacto');
+      for(var j=0;j<dids.length;j++){
+        var r3=await fetch(GRF_ASSOC,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({contactId:cid,dealId:dids[j]})});
+        if(!r3.ok) throw new Error('HTTP '+r3.status);
+      }
+    } else { throw new Error('Acción no soportada'); }
+    grfStatus('✓ Guardado','#62D175');
+    setTimeout(function(){ grfCerrar(); location.reload(); }, 900);
+  }catch(e){ grfStatus('Error: '+e.message,'#DB0540'); if(btn) btn.disabled=false; }
+}
+
+document.addEventListener('click', function(ev){
+  var t=ev.target; if(!t||!t.closest) return;
+  var b=t.closest('.grf-open'); if(!b) return;
+  ev.preventDefault();
+  abrirFixGR(b.getAttribute('data-acc'), b.getAttribute('data-did')||'', {
+    nombre: decodeURIComponent(b.getAttribute('data-nom')||''),
+    empresa: decodeURIComponent(b.getAttribute('data-emp')||''),
+    contactId: b.getAttribute('data-cid')||''
+  });
+});
+</script>
 </body>
 </html>
 
