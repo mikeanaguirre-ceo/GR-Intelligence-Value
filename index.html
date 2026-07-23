@@ -966,7 +966,7 @@ function filtrosHTML(menu, arr, kind){
   var pids=catPersonaIds();
   H+='<div class="filters"><span class="filter-label">Persona:</span>';
   H+=_chip(menu,'persona','Todos','Todos ('+totalP+')', f.persona==='Todos');
-  pids.forEach(function(p){ if(pcount[p]) H+=_chip(menu,'persona',p, p+' ('+pcount[p]+')', f.persona===p); });
+  pids.forEach(function(p){ if(pcount[p] || menu==='alertas') H+=_chip(menu,'persona',p, p+' ('+(pcount[p]||0)+')', f.persona===p); });
   if(pcount['Otro']) H+=_chip(menu,'persona','Otro','Otro ('+pcount['Otro']+')', f.persona==='Otro');
   H+='</div>';
   // Semáforo (pipeline, pendientes, alertas — no recap)
@@ -980,19 +980,28 @@ function filtrosHTML(menu, arr, kind){
   GRUPOS_ORDEN.forEach(function(g){ H+=_chip(menu,'grupo',g,grupoLabel(g), (f.grupo||'ALL')===g); });
   H+='</div>';
   // Producto (todos) canónico, presente
-  var prods=prodsPresentesDe(arr);
+  var prods;
+  if(menu==='alertas'){
+    var _excl={'Interno':1,'Otro':1,'P-Otro':1};
+    prods=((CAT().productos)||CAT_FALLBACK.productos||[]).map(function(x){return x.id;}).filter(function(x){return !_excl[x];});
+  } else { prods=prodsPresentesDe(arr); }
   if(f.grupo && f.grupo!=='ALL'){ prods=prods.filter(function(p){return grupoDeProd(p)===f.grupo;}); }
+  var _pc={}; (arr||[]).forEach(function(it){ if(it&&it.prod) _pc[it.prod]=(_pc[it.prod]||0)+1; });
   H+='<div class="filters"><span class="filter-label">Producto:</span>';
   H+=_chip(menu,'prod','ALL','Todos', (f.prod||'ALL')==='ALL');
-  prods.forEach(function(p){ H+=_chip(menu,'prod',p,p, f.prod===p); });
+  prods.forEach(function(p){ H+=_chip(menu,'prod',p, (menu==='alertas'? (p+' ('+(_pc[p]||0)+')') : p), f.prod===p); });
   H+='</div>';
   // Stage (solo deals: pipeline, alertas)
   if(kind==='deal'||kind==='alerta'){
-    var stgs=_stagesPresentes(arr);
+    var stgs;
+    if(menu==='alertas'){
+      stgs=((CAT().stages)||CAT_FALLBACK.stages||[]).slice().sort(function(a,b){return a.prioridad-b.prioridad;});
+    } else { stgs=_stagesPresentes(arr); }
     if(!stgs.some(function(x){return x.label==='Perdida';})) stgs=stgs.concat([{label:'Perdida'}]);
+    var _sc={}; (arr||[]).forEach(function(it){ var l=(it&&(it.stageLabel||it.stage))||''; if(l) _sc[l]=(_sc[l]||0)+1; });
     H+='<div class="filters"><span class="filter-label">Stage:</span>';
     H+=_chip(menu,'stage','ALL','Todos', (f.stage||'ALL')==='ALL');
-    stgs.forEach(function(x){ H+=_chip(menu,'stage',x.label,x.label, f.stage===x.label); });
+    stgs.forEach(function(x){ H+=_chip(menu,'stage',x.label, (menu==='alertas'? (x.label+' ('+(_sc[x.label]||0)+')') : x.label), f.stage===x.label); });
     H+='</div>';
     // Monto
     H+='<div class="filters"><span class="filter-label">Monto:</span>';
@@ -2551,7 +2560,7 @@ function renderLimpieza(){
     var hsUrl='https://app.hubspot.com/contacts/49671716/record/'+hsType+'/'+it.id;
     var vinc=esDeal
       ?'<button class="btn-action grf-open" data-acc="vincularContacto" data-did="'+it.id+'" data-nom="'+encodeURIComponent(it.nombre||'')+'">Vincular</button> '
-      :'<button class="btn-action grf-open" data-acc="vincularDeals" data-cid="'+it.id+'" data-emp="'+encodeURIComponent(it.empresa||'')+'" data-nom="'+encodeURIComponent(it.nombre||'')+'">Vincular</button> ';
+      :'<button class="btn-action grf-open" data-acc="vincularDeals" data-cid="'+it.id+'" data-emp="'+encodeURIComponent(it.empresa||'')+'" data-eml="'+encodeURIComponent(it.email||'')+'" data-nom="'+encodeURIComponent(it.nombre||'')+'">Vincular</button> ';
     if(!esDeal && !it.empresa) vinc='';
     var accion=vinc+(marked
       ?'<span style="color:var(--mint);font-weight:700;font-size:11px">✓</span> <button class="btn-action limp-undo" data-tipo="'+active.tipo+'" data-id="'+it.id+'" data-orig="'+encodeURIComponent(orig)+'">Deshacer</button>'
@@ -4645,20 +4654,20 @@ async function abrirFixGR(accion,dealId,extra){
       if(!cts.length){ grfSet('Vincular contacto','<div style="color:#FCD34D">No encontré contactos en esta empresa'+(data&&data.empresa?(' ('+grfEsc(data.empresa.nombre)+')'):'')+'.</div>', false); return; }
       grfSet('Vincular contacto',
         '<div style="color:#9CA3AF;margin-bottom:10px">Empresa: <b>'+grfEsc((data.empresa&&data.empresa.nombre)||'—')+'</b>. Marca uno o varios contactos para vincular a esta oportunidad.</div>'
-        +cts.map(function(c){ return '<label style="display:flex;gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><input type="checkbox" class="grf-ct" value="'+c.id+'"><span><b>'+grfEsc(c.nombre)+'</b>'+(c.puesto?('<span style="color:#9CA3AF"> · '+grfEsc(c.puesto)+'</span>'):'')+(c.email?('<br><span style="color:#6B7280;font-size:12px">'+grfEsc(c.email)+'</span>'):'')+'</span></label>'; }).join(''), true);
+        +cts.map(function(c){ var nd=Number(c.deals||0); var badge=nd>0?('<span style="color:#62D175;font-size:11px;font-weight:700"> · '+nd+' oportunidad'+(nd!==1?'es':'')+'</span>'):'<span style="color:#6B7280;font-size:11px"> · sin oportunidades</span>'; return '<label style="display:flex;gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><input type="checkbox" class="grf-ct" value="'+c.id+'"><span><b>'+grfEsc(c.nombre)+'</b>'+(c.puesto?('<span style="color:#9CA3AF"> · '+grfEsc(c.puesto)+'</span>'):'')+badge+(c.email?('<br><span style="color:#6B7280;font-size:12px">'+grfEsc(c.email)+'</span>'):'')+'</span></label>'; }).join(''), true);
     }catch(e){ grfSet('Vincular contacto','<div style="color:#DB0540">Error al cargar: '+grfEsc(e.message)+'</div>', false); }
     return;
   }
   if(accion==='vincularDeals'){
     grfSet('Vincular a oportunidad','<div style="color:#9CA3AF">Cargando oportunidades de la empresa…</div>', false);
     try{
-      var r2=await fetch(GRF_COMPANY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({empresa:(extra&&extra.empresa)||''})});
+      var r2=await fetch(GRF_COMPANY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({empresa:(extra&&extra.empresa)||'',email:(extra&&extra.email)||''})});
       var d2=await r2.json(); GRF.data=d2;
       var dls=(d2&&d2.deals)||[];
       if(!dls.length){ grfSet('Vincular a oportunidad','<div style="color:#FCD34D">Esta empresa no tiene oportunidades. Si no aporta, puedes marcarlo para borrar.</div>', false); return; }
       grfSet('Vincular a oportunidad',
         '<div style="color:#9CA3AF;margin-bottom:10px">Contacto: <b>'+grfEsc((extra&&extra.nombre)||'')+'</b> · Empresa: <b>'+grfEsc((d2.empresa&&d2.empresa.nombre)||'—')+'</b>. Marca las oportunidades a las que lo quieres ligar.</div>'
-        +dls.map(function(x){ return '<label style="display:flex;gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><input type="checkbox" class="grf-dl" value="'+x.id+'"><span><b>'+grfEsc(x.nombre)+'</b><br><span style="color:#6B7280;font-size:12px">'+(x.monto?('$'+Number(x.monto).toLocaleString('es-MX')):'')+(x.createdate?(' · alta '+fmtFecha(x.createdate)):'')+'</span></span></label>'; }).join(''), true);
+        +dls.map(function(x){ var nc=Number(x.contactos||0); var cb=nc>0?(' · '+nc+' contacto'+(nc!==1?'s':'')+' ya vinculado'+(nc!==1?'s':'')):' · sin contactos'; return '<label style="display:flex;gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><input type="checkbox" class="grf-dl" value="'+x.id+'"><span><b>'+grfEsc(x.nombre)+'</b><br><span style="color:#6B7280;font-size:12px">'+(x.monto?('$'+Number(x.monto).toLocaleString('es-MX')):'')+(x.createdate?(' · alta '+fmtFecha(x.createdate)):'')+cb+'</span></span></label>'; }).join(''), true);
     }catch(e){ grfSet('Vincular a oportunidad','<div style="color:#DB0540">Error al cargar: '+grfEsc(e.message)+'</div>', false); }
     return;
   }
@@ -4745,7 +4754,8 @@ document.addEventListener('click', function(ev){
   abrirFixGR(b.getAttribute('data-acc'), b.getAttribute('data-did')||'', {
     nombre: decodeURIComponent(b.getAttribute('data-nom')||''),
     empresa: decodeURIComponent(b.getAttribute('data-emp')||''),
-    contactId: b.getAttribute('data-cid')||''
+    contactId: b.getAttribute('data-cid')||'',
+    email: decodeURIComponent(b.getAttribute('data-eml')||'')
   });
 });
 </script>
