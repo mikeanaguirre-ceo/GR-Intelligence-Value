@@ -338,7 +338,7 @@ function ensureTaskModal() {
         '<div style="flex:1;display:none;"><label style="' + lab + '">Responsable</label>' +
         '<select id="tm-resp" style="margin-top:6px;' + f + '"></select>' +
         '<input id="tm-resp-otro" placeholder="nombre" style="display:none;margin-top:6px;' + f + '"></div>' +
-        '<div style="flex:1;position:relative;"><label style="' + lab + '">Fecha de cierre</label>' +
+        '<div style="flex:1;position:relative;"><label style="' + lab + '">Fecha límite de la tarea</label>' +
         '<input id="tm-date-display" readonly placeholder="elegir fecha" style="margin-top:6px;cursor:pointer;' + f + '">' +
         '<input id="tm-date" type="hidden">' +
         '<div id="tm-cal" style="display:none;position:absolute;top:64px;left:0;right:0;z-index:5;background:var(--card,#16181d);border:1px solid var(--border,#2a2d35);border-radius:10px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.5);"></div>' +
@@ -424,7 +424,15 @@ function openTaskEditor(ds) {
     op.style.background = 'rgba(220,38,38,.12)'; op.style.color = '#FCA5A5';
     op.innerHTML = '⚠️ Sin oportunidad asociada — el REA pide que toda tarea tenga deal. Asóciala en HubSpot.';
   }
-  document.getElementById('tm-prod').value = ds.prod || '';
+  var _tmProd=document.getElementById('tm-prod');
+  // Garantiza que el producto actual (incl. Interno/Otro) y 'Interno' existan como opcion.
+  [ds.prod, 'Interno'].forEach(function(p){
+    if(p && !Array.prototype.some.call(_tmProd.options, function(o){return o.value===p;})){
+      var _o=document.createElement('option'); _o.value=p; _o.textContent=p; _tmProd.appendChild(_o);
+    }
+  });
+  _tmProd.value = ds.prod || '';
+  _tmProd.disabled = false; _tmProd.style.opacity = '1';
   document.getElementById('tm-client').value = _taskCtx.client || '';
   document.getElementById('tm-accion').value = parsed.accion || title;
   const respSel = document.getElementById('tm-resp'), respOtro = document.getElementById('tm-resp-otro');
@@ -500,8 +508,8 @@ async function doTaskAction(kind) {
     const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     document.getElementById('task-modal').style.display = 'none';
-    taskToast(kind === 'update' ? 'Tarea actualizada' : kind === 'close' ? 'Tarea cerrada' : 'Tarea nueva creada', true);
-    setTimeout(function(){ cargarDatos(true); }, 1500);
+    taskToast((kind === 'update' ? 'Tarea actualizada' : kind === 'close' ? 'Tarea cerrada' : 'Tarea nueva creada') + '. Aprieta ↺ Actualizar', true);
+    // Sin re-fetch automatico: el usuario reconcilia con ↺ Actualizar cuando quiera.
   } catch (e) {
     taskToast('Error: ' + e.message, false);
   }
@@ -777,6 +785,15 @@ function abrirEditarDeal(dealId){
   cargarActividades('https://mikea.app.n8n.cloud/webhook/stil-act', dealId, 'md-acts');
 }
 function cerrarModal(){ document.getElementById('modal-edit').style.display='none'; window.__editDealId=null; }
+function stNuevaTarea(){
+  var dealId=window.__editDealId; if(!dealId){ taskToast('Abre un deal primero', false); return; }
+  var d=(DATA.deals||[]).filter(function(x){return String(x.id)===String(dealId);})[0];
+  if(!d){ taskToast('Deal no encontrado en los datos actuales', false); return; }
+  openAlertAction({ did:String(dealId), oid:'', client:(d.cliente||d.dealname||''), prod:(d.prod||''), stages:(d.etapa||''), persona:'' });
+  // La tarea pertenece a esta oportunidad, que ya tiene producto: se fija y no se puede cambiar aqui.
+  var _ps=document.getElementById('tm-prod');
+  if(_ps){ _ps.value=(d.prod||''); _ps.disabled=true; _ps.style.opacity='.7'; }
+}
 window.__stContactos=[];
 function stPretty(){ var el=document.getElementById('md-close'); var out=document.getElementById('md-close-pretty'); if(!el||!out) return; var v=el.value; if(!v){ out.textContent=''; return; } var pr=fmtFecha(v+'T00:00:00Z'); out.textContent=pr?('\u2192 '+pr):''; }
 function stSyncPhone(){ var sel=document.getElementById('md-contact'); var ph=document.getElementById('md-phone'); if(!sel||!ph) return; var c=(window.__stContactos||[]).filter(function(x){return String(x.id)===String(sel.value);})[0]; ph.value=c?(c.telefono||''):''; ph.setAttribute('data-orig', ph.value); }
@@ -805,8 +822,9 @@ async function guardarDeal(){
       if(_sel&&_ph&&_sel.value&&_ph.value!==(_ph.getAttribute('data-orig')||'')){
         await fetch('https://mikea.app.n8n.cloud/webhook/stil-update',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({contactId:_sel.value,properties:{phone:_ph.value}})});
       } }catch(e){}
-    stt.textContent='✓ Guardado. Actualizando…'; stt.style.color='#34d399';
-    setTimeout(function(){ cerrarModal(); cargarDatos(true); }, 1500);
+    cerrarModal();
+    taskToast('Guardado. Aprieta ↺ Actualizar para ver los cambios', true);
+    btn.disabled=false;
   }catch(e){ stt.textContent='Error al guardar: '+e.message; stt.style.color='#EF4444'; btn.disabled=false; }
 }
 function renderKanban(){
@@ -1265,14 +1283,17 @@ cargarDatos();
     <div id="md-info" style="font-size:12px;color:#9CA3AF;margin-bottom:16px;line-height:1.7;"></div>
     <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Etapa</label>
     <select id="md-stage" style="width:100%;margin:5px 0 14px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #374151;color:#F3F4F6;font-size:14px;"></select>
-    <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Fecha de cierre</label>
+    <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Fecha de cierre de la oportunidad</label>
     <input id="md-close" type="date" onfocus="try{this.showPicker&&this.showPicker()}catch(e){}" onclick="try{this.showPicker&&this.showPicker()}catch(e){}" oninput="stPretty()" style="width:100%;margin:5px 0 2px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #374151;color:#F3F4F6;font-size:14px;">
     <div id="md-close-pretty" style="font-size:12px;color:#02ADBA;font-weight:700;margin:0 0 14px;min-height:15px;"></div>
     <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Contacto</label>
     <select id="md-contact" onchange="stSyncPhone()" style="width:100%;margin:5px 0 8px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #374151;color:#F3F4F6;font-size:14px;"></select>
     <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Teléfono</label>
     <input id="md-phone" type="tel" placeholder="+52 ..." style="width:100%;margin:5px 0 14px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #374151;color:#F3F4F6;font-size:14px;">
-    <div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Tareas por persona</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Tareas por persona</div>
+      <button onclick="stNuevaTarea()" style="background:transparent;color:#c4b5fd;border:1px solid #7D2AE4;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;">+ Agregar tarea</button>
+    </div>
     <div id="md-acts" style="max-height:220px;overflow:auto;margin:6px 0 14px;border:1px solid #2A3142;border-radius:10px;padding:10px 12px;background:#0d111a;"></div>
     <div id="md-status" style="font-size:12px;margin:4px 0;min-height:16px;font-weight:700;"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
