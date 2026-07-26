@@ -894,6 +894,9 @@ function grmdNuevaTarea(){
   if(!d){ taskToast('Deal no encontrado en los datos actuales', false); return; }
   var lbl=(STAGE_ORDER_K.find(function(s){return s.id===d.stage;})||{}).label;
   openAlertAction({ did:String(dealId), oid:'', client:(d.cliente||d.name||''), prod:(d.prod||''), stages:(lbl||''), persona:((d.personas&&d.personas[0])||'') });
+  // La tarea pertenece a esta oportunidad, que ya tiene producto: se fija y no se puede cambiar aqui.
+  var _ps=document.getElementById('tm-prod');
+  if(_ps){ _ps.value=(d.prod||''); _ps.disabled=true; _ps.style.opacity='.7'; }
 }
 window.__grContactos=[];
 function grmdPretty(){ var el=document.getElementById('grmd-close'); var out=document.getElementById('grmd-close-pretty'); if(!el||!out) return; var v=el.value; if(!v){ out.textContent=''; return; } var pr=fmtFecha(v+'T00:00:00Z'); out.textContent=pr?('\u2192 '+pr):''; }
@@ -2348,7 +2351,7 @@ function ensureTaskModal() {
         '<div style="flex:1;"><label style="' + lab + '">Responsable</label>' +
         '<select id="tm-resp" style="margin-top:6px;' + f + '"></select>' +
         '<input id="tm-resp-otro" placeholder="nombre" style="display:none;margin-top:6px;' + f + '"></div>' +
-        '<div style="flex:1;position:relative;"><label style="' + lab + '">Fecha de cierre</label>' +
+        '<div style="flex:1;position:relative;"><label style="' + lab + '">Fecha límite de la tarea</label>' +
         '<input id="tm-date-display" readonly placeholder="elegir fecha" style="margin-top:6px;cursor:pointer;' + f + '">' +
         '<input id="tm-date" type="hidden">' +
         '<div id="tm-cal" style="display:none;position:absolute;top:64px;left:0;right:0;z-index:5;background:var(--card,#16181d);border:1px solid var(--border,#2a2d35);border-radius:10px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.5);"></div>' +
@@ -2434,7 +2437,9 @@ function openTaskEditor(ds) {
     op.style.background = 'rgba(220,38,38,.12)'; op.style.color = '#FCA5A5';
     op.innerHTML = '⚠️ Sin oportunidad asociada — el REA pide que toda tarea tenga deal. Asóciala en HubSpot.';
   }
-  document.getElementById('tm-prod').value = ds.prod || '';
+  var _tmProd=document.getElementById('tm-prod');
+  _tmProd.value = ds.prod || '';
+  _tmProd.disabled = false; _tmProd.style.opacity = '1';
   document.getElementById('tm-client').value = _taskCtx.client || '';
   document.getElementById('tm-accion').value = parsed.accion;
   const respSel = document.getElementById('tm-resp'), respOtro = document.getElementById('tm-resp-otro');
@@ -2667,7 +2672,7 @@ const ACCION_DEFS = [
   { id: 'vincularContacto',     label: 'Vincular contacto',         icon: '📇', cat: 'Higienizar' },
   { id: 'completarDescripcion', label: 'Completar descripción',     icon: '📝', cat: 'Higienizar' },
   { id: 'eliminarPrueba',       label: 'Eliminar deal de prueba',   icon: '🧹', cat: 'Higienizar' },
-  { id: 'definirCloseDate',     label: 'Definir fecha de cierre',   icon: '📅', cat: 'Higienizar' },
+  { id: 'definirCloseDate',     label: 'Definir fecha de cierre de la oportunidad',   icon: '📅', cat: 'Higienizar' },
   { id: 'resolverDuplicado',    label: 'Resolver duplicado',        icon: '🔁', cat: 'Higienizar' }
 ];
 
@@ -4573,7 +4578,7 @@ if (document.readyState === 'loading') {
     <div id="grmd-info" style="font-size:12px;color:#9CA3AF;margin-bottom:16px;line-height:1.7;"></div>
     <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Etapa</label>
     <select id="grmd-stage" style="width:100%;margin:5px 0 14px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;"></select>
-    <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Fecha de cierre</label>
+    <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Fecha de cierre de la oportunidad</label>
     <input id="grmd-close" type="date" onfocus="try{this.showPicker&&this.showPicker()}catch(e){}" onclick="try{this.showPicker&&this.showPicker()}catch(e){}" oninput="grmdPretty()" style="width:100%;margin:5px 0 2px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;">
     <div id="grmd-close-pretty" style="font-size:12px;color:#02ADBA;font-weight:700;margin:0 0 14px;min-height:15px;"></div>
     <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Contacto</label>
