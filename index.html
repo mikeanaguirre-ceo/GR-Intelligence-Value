@@ -2620,7 +2620,7 @@ async function markBorrar(tipo,id,nombreActual,quitar,btn){
     var r=await fetch(MARK_BORRAR_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tipo:tipo,id:id,nombreActual:nombreActual,quitar:!!quitar})});
     if(!r.ok) throw new Error('HTTP '+r.status);
     if(quitar){delete LIMP_MARKED[id];}else{LIMP_MARKED[id]=true;}
-    taskToast(quitar?'Marca quitada':'Marcado para borrar',true);
+    taskToast((quitar?'Marca quitada':'Marcado para borrar')+'. Aprieta ↻ Actualizar',true);
     renderLimpieza();
   }catch(e){ if(btn){btn.disabled=false;btn.textContent=quitar?'Deshacer':'Marcar para borrar';} taskToast('Error: '+e.message,false); }
 }
