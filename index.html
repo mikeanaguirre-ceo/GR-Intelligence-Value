@@ -888,6 +888,13 @@ function abrirEditarDealGR(dealId){
   cargarActividadesGR(dealId, 'grmd-acts');
 }
 function cerrarModalGR(){ document.getElementById('gr-modal-edit').style.display='none'; window.__grEditId=null; }
+function grmdNuevaTarea(){
+  var dealId=window.__grEditId; if(!dealId){ taskToast('Abre un deal primero', false); return; }
+  var d=(DATA.deals||[]).filter(function(x){return String(x.id)===String(dealId);})[0];
+  if(!d){ taskToast('Deal no encontrado en los datos actuales', false); return; }
+  var lbl=(STAGE_ORDER_K.find(function(s){return s.id===d.stage;})||{}).label;
+  openAlertAction({ did:String(dealId), oid:'', client:(d.cliente||d.name||''), prod:(d.prod||''), stages:(lbl||''), persona:((d.personas&&d.personas[0])||'') });
+}
 window.__grContactos=[];
 function grmdPretty(){ var el=document.getElementById('grmd-close'); var out=document.getElementById('grmd-close-pretty'); if(!el||!out) return; var v=el.value; if(!v){ out.textContent=''; return; } var pr=fmtFecha(v+'T00:00:00Z'); out.textContent=pr?('\u2192 '+pr):''; }
 function grmdSyncPhone(){ var sel=document.getElementById('grmd-contact'); var ph=document.getElementById('grmd-phone'); if(!sel||!ph) return; var c=(window.__grContactos||[]).filter(function(x){return String(x.id)===String(sel.value);})[0]; ph.value=c?(c.telefono||''):''; ph.setAttribute('data-orig', ph.value); }
@@ -908,16 +915,31 @@ async function guardarDealGR(){
   var stage=document.getElementById('grmd-stage').value;
   var close=document.getElementById('grmd-close').value;
   var stt=document.getElementById('grmd-status'); var btn=document.getElementById('grmd-save');
+  var _sel=document.getElementById('grmd-contact'); var _ph=document.getElementById('grmd-phone');
+  var phoneChanged=!!(_sel&&_ph&&_sel.value&&_ph.value!==(_ph.getAttribute('data-orig')||''));
   stt.textContent='Guardando…'; stt.style.color='#9CA3AF'; btn.disabled=true;
   try{
     var r=await fetch('https://mikea.app.n8n.cloud/webhook/gr-deal',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:dealId,dealstage:stage,closedate:close})});
     if(!r.ok) throw new Error('HTTP '+r.status);
-    try{ var _sel=document.getElementById('grmd-contact'); var _ph=document.getElementById('grmd-phone');
-      if(_sel&&_ph&&_sel.value&&_ph.value!==(_ph.getAttribute('data-orig')||'')){
+    if(phoneChanged){
+      try{
         await fetch('https://mikea.app.n8n.cloud/webhook/gr-update-deal',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({contactId:_sel.value,properties:{phone:_ph.value}})});
-      } }catch(e){}
-    stt.textContent='✓ Guardado. Actualizando…'; stt.style.color='#62D175';
-    setTimeout(function(){ cerrarModalGR(); location.reload(); }, 900);
+      }catch(e){}
+    }
+    // Actualizacion optimista en memoria: sin recargar la pagina ni re-fetch.
+    // El boton ↻ Actualizar es el punto de reconciliacion con HubSpot.
+    var _d=(DATA.deals||[]).filter(function(x){return String(x.id)===String(dealId);})[0];
+    if(_d){
+      _d.stage=stage;
+      if(close) _d.closedate=close;
+      if(phoneChanged && _d.contacto && (!_d.contacto.id || String(_d.contacto.id)===String(_sel.value))){
+        _d.contacto.telefono=_ph.value;
+      }
+    }
+    cerrarModalGR();
+    try{ renderCurrentTab(); }catch(e){}
+    taskToast('Guardado. Aprieta ↻ Actualizar para confirmar con HubSpot', true);
+    btn.disabled=false;
   }catch(e){ stt.textContent='Error al guardar: '+e.message; stt.style.color='#DB0540'; btn.disabled=false; }
 }
 function catPersonaIds(){ return (CAT().personas || CAT_FALLBACK.personas).map(function(p){return p.id;}); }
@@ -2488,8 +2510,8 @@ async function doTaskAction(kind) {
     const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     document.getElementById('task-modal').style.display = 'none';
-    taskToast(kind === 'update' ? 'Tarea actualizada' : kind === 'close' ? 'Tarea cerrada' : 'Tarea nueva creada', true);
-    setTimeout(loadData, 700);
+    taskToast((kind === 'update' ? 'Tarea actualizada' : kind === 'close' ? 'Tarea cerrada' : 'Tarea nueva creada') + '. Aprieta ↻ Actualizar', true);
+    // Sin re-fetch automatico de los 4 endpoints: el usuario reconcilia con ↻ Actualizar cuando quiera.
   } catch (e) {
     taskToast('Error: ' + e.message, false);
   }
@@ -4558,7 +4580,10 @@ if (document.readyState === 'loading') {
     <select id="grmd-contact" onchange="grmdSyncPhone()" style="width:100%;margin:5px 0 8px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;"></select>
     <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Teléfono</label>
     <input id="grmd-phone" type="tel" placeholder="+52 ..." style="width:100%;margin:5px 0 14px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;">
-    <div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Tareas por persona</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Tareas por persona</div>
+      <button onclick="grmdNuevaTarea()" style="background:transparent;color:#c4b5fd;border:1px solid #7C3AED;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;">+ Agregar tarea</button>
+    </div>
     <div id="grmd-acts" style="max-height:220px;overflow:auto;margin:6px 0 14px;border:1px solid #2A3142;border-radius:10px;padding:10px 12px;background:#0d111a;"></div>
     <div id="grmd-status" style="font-size:12px;margin:4px 0;min-height:16px;font-weight:700;"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
@@ -4765,7 +4790,9 @@ async function grfGuardar(){
       }
     } else { throw new Error('Acción no soportada'); }
     grfStatus('✓ Guardado','#62D175');
-    setTimeout(function(){ grfCerrar(); location.reload(); }, 900);
+    grfCerrar();
+    taskToast('Guardado. Aprieta ↻ Actualizar para ver los cambios', true);
+    if(btn) btn.disabled=false;
   }catch(e){ grfStatus('Error: '+e.message,'#DB0540'); if(btn) btn.disabled=false; }
 }
 
