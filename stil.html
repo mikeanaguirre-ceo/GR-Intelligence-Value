@@ -1444,7 +1444,7 @@ async function slimpGuardarVinc(){
     var body=(SVINC.tipo==='deal')?{contactId:ids[i],dealId:SVINC.id}:{contactId:SVINC.id,dealId:ids[i]};
     try{ var r=await fetch(STL_ASSOC_URL,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); if(r.ok) ok++; }catch(e){}
   }
-  st.textContent='✓ '+ok+' de '+ids.length+' vinculados.'; st.style.color='#34d399';
+  st.textContent='✓ '+ok+' de '+ids.length+' vinculados. Aprieta ↺ Actualizar.'; st.style.color='#34d399';
   SLIMP=null; setTimeout(function(){ document.getElementById('slimp-modal').style.display='none'; slimpLoad(); }, 1200);
 }
 
@@ -1455,6 +1455,7 @@ async function slimpMark(tipo,id,nombre,quitar,btn){
     if(!r.ok) throw new Error('HTTP '+r.status);
     if(quitar) delete SLIMP_M[id]; else SLIMP_M[id]=true;
     slimpRender();
+    taskToast((quitar?'Marca quitada':'Marcado para borrar')+'. Aprieta ↺ Actualizar',true);
   }catch(e){ if(btn){ btn.disabled=false; btn.textContent=quitar?'Deshacer':'Marcar'; } alert('Error: '+e.message); }
 }
 </script>
