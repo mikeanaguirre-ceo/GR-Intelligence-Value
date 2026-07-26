@@ -2438,6 +2438,13 @@ function openTaskEditor(ds) {
     op.innerHTML = '⚠️ Sin oportunidad asociada — el REA pide que toda tarea tenga deal. Asóciala en HubSpot.';
   }
   var _tmProd=document.getElementById('tm-prod');
+  // Garantiza que el producto actual (incl. Interno/Otro) y 'Interno' existan como opcion.
+  // El llenado por defecto excluye Interno/Otro, y al editar una tarea interna se perdia el producto.
+  [ds.prod, 'Interno'].forEach(function(p){
+    if(p && !Array.prototype.some.call(_tmProd.options, function(o){return o.value===p;})){
+      var _o=document.createElement('option'); _o.value=p; _o.textContent=p; _tmProd.appendChild(_o);
+    }
+  });
   _tmProd.value = ds.prod || '';
   _tmProd.disabled = false; _tmProd.style.opacity = '1';
   document.getElementById('tm-client').value = _taskCtx.client || '';
