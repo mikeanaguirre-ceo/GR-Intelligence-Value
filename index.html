@@ -3426,6 +3426,55 @@ function grDayKey(d) {
    asi que tocar el numero abria una lista vacia. Se unifica con el mismo mapeo. */
 function normClasP(c){ return c==='asked_to_circle_back_later' ? 'circle_back' : (c||''); }
 
+// ---- Sincronizacion de listas de llamadas GR (Amplemarket) ----
+// Dispara el workflow n8n 'GR - Sincronizar Listas de Llamadas' por webhook.
+// Reconcilia por delta contra HubSpot: agrega quien entro a la etapa y quita quien salio.
+// Nunca borra ni recrea las listas, asi que el lista_id que usa el marcador no cambia.
+var GR_SYNC_LISTAS_URL = 'https://mikea.app.n8n.cloud/webhook/gr-sync-listas';
+var GR_SYNC_BOX = '<div class="section" id="sync-listas-box" style="margin-bottom:14px;">'
+  + '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
+  + '<button id="btn-sync-listas" onclick="grSyncListasLlamadas()" style="background:#02ADBA;color:#fff;border:0;border-radius:6px;padding:10px 16px;font-weight:600;font-size:13px;cursor:pointer;">Actualizar listas de llamadas</button>'
+  + '<span style="font-size:12px;color:var(--text-dim);">Se actualizan solas a las 04:00. Usa el bot\u00f3n si alguien cambi\u00f3 de etapa hoy.</span>'
+  + '</div><div id="sync-listas-msg" style="margin-top:10px;font-size:12px;line-height:1.5;"></div></div>';
+
+function grSyncListasLlamadas(){
+  var btn = document.getElementById('btn-sync-listas');
+  var msg = document.getElementById('sync-listas-msg');
+  if(!btn || !msg) return;
+  btn.disabled = true;
+  var txt = btn.textContent;
+  btn.textContent = 'Actualizando...';
+  btn.style.opacity = '0.6';
+  msg.style.color = 'var(--text-dim)';
+  msg.textContent = 'Sincronizando contra HubSpot. Tarda varios minutos, no cierres la pagina.';
+
+  fetch(GR_SYNC_LISTAS_URL, { method: 'POST' })
+    .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(d){
+      var listas = (d && Array.isArray(d.LISTAS)) ? d.LISTAS : [];
+      var fallas = (d && Array.isArray(d.FALLAS)) ? d.FALLAS : [];
+      var lineas = listas.map(function(l){
+        var c = [];
+        if(l.intencion_agregar > 0) c.push('+' + l.intencion_agregar);
+        if(l.intencion_quitar > 0) c.push('-' + l.intencion_quitar);
+        return l.nombre + ': ' + l.en_hubspot + ' prospectos (' + (c.length ? c.join(' / ') : 'sin cambios') + ')';
+      });
+      if(fallas.length){
+        msg.style.color = '#EF4444';
+        msg.innerHTML = '<strong>Termin\u00f3 con fallas:</strong><br>' + fallas.join('<br>') + (lineas.length ? '<br><br>' + lineas.join('<br>') : '');
+      } else {
+        msg.style.color = '#10B981';
+        msg.innerHTML = '<strong>Listas actualizadas.</strong><br>' + (lineas.length ? lineas.join('<br>') : 'Nada que cambiar.');
+      }
+    })
+    .catch(function(e){
+      msg.style.color = '#EF4444';
+      msg.innerHTML = '<strong>No se pudo actualizar.</strong> ' + String(e.message || e)
+        + '<br>Si dice timeout, la sincronizaci\u00f3n pudo haber corrido igual. Vuelve a intentar en un minuto.';
+    })
+    .then(function(){ btn.disabled = false; btn.textContent = txt; btn.style.opacity = '1'; });
+}
+
 function renderProspeccion() {
   var deals = (DATA && DATA.deals) || [];
   var PEV = (PROSPECCION_DATA && Array.isArray(PROSPECCION_DATA.eventos)) ? PROSPECCION_DATA.eventos : null;
@@ -3433,7 +3482,7 @@ function renderProspeccion() {
   var cont = document.getElementById('p-prospeccion');
   if (!cont) return;
   if (!PEV || !PEV.length) {
-    cont.innerHTML = '<div class="section"><div style="font-size:12px;color:var(--text-dim);">Aún no hay eventos.</div></div>';
+    cont.innerHTML = GR_SYNC_BOX + '<div class="section"><div style="font-size:12px;color:var(--text-dim);">Aún no hay eventos.</div></div>';
     return;
   }
   var fmtLbl = function(s) { return String(s||'').split('_').map(function(w){return w.charAt(0).toUpperCase()+w.slice(1);}).join(' '); };
@@ -3501,7 +3550,7 @@ function renderProspeccion() {
   t2+='<tr style="border-top:2px solid var(--border,#2A3142);"><td style="font-weight:700;">TOTAL señales</td>'+wcp(wS.hoy,'hoy','__ALL_SENALES__',1)+wcp(wS.d7,'d7','__ALL_SENALES__',1)+wcp(wS.d30,'d30','__ALL_SENALES__',1)+wcp(wS.d90,'d90','__ALL_SENALES__',1)+wcp(wS.total,'total','__ALL_SENALES__',1)+'</tr></tbody></table></div>';
   // ETAPAS y sc eliminados (tabla dh quitada)
   // Tabla Oportunidades eliminada
-  cont.innerHTML='<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Fuente: tabla de eventos (los 3 tenants), no HubSpot. Los 30d incluyen 7d y hoy.</div>'+chips+'<div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado. Toca un número para ver el detalle.</div>'+t1+'<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto</div>'+t2+'<div id="pipeline-metrics-gr" style="margin:16px 0 4px;"></div><div style="border:none;border-top:1px solid #252d50;margin:14px 0"></div><div id="prosp-detalle" style="margin-top:16px;"></div></div>';
+  cont.innerHTML=GR_SYNC_BOX + '<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Fuente: tabla de eventos (los 3 tenants), no HubSpot. Los 30d incluyen 7d y hoy.</div>'+chips+'<div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado. Toca un número para ver el detalle.</div>'+t1+'<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto</div>'+t2+'<div id="pipeline-metrics-gr" style="margin:16px 0 4px;"></div><div style="border:none;border-top:1px solid #252d50;margin:14px 0"></div><div id="prosp-detalle" style="margin-top:16px;"></div></div>';
   cont.querySelectorAll('[data-pf]').forEach(function(btn){ btn.addEventListener('click',function(){ var f=btn.dataset.pf, v=decodeURIComponent(btn.dataset.pv); if(f==='grupo'){prospGrupo=v; prospProducto='ALL';} else if(f==='prod')prospProducto=v; else if(f==='canal')prospCanal=v; else if(f==='sem')prospSem=v; else if(f==='stage')prospStage=v; renderProspeccion(); }); });
   renderPipelineMetricsGR();
   cont.querySelectorAll('.pcell').forEach(function(td){ td.addEventListener('click',function(){
