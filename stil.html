@@ -168,6 +168,13 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
   <div id="pp-c" style="display:none">
     <div class="ptitle">Inventario de prospección</div>
     <div class="psub">Fuente: tabla de eventos STIL — no HubSpot. Los 30d incluyen 7d y hoy.</div>
+    <div id="sync-listas-box" style="margin:12px 0 4px;padding:12px;border:1px solid #2a2f3a;border-radius:8px;background:#151922">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <button id="btn-sync-listas" onclick="syncListasLlamadas()" style="background:#02ADBA;color:#fff;border:0;border-radius:6px;padding:10px 16px;font-weight:600;font-size:14px;cursor:pointer">Actualizar listas de llamadas</button>
+        <span style="color:#8b93a1;font-size:12px">Se actualizan solas a las 04:00. Usa el botón si alguien cambió de etapa hoy.</span>
+      </div>
+      <div id="sync-listas-msg" style="margin-top:10px;font-size:13px;line-height:1.5"></div>
+    </div>
     <div class="fbar" id="prosp-chips"></div>
     <div class="stitle c">Replies por prioridad</div>
     <div class="shint">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado. Toca un número para ver el detalle.</div>
@@ -1457,6 +1464,60 @@ async function slimpMark(tipo,id,nombre,quitar,btn){
     slimpRender();
     taskToast((quitar?'Marca quitada':'Marcado para borrar')+'. Aprieta ↺ Actualizar',true);
   }catch(e){ if(btn){ btn.disabled=false; btn.textContent=quitar?'Deshacer':'Marcar'; } alert('Error: '+e.message); }
+}
+
+// ---- Sincronizacion de listas de llamadas STIL (Amplemarket) ----
+// Dispara el workflow n8n 'STIL - Sincronizar Listas de Llamadas' por webhook.
+// El workflow reconcilia por delta: agrega quien entro a la etapa y quita quien salio.
+// Nunca borra ni recrea las listas, asi que el lista_id que usa el marcador no cambia.
+var SYNC_LISTAS_URL = 'https://mikea.app.n8n.cloud/webhook/stil-sync-listas';
+
+function syncListasLlamadas(){
+  var btn = document.getElementById('btn-sync-listas');
+  var msg = document.getElementById('sync-listas-msg');
+  if(!btn || !msg) return;
+  btn.disabled = true;
+  var textoOriginal = btn.textContent;
+  btn.textContent = 'Actualizando...';
+  btn.style.opacity = '0.6';
+  msg.style.color = '#8b93a1';
+  msg.textContent = 'Sincronizando contra HubSpot. Tarda un par de minutos, no cierres la pagina.';
+
+  fetch(SYNC_LISTAS_URL, { method: 'POST' })
+    .then(function(r){
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(d){
+      var listas = (d && Array.isArray(d.LISTAS)) ? d.LISTAS : [];
+      var fallas = (d && Array.isArray(d.FALLAS)) ? d.FALLAS : [];
+      var lineas = listas.map(function(l){
+        var cambios = [];
+        if(l.intencion_agregar > 0) cambios.push('+' + l.intencion_agregar);
+        if(l.intencion_quitar > 0) cambios.push('-' + l.intencion_quitar);
+        var det = cambios.length ? cambios.join(' / ') : 'sin cambios';
+        return l.nombre + ': ' + l.en_hubspot + ' prospectos (' + det + ')';
+      });
+      if(fallas.length){
+        msg.style.color = '#DB0540';
+        msg.innerHTML = '<strong>Terminó con fallas:</strong><br>' + fallas.join('<br>') +
+                        (lineas.length ? '<br><br>' + lineas.join('<br>') : '');
+      } else {
+        msg.style.color = '#62D175';
+        msg.innerHTML = '<strong>Listas actualizadas.</strong><br>' +
+                        (lineas.length ? lineas.join('<br>') : 'Nada que cambiar.');
+      }
+    })
+    .catch(function(e){
+      msg.style.color = '#DB0540';
+      msg.innerHTML = '<strong>No se pudo actualizar.</strong> ' + String(e.message || e) +
+                      '<br>Si dice timeout, la sincronización pudo haber corrido igual. Vuelve a intentar en un minuto.';
+    })
+    .then(function(){
+      btn.disabled = false;
+      btn.textContent = textoOriginal;
+      btn.style.opacity = '1';
+    });
 }
 </script>
 
