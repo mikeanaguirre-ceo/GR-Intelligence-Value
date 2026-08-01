@@ -5081,13 +5081,17 @@ function mtPintar(){
       +'<b>Cuello de botella: '+mtEsc(flu.cuello_de_botella)+'</b> <span style="color:'+MT_C.gris+';font-size:11px;">— '+mtEsc(flu.cuello_criterio||'')+'</span></div>';
   }
   h+='<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;">';
-  h+=mtTarjeta('En el embudo',mtNum(flu.inventario_total),'',MT_C.azul,'oportunidades vivas');
-  h+=mtTarjeta('En tiempo',mtNum(flu.en_tiempo_pct),'%',MT_C.verde,mtNum(flu.en_tiempo)+' oportunidades');
+  h+=mtTarjeta('En el embudo',mtNum(flu.inventario_total),'',MT_C.azul,'oportunidades vivas','mt-det-todos');
+  h+=mtTarjeta('En tiempo',mtNum(flu.en_tiempo_pct),'%',MT_C.verde,mtNum(flu.en_tiempo)+' oportunidades','mt-det-entiempo');
   h+=mtTarjeta('Con retraso',mtNum(flu.retrasados_pct),'%',MT_C.rojo,mtNum(flu.retrasados)+' oportunidades','mt-det-retraso');
-  h+=mtTarjeta('Avanzaron',mtNum(flu.avanzaron),'',MT_C.verde,flu.foto_comparada?('desde '+mtEsc(flu.foto_comparada)):'requiere 2 fotos');
-  h+=mtTarjeta('Entraron',mtNum(flu.entraron),'',MT_C.morado,flu.foto_comparada?('desde '+mtEsc(flu.foto_comparada)):'requiere 2 fotos');
+  h+=mtTarjeta('Avanzaron',mtNum(flu.avanzaron),'',MT_C.verde,flu.foto_comparada?('desde '+mtEsc(flu.foto_comparada)):'requiere 2 fotos','mt-det-avanzaron');
+  h+=mtTarjeta('Entraron',mtNum(flu.entraron),'',MT_C.morado,flu.foto_comparada?('desde '+mtEsc(flu.foto_comparada)):'requiere 2 fotos','mt-det-entraron');
   h+='</div>';
+  h+=mtDetalleOportunidades('mt-det-todos',flu.detalle_todos||[]);
+  h+=mtDetalleOportunidades('mt-det-entiempo',flu.detalle_en_tiempo||[]);
   h+=mtDetalleOportunidades('mt-det-retraso',flu.retrasados_detalle||[]);
+  h+=mtDetalleOportunidades('mt-det-avanzaron',flu.detalle_avanzaron||[]);
+  h+=mtDetalleOportunidades('mt-det-entraron',flu.detalle_entraron||[]);
 
   var pe=flu.por_etapa||[];
   if(pe.length){
@@ -5111,9 +5115,12 @@ function mtPintar(){
   /* ---------- BLOQUE 4: TAREAS ---------- */
   h+='<h3 style="margin:22px 0 4px 0;font-size:15px;">Tareas</h3>';
   h+='<div style="font-size:11px;color:'+MT_C.gris+';margin-bottom:10px;">Se miden contra su fecha compromiso. La autoridad es HubSpot.</div>';
-  if(tar.disponible===false || (!tar.vencian && !tar.backlog_abierto)){
+  if(tar.disponible===false){
+    h+='<div style="border:1px dashed '+MT_C.rojo+';border-radius:10px;padding:12px 14px;font-size:12px;color:'+MT_C.rojo+';">'
+      +'HubSpot no respondió al consultar las tareas. Vuelve a cargar en unos minutos; Citas y Flujo no dependen de HubSpot y siguen siendo correctos.</div>';
+  } else if(!tar.vencian && !tar.backlog_abierto){
     h+='<div style="border:1px dashed rgba(148,163,184,.4);border-radius:10px;padding:12px 14px;font-size:12px;color:'+MT_C.gris+';">'
-      +'Sin tareas con fecha compromiso en este periodo, o HubSpot no respondió al consultarlas.</div>';
+      +'No hay tareas con fecha compromiso en este periodo.</div>';
   } else {
     var cT=mtNum(tar.cumplimiento_pct);
     h+='<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;">';
