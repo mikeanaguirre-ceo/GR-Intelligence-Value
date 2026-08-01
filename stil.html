@@ -1526,236 +1526,231 @@ function syncListasLlamadas(){
 var METRICAS_TENANT_FIJO = 'STIL';
 
 /* ===================== PESTANA METRICAS ===================== */
-/* Alimentada por el endpoint gr-metricas. Los umbrales de estancamiento
-   los aplica el backend al responder, no estan congelados en los datos. */
 var METRICAS_URL = 'https://mikea.app.n8n.cloud/webhook/gr-metricas';
 var MT_TENANT_FIJO = (typeof METRICAS_TENANT_FIJO !== 'undefined') ? METRICAS_TENANT_FIJO : '';
-var MT_STATE = { periodo:'30d', producto:'TODOS', owner:'TODOS', tenant: (MT_TENANT_FIJO || 'TODOS') };
+var MT_STATE = { periodo:'mes', producto:'TODOS', owner:'TODOS', tenant:(MT_TENANT_FIJO||'TODOS') };
 var MT_DATA = null, MT_CARGANDO = false;
 var MT_C = { morado:'#7D2AE4', azul:'#02ADBA', verde:'#62D175', amarillo:'#FFCD00', rojo:'#DB0540', gris:'#9CA3AF' };
 
 function mtEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 function mtPanel(){ return document.getElementById('p-metricas') || document.getElementById('page-metricas'); }
+function mtNum(n){ return (n==null?0:n); }
 
-function mtNombrePeriodo(p){
-  var m = { sem1:'Semana 1', sem2:'Semana 2', sem3:'Semana 3', sem4:'Semana 4',
-            mes:'Mes en curso', '15d':'15 dias', '30d':'30 dias', '90d':'90 dias' };
-  return m[p] || p;
-}
-
-function mtSetFiltro(campo, valor){
-  MT_STATE[campo] = valor;
-  mtCargar();
-}
+function mtSetFiltro(campo, valor){ MT_STATE[campo]=valor; mtCargar(); }
 
 async function mtCargar(){
-  var cont = mtPanel();
-  if(!cont) return;
-  if(MT_CARGANDO) return;
+  var cont = mtPanel(); if(!cont) return; if(MT_CARGANDO) return;
   MT_CARGANDO = true;
-  if(!MT_DATA){ cont.innerHTML = '<div style="padding:24px;color:#9CA3AF;font-size:13px;">Cargando metricas...</div>'; }
+  if(!MT_DATA) cont.innerHTML = '<div style="padding:24px;color:#9CA3AF;font-size:13px;">Cargando métricas…</div>';
   try{
-    var cuerpo = {
-      tenant: (MT_TENANT_FIJO || MT_STATE.tenant),
-      periodo: MT_STATE.periodo,
-      producto: MT_STATE.producto,
-      owner: MT_STATE.owner
-    };
-    var r = await fetch(METRICAS_URL, { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(cuerpo) });
-    if(!r.ok) throw new Error('HTTP ' + r.status);
+    var r = await fetch(METRICAS_URL, {method:'POST',headers:{'content-type':'application/json'},
+      body: JSON.stringify({ tenant:(MT_TENANT_FIJO||MT_STATE.tenant), periodo:MT_STATE.periodo, producto:MT_STATE.producto, owner:MT_STATE.owner })});
+    if(!r.ok) throw new Error('HTTP '+r.status);
     MT_DATA = await r.json();
     mtPintar();
   }catch(e){
-    cont.innerHTML = '<div style="padding:24px;color:'+MT_C.rojo+';font-size:13px;">No se pudieron cargar las metricas: '+mtEsc(e.message)+'</div>';
-  }finally{
-    MT_CARGANDO = false;
-  }
+    cont.innerHTML = '<div style="padding:24px;color:'+MT_C.rojo+';font-size:13px;">No se pudieron cargar las métricas: '+mtEsc(e.message)+'</div>';
+  }finally{ MT_CARGANDO = false; }
 }
 
 function mtChips(titulo, campo, opciones, activo){
   var h = '<div style="margin:0 0 10px 0;">';
   h += '<div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:'+MT_C.gris+';margin-bottom:5px;">'+mtEsc(titulo)+'</div>';
-  h += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+  h += '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">';
   for(var i=0;i<opciones.length;i++){
     var o = opciones[i];
-    var val = (typeof o === 'string') ? o : o.v;
-    var lbl = (typeof o === 'string') ? o : o.l;
-    var on = (String(val) === String(activo));
-    h += '<button onclick="mtSetFiltro(\''+campo+'\',\''+mtEsc(val).replace(/'/g,"\\'")+'\')" style="'
-       + 'cursor:pointer;border-radius:999px;padding:5px 11px;font-size:12px;border:1px solid '
-       + (on ? MT_C.morado : 'rgba(148,163,184,.35)') + ';'
-       + 'background:' + (on ? MT_C.morado : 'transparent') + ';'
-       + 'color:' + (on ? '#fff' : 'inherit') + ';">' + mtEsc(lbl) + '</button>';
+    if(o === '|'){ h += '<span style="width:1px;height:18px;background:rgba(148,163,184,.35);margin:0 3px;"></span>'; continue; }
+    var val = (typeof o==='string')?o:o.v, lbl = (typeof o==='string')?o:o.l;
+    var sub = (typeof o==='object' && o.sub);
+    var on = (String(val)===String(activo));
+    h += '<button onclick="mtSetFiltro(\''+campo+'\',\''+mtEsc(val).replace(/'/g,"\\'")+'\')" style="cursor:pointer;border-radius:999px;'
+       + 'padding:'+(sub?'3px 9px':'5px 11px')+';font-size:'+(sub?'11px':'12px')+';'
+       + 'border:1px solid '+(on?MT_C.morado:'rgba(148,163,184,.35)')+';'
+       + 'background:'+(on?MT_C.morado:'transparent')+';color:'+(on?'#fff':'inherit')+';">'+mtEsc(lbl)+'</button>';
   }
   h += '</div></div>';
   return h;
 }
 
-function mtTarjeta(etiqueta, valor, sufijo, color, pie){
-  return '<div style="flex:1 1 140px;min-width:140px;border:1px solid rgba(148,163,184,.25);border-radius:12px;padding:12px 14px;">'
-   + '<div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:'+MT_C.gris+';">'+mtEsc(etiqueta)+'</div>'
+function mtTarjeta(etiqueta, valor, sufijo, color, pie, idDetalle){
+  var flecha = idDetalle ? '<span style="font-size:10px;color:'+MT_C.gris+';cursor:pointer;" onclick="mtToggle(\''+idDetalle+'\')">▸ ver</span>' : '';
+  return '<div style="flex:1 1 150px;min-width:150px;border:1px solid rgba(148,163,184,.25);border-radius:12px;padding:12px 14px;">'
+   + '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">'
+   + '<span style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:'+MT_C.gris+';">'+mtEsc(etiqueta)+'</span>'+flecha+'</div>'
    + '<div style="font-size:30px;font-weight:700;line-height:1.15;color:'+color+';">'+mtEsc(valor)+(sufijo||'')+'</div>'
-   + '<div style="font-size:11px;color:'+MT_C.gris+';min-height:14px;">'+(pie||'')+'</div>'
-   + '</div>';
+   + '<div style="font-size:11px;color:'+MT_C.gris+';min-height:14px;">'+(pie||'')+'</div></div>';
 }
 
-function mtVariacion(actual, previo){
-  var a = Number(actual)||0, p = Number(previo)||0;
-  if(p === 0){ return a > 0 ? '<span style="color:'+MT_C.verde+';">nuevo</span>' : '<span style="color:'+MT_C.gris+';">sin comparativo</span>'; }
-  var d = Math.round(((a - p) / p) * 100);
-  var col = d > 0 ? MT_C.verde : (d < 0 ? MT_C.rojo : MT_C.gris);
-  var flecha = d > 0 ? '+' : '';
-  return '<span style="color:'+col+';">'+flecha+d+'% vs '+p+'</span>';
+function mtToggle(id){
+  var el = document.getElementById(id);
+  if(el) el.style.display = (el.style.display==='none' ? 'block' : 'none');
+}
+
+function mtVar(actual, previo){
+  var a=mtNum(actual), p=mtNum(previo);
+  if(p===0) return a>0 ? '<span style="color:'+MT_C.verde+';">nuevo</span>' : '<span style="color:'+MT_C.gris+';">sin comparativo</span>';
+  var d = Math.round(((a-p)/p)*100), col = d>0?MT_C.verde:(d<0?MT_C.rojo:MT_C.gris);
+  return '<span style="color:'+col+';">'+(d>0?'+':'')+d+'% vs '+p+'</span>';
+}
+
+function mtTabla(cols, filas){
+  var h = '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="text-align:left;color:'+MT_C.gris+';font-size:10px;text-transform:uppercase;letter-spacing:.06em;">';
+  for(var i=0;i<cols.length;i++) h += '<th style="padding:6px 8px;white-space:nowrap;">'+mtEsc(cols[i])+'</th>';
+  h += '</tr></thead><tbody>';
+  for(var j=0;j<filas.length;j++){
+    h += '<tr style="border-top:1px solid rgba(148,163,184,.15);">';
+    for(var k=0;k<filas[j].length;k++) h += '<td style="padding:6px 8px;">'+filas[j][k]+'</td>';
+    h += '</tr>';
+  }
+  return h + '</tbody></table></div>';
+}
+
+function mtBloqueOportunidades(id, lista, tipo){
+  var cols, filas = [];
+  if(tipo==='retraso'){
+    cols = ['Oportunidad','Etapa','Días','Plazo','Excedido','Producto','Responsable'];
+    for(var i=0;i<lista.length;i++){ var s=lista[i];
+      filas.push([ mtEsc(s.dealname), mtEsc(s.etapa),
+        '<b style="color:'+MT_C.rojo+';">'+mtNum(s.dias)+'</b>', mtNum(s.umbral)+'d',
+        '<span style="color:'+MT_C.rojo+';">+'+mtNum(s.exceso_pct)+'%</span>',
+        mtEsc(s.producto), '<span style="color:'+MT_C.gris+';">'+mtEsc(s.owner)+'</span>' ]); }
+  } else {
+    cols = ['Oportunidad','Días','Estado','Producto','Responsable'];
+    for(var m=0;m<lista.length;m++){ var e=lista[m];
+      filas.push([ mtEsc(e.dealname), mtNum(e.dias),
+        (e.en_tiempo ? '<span style="color:'+MT_C.verde+';">en tiempo</span>' : '<span style="color:'+MT_C.rojo+';">con retraso</span>'),
+        mtEsc(e.producto), '<span style="color:'+MT_C.gris+';">'+mtEsc(e.owner)+'</span>' ]); }
+  }
+  return '<div id="'+id+'" style="display:none;margin:8px 0 4px 0;padding:8px;border:1px solid rgba(148,163,184,.2);border-radius:8px;">'+mtTabla(cols,filas)+'</div>';
 }
 
 function mtPintar(){
-  var cont = mtPanel();
-  if(!cont || !MT_DATA) return;
-  var d = MT_DATA;
-  var cit = d.citas || {}, flu = d.flujo || {}, tar = d.tareas || {}, cat = d.catalogos || {};
+  var cont = mtPanel(); if(!cont || !MT_DATA) return;
+  var d = MT_DATA, cit = d.citas||{}, flu = d.flujo||{}, tar = d.tareas||{}, cat = d.catalogos||{}, met = d.metas||{};
   var h = '';
 
-  /* ---- FILTROS ---- */
+  /* ---------- FILTROS ---------- */
   h += '<div style="border:1px solid rgba(148,163,184,.2);border-radius:12px;padding:12px 14px;margin-bottom:16px;">';
   h += mtChips('Periodo','periodo',[
-        {v:'sem1',l:'Sem 1'},{v:'sem2',l:'Sem 2'},{v:'sem3',l:'Sem 3'},{v:'sem4',l:'Sem 4'},
-        {v:'mes',l:'Mes'},{v:'15d',l:'15 dias'},{v:'30d',l:'30 dias'},{v:'90d',l:'90 dias'}
+        {v:'todas',l:'Todas'}, '|', {v:'mes',l:'Mes'},
+        {v:'sem1',l:'S1',sub:1},{v:'sem2',l:'S2',sub:1},{v:'sem3',l:'S3',sub:1},{v:'sem4',l:'S4',sub:1},
+        '|', {v:'30d',l:'30d'},{v:'45d',l:'45d'},{v:'90d',l:'90d'}
       ], MT_STATE.periodo);
-  if(!MT_TENANT_FIJO){
-    var tens = ['TODOS'].concat(cat.tenants||[]);
-    h += mtChips('Cliente','tenant',tens,MT_STATE.tenant);
-  }
-  var prods = ['TODOS'].concat(cat.productos||[]);
-  h += mtChips('Producto','producto',prods,MT_STATE.producto);
-  var owns = ['TODOS'].concat(cat.owners||[]);
-  h += mtChips('Responsable','owner',owns,MT_STATE.owner);
-  h += '<div style="font-size:11px;color:'+MT_C.gris+';margin-top:4px;">'
-     + mtNombrePeriodo(MT_STATE.periodo) + ': ' + mtEsc((d.rango||{}).desde) + ' al ' + mtEsc((d.rango||{}).hasta) + '</div>';
+  if(!MT_TENANT_FIJO) h += mtChips('Cliente','tenant',['TODOS'].concat(cat.tenants||[]),MT_STATE.tenant);
+  h += mtChips('Producto','producto',['TODOS'].concat(cat.productos||[]),MT_STATE.producto);
+  h += mtChips('Responsable','owner',['TODOS'].concat(cat.owners||[]),MT_STATE.owner);
+  h += '<div style="font-size:11px;color:'+MT_C.gris+';margin-top:4px;">Del '+mtEsc((d.rango||{}).desde)+' al '+mtEsc((d.rango||{}).hasta)+'</div>';
   h += '</div>';
 
-  /* ---- ADVERTENCIAS ---- */
-  var advs = d.advertencias || [];
+  /* ---------- ADVERTENCIAS ---------- */
+  var advs = d.advertencias||[];
   if(advs.length){
     h += '<div style="border-left:3px solid '+MT_C.amarillo+';background:rgba(255,205,0,.07);border-radius:6px;padding:10px 12px;margin-bottom:16px;font-size:12px;">';
-    for(var i=0;i<advs.length;i++){ h += '<div style="margin:2px 0;">'+mtEsc(advs[i])+'</div>'; }
+    for(var a=0;a<advs.length;a++) h += '<div style="margin:2px 0;">'+mtEsc(advs[a])+'</div>';
     h += '</div>';
   }
 
-  /* ---- BLOQUE 1: CITAS ---- */
+  /* ---------- BLOQUE 1: CITAS ---------- */
+  var metaP = mtNum(cit.meta_periodo), cump = mtNum(cit.cumplimiento_meta_pct);
+  var colMeta = cump>=100?MT_C.verde:(cump>=70?MT_C.amarillo:MT_C.rojo);
   h += '<h3 style="margin:0 0 4px 0;font-size:15px;">Citas</h3>';
-  h += '<div style="font-size:11px;color:'+MT_C.gris+';margin-bottom:10px;">Efectuada = la reunion ocurrio. Agendada = quedo puesta en calendario.</div>';
-  h += '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;">';
-  h += mtTarjeta('Efectuadas', cit.efectuadas||0, '', MT_C.verde, mtVariacion(cit.efectuadas,(cit.vs_periodo_previo||{}).efectuadas));
-  h += mtTarjeta('Agendadas', cit.agendadas||0, '', MT_C.azul, mtVariacion(cit.agendadas,(cit.vs_periodo_previo||{}).agendadas));
-  h += mtTarjeta('Se cayeron', cit.caidas||0, '', (cit.caidas ? MT_C.rojo : MT_C.gris), 'agendadas sin realizarse');
-  h += mtTarjeta('Show rate', cit.show_rate_pct||0, '%', (cit.show_rate_confiable ? MT_C.morado : MT_C.amarillo),
-        (cit.show_rate_confiable ? 'por cohorte, confiable' : 'parcial: cohorte incompleta'));
+  h += '<div style="font-size:11px;color:'+MT_C.gris+';margin-bottom:10px;">Atracción = la cita quedó agendada. Educación = la reunión se efectuó.</div>';
+  h += '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;">';
+  h += mtTarjeta('Educación', mtNum(cit.efectuadas), '', MT_C.verde, mtVar(cit.efectuadas,(cit.vs_periodo_previo||{}).efectuadas), 'mt-det-citas');
+  h += mtTarjeta('Atracción', mtNum(cit.agendadas), '', MT_C.azul, mtVar(cit.agendadas,(cit.vs_periodo_previo||{}).agendadas));
+  h += mtTarjeta('Vs meta', cump, '%', colMeta, (metaP? (mtNum(cit.efectuadas)+' de '+metaP+' · cierre '+mtNum(cit.proyeccion_cierre)) : 'sin meta en este periodo'));
+  h += mtTarjeta('Se cayeron', mtNum(cit.caidas), '', (cit.caidas?MT_C.rojo:MT_C.gris), 'Atracción sin llegar a Educación');
+  h += mtTarjeta('Conversión', mtNum(cit.show_rate_pct), '%', (cit.show_rate_confiable?MT_C.morado:MT_C.amarillo), (cit.show_rate_confiable?'Atracción → Educación':'parcial: cohorte incompleta'));
   h += '</div>';
 
-  var det = cit.detalle || [];
-  if(det.length){
-    h += '<div style="overflow-x:auto;margin-bottom:26px;"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
-    h += '<thead><tr style="text-align:left;color:'+MT_C.gris+';font-size:10px;text-transform:uppercase;letter-spacing:.06em;">'
-       + '<th style="padding:6px 8px;">Empresa</th><th style="padding:6px 8px;">Producto</th>'
-       + '<th style="padding:6px 8px;">Cliente</th><th style="padding:6px 8px;">Agendada</th>'
-       + '<th style="padding:6px 8px;">Efectuada</th></tr></thead><tbody>';
-    for(var j=0;j<det.length;j++){
-      var c = det[j];
-      var marca = c.orden_invertido ? ' <span title="La reunion quedo registrada antes que el agendado" style="color:'+MT_C.amarillo+';">&#9888;</span>' : '';
-      h += '<tr style="border-top:1px solid rgba(148,163,184,.15);">'
-         + '<td style="padding:6px 8px;">'+mtEsc(c.empresa)+marca+'</td>'
-         + '<td style="padding:6px 8px;">'+mtEsc(c.producto)+'</td>'
-         + '<td style="padding:6px 8px;">'+mtEsc(c.tenant)+'</td>'
-         + '<td style="padding:6px 8px;color:'+MT_C.gris+';">'+mtEsc(c.fecha_agendada||'—')+'</td>'
-         + '<td style="padding:6px 8px;color:'+(c.fecha_cita?MT_C.verde:MT_C.gris)+';">'+mtEsc(c.fecha_cita||'pendiente')+'</td>'
-         + '</tr>';
+  /* detalle citas desplegable */
+  var det = cit.detalle||[], filasC = [];
+  for(var c=0;c<det.length;c++){ var x=det[c];
+    var marca = x.orden_invertido ? ' <span title="Llegó a Educación antes que a Atracción" style="color:'+MT_C.amarillo+';">&#9888;</span>' : '';
+    filasC.push([ mtEsc(x.empresa)+marca, mtEsc(x.persona), mtEsc(x.producto), mtEsc(x.etapa),
+      '<span style="color:'+MT_C.gris+';">'+mtEsc(x.fecha_agendada||'—')+'</span>',
+      '<span style="color:'+(x.fecha_cita?MT_C.verde:MT_C.gris)+';">'+mtEsc(x.fecha_cita||'pendiente')+'</span>' ]); }
+  h += '<div id="mt-det-citas" style="display:none;margin-bottom:12px;padding:8px;border:1px solid rgba(148,163,184,.2);border-radius:8px;">'
+     + (filasC.length ? mtTabla(['Empresa','Persona','Producto','Etapa','Agendada','Efectuada'],filasC)
+        : '<div style="color:'+MT_C.gris+';font-size:12px;padding:6px;">Sin citas en este periodo.</div>') + '</div>';
+
+  /* tendencia semanal */
+  var tend = cit.tendencia_semanal||[];
+  if(tend.length){
+    var maxT = 1; for(var t=0;t<tend.length;t++){ if(tend[t].educacion>maxT) maxT=tend[t].educacion; if(tend[t].atraccion>maxT) maxT=tend[t].atraccion; }
+    h += '<div style="border:1px solid rgba(148,163,184,.2);border-radius:12px;padding:12px 14px;margin-bottom:26px;">';
+    h += '<div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:'+MT_C.gris+';margin-bottom:8px;">Semana a semana · Educación contra meta</div>';
+    h += '<div style="display:flex;align-items:flex-end;gap:4px;height:110px;">';
+    for(var s=0;s<tend.length;s++){
+      var w = tend[s], alt = Math.round((w.educacion/maxT)*88), altM = Math.round((w.meta/maxT)*88);
+      var col = w.educacion>=w.meta ? MT_C.verde : (w.educacion>=w.meta*0.5 ? MT_C.amarillo : MT_C.rojo);
+      h += '<div style="flex:1;text-align:center;position:relative;" title="'+mtEsc(w.semana)+': '+w.educacion+' Educación, '+w.atraccion+' Atracción">'
+         + '<div style="font-size:10px;color:'+col+';font-weight:700;">'+w.educacion+'</div>'
+         + '<div style="position:relative;height:88px;display:flex;align-items:flex-end;">'
+         + '<div style="width:100%;height:'+Math.max(alt,2)+'px;background:'+col+';border-radius:3px 3px 0 0;"></div>'
+         + '<div style="position:absolute;left:0;right:0;bottom:'+altM+'px;border-top:1px dashed '+MT_C.gris+';"></div></div>'
+         + '<div style="font-size:8px;color:'+MT_C.gris+';">'+mtEsc(String(w.semana).slice(5))+'</div></div>';
     }
-    h += '</tbody></table></div>';
-  } else {
-    h += '<div style="color:'+MT_C.gris+';font-size:12px;margin-bottom:26px;">Sin citas en este periodo con los filtros aplicados.</div>';
+    h += '</div><div style="font-size:10px;color:'+MT_C.gris+';margin-top:6px;">La línea punteada es la meta semanal ('+mtNum((tend[0]||{}).meta)+').</div></div>';
   }
 
-  /* ---- BLOQUE 2: FLUJO ---- */
+  /* ---------- BLOQUE 2: FLUJO ---------- */
   h += '<h3 style="margin:0 0 4px 0;font-size:15px;">Flujo del embudo</h3>';
-  h += '<div style="font-size:11px;color:'+MT_C.gris+';margin-bottom:10px;">Foto del '+mtEsc(flu.foto_mas_reciente||'—')+'. Atorado = supera el umbral de dias de su etapa.</div>';
+  h += '<div style="font-size:11px;color:'+MT_C.gris+';margin-bottom:10px;">Foto del '+mtEsc(flu.foto_mas_reciente||'—')+'. Con retraso = lleva más días de los que fija el plazo de su etapa.</div>';
 
-  if(!flu.datos_suficientes){
-    h += '<div style="border:1px dashed rgba(148,163,184,.4);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:12px;color:'+MT_C.gris+';">'
-       + 'Acumulando datos: llevamos '+(flu.fotos_disponibles||0)+' de 7 fotos diarias. El inventario y los atorados ya son reales; '
-       + 'las columnas de movimiento (entraron, avanzaron) se activan al juntar una semana.</div>';
+  if(flu.cuello_de_botella){
+    h += '<div style="border-left:3px solid '+MT_C.rojo+';background:rgba(219,5,64,.07);border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:13px;">'
+       + '<b>Cuello de botella: '+mtEsc(flu.cuello_de_botella)+'</b> <span style="color:'+MT_C.gris+';font-size:11px;">— '+mtEsc(flu.cuello_criterio||'')+'</span></div>';
   }
 
-  h += '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;">';
-  h += mtTarjeta('Atorados', flu.estancados||0, '', (flu.estancados ? MT_C.rojo : MT_C.verde), 'de '+(flu.por_etapa||[]).reduce(function(a,b){return a+(b.inventario||0);},0)+' en el embudo');
-  h += mtTarjeta('Entraron', flu.entraron||0, '', MT_C.azul, flu.foto_comparada ? ('desde '+mtEsc(flu.foto_comparada)) : 'requiere 2 fotos');
-  h += mtTarjeta('Avanzaron', flu.avanzaron||0, '', MT_C.verde, flu.foto_comparada ? ('desde '+mtEsc(flu.foto_comparada)) : 'requiere 2 fotos');
-  h += mtTarjeta('Salieron', flu.salieron_del_embudo||0, '', MT_C.gris, 'ganadas, perdidas o mas alla');
+  h += '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;">';
+  h += mtTarjeta('En el embudo', mtNum(flu.inventario_total), '', MT_C.azul, 'oportunidades vivas');
+  h += mtTarjeta('En tiempo', mtNum(flu.en_tiempo_pct), '%', MT_C.verde, mtNum(flu.en_tiempo)+' oportunidades');
+  h += mtTarjeta('Con retraso', mtNum(flu.retrasados_pct), '%', MT_C.rojo, mtNum(flu.retrasados)+' oportunidades', 'mt-det-retraso');
+  h += mtTarjeta('Avanzaron', mtNum(flu.avanzaron), '', MT_C.verde, flu.foto_comparada ? ('desde '+mtEsc(flu.foto_comparada)) : 'requiere 2 fotos');
+  h += mtTarjeta('Entraron', mtNum(flu.entraron), '', MT_C.morado, flu.foto_comparada ? ('desde '+mtEsc(flu.foto_comparada)) : 'requiere 2 fotos');
   h += '</div>';
+  h += mtBloqueOportunidades('mt-det-retraso', flu.retrasados_detalle||[], 'retraso');
 
-  var pe = flu.por_etapa || [];
+  var pe = flu.por_etapa||[];
   if(pe.length){
-    h += '<div style="overflow-x:auto;margin-bottom:14px;"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
-    h += '<thead><tr style="text-align:left;color:'+MT_C.gris+';font-size:10px;text-transform:uppercase;letter-spacing:.06em;">'
-       + '<th style="padding:6px 8px;">Etapa</th><th style="padding:6px 8px;">Hay</th>'
-       + '<th style="padding:6px 8px;">Atorados</th><th style="padding:6px 8px;">Dias prom.</th>'
-       + '<th style="padding:6px 8px;">Umbral</th><th style="padding:6px 8px;">Entraron</th>'
-       + '<th style="padding:6px 8px;">Avanzaron</th></tr></thead><tbody>';
-    for(var k=0;k<pe.length;k++){
-      var e = pe[k];
-      var pct = e.inventario ? (e.estancados/e.inventario) : 0;
-      var col = pct >= 0.5 ? MT_C.rojo : (pct >= 0.25 ? MT_C.amarillo : MT_C.verde);
-      h += '<tr style="border-top:1px solid rgba(148,163,184,.15);">'
-         + '<td style="padding:6px 8px;font-weight:600;">'+mtEsc(e.etapa)+'</td>'
-         + '<td style="padding:6px 8px;">'+(e.inventario||0)+'</td>'
-         + '<td style="padding:6px 8px;color:'+col+';font-weight:700;">'+(e.estancados||0)+'</td>'
-         + '<td style="padding:6px 8px;">'+(e.dias_promedio||0)+'</td>'
-         + '<td style="padding:6px 8px;color:'+MT_C.gris+';">'+(e.umbral_dias?(e.umbral_dias+'d'):'—')+'</td>'
-         + '<td style="padding:6px 8px;color:'+MT_C.gris+';">'+(e.entraron||0)+'</td>'
-         + '<td style="padding:6px 8px;color:'+MT_C.gris+';">'+(e.avanzaron||0)+'</td>'
-         + '</tr>';
+    var filasE = [];
+    for(var p=0;p<pe.length;p++){
+      var e = pe[p], idd = 'mt-et-'+p;
+      var colR = e.retrasados_pct>=50?MT_C.rojo:(e.retrasados_pct>=25?MT_C.amarillo:MT_C.verde);
+      var colA = e.tasa_avance_pct>=30?MT_C.verde:(e.tasa_avance_pct>0?MT_C.amarillo:MT_C.gris);
+      filasE.push([
+        '<b>'+mtEsc(e.etapa)+'</b> <span style="font-size:10px;color:'+MT_C.gris+';cursor:pointer;" onclick="mtToggle(\''+idd+'\')">▸ ver</span>',
+        mtNum(e.inventario),
+        '<span style="color:'+MT_C.verde+';">'+mtNum(e.en_tiempo_pct)+'%</span>',
+        '<span style="color:'+colR+';font-weight:700;">'+mtNum(e.retrasados_pct)+'%</span>',
+        (e.exceso_promedio_pct?'<span style="color:'+MT_C.rojo+';">+'+mtNum(e.exceso_promedio_pct)+'%</span>':'—'),
+        mtNum(e.dias_promedio)+'d',
+        (e.umbral_dias?mtNum(e.umbral_dias)+'d':'—'),
+        '<span style="color:'+colA+';">'+mtNum(e.tasa_avance_pct)+'%</span>'
+      ]);
     }
-    h += '</tbody></table></div>';
+    h += mtTabla(['Etapa','Hay','En tiempo','Con retraso','Excedido','Días prom.','Plazo','Avance'], filasE);
+    for(var q=0;q<pe.length;q++) h += mtBloqueOportunidades('mt-et-'+q, pe[q].detalle||[], 'etapa');
   }
 
-  var est = flu.estancados_detalle || [];
-  if(est.length){
-    h += '<details style="margin-bottom:26px;"><summary style="cursor:pointer;font-size:12px;color:'+MT_C.rojo+';">Ver las '+est.length+' oportunidades atoradas</summary>';
-    h += '<div style="overflow-x:auto;margin-top:8px;"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
-    h += '<thead><tr style="text-align:left;color:'+MT_C.gris+';font-size:10px;text-transform:uppercase;letter-spacing:.06em;">'
-       + '<th style="padding:6px 8px;">Oportunidad</th><th style="padding:6px 8px;">Etapa</th>'
-       + '<th style="padding:6px 8px;">Dias</th><th style="padding:6px 8px;">Producto</th>'
-       + '<th style="padding:6px 8px;">Responsable</th></tr></thead><tbody>';
-    for(var m=0;m<est.length;m++){
-      var s = est[m];
-      h += '<tr style="border-top:1px solid rgba(148,163,184,.15);">'
-         + '<td style="padding:6px 8px;">'+mtEsc(s.dealname)+'</td>'
-         + '<td style="padding:6px 8px;">'+mtEsc(s.etapa)+'</td>'
-         + '<td style="padding:6px 8px;color:'+MT_C.rojo+';font-weight:700;">'+(s.dias||0)+'</td>'
-         + '<td style="padding:6px 8px;">'+mtEsc(s.producto)+'</td>'
-         + '<td style="padding:6px 8px;color:'+MT_C.gris+';">'+mtEsc(s.owner)+'</td>'
-         + '</tr>';
-    }
-    h += '</tbody></table></div></details>';
-  }
-
-  /* ---- BLOQUE 3: TAREAS ---- */
-  h += '<h3 style="margin:0 0 4px 0;font-size:15px;">Tareas</h3>';
+  /* ---------- BLOQUE 3: TAREAS ---------- */
+  h += '<h3 style="margin:22px 0 4px 0;font-size:15px;">Tareas</h3>';
   if(tar.disponible === false){
     h += '<div style="border:1px dashed rgba(148,163,184,.4);border-radius:10px;padding:12px 14px;font-size:12px;color:'+MT_C.gris+';">'
-       + 'En construccion. El cumplimiento de tareas se mide por vencimiento y la autoridad es HubSpot.</div>';
+       + 'En construcción. Se medirá por fecha compromiso: cumplida a tiempo o tarde. La autoridad es HubSpot.</div>';
   } else {
+    var cT = mtNum(tar.cumplimiento_pct);
     h += '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
-    h += mtTarjeta('Vencian', tar.vencian||0, '', MT_C.azul, '');
-    h += mtTarjeta('Cumplidas', tar.cumplidas||0, '', MT_C.verde, '');
-    h += mtTarjeta('Cumplimiento', tar.cumplimiento_pct||0, '%', MT_C.morado, 'por vencimiento');
-    h += mtTarjeta('Sin cumplir', tar.vencidas_sin_cumplir||0, '', MT_C.rojo, '');
-    h += mtTarjeta('Backlog', tar.backlog_abierto||0, '', MT_C.gris, 'abiertas');
+    h += mtTarjeta('Vencían', mtNum(tar.vencian), '', MT_C.azul, 'con fecha compromiso en el periodo');
+    h += mtTarjeta('Cumplidas', mtNum(tar.cumplidas), '', MT_C.verde, '');
+    h += mtTarjeta('Cumplimiento', cT, '%', (cT>=80?MT_C.verde:(cT>=50?MT_C.amarillo:MT_C.rojo)), 'contra fecha compromiso');
+    h += mtTarjeta('Sin cumplir', mtNum(tar.vencidas_sin_cumplir), '', MT_C.rojo, mtNum(tar.retraso_promedio_dias)+'d de retraso prom.');
+    h += mtTarjeta('Backlog', mtNum(tar.backlog_abierto), '', MT_C.gris, 'abiertas');
     h += '</div>';
   }
 
-  h += '<div style="font-size:10px;color:'+MT_C.gris+';margin-top:22px;">'
-     + 'Mide efectividad de resultado, no esfuerzo: sin datos de llamadas ni de mensajes enviados, '
-     + '"no avanzo" no distingue entre no haber contactado y haber contactado sin interes.</div>';
+  h += '<div style="font-size:10px;color:'+MT_C.gris+';margin-top:22px;">Mide efectividad de resultado, no esfuerzo: sin datos de llamadas ni de mensajes enviados, "no avanzó" no distingue entre no haber contactado y haber contactado sin interés.</div>';
 
   cont.innerHTML = h;
 }
