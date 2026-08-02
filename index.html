@@ -4892,6 +4892,7 @@ var METRICAS_TENANT_FIJO = 'GR';
 /* Patron identico al de Pendientes: se piden los datos UNA vez y todo el
    filtrado y calculo ocurre aqui, en el navegador. Cambiar un filtro no
    vuelve a llamar al servidor. */
+var MT_VERSION = 'Métricas v5 · 2 ago';
 var METRICAS_URL = 'https://mikea.app.n8n.cloud/webhook/gr-metricas';
 var MT_TENANT_FIJO = (typeof METRICAS_TENANT_FIJO !== 'undefined') ? METRICAS_TENANT_FIJO : '';
 var MT_STATE = { periodo:'mes', mes:'', producto:'TODOS', owner:'TODOS' };
@@ -5219,6 +5220,10 @@ function mtPintar(){
   var cit=D.citas, flu=D.flujo, tar=D.tareas, cat=D.catalogos;
   var h='';
 
+  h+='<div style="font-size:11px;color:'+MT_C.gris+';margin-bottom:10px;padding:6px 10px;border:1px dashed rgba(148,163,184,.35);border-radius:8px;">'
+    +'<b>'+MT_VERSION+'</b> · <span data-mt-diag="1">enganchando…</span> · '
+    +(MT_RAW.citas||[]).length+' citas · '+(((MT_RAW.foto||{}).deals)||[]).length+' en foto · '
+    +(MT_RAW.tareas||[]).length+' tareas</div>';
   h+='<div style="border:1px solid rgba(148,163,184,.2);border-radius:12px;padding:12px 14px;margin-bottom:16px;">';
   h+=mtChips('Periodo','periodo',[{v:'todas',l:'Todas'},'|',{v:'mes',l:'Mes'},
       {v:'sem1',l:'S1',sub:1},{v:'sem2',l:'S2',sub:1},{v:'sem3',l:'S3',sub:1},{v:'sem4',l:'S4',sub:1},
@@ -5348,10 +5353,6 @@ function mtPintar(){
       +mtListaTareas('mt-t-sin',tar.dSin)+mtListaTareas('mt-t-back',tar.dBack);
   }
 
-  h+='<div style="font-size:10px;color:'+MT_C.gris+';margin-top:14px;">Diagnóstico: '
-    +(MT_RAW.citas||[]).length+' citas · '+(((MT_RAW.foto||{}).deals)||[]).length+' en foto · '
-    +(MT_RAW.tareas||[]).length+' tareas · '+(MT_RAW.fotos_fechas||[]).length+' fotos · clics '
-    +'<span data-mt-diag="1">enganchando…</span></div>';
   h+='<div style="font-size:10px;color:'+MT_C.gris+';margin-top:8px;">Mide efectividad de resultado, no esfuerzo: sin datos de llamadas ni de mensajes enviados, "no avanzó" no distingue entre no haber contactado y haber contactado sin interés.</div>';
   cont.innerHTML=h;
   MT_ABIERTO=null;
@@ -5417,25 +5418,16 @@ window.addEventListener('error', function(e){
   if(!MT_RAW && mtPanel()) mtDiag('Error de JavaScript: ' + (e && e.message ? e.message : 'desconocido'));
 });
 
-var MT_VISTO = false;
-function mtVisible(){
-  var c = mtPanel();
-  if(!c) return false;
-  if(c.offsetParent === null && !(c.className||'').match(/\b(on|active)\b/)) return false;
-  return true;
+/* Arranque: una sola vez, sin vigilante en bucle.
+   El intervalo anterior repintaba la pestana cada 0.7 s y borraba los botones
+   que se acababan de enganchar: se veia funcionar un instante y luego se trababa. */
+function mtIniciar(){
+  try{ if(mtPanel()) mtCargar(false); }catch(e){ mtDiag('Fallo al iniciar: ' + e.message); }
 }
-function mtVigilar(){
-  try{
-    if(mtVisible()){
-      if(!MT_VISTO){ MT_VISTO = true; mtCargar(false); }
-    } else { MT_VISTO = false; }
-  }catch(e){ mtDiag('Fallo al iniciar: ' + e.message); }
-}
-if(!window.__MT_VIGILA__){
-  window.__MT_VIGILA__ = true;
-  setInterval(mtVigilar, 700);
-  if(document.readyState !== 'loading') setTimeout(mtVigilar, 300);
-  else document.addEventListener('DOMContentLoaded', function(){ setTimeout(mtVigilar, 300); });
+if(!window.__MT_INIT__){
+  window.__MT_INIT__ = true;
+  if(document.readyState !== 'loading') setTimeout(mtIniciar, 400);
+  else document.addEventListener('DOMContentLoaded', function(){ setTimeout(mtIniciar, 400); });
 }
 /* =================== FIN PESTANA METRICAS =================== */
 
