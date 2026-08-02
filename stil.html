@@ -1556,7 +1556,18 @@ async function mtCargar(forzar){
   try{
     var r = await fetch(METRICAS_URL,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({})});
     if(!r.ok) throw new Error('HTTP '+r.status);
-    MT_RAW = await r.json();
+    var P = await r.json();
+    MT_RAW = {
+      ok:P.ok, generado:P.generado, config:P.config||{},
+      citas:(P.citas||[]).map(function(c){return {deal_id:c.d,tenant:c.t,producto:c.p,owner:c.o,
+        empresa:c.e,persona:c.n,agendada:c.a,cita:c.c,etapa:c.s};}),
+      foto:{fecha:(P.foto||{}).fecha||'', deals:(((P.foto||{}).deals)||[]).map(function(x){return {deal_id:x.d,
+        tenant:x.t,producto:x.p,owner:x.o,empresa:x.e,persona:x.n,etapa:x.s,orden:x.r,dias:x.i};})},
+      fotos_fechas:P.fotos_fechas||[], fotos_ordenes:P.fotos_ordenes||{},
+      tareas:(P.tareas||[]).map(function(t){return {portal:t.g,owner:'',asunto:t.a,vence:t.v,
+        completada:t.c,estado:t.s};}),
+      tareas_capturadas_el:P.tareas_capturadas_el||''
+    };
     if(!MT_STATE.mes) MT_STATE.mes = (MT_RAW.generado||'').slice(0,7);
     mtPintar();
   }catch(e){
@@ -1717,7 +1728,6 @@ function mtCalcular(){
 
   /* ---- TAREAS ---- */
   var tar = (R.tareas||[]).filter(function(t){
-    if(MT_STATE.owner!=='TODOS' && t.owner!==MT_STATE.owner) return false;
     if(!MT_TENANT_FIJO) return true;
     return MT_TENANT_FIJO==='GR' ? t.portal==='GR' : t.portal==='CLIENTES';
   });
