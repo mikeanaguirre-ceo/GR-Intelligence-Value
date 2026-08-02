@@ -1988,11 +1988,43 @@ function mtPintar(){
   h+='<div style="font-size:10px;color:'+MT_C.gris+';margin-top:14px;">Diagnóstico: '
     +(MT_RAW.citas||[]).length+' citas · '+(((MT_RAW.foto||{}).deals)||[]).length+' en foto · '
     +(MT_RAW.tareas||[]).length+' tareas · '+(MT_RAW.fotos_fechas||[]).length+' fotos · clics '
-    +(window.__MT_CLICKS__?'conectados':'SIN CONECTAR')+'</div>';
+    +'<span data-mt-diag="1">enganchando…</span></div>';
   h+='<div style="font-size:10px;color:'+MT_C.gris+';margin-top:8px;">Mide efectividad de resultado, no esfuerzo: sin datos de llamadas ni de mensajes enviados, "no avanzó" no distingue entre no haber contactado y haber contactado sin interés.</div>';
   cont.innerHTML=h;
   MT_ABIERTO=null;
+  mtEnganchar(cont);
 }
+
+/* Engancha cada boton directamente despues de dibujarlo.
+   Ni onclick incrustado ni delegacion en el documento funcionaron aqui;
+   la asignacion directa no depende de que el clic burbujee ni de otros manejadores. */
+function mtEnganchar(cont){
+  var n = 0;
+  try{
+    var els = cont.querySelectorAll('[data-mt]');
+    for(var i=0;i<els.length;i++){
+      (function(el){
+        var accion = el.getAttribute('data-mt');
+        el.style.cursor = 'pointer';
+        el.onclick = function(ev){
+          if(ev && ev.preventDefault) ev.preventDefault();
+          if(ev && ev.stopPropagation) ev.stopPropagation();
+          try{
+            if(accion==='filtro') mtSetFiltro(el.getAttribute('data-mt-campo'), el.getAttribute('data-mt-valor'));
+            else if(accion==='toggle') mtToggle(el.getAttribute('data-mt-id'));
+            else if(accion==='recargar') mtCargar(true);
+          }catch(e){ mtDiag('Error al responder el clic: ' + e.message); }
+          return false;
+        };
+        n++;
+      })(els[i]);
+    }
+  }catch(e){}
+  MT_ENGANCHADOS = n;
+  var d = cont.querySelector('[data-mt-diag]');
+  if(d) d.textContent = n + ' botones activos';
+}
+var MT_ENGANCHADOS = 0;
 
 /* Los clics se atienden por delegacion en el documento, igual que el resto del
    dashboard. Los onclick incrustados en el HTML no se estaban ejecutando. */
