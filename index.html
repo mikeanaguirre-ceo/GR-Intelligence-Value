@@ -1329,6 +1329,16 @@ window.addEventListener('popstate',function(e){
 });
 
 function renderCurrentTab() {
+  // Metricas no depende de los datos principales del dashboard: tiene su propio
+  // origen. Se atiende antes del guard de DATA para que un fallo del endpoint
+  // principal no deje la pestana en blanco.
+  if (currentTab === 'metricas') {
+    try { renderMetricas(); } catch(e) {
+      var em = document.getElementById('p-metricas');
+      if (em) em.innerHTML = '<div style="color:#ef4444;padding:16px;">Error en render: ' + e.message + '</div>';
+    }
+    return;
+  }
   if (!DATA) {
     // DATA no cargó aún — mostrar mensaje en el tab activo
     var contP = document.getElementById('p-prospeccion');
