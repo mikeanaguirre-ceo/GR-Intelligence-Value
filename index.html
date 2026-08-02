@@ -4935,7 +4935,7 @@ async function mtCargar(forzar){
     mtPintar();
   }catch(e){
     cont.innerHTML='<div style="padding:24px;color:'+MT_C.rojo+';font-size:13px;">No se pudieron cargar las métricas: '+mtEsc(e.message)
-      +'<br><span style="color:'+MT_C.gris+';cursor:pointer;text-decoration:underline;" onclick="mtCargar(true)">Reintentar</span></div>';
+      +'<br><span style="color:'+MT_C.gris+';cursor:pointer;text-decoration:underline;" data-mt="recargar">Reintentar</span></div>';
   }finally{ MT_CARGANDO=false; }
 }
 function mtSetFiltro(campo,valor){ MT_STATE[campo]=valor; MT_ABIERTO=null; mtPintar(); }
@@ -5159,13 +5159,13 @@ function mtChips(titulo,campo,ops,activo){
     if(o==='|'){ h+='<span style="width:1px;height:18px;background:rgba(148,163,184,.35);margin:0 3px;"></span>'; continue; }
     var val=(typeof o==='string')?o:o.v, lbl=(typeof o==='string')?o:o.l, sub=(typeof o==='object'&&o.sub);
     var on=(String(val)===String(activo));
-    h+='<button onclick="mtSetFiltro(\''+campo+'\',\''+mtEsc(val).replace(/'/g,"\\'")+'\')" style="cursor:pointer;border-radius:999px;padding:'+(sub?'3px 9px':'5px 11px')+';font-size:'+(sub?'11px':'12px')+';border:1px solid '+(on?MT_C.morado:'rgba(148,163,184,.35)')+';background:'+(on?MT_C.morado:'transparent')+';color:'+(on?'#fff':'inherit')+';">'+mtEsc(lbl)+'</button>';
+    h+='<button data-mt="filtro" data-mt-campo="'+mtEsc(campo)+'" data-mt-valor="'+mtEsc(val)+'" style="cursor:pointer;border-radius:999px;padding:'+(sub?'3px 9px':'5px 11px')+';font-size:'+(sub?'11px':'12px')+';border:1px solid '+(on?MT_C.morado:'rgba(148,163,184,.35)')+';background:'+(on?MT_C.morado:'transparent')+';color:'+(on?'#fff':'inherit')+';">'+mtEsc(lbl)+'</button>';
   }
   return h+'</div></div>';
 }
 
 function mtTarjeta(et,val,suf,col,pie,idd){
-  var v = idd ? '<span id="f-'+idd+'" style="font-size:13px;font-weight:600;color:'+MT_C.morado+';cursor:pointer;padding:3px 8px;border:1px solid '+MT_C.morado+';border-radius:999px;white-space:nowrap;" onclick="mtToggle(\''+idd+'\')">▸ ver</span>' : '';
+  var v = idd ? '<span id="f-'+idd+'" data-mt="toggle" data-mt-id="'+idd+'" style="font-size:13px;font-weight:600;color:'+MT_C.morado+';cursor:pointer;padding:3px 8px;border:1px solid '+MT_C.morado+';border-radius:999px;white-space:nowrap;">▸ ver</span>' : '';
   return '<div style="flex:1 1 150px;min-width:150px;border:1px solid rgba(148,163,184,.25);border-radius:12px;padding:12px 14px;">'
    +'<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;"><span style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:'+MT_C.gris+';">'+mtEsc(et)+'</span>'+v+'</div>'
    +'<div style="font-size:30px;font-weight:700;line-height:1.15;color:'+col+';">'+mtEsc(val)+(suf||'')+'</div>'
@@ -5230,7 +5230,7 @@ function mtPintar(){
   h+=mtChips('Producto','producto',['TODOS'].concat(cat.productos||[]),MT_STATE.producto);
   h+=mtChips('Responsable','owner',['TODOS'].concat(cat.owners||[]),MT_STATE.owner);
   h+='<div style="font-size:11px;color:'+MT_C.gris+';margin-top:4px;">Del '+mtEsc(D.rango.desde)+' al '+mtEsc(D.rango.hasta)
-    +' · <span style="cursor:pointer;text-decoration:underline;" onclick="mtCargar(true)">actualizar datos</span></div></div>';
+    +' · <span style="cursor:pointer;text-decoration:underline;" data-mt="recargar">actualizar datos</span></div></div>';
 
   if(D.advertencias.length){
     h+='<div style="border-left:3px solid '+MT_C.amarillo+';background:rgba(255,205,0,.07);border-radius:6px;padding:10px 12px;margin-bottom:16px;font-size:12px;">';
@@ -5280,7 +5280,7 @@ function mtPintar(){
     for(var p2=0;p2<cit.porProd.length;p2++){ var Q=cit.porProd[p2];
       var cq=Q.conv>=60?MT_C.verde:(Q.conv>=30?MT_C.amarillo:MT_C.rojo);
       fp.push([mtEsc(Q.producto),Q.agendadas,Q.efectuadas,'<b style="color:'+cq+';">'+Q.conv+'%</b>']); }
-    h+='<div style="margin-bottom:12px;"><span id="f-mt-prod" style="font-size:12px;font-weight:600;color:'+MT_C.morado+';cursor:pointer;padding:2px 8px;border:1px solid '+MT_C.morado+';border-radius:999px;" onclick="mtToggle(\'mt-prod\')">▸ ver</span> <span style="font-size:11px;color:'+MT_C.gris+';">Conversión por producto</span>'
+    h+='<div style="margin-bottom:12px;"><span id="f-mt-prod" data-mt="toggle" data-mt-id="mt-prod" style="font-size:12px;font-weight:600;color:'+MT_C.morado+';cursor:pointer;padding:2px 8px;border:1px solid '+MT_C.morado+';border-radius:999px;">▸ ver</span> <span style="font-size:11px;color:'+MT_C.gris+';">Conversión por producto</span>'
       +'<div id="mt-prod" style="display:none;margin-top:8px;padding:8px;border:1px solid rgba(148,163,184,.2);border-radius:8px;">'+mtTabla(['Producto','Atracción','Educación','Conversión'],fp)+'</div></div>';
   }
 
@@ -5320,7 +5320,7 @@ function mtPintar(){
   for(var p3=0;p3<flu.porEtapa.length;p3++){ var E3=flu.porEtapa[p3], idd='mt-et-'+p3;
     var cR=E3.retPct>=50?MT_C.rojo:(E3.retPct>=25?MT_C.amarillo:MT_C.verde);
     var cA=E3.avancePct>=30?MT_C.verde:(E3.avancePct>0?MT_C.amarillo:MT_C.gris);
-    fe.push(['<b>'+mtEsc(E3.etapa)+'</b> <span id="f-'+idd+'" style="font-size:12px;font-weight:600;color:'+MT_C.morado+';cursor:pointer;padding:2px 7px;border:1px solid '+MT_C.morado+';border-radius:999px;white-space:nowrap;" onclick="mtToggle(\''+idd+'\')">▸ ver</span>',
+    fe.push(['<b>'+mtEsc(E3.etapa)+'</b> <span id="f-'+idd+'" data-mt="toggle" data-mt-id="'+idd+'" style="font-size:12px;font-weight:600;color:'+MT_C.morado+';cursor:pointer;padding:2px 7px;border:1px solid '+MT_C.morado+';border-radius:999px;white-space:nowrap;">▸ ver</span>',
       E3.inv,'<span style="color:'+MT_C.verde+';">'+E3.enTiempoPct+'%</span>',
       '<span style="color:'+cR+';font-weight:700;">'+E3.retPct+'%</span>',
       (E3.excesoProm?'<span style="color:'+MT_C.rojo+';">+'+E3.excesoProm+'%</span>':'—'),
@@ -5351,6 +5351,20 @@ function mtPintar(){
   h+='<div style="font-size:10px;color:'+MT_C.gris+';margin-top:22px;">Mide efectividad de resultado, no esfuerzo: sin datos de llamadas ni de mensajes enviados, "no avanzó" no distingue entre no haber contactado y haber contactado sin interés.</div>';
   cont.innerHTML=h;
   MT_ABIERTO=null;
+}
+
+/* Los clics se atienden por delegacion en el documento, igual que el resto del
+   dashboard. Los onclick incrustados en el HTML no se estaban ejecutando. */
+if (!window.__MT_CLICKS__) {
+  window.__MT_CLICKS__ = true;
+  document.addEventListener('click', function(ev){
+    var el = ev.target && ev.target.closest ? ev.target.closest('[data-mt]') : null;
+    if(!el) return;
+    var accion = el.getAttribute('data-mt');
+    if(accion === 'filtro'){ ev.preventDefault(); mtSetFiltro(el.getAttribute('data-mt-campo'), el.getAttribute('data-mt-valor')); }
+    else if(accion === 'toggle'){ ev.preventDefault(); mtToggle(el.getAttribute('data-mt-id')); }
+    else if(accion === 'recargar'){ ev.preventDefault(); mtCargar(true); }
+  });
 }
 /* =================== FIN PESTANA METRICAS =================== */
 
