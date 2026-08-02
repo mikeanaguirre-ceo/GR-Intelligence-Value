@@ -3498,8 +3498,11 @@ function renderProspeccion() {
   };
   var matchFilt = prospPasa;
   var normClas = function(c) { return (c==='asked_to_circle_back_later') ? 'circle_back' : (c||''); };
+  // Clasificaciones de sistema: no son replies reales del prospecto. No cuentan ni se listan.
+  var CLAS_SISTEMA = new Set(['rebote','unsubscribe','evento_sistema']);
+  var esReplyReal = function(e){ return !CLAS_SISTEMA.has(String(e.clasificacion||'').toLowerCase()); };
   var PEV_n = PEV.map(function(e){ return Object.assign({},e,{clasificacion:normClas(e.clasificacion||'')}); }).filter(function(e){ return !isEventoPrueba(e); });
-  var repliesArr = PEV_n.filter(function(e){ return e.tipo!=='open3' && matchFilt(e); });
+  var repliesArr = PEV_n.filter(function(e){ return e.tipo!=='open3' && esReplyReal(e) && matchFilt(e); });
   var senalesArr = PEV_n.filter(function(e){ return e.tipo==='open3' && matchFilt(e); });
   // DUO: campana con formato "Empresa, Persona – señal"
   var isDUO = function(e){ return e.campana && e.campana.indexOf(' – ')!==-1; };
