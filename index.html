@@ -5348,7 +5348,11 @@ function mtPintar(){
       +mtListaTareas('mt-t-sin',tar.dSin)+mtListaTareas('mt-t-back',tar.dBack);
   }
 
-  h+='<div style="font-size:10px;color:'+MT_C.gris+';margin-top:22px;">Mide efectividad de resultado, no esfuerzo: sin datos de llamadas ni de mensajes enviados, "no avanzó" no distingue entre no haber contactado y haber contactado sin interés.</div>';
+  h+='<div style="font-size:10px;color:'+MT_C.gris+';margin-top:14px;">Diagnóstico: '
+    +(MT_RAW.citas||[]).length+' citas · '+(((MT_RAW.foto||{}).deals)||[]).length+' en foto · '
+    +(MT_RAW.tareas||[]).length+' tareas · '+(MT_RAW.fotos_fechas||[]).length+' fotos · clics '
+    +(window.__MT_CLICKS__?'conectados':'SIN CONECTAR')+'</div>';
+  h+='<div style="font-size:10px;color:'+MT_C.gris+';margin-top:8px;">Mide efectividad de resultado, no esfuerzo: sin datos de llamadas ni de mensajes enviados, "no avanzó" no distingue entre no haber contactado y haber contactado sin interés.</div>';
   cont.innerHTML=h;
   MT_ABIERTO=null;
 }
@@ -5365,6 +5369,41 @@ if (!window.__MT_CLICKS__) {
     else if(accion === 'toggle'){ ev.preventDefault(); mtToggle(el.getAttribute('data-mt-id')); }
     else if(accion === 'recargar'){ ev.preventDefault(); mtCargar(true); }
   });
+}
+
+/* ---- Arranque autonomo y diagnostico visible ----
+   La pestana no depende de que el clic de navegacion la invoque: se vigila a si
+   misma y se pinta en cuanto su contenedor aparece. Cualquier error queda escrito
+   en pantalla, porque en iPad no hay consola para verlo. */
+function mtDiag(msg){
+  var c = mtPanel();
+  if(c) c.innerHTML = '<div style="padding:16px;font-size:12px;color:#DB0540;border:1px solid #DB0540;border-radius:8px;">'
+    + '<b>Diagnóstico de Métricas</b><br>' + mtEsc(msg)
+    + '<br><br><span data-mt="recargar" style="cursor:pointer;text-decoration:underline;color:#02ADBA;">Reintentar</span></div>';
+}
+window.addEventListener('error', function(e){
+  if(!MT_RAW && mtPanel()) mtDiag('Error de JavaScript: ' + (e && e.message ? e.message : 'desconocido'));
+});
+
+var MT_VISTO = false;
+function mtVisible(){
+  var c = mtPanel();
+  if(!c) return false;
+  if(c.offsetParent === null && !(c.className||'').match(/\b(on|active)\b/)) return false;
+  return true;
+}
+function mtVigilar(){
+  try{
+    if(mtVisible()){
+      if(!MT_VISTO){ MT_VISTO = true; mtCargar(false); }
+    } else { MT_VISTO = false; }
+  }catch(e){ mtDiag('Fallo al iniciar: ' + e.message); }
+}
+if(!window.__MT_VIGILA__){
+  window.__MT_VIGILA__ = true;
+  setInterval(mtVigilar, 700);
+  if(document.readyState !== 'loading') setTimeout(mtVigilar, 300);
+  else document.addEventListener('DOMContentLoaded', function(){ setTimeout(mtVigilar, 300); });
 }
 /* =================== FIN PESTANA METRICAS =================== */
 
