@@ -3515,7 +3515,8 @@ function renderProspeccion() {
   var repliesArr = PEV_n.filter(function(e){ return e.tipo!=='open3' && esReplyReal(e) && matchFilt(e); });
   var senalesArr = PEV_n.filter(function(e){ return e.tipo==='open3' && matchFilt(e); });
   // DUO: campana con formato "Empresa, Persona – señal"
-  var isDUO = function(e){ return e.campana && e.campana.indexOf(' – ')!==-1; };
+  // DUO: marca real es_duo (origen); guion como respaldo solo para filas historicas sin marca
+  var isDUO = function(e){ if(e.es_duo===true||e.es_duo==='true'||e.es_duo===1) return true; if(e.es_duo===false||e.es_duo==='false'||e.es_duo===0) return false; return !!(e.campana && e.campana.indexOf(' – ')!==-1); };
   var duoArr = senalesArr.filter(function(e){ return isDUO(e); });
   var open3puro = senalesArr.filter(function(e){ return !isDUO(e); });
   var duoReplies = repliesArr.filter(function(e){ return isDUO(e); });
@@ -4099,7 +4100,7 @@ function renderProspDetalle(ptype, pval, pwin) {
   var rel=function(iso){ var f=new Date(iso); if(isNaN(f)) return ''; var k=grDayKey(f); if(k===HOY_KEY)return 'hoy'; if(k===AYER_KEY)return 'ayer'; var a=Math.floor((nowP-f)/86400000); if(a>0&&a<30)return 'hace '+a+'d'; return f.toLocaleDateString('es-MX',{day:'2-digit',month:'short'}); };
 
   var pool=PEV.map(function(e){return Object.assign({},e,{clasificacion:normClas(e.clasificacion||'')});}).filter(function(e){return matchFilt(e)&&inWin(e);});
-  var isDUOf=function(e){ return e.campana && e.campana.indexOf(' – ')!==-1; };
+  var isDUOf=function(e){ if(e.es_duo===true||e.es_duo==='true'||e.es_duo===1) return true; if(e.es_duo===false||e.es_duo==='false'||e.es_duo===0) return false; return !!(e.campana && e.campana.indexOf(' – ')!==-1); };
   if(ptype==='clas'){
     if(pval==='__DUO_REPLY__'){
       // DUO replies: replies cuya campana tiene formato DuoCopilot
