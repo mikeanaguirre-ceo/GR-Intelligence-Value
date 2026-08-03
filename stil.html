@@ -618,6 +618,11 @@ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'
 function fmtFecha(s){ if(!s||s==='null') return ''; var d=new Date(s); if(isNaN(d)) return ''; var M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; return d.getUTCDate()+' '+M[d.getUTCMonth()]+' '+d.getUTCFullYear(); }
 function esDeal(dn){if(!dn)return false;const d=dn.toUpperCase();return STIL_OK.some(p=>d.startsWith(p))}
 function normClas(c){const s=String(c||'').toLowerCase().trim();return s==='asked_to_circle_back_later'?'circle_back':s}
+// Clasificaciones de sistema: no son respuestas reales del prospecto. No se muestran ni suman.
+var CLAS_SISTEMA=new Set(['rebote','unsubscribe','evento_sistema']);
+function esReplyReal(e){return !CLAS_SISTEMA.has(normClas(e.clasificacion));}
+// DUO: marca real es_duo (origen); guion como respaldo solo para filas historicas sin marca
+function esDuoReal(e){if(e.es_duo===true||e.es_duo==='true'||e.es_duo===1)return true;if(e.es_duo===false||e.es_duo==='false'||e.es_duo===0)return false;return !!(e.campana&&e.campana.includes(' – '));}
 function fmtLbl(s){return String(s||'').split('_').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ')}
 
 function switchTab(id,el){
@@ -1027,8 +1032,8 @@ function secH(lbl,cls){return `<tr class="gh ${cls}"><td colspan="6"><span class
 
 function renderTablas(){
   const all=getEvsFiltrados();
-  const replies=all.filter(e=>e.tipo!=='open3');
-  const isDUO=e=>e.campana&&e.campana.includes(' – ');
+  const replies=all.filter(e=>e.tipo!=='open3'&&esReplyReal(e));
+  const isDUO=esDuoReal;
   const duoR=replies.filter(e=>isDUO(e));
 
   let t='';
@@ -1049,7 +1054,7 @@ function renderTablas(){
 
   // Open+3 — DUO PRIMERO, luego CB, NAC, total
   const open3=all.filter(e=>e.tipo==='open3');
-  const isDUOe=e=>e.campana&&e.campana.includes(' – ');
+  const isDUOe=esDuoReal;
   const duoS=open3.filter(e=>isDUOe(e));
   const pCB=open3.filter(e=>!isDUOe(e)&&String(e.campana||'').toUpperCase().startsWith('CB_'));
   const pNAC=open3.filter(e=>!isDUOe(e)&&!String(e.campana||'').toUpperCase().startsWith('CB_'));
@@ -1097,13 +1102,13 @@ function goURL(url){if(url)window.open(url,'_blank','noopener,noreferrer');}
 function renderDetalle(ptype,pval,pwin){
   const box=document.getElementById('prosp-detalle');if(!box)return;
   const all=getEvsFiltrados();
-  const isDUO=e=>e.campana&&e.campana.includes(' – ');
+  const isDUO=esDuoReal;
   let pool=all.map(e=>Object.assign({},e,{clasificacion:normClas(e.clasificacion||'')}))
     .filter(e=>inW(e,pwin));
 
   if(ptype==='clas'){
     if(pval==='__DUO_REPLY__') pool=pool.filter(e=>e.tipo!=='open3'&&isDUO(e));
-    else{pool=pool.filter(e=>e.tipo!=='open3');if(pval!=='__ALL_REPLIES__')pool=pool.filter(e=>e.clasificacion===pval);}
+    else{pool=pool.filter(e=>e.tipo!=='open3'&&esReplyReal(e));if(pval!=='__ALL_REPLIES__')pool=pool.filter(e=>e.clasificacion===pval);}
   } else {
     if(pval==='__DUO__') pool=pool.filter(e=>e.tipo==='open3'&&isDUO(e));
     else{
