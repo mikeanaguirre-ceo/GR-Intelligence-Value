@@ -1035,10 +1035,10 @@ function filtrosHTML(menu, arr, kind){
     MONTO_OPC.forEach(function(o){ H+=_chip(menu,'monto',o.id,o.label, (f.monto||0)===o.id); });
     H+='</div>';
   }
-  // Categoría (solo alertas)
-  if(menu==='alertas'){
+  // Categoría (solo alertas). En "Arreglar" manda el menu por objeto, no esta fila.
+  if(menu==='alertas' && FIX_NIVEL1==='vender'){
     H+='<div class="filters"><span class="filter-label">Categoría:</span>';
-    [['ALL','Todas'],['Cerrar','Cerrar'],['ReActivar','ReActivar'],['Higienizar','Higienizar']].forEach(function(o){ H+=_chip(menu,'categoria',o[0],o[1], (f.categoria||'ALL')===o[0]); });
+    [['ALL','Todas'],['Cerrar','Cerrar'],['ReActivar','ReActivar']].forEach(function(o){ H+=_chip(menu,'categoria',o[0],o[1], (f.categoria||'ALL')===o[0]); });
     H+='</div>';
   }
   return H;
@@ -1052,6 +1052,11 @@ function pasaFiltro(menu, it, kind){
   if(f.prod && f.prod!=='ALL'){ if(it.prod!==f.prod) return false; }
   if((kind==='deal'||kind==='alerta') && f.stage && f.stage!=='ALL'){ var sl=it.stageLabel||it.stage; if(sl!==f.stage) return false; }
   if((kind==='deal'||kind==='alerta') && f.monto){ if((it.amount||0) < f.monto) return false; }
+  if(menu==='alertas'){
+    // Nivel 1: Vender = Cerrar + ReActivar. Arreglar = Higienizar (mas las bandejas de limpieza).
+    if(FIX_NIVEL1==='arreglar'){ if(it.categoria!=='Higienizar') return false; }
+    else if(it.categoria==='Higienizar') return false;
+  }
   if(menu==='alertas' && f.categoria && f.categoria!=='ALL'){ if(it.categoria!==f.categoria) return false; }
   return true;
 }
@@ -2563,16 +2568,22 @@ function limpBuckets(){
   ];
 }
 
+var LIMP_CARGANDO=false;
 async function loadLimpieza(){
+  if(LIMP_CARGANDO) return;
+  LIMP_CARGANDO=true;
   var cEl=document.getElementById('limpieza-cards');
   if(cEl && !LIMP) cEl.innerHTML='<div class="loading">Cargando candidatos de limpieza…</div>';
   try{
     var r=await fetch(LIMPIEZA_URL);
     if(!r.ok) throw new Error('HTTP '+r.status);
     LIMP=await r.json();
-    if(currentTab==='alertas') renderLimpieza();
+    /* Repinta el menu completo: los conteos por objeto salen de esta carga. */
+    if(currentTab==='alertas') renderAlertasConLimpieza();
   }catch(e){
     if(cEl) cEl.innerHTML='<div class="error">Error cargando limpieza: '+e.message+'<br>URL: '+LIMPIEZA_URL+'</div>';
+  }finally{
+    LIMP_CARGANDO=false;
   }
 }
 
@@ -2584,13 +2595,11 @@ function renderLimpieza(){
   var buckets=limpBuckets();
   if(!buckets.some(function(b){return b.k===LIMP_FILTER;})) LIMP_FILTER='c2';
   var active=buckets.filter(function(b){return b.k===LIMP_FILTER;})[0]||buckets[0];
-  var chips=buckets.map(function(b){return '<button class="chip'+(LIMP_FILTER===b.k?' active':'')+'" data-limp-chip="'+b.k+'">'+b.label+' <b>'+b.arr.length+'</b></button>';}).join(' ');
   var _nc=active.warn?'var(--yellow)':'var(--cyan)';var _nbg=active.warn?'rgba(245,158,11,.08)':'var(--bg-3)';var _ntx=active.warn?'#FCD34D':'var(--text-dim)';
   var note=active.note?('<div style="background:'+_nbg+';border:1px solid var(--border);border-left:3px solid '+_nc+';border-radius:8px;padding:8px 11px;margin:6px 0 2px;font-size:12px;line-height:1.45;color:'+_ntx+'">'+(active.warn?'⚠️ ':'ℹ️ ')+active.note+'</div>'):'';
-  if(fEl){
-    fEl.innerHTML='<div class="filters"><span class="filter-label">🧹 Limpieza:</span>'+chips+'</div>'+note;
-    fEl.querySelectorAll('[data-limp-chip]').forEach(function(c){c.addEventListener('click',function(){LIMP_FILTER=c.getAttribute('data-limp-chip');renderLimpieza();});});
-  }
+  /* Los chips de bandeja ya viven en el menu por objeto (fixMenuHTML).
+     Aqui solo queda la nota que explica que es cada categoria. */
+  if(fEl){ fEl.innerHTML=note; }
   var esDeal=(active.tipo==='deal');
   var _cat=(typeof CAT==='function')?(CAT()||{}):{};
   var _stMap={}; ((_cat.stages)||[]).forEach(function(s){ _stMap[String(s.id)]=s.corto||s.label||s.id; });
@@ -2638,33 +2647,129 @@ async function markBorrar(tipo,id,nombreActual,quitar,btn){
   }catch(e){ if(btn){btn.disabled=false;btn.textContent=quitar?'Deshacer':'Marcar para borrar';} taskToast('Error: '+e.message,false); }
 }
 
-let ALERTAS_MODE='alertas';
+/* =========================================================================
+   MENU DE DOS NIVELES DE LA PESTANA ALERTAS
+   Nivel 1: que vengo a hacer  -> Vender | Arreglar
+   Nivel 2 (solo Arreglar): sobre que objeto -> Oportunidad | Contacto
+   Nivel 3: la opcion concreta, que puede venir de dos fuentes:
+     src 'alertas' = fila de DATA.alertas16 (categoria Higienizar)
+     src 'limp'    = bandeja de limpieza (LIMPIEZA_URL)
+   El usuario ve un solo arbol; por dentro cada opcion sabe de donde sale.
+   ========================================================================= */
+var FIX_NIVEL1 = 'vender';       // 'vender' | 'arreglar'
+var FIX_OBJ    = 'oportunidad';  // 'oportunidad' | 'contacto'
+var FIX_OPC    = 'ALL';          // clave de la opcion activa dentro del objeto
 
-function limpSwitchHTML(){
-  return '<div class="filters" style="margin-bottom:14px;gap:6px">'
-    +'<button class="chip'+(ALERTAS_MODE==='alertas'?' active':'')+'" data-amode="alertas" style="font-weight:700">🔔 Alertas</button>'
-    +'<button class="chip'+(ALERTAS_MODE==='limpieza'?' active':'')+'" data-amode="limpieza" style="font-weight:700">🧹 Limpieza</button>'
-    +'</div>';
+/* Objetos que todavia no tienen de donde leer. Se muestran apagados a proposito:
+   esconderlos daria la falsa impresion de que el CRM ya esta limpio de eso. */
+var FIX_OBJ_PENDIENTES = [
+  {k:'empresa', label:'🏢 Empresa', nota:'Falta construir la consulta de empresas sin contactos y sin oportunidades.'},
+  {k:'tarea',   label:'✅ Tarea',   nota:'Falta construir la consulta de tareas sin oportunidad y sin responsable.'}
+];
+
+function fixOpciones(obj){
+  if(obj==='contacto'){
+    return [
+      {k:'ctodos', label:'Todos',                     src:'limp', bucket:'ctodos'},
+      {k:'c2',     label:'Sin oportunidad',           src:'limp', bucket:'c2'},
+      {k:'c3',     label:'Sin oportunidad · empresa viva', src:'limp', bucket:'c3'},
+      {k:'c4',     label:'Sin correo',                src:'limp', bucket:'c4'}
+    ];
+  }
+  var o=[{k:'ALL', label:'Todas', src:'alertas', accion:'ALL'}];
+  ACCION_DEFS.forEach(function(d){
+    if(d.cat==='Higienizar') o.push({k:d.id, label:d.icon+' '+d.label, src:'alertas', accion:d.id});
+  });
+  o.push({k:'d1', label:'📇 Sin contacto',              src:'limp', bucket:'d1'});
+  o.push({k:'d2', label:'🗑️ Perdida que nunca arrancó', src:'limp', bucket:'d2'});
+  return o;
 }
 
-function wireModeSwitch(){
+function fixOpcionActiva(){
+  var ops=fixOpciones(FIX_OBJ);
+  var hit=ops.filter(function(o){ return o.k===FIX_OPC; })[0];
+  if(!hit){ FIX_OPC=ops[0].k; hit=ops[0]; }
+  return hit;
+}
+
+/* Conteo de cada opcion. '…' mientras la bandeja de limpieza no ha cargado. */
+function fixConteo(op){
+  if(op.src==='limp'){
+    if(!LIMP) return '…';
+    var b=limpBuckets().filter(function(x){ return x.k===op.bucket; })[0];
+    return b ? String(b.arr.length) : '0';
+  }
+  var base=((DATA && DATA.alertas16)||[]).filter(function(a){
+    return a.accion!=='setearDealtype' && a.categoria==='Higienizar';
+  });
+  if(op.accion==='ALL') return String(base.length);
+  return String(base.filter(function(a){ return a.accion===op.accion; }).length);
+}
+
+function fixMenuHTML(){
+  var H='<div class="filters" style="margin-bottom:8px;gap:6px">'
+    +'<button class="chip'+(FIX_NIVEL1==='vender'?' active':'')+'" data-fix1="vender" style="font-weight:700">💼 Vender</button>'
+    +'<button class="chip'+(FIX_NIVEL1==='arreglar'?' active':'')+'" data-fix1="arreglar" style="font-weight:700">🧹 Arreglar</button>'
+    +'</div>';
+  if(FIX_NIVEL1!=='arreglar') return H;
+
+  H+='<div class="filters" style="margin-bottom:8px;gap:6px"><span class="filter-label">¿Qué arreglas?</span>'
+    +'<button class="chip'+(FIX_OBJ==='oportunidad'?' active':'')+'" data-fixobj="oportunidad">💠 Oportunidad</button>'
+    +'<button class="chip'+(FIX_OBJ==='contacto'?' active':'')+'" data-fixobj="contacto">📇 Contacto</button>';
+  FIX_OBJ_PENDIENTES.forEach(function(p){
+    H+='<button class="chip" disabled title="'+p.nota+'" style="opacity:.45;cursor:not-allowed">'+p.label+' <b>—</b></button>';
+  });
+  H+='</div>';
+
+  var ops=fixOpciones(FIX_OBJ);
+  H+='<div class="filters" style="margin-bottom:10px;gap:6px"><span class="filter-label">Problema:</span>';
+  ops.forEach(function(o){
+    H+='<button class="chip'+(FIX_OPC===o.k?' active':'')+'" data-fixopc="'+o.k+'">'+o.label+' <b>'+fixConteo(o)+'</b></button>';
+  });
+  H+='</div>';
+  return H;
+}
+
+function wireFixMenu(){
   var p=document.getElementById('p-alertas'); if(!p) return;
-  p.querySelectorAll('[data-amode]').forEach(function(b){ b.addEventListener('click',function(){ ALERTAS_MODE=b.getAttribute('data-amode'); renderAlertasConLimpieza(); }); });
+  p.querySelectorAll('[data-fix1]').forEach(function(b){ b.addEventListener('click',function(){
+    FIX_NIVEL1=b.getAttribute('data-fix1');
+    FILT.alertas.categoria='ALL'; FILT.alertas.accion='ALL';
+    if(FIX_NIVEL1==='arreglar'){ FIX_OPC=fixOpciones(FIX_OBJ)[0].k; }
+    renderAlertasConLimpieza();
+  }); });
+  p.querySelectorAll('[data-fixobj]').forEach(function(b){ b.addEventListener('click',function(){
+    FIX_OBJ=b.getAttribute('data-fixobj');
+    FIX_OPC=fixOpciones(FIX_OBJ)[0].k;
+    renderAlertasConLimpieza();
+  }); });
+  p.querySelectorAll('[data-fixopc]').forEach(function(b){ b.addEventListener('click',function(){
+    FIX_OPC=b.getAttribute('data-fixopc');
+    renderAlertasConLimpieza();
+  }); });
 }
 
 function renderAlertasConLimpieza(){
   var p=document.getElementById('p-alertas'); if(!p) return;
-  if(ALERTAS_MODE==='limpieza'){
-    p.innerHTML=limpSwitchHTML()+'<div id="limpieza-filters"></div><div id="limpieza-cards" style="margin-top:14px"></div>';
-    wireModeSwitch();
+  if(!LIMP) loadLimpieza();   // los conteos del menu salen de aqui
+
+  var op=(FIX_NIVEL1==='arreglar') ? fixOpcionActiva() : null;
+
+  if(op && op.src==='limp'){
+    LIMP_FILTER=op.bucket;
+    p.innerHTML=fixMenuHTML()+'<div id="limpieza-filters"></div><div id="limpieza-cards" style="margin-top:14px"></div>';
+    wireFixMenu();
     renderLimpieza();
-  } else {
-    try{ renderAlertas(); }catch(e){}
-    var bar=document.createElement('div');
-    bar.innerHTML=limpSwitchHTML();
-    if(bar.firstChild) p.insertBefore(bar.firstChild, p.firstChild);
-    wireModeSwitch();
+    return;
   }
+
+  if(op) FILT.alertas.accion=op.accion;
+  try{ renderAlertas(); }catch(e){}
+  var bar=document.createElement('div');
+  bar.innerHTML=fixMenuHTML();
+  var nodos=[]; while(bar.firstChild){ nodos.push(bar.firstChild); bar.removeChild(bar.firstChild); }
+  nodos.reverse().forEach(function(n){ p.insertBefore(n, p.firstChild); });
+  wireFixMenu();
 }
 
 /* Limpieza se carga solo al abrir su pestana (evita 2 llamadas pesadas simultaneas al cargar) */
@@ -2787,12 +2892,18 @@ function renderAlertas() {
   // Filtros unificados (persona c/conteo · semáforo · grupo · producto · stage · monto · categoría)
   html += filtrosHTML('alertas', allAlertas, 'alerta');
 
-  var _accBase = allAlertas.filter(function(a){ return pasaFiltro('alertas', a, 'alerta'); });
-  var _accCounts = {}; _accBase.forEach(function(a){ _accCounts[a.accion]=(_accCounts[a.accion]||0)+1; });
-  html += '<div class="filters"><span class="filter-label">Acción:</span>';
-  html += _chip('alertas','accion','ALL','Todas ('+_accBase.length+')', FILT.alertas.accion==='ALL');
-  ACCION_DEFS.forEach(function(d){ var c=_accCounts[d.id]||0; html += _chip('alertas','accion',d.id, d.icon+' '+d.label+' ('+c+')', FILT.alertas.accion===d.id); });
-  html += '</div>';
+  /* Fila de acciones: solo en "Vender". En "Arreglar" la opcion la elige el menu por objeto. */
+  if(FIX_NIVEL1==='vender'){
+    var _accBase = allAlertas.filter(function(a){ return pasaFiltro('alertas', a, 'alerta'); });
+    var _accCounts = {}; _accBase.forEach(function(a){ _accCounts[a.accion]=(_accCounts[a.accion]||0)+1; });
+    html += '<div class="filters"><span class="filter-label">Acción:</span>';
+    html += _chip('alertas','accion','ALL','Todas ('+_accBase.length+')', FILT.alertas.accion==='ALL');
+    ACCION_DEFS.forEach(function(d){
+      if(d.cat==='Higienizar') return;
+      var c=_accCounts[d.id]||0; html += _chip('alertas','accion',d.id, d.icon+' '+d.label+' ('+c+')', FILT.alertas.accion===d.id);
+    });
+    html += '</div>';
+  }
 
   html += `<div class="filters">
     <span class="filter-label">Ordenar por:</span>

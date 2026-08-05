@@ -1339,6 +1339,15 @@ var STL_MARK_URL='https://mikea.app.n8n.cloud/webhook/stil-mark-borrar';
 var STL_COMPANY_URL='https://mikea.app.n8n.cloud/webhook/stil-company';
 var SLIMP=null, SLIMP_F='c2', SLIMP_M={};
 
+/* Menu por objeto, igual que el tablero GR. STIL no tiene alertas de venta,
+   asi que aqui el primer nivel es directamente el objeto. */
+var SLIMP_OBJ='contacto';
+var SLIMP_OBJ_PENDIENTES=[
+  {k:'empresa', label:'🏢 Empresa', nota:'Falta construir la consulta de empresas sin contactos y sin oportunidades.'},
+  {k:'tarea',   label:'✅ Tarea',   nota:'Falta construir la consulta de tareas sin oportunidad y sin responsable.'}
+];
+var SLIMP_POR_OBJ={ contacto:['ctodos','c2','c3','c4'], oportunidad:['d1','d2'] };
+
 (function(){
   try{
     var nav=document.querySelector('.nav');
@@ -1365,12 +1374,12 @@ function slimpBuckets(){
   var seen={}, todos=[];
   c2.concat(c3).concat(c4).forEach(function(x){ if(x&&!seen[x.id]){seen[x.id]=1;todos.push(x);} });
   return [
-    {k:'ctodos',label:'Todos los contactos',tipo:'contact',arr:todos,warn:false,note:'Unión de las categorías de contactos, sin duplicados.'},
-    {k:'c2',label:'Contactos sin deal',tipo:'contact',arr:c2,warn:false,note:'Contactos sin ninguna oportunidad, y cuya empresa tampoco tiene oportunidades abiertas. Los candidatos más claros a borrar.'},
-    {k:'c3',label:'Sin deal · empresa activa',tipo:'contact',arr:c3,warn:true,note:'Sin oportunidad propia, PERO su empresa SÍ tiene oportunidades. Revisa antes de marcar: pueden ser un segundo contacto útil.'},
-    {k:'c4',label:'Sin email',tipo:'contact',arr:c4,warn:false,note:'Contactos sin correo. No se les puede contactar por email.'},
-    {k:'d1',label:'Deals sin contacto',tipo:'deal',arr:D.d1||[],warn:false,note:'Oportunidades sin ningún contacto asociado: no hay a quién escribirle.'},
-    {k:'d2',label:'Deals perdidos',tipo:'deal',arr:D.d2||[],warn:false,note:'Oportunidades marcadas como Perdida que nunca avanzaron en el funnel.'}
+    {k:'ctodos',label:'Todos',tipo:'contact',arr:todos,warn:false,note:'Unión de las categorías de contactos, sin duplicados.'},
+    {k:'c2',label:'Sin oportunidad',tipo:'contact',arr:c2,warn:false,note:'Contactos sin ninguna oportunidad, y cuya empresa tampoco tiene oportunidades abiertas. Los candidatos más claros a borrar.'},
+    {k:'c3',label:'Sin oportunidad · empresa viva',tipo:'contact',arr:c3,warn:true,note:'Sin oportunidad propia, PERO su empresa SÍ tiene oportunidades. Revisa antes de marcar: pueden ser un segundo contacto útil.'},
+    {k:'c4',label:'Sin correo',tipo:'contact',arr:c4,warn:false,note:'Contactos sin correo. No se les puede contactar por email.'},
+    {k:'d1',label:'📇 Sin contacto',tipo:'deal',arr:D.d1||[],warn:false,note:'Oportunidades sin ningún contacto asociado: no hay a quién escribirle.'},
+    {k:'d2',label:'🗑️ Perdida que nunca arrancó',tipo:'deal',arr:D.d2||[],warn:false,note:'Oportunidades marcadas como Perdida que nunca avanzaron en el funnel.'}
   ];
 }
 
@@ -1392,14 +1401,36 @@ function slimpRender(){
   if(!f||!b) return;
   if(!SLIMP){ slimpLoad(); return; }
   var bk=slimpBuckets();
-  if(!bk.some(function(x){return x.k===SLIMP_F;})) SLIMP_F='c2';
+  /* La opcion activa tiene que pertenecer al objeto elegido. */
+  var claves=SLIMP_POR_OBJ[SLIMP_OBJ]||SLIMP_POR_OBJ.contacto;
+  if(claves.indexOf(SLIMP_F)<0) SLIMP_F=claves[0];
   var a=bk.filter(function(x){return x.k===SLIMP_F;})[0]||bk[0];
+  var deObjeto=bk.filter(function(x){ return claves.indexOf(x.k)>=0; });
+
+  var btn=function(attr,val,txt,activo,apagado,tip){
+    return '<button '+(apagado?'disabled title="'+tip+'" ':attr+'="'+val+'" ')
+      +'style="border:1px solid '+(activo?'#02ADBA':'#2A3142')+';background:'+(activo?'rgba(2,173,186,.15)':'#141827')
+      +';color:#D1D5DB;border-radius:20px;padding:5px 11px;font-size:12px;cursor:'+(apagado?'not-allowed':'pointer')
+      +(apagado?';opacity:.45':'')+'">'+txt+'</button>';
+  };
+
   f.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">'
-    +'<span style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-right:4px">🧹 Limpieza:</span>'
-    +bk.map(function(x){ return '<button data-slimp="'+x.k+'" style="border:1px solid '+(SLIMP_F===x.k?'#02ADBA':'#2A3142')+';background:'+(SLIMP_F===x.k?'rgba(2,173,186,.15)':'#141827')+';color:#D1D5DB;border-radius:20px;padding:5px 11px;font-size:12px;cursor:pointer">'+x.label+' <b>'+x.arr.length+'</b></button>'; }).join('')
+    +'<span style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-right:4px">¿Qué arreglas?</span>'
+    +btn('data-slimpobj','contacto','📇 Contacto',SLIMP_OBJ==='contacto',false,'')
+    +btn('data-slimpobj','oportunidad','💠 Oportunidad',SLIMP_OBJ==='oportunidad',false,'')
+    +SLIMP_OBJ_PENDIENTES.map(function(p){ return btn('','',p.label+' <b>—</b>',false,true,p.nota); }).join('')
+    +'</div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px">'
+    +'<span style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-right:4px">Problema:</span>'
+    +deObjeto.map(function(x){ return btn('data-slimp',x.k,x.label+' <b>'+x.arr.length+'</b>',SLIMP_F===x.k,false,''); }).join('')
     +'</div>'
     +(a.note?('<div style="background:'+(a.warn?'rgba(245,158,11,.08)':'#0d111a')+';border:1px solid #2A3142;border-left:3px solid '+(a.warn?'#F59E0B':'#02ADBA')+';border-radius:8px;padding:8px 11px;margin-top:8px;font-size:12px;color:'+(a.warn?'#FCD34D':'#9CA3AF')+'">'+(a.warn?'⚠️ ':'ℹ️ ')+a.note+'</div>'):'');
   f.querySelectorAll('[data-slimp]').forEach(function(x){ x.addEventListener('click',function(){ SLIMP_F=x.getAttribute('data-slimp'); slimpRender(); }); });
+  f.querySelectorAll('[data-slimpobj]').forEach(function(x){ x.addEventListener('click',function(){
+    SLIMP_OBJ=x.getAttribute('data-slimpobj');
+    SLIMP_F=(SLIMP_POR_OBJ[SLIMP_OBJ]||[])[0];
+    slimpRender();
+  }); });
 
   var esDeal=(a.tipo==='deal');
   var edad=function(cd){ if(!cd) return '—'; var d=new Date(cd); if(isNaN(d)) return '—'; return Math.floor((Date.now()-d)/86400000)+'d'; };
