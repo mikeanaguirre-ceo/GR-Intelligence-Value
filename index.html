@@ -2557,6 +2557,7 @@ let LIMP_MARKED = {};
 
 function limpBuckets(){
   var _c2=(LIMP.contactos||{}).c2||[], _c3=(LIMP.contactos||{}).c3||[], _c4=(LIMP.contactos||{}).c4||[];
+  var _e1=(LIMP.empresas||{}).e1||[];
   var _seen={}, _todos=[]; _c2.concat(_c3).concat(_c4).forEach(function(x){ if(x&&!_seen[x.id]){_seen[x.id]=1;_todos.push(x);} });
   return [
     {k:'ctodos',label:'Todos los contactos',warn:false,note:'Unión de las tres categorías de contactos (sin deal, empresa activa y sin email), sin duplicados.',tipo:'contact',arr:_todos},
@@ -2564,7 +2565,11 @@ function limpBuckets(){
     {k:'c3',label:'Sin deal · empresa activa',warn:true,note:'Contactos sin oportunidad propia, PERO su empresa SÍ tiene oportunidades abiertas. Revisa antes de marcar: pueden ser un segundo contacto útil de una cuenta viva. No los borres a ciegas.',tipo:'contact',arr:(LIMP.contactos||{}).c3||[]},
     {k:'c4',label:'Sin email',warn:false,note:'Contactos sin correo electrónico. No se les puede contactar por email, así que aportan poco y saturan el CRM.',tipo:'contact',arr:(LIMP.contactos||{}).c4||[]},
     {k:'d1',label:'Deals sin contacto',warn:false,note:'Oportunidades (deals) sin ningún contacto asociado. No se pueden trabajar porque no hay a quién escribirle.',tipo:'deal',arr:(LIMP.deals||{}).d1||[]},
-    {k:'d2',label:'Deals perdidos',warn:false,note:'Oportunidades marcadas como Perdida que nunca pasaron de la fase de prospección (no llegaron a Atracción). Se dieron por perdidas antes de arrancar; prácticamente basura de prospección.',tipo:'deal',arr:(LIMP.deals||{}).d2||[]}
+    {k:'d2',label:'Deals perdidos',warn:false,note:'Oportunidades marcadas como Perdida que nunca pasaron de la fase de prospección (no llegaron a Atracción). Se dieron por perdidas antes de arrancar; prácticamente basura de prospección.',tipo:'deal',arr:(LIMP.deals||{}).d2||[]},
+    /* e3 no viaja como lista propia: se deriva de e1 con la marca sinOportunidades. */
+    {k:'e1',label:'Sin contactos',warn:false,note:'Empresas sin una sola persona asociada. No hay a quién escribirle: la cuenta existe pero no se puede trabajar.',tipo:'company',arr:_e1},
+    {k:'e2',label:'Sin oportunidades',warn:false,note:'Empresas sin ninguna oportunidad, ni abierta ni cerrada. Nunca se les ha abierto un negocio.',tipo:'company',arr:(LIMP.empresas||{}).e2||[]},
+    {k:'e3',label:'Sin contactos ni oportunidades',warn:false,note:'Empresas completamente vacías: ni una persona ni un negocio. Son las candidatas más claras a borrar.',tipo:'company',arr:_e1.filter(function(x){return x.sinOportunidades;})}
   ];
 }
 
@@ -2597,10 +2602,17 @@ function renderLimpieza(){
   var active=buckets.filter(function(b){return b.k===LIMP_FILTER;})[0]||buckets[0];
   var _nc=active.warn?'var(--yellow)':'var(--cyan)';var _nbg=active.warn?'rgba(245,158,11,.08)':'var(--bg-3)';var _ntx=active.warn?'#FCD34D':'var(--text-dim)';
   var note=active.note?('<div style="background:'+_nbg+';border:1px solid var(--border);border-left:3px solid '+_nc+';border-radius:8px;padding:8px 11px;margin:6px 0 2px;font-size:12px;line-height:1.45;color:'+_ntx+'">'+(active.warn?'⚠️ ':'ℹ️ ')+active.note+'</div>'):'';
+  /* Si la consulta se quedo corta hay que decirlo. Mostrar menos en silencio
+     hace creer que el CRM esta mas limpio de lo que esta. */
+  var _t=(LIMP.truncado||{});
+  var _tk=(LIMP_FILTER==='c2'||LIMP_FILTER==='c3'||LIMP_FILTER==='ctodos')?'c2c3':(LIMP_FILTER==='e3'?'e1':LIMP_FILTER);
+  var _tr=_t[_tk];
+  var aviso=_tr?('<div style="background:rgba(239,68,68,.10);border:1px solid var(--border);border-left:3px solid #EF4444;border-radius:8px;padding:8px 11px;margin:6px 0 2px;font-size:12px;line-height:1.45;color:#FCA5A5">🚨 Esta lista está incompleta: HubSpot reporta <b>'+_tr.hay+'</b> y aquí solo caben <b>'+_tr.mostrados+'</b>. Lo que no ves sigue sucio.</div>'):'';
   /* Los chips de bandeja ya viven en el menu por objeto (fixMenuHTML).
      Aqui solo queda la nota que explica que es cada categoria. */
-  if(fEl){ fEl.innerHTML=note; }
+  if(fEl){ fEl.innerHTML=aviso+note; }
   var esDeal=(active.tipo==='deal');
+  var esEmpresa=(active.tipo==='company');
   var _cat=(typeof CAT==='function')?(CAT()||{}):{};
   var _stMap={}; ((_cat.stages)||[]).forEach(function(s){ _stMap[String(s.id)]=s.corto||s.label||s.id; });
   var stLabel=function(id){ return _stMap[String(id||'')]||(id||'—'); };
@@ -2608,22 +2620,30 @@ function renderLimpieza(){
   var ageOf=function(cd){ if(!cd) return '—'; var f=new Date(cd); if(isNaN(f)) return '—'; return Math.floor((Date.now()-f)/86400000)+'d'; };
   var thead=esDeal
     ? '<tr><th>Deal</th><th>Producto</th><th>Stage</th><th style="text-align:center;">Días alta</th><th style="width:1%"></th></tr>'
+    : esEmpresa
+    ? '<tr><th>Empresa</th><th>Dominio</th><th style="text-align:center;">Contactos</th><th style="text-align:center;">Oportunidades</th><th style="text-align:center;">Días alta</th><th style="width:1%"></th></tr>'
     : '<tr><th>Nombre</th><th>Puesto</th><th>Empresa</th><th>Teléfono</th><th>Empresa con deals</th><th style="width:1%"></th></tr>';
   var rows=active.arr.map(function(it){
     var marked=!!LIMP_MARKED[it.id];
-    var orig=esDeal?(it.nombre||''):(it.apellido||'');
-    var hsType=esDeal?'0-3':'0-1';
+    var orig=(esDeal||esEmpresa)?(it.nombre||''):(it.apellido||'');
+    var hsType=esDeal?'0-3':(esEmpresa?'0-2':'0-1');
     var hsUrl='https://app.hubspot.com/contacts/49671716/record/'+hsType+'/'+it.id;
     var vinc=esDeal
       ?'<button class="btn-action grf-open" data-acc="vincularContacto" data-did="'+it.id+'" data-nom="'+encodeURIComponent(it.nombre||'')+'">Vincular</button> '
       :'<button class="btn-action grf-open" data-acc="vincularDeals" data-cid="'+it.id+'" data-emp="'+encodeURIComponent(it.empresa||'')+'" data-eml="'+encodeURIComponent(it.email||'')+'" data-nom="'+encodeURIComponent(it.nombre||'')+'">Vincular</button> ';
-    if(!esDeal && !it.empresa) vinc='';
+    /* En empresas no hay a qué vincular desde aquí: la acción es marcar o dejarla. */
+    if(esEmpresa) vinc='';
+    else if(!esDeal && !it.empresa) vinc='';
     var accion=vinc+(marked
       ?'<span style="color:var(--mint);font-weight:700;font-size:11px">✓</span> <button class="btn-action limp-undo" data-tipo="'+active.tipo+'" data-id="'+it.id+'" data-orig="'+encodeURIComponent(orig)+'">Deshacer</button>'
       :'<button class="btn-action limp-mark" data-tipo="'+active.tipo+'" data-id="'+it.id+'" data-orig="'+encodeURIComponent(orig)+'">Marcar</button>');
     var nombreCell='<a href="'+hsUrl+'" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600">'+(it.nombre||'(sin nombre)')+'</a>';
     if(esDeal){
       return '<tr'+(marked?' style="opacity:.5"':'')+'><td>'+nombreCell+'</td><td><span class="tag tag-atraccion">'+prodDeName(it.nombre)+'</span></td><td style="color:var(--text-dim);font-size:12px">'+stLabel(it.stage)+'</td><td style="text-align:center;font-size:12px;color:var(--text-dim)">'+ageOf(it.createdate)+'</td><td>'+accion+'</td></tr>';
+    }
+    if(esEmpresa){
+      var cero=function(n){ return Number(n||0)===0 ? '<span style="color:var(--yellow);font-weight:700">0</span>' : String(n); };
+      return '<tr'+(marked?' style="opacity:.5"':'')+'><td>'+nombreCell+'</td><td style="font-size:12px;color:var(--text-dim)">'+(it.dominio||'—')+'</td><td style="text-align:center;font-size:12px">'+cero(it.contactos)+'</td><td style="text-align:center;font-size:12px">'+cero(it.oportunidades)+'</td><td style="text-align:center;font-size:12px;color:var(--text-dim)">'+ageOf(it.createdate)+'</td><td>'+accion+'</td></tr>';
     }
     var badge=it.empresaConDeals?'<span style="color:var(--yellow);font-size:11px">● sí</span>':'<span style="color:var(--text-mute);font-size:11px">—</span>';
     return '<tr'+(marked?' style="opacity:.5"':'')+'><td>'+nombreCell+'</td><td style="font-size:12px;color:var(--text-dim)">'+(it.puesto||'—')+'</td><td style="font-size:12px;color:var(--text-dim)">'+(it.empresa||'—')+'</td><td style="font-size:12px;color:var(--text-dim)">'+(it.telefono||'—')+'</td><td>'+badge+'</td><td>'+accion+'</td></tr>';
@@ -2663,11 +2683,17 @@ var FIX_OPC    = 'ALL';          // clave de la opcion activa dentro del objeto
 /* Objetos que todavia no tienen de donde leer. Se muestran apagados a proposito:
    esconderlos daria la falsa impresion de que el CRM ya esta limpio de eso. */
 var FIX_OBJ_PENDIENTES = [
-  {k:'empresa', label:'🏢 Empresa', nota:'Falta construir la consulta de empresas sin contactos y sin oportunidades.'},
-  {k:'tarea',   label:'✅ Tarea',   nota:'Falta construir la consulta de tareas sin oportunidad y sin responsable.'}
+  {k:'tarea', label:'✅ Tarea', nota:'Falta construir la consulta de tareas sin oportunidad, sin contacto y sin responsable.'}
 ];
 
 function fixOpciones(obj){
+  if(obj==='empresa'){
+    return [
+      {k:'e3', label:'Sin contactos ni oportunidades', src:'limp', bucket:'e3'},
+      {k:'e1', label:'Sin contactos',                  src:'limp', bucket:'e1'},
+      {k:'e2', label:'Sin oportunidades',              src:'limp', bucket:'e2'}
+    ];
+  }
   if(obj==='contacto'){
     return [
       {k:'ctodos', label:'Todos',                     src:'limp', bucket:'ctodos'},
@@ -2715,7 +2741,8 @@ function fixMenuHTML(){
 
   H+='<div class="filters" style="margin-bottom:8px;gap:6px"><span class="filter-label">¿Qué arreglas?</span>'
     +'<button class="chip'+(FIX_OBJ==='oportunidad'?' active':'')+'" data-fixobj="oportunidad">💠 Oportunidad</button>'
-    +'<button class="chip'+(FIX_OBJ==='contacto'?' active':'')+'" data-fixobj="contacto">📇 Contacto</button>';
+    +'<button class="chip'+(FIX_OBJ==='contacto'?' active':'')+'" data-fixobj="contacto">📇 Contacto</button>'
+    +'<button class="chip'+(FIX_OBJ==='empresa'?' active':'')+'" data-fixobj="empresa">🏢 Empresa</button>';
   FIX_OBJ_PENDIENTES.forEach(function(p){
     H+='<button class="chip" disabled title="'+p.nota+'" style="opacity:.45;cursor:not-allowed">'+p.label+' <b>—</b></button>';
   });
