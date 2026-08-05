@@ -1342,10 +1342,36 @@ var SLIMP=null, SLIMP_F='c2', SLIMP_M={};
 /* Menu por objeto, igual que el tablero GR. STIL no tiene alertas de venta,
    asi que aqui el primer nivel es directamente el objeto. */
 var SLIMP_OBJ='contacto';
-var SLIMP_OBJ_PENDIENTES=[
-  {k:'tarea', label:'✅ Tarea', nota:'Falta construir la consulta de tareas sin oportunidad, sin contacto y sin responsable.'}
-];
-var SLIMP_POR_OBJ={ contacto:['ctodos','c2','c3','c4'], oportunidad:['d1','d2'], empresa:['e3','e1','e2'] };
+var SLIMP_OBJ_PENDIENTES=[];
+var SLIMP_POR_OBJ={ contacto:['ctodos','c2','c3','c4'], oportunidad:['d1','d2'], empresa:['e3','e1','e2'], tarea:['t1','t2','t3','t4'] };
+
+/* Tareas: endpoint propio, resolver sus vinculos es caro y solo se paga al abrirlas. */
+var STL_TAREAS_URL='https://mikea.app.n8n.cloud/webhook/stil-tareas';
+var STAR=null, STAR_CARGANDO=false;
+async function stilLoadTareas(){
+  if(STAR_CARGANDO) return;
+  STAR_CARGANDO=true;
+  try{
+    var r=await fetch(STL_TAREAS_URL);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    STAR=await r.json();
+    slimpRender();
+  }catch(e){
+    var b=document.getElementById('slimp-body');
+    if(b) b.innerHTML='<div style="color:#EF4444;padding:14px">Error cargando tareas: '+e.message+'</div>';
+  }finally{
+    STAR_CARGANDO=false;
+  }
+}
+function stilTareasBuckets(){
+  var T=(STAR&&STAR.tareas)||{};
+  return [
+    {k:'t1',label:'Sin oportunidad',          tipo:'task',arr:T.t1||[],warn:false,note:'Tareas que no cuelgan de ningún negocio. Se trabajan a ciegas.'},
+    {k:'t2',label:'Sin contacto',             tipo:'task',arr:T.t2||[],warn:false,note:'Tareas sin persona asociada. Suelen ser las automáticas.'},
+    {k:'t3',label:'Sin responsable',          tipo:'task',arr:T.t3||[],warn:true, note:'Tareas que no son de nadie. Nadie las va a hacer.'},
+    {k:'t4',label:'Vencida y sin responsable',tipo:'task',arr:T.t4||[],warn:true, note:'Ya pasó su fecha y además no tienen dueño. Las más muertas de todas.'}
+  ];
+}
 
 (function(){
   try{
@@ -1383,7 +1409,7 @@ function slimpBuckets(){
     {k:'e3',label:'Sin contactos ni oportunidades',tipo:'company',arr:e1.filter(function(x){return x.sinOportunidades;}),warn:false,note:'Empresas completamente vacías: ni una persona ni un negocio. Las candidatas más claras a borrar.'},
     {k:'e1',label:'Sin contactos',tipo:'company',arr:e1,warn:false,note:'Empresas sin una sola persona asociada. No hay a quién escribirle.'},
     {k:'e2',label:'Sin oportunidades',tipo:'company',arr:E.e2||[],warn:false,note:'Empresas sin ninguna oportunidad, ni abierta ni cerrada.'}
-  ];
+  ].concat(stilTareasBuckets());
 }
 
 async function slimpLoad(){
@@ -1422,6 +1448,7 @@ function slimpRender(){
     +btn('data-slimpobj','contacto','📇 Contacto',SLIMP_OBJ==='contacto',false,'')
     +btn('data-slimpobj','oportunidad','💠 Oportunidad',SLIMP_OBJ==='oportunidad',false,'')
     +btn('data-slimpobj','empresa','🏢 Empresa',SLIMP_OBJ==='empresa',false,'')
+    +btn('data-slimpobj','tarea','✅ Tarea',SLIMP_OBJ==='tarea',false,'')
     +SLIMP_OBJ_PENDIENTES.map(function(p){ return btn('','',p.label+' <b>—</b>',false,true,p.nota); }).join('')
     +'</div>'
     +'<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px">'
@@ -1430,8 +1457,9 @@ function slimpRender(){
     +'</div>'
     +(function(){
       /* Si la consulta se quedo corta hay que decirlo, no mostrar menos en silencio. */
-      var T=(SLIMP&&SLIMP.truncado)||{};
-      var k=(SLIMP_F==='c2'||SLIMP_F==='c3'||SLIMP_F==='ctodos')?'c2c3':(SLIMP_F==='e3'?'e1':SLIMP_F);
+      var esTarea=(SLIMP_F.charAt(0)==='t');
+      var T=(esTarea?((STAR&&STAR.truncado)||{}):((SLIMP&&SLIMP.truncado)||{}));
+      var k=esTarea?'tareas':((SLIMP_F==='c2'||SLIMP_F==='c3'||SLIMP_F==='ctodos')?'c2c3':(SLIMP_F==='e3'?'e1':SLIMP_F));
       var t=T[k];
       return t?('<div style="background:rgba(239,68,68,.10);border:1px solid #2A3142;border-left:3px solid #EF4444;border-radius:8px;padding:8px 11px;margin-top:8px;font-size:12px;color:#FCA5A5">🚨 Esta lista está incompleta: HubSpot reporta <b>'+t.hay+'</b> y aquí solo caben <b>'+t.mostrados+'</b>. Lo que no ves sigue sucio.</div>'):'';
     })()
@@ -1443,6 +1471,24 @@ function slimpRender(){
     slimpRender();
   }); });
 
+  if(a.tipo==='task' && !STAR){ b.innerHTML='<div style="color:#9CA3AF;padding:14px">Cargando tareas…</div>'; stilLoadTareas(); return; }
+  if(a.tipo==='task'){
+    var fecha=function(s){ if(!s) return '—'; var d=new Date(s); if(isNaN(d)) return '—'; return d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'2-digit'}); };
+    var vencida=function(s){ if(!s) return false; var d=new Date(s); return !isNaN(d) && d.getTime()<Date.now(); };
+    var filas=a.arr.map(function(t){
+      var url='https://app.hubspot.com/tasks/51496709/view/all/task/'+t.id;
+      var v=vencida(t.vence);
+      return '<tr><td style="padding:7px 6px"><a href="'+url+'" target="_blank" style="color:#02ADBA;text-decoration:none;font-weight:600">'+esc(t.asunto)+'</a></td>'
+        +'<td style="padding:7px 6px;font-size:12px;color:#9CA3AF">'+(t.ownerId?'asignada':'<b style="color:#FCD34D">sin dueño</b>')+'</td>'
+        +'<td style="padding:7px 6px;font-size:12px;'+(v?'color:#FCA5A5;font-weight:700':'color:#9CA3AF')+'">'+fecha(t.vence)+(v?' ⚠️':'')+'</td>'
+        +'<td style="text-align:center;padding:7px 6px;font-size:12px">'+(t.tieneOportunidad?'<span style="color:#34d399">sí</span>':'<b style="color:#FCD34D">no</b>')+'</td>'
+        +'<td style="text-align:center;padding:7px 6px;font-size:12px">'+(t.tieneContacto?'<span style="color:#34d399">sí</span>':'<b style="color:#FCD34D">no</b>')+'</td></tr>';
+    }).join('');
+    b.innerHTML=a.arr.length
+      ? ('<div style="font-size:12px;color:#6B7280;margin:0 0 6px">'+a.arr.length+' de '+(((STAR||{}).resumen||{}).pendientes||0)+' tareas pendientes · se arreglan en HubSpot.</div><table style="width:100%;border-collapse:collapse;font-size:13px"><thead style="color:#6B7280;font-size:11px;text-transform:uppercase"><tr><th style="text-align:left">Tarea</th><th style="text-align:left">Responsable</th><th style="text-align:left">Vence</th><th style="text-align:center">Oportunidad</th><th style="text-align:center">Contacto</th></tr></thead><tbody>'+filas+'</tbody></table>')
+      : '<div style="color:#6B7280;padding:14px">Sin tareas en esta categoría 🎉</div>';
+    return;
+  }
   var esDeal=(a.tipo==='deal');
   var esEmpresa=(a.tipo==='company');
   var edad=function(cd){ if(!cd) return '—'; var d=new Date(cd); if(isNaN(d)) return '—'; return Math.floor((Date.now()-d)/86400000)+'d'; };

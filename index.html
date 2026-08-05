@@ -765,6 +765,9 @@ const TASK_NEXT_URL   = 'https://mikea.app.n8n.cloud/webhook/gr-task-next';
 // --- Limpieza CRM (workflows "GR — Limpieza (datos)" y "GR — Marcar BORRAR") ---
 const LIMPIEZA_URL = 'https://mikea.app.n8n.cloud/webhook/gr-limpieza';
 const MARK_BORRAR_URL = 'https://mikea.app.n8n.cloud/webhook/gr-mark-borrar';
+/* Tareas viven en su propio endpoint: resolver sus vinculos es caro y solo se
+   paga cuando abres ese objeto, no en cada carga de la limpieza. */
+const TAREAS_URL = 'https://mikea.app.n8n.cloud/webhook/gr-tareas';
 // Responsables conocidos (ownerId HubSpot -> nombre). Ampliable.
 const OWNERS = { '77808624': 'Migue', '82004391': 'Martha' };
 let AM_DATA = null;
@@ -2682,11 +2685,40 @@ var FIX_OPC    = 'ALL';          // clave de la opcion activa dentro del objeto
 
 /* Objetos que todavia no tienen de donde leer. Se muestran apagados a proposito:
    esconderlos daria la falsa impresion de que el CRM ya esta limpio de eso. */
-var FIX_OBJ_PENDIENTES = [
-  {k:'tarea', label:'✅ Tarea', nota:'Falta construir la consulta de tareas sin oportunidad, sin contacto y sin responsable.'}
-];
+var FIX_OBJ_PENDIENTES = [];
+
+/* Bandeja de tareas: endpoint propio, se carga la primera vez que abres el objeto. */
+var TAREAS = null, TAREAS_CARGANDO = false;
+async function loadTareas(){
+  if(TAREAS_CARGANDO) return;
+  TAREAS_CARGANDO = true;
+  try{
+    var r = await fetch(TAREAS_URL);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    TAREAS = await r.json();
+    if(currentTab==='alertas') renderAlertasConLimpieza();
+  }catch(e){
+    var c=document.getElementById('limpieza-cards');
+    if(c) c.innerHTML='<div class="error">Error cargando tareas: '+e.message+'</div>';
+  }finally{
+    TAREAS_CARGANDO = false;
+  }
+}
+
+function tareasBuckets(){
+  var T=(TAREAS&&TAREAS.tareas)||{};
+  return [
+    {k:'t1',label:'Sin oportunidad',          arr:T.t1||[], note:'Tareas que no cuelgan de ningún negocio. Se trabajan a ciegas: nadie sabe a qué venta pertenecen.'},
+    {k:'t2',label:'Sin contacto',             arr:T.t2||[], note:'Tareas sin persona asociada. Suelen ser las automáticas, que se crean colgadas del negocio pero no de quien lo atiende.'},
+    {k:'t3',label:'Sin responsable',          arr:T.t3||[], note:'Tareas que no son de nadie. Nadie las va a hacer.'},
+    {k:'t4',label:'Vencida y sin responsable',arr:T.t4||[], note:'Ya pasó su fecha y además no tienen dueño. Son las más muertas de todas.'}
+  ];
+}
 
 function fixOpciones(obj){
+  if(obj==='tarea'){
+    return tareasBuckets().map(function(b){ return {k:b.k, label:b.label, src:'tareas', bucket:b.k}; });
+  }
   if(obj==='empresa'){
     return [
       {k:'e3', label:'Sin contactos ni oportunidades', src:'limp', bucket:'e3'},
@@ -2720,6 +2752,11 @@ function fixOpcionActiva(){
 
 /* Conteo de cada opcion. '…' mientras la bandeja de limpieza no ha cargado. */
 function fixConteo(op){
+  if(op.src==='tareas'){
+    if(!TAREAS) return '…';
+    var b=tareasBuckets().filter(function(x){ return x.k===op.bucket; })[0];
+    return b ? String(b.arr.length) : '0';
+  }
   if(op.src==='limp'){
     if(!LIMP) return '…';
     var b=limpBuckets().filter(function(x){ return x.k===op.bucket; })[0];
@@ -2742,7 +2779,8 @@ function fixMenuHTML(){
   H+='<div class="filters" style="margin-bottom:8px;gap:6px"><span class="filter-label">¿Qué arreglas?</span>'
     +'<button class="chip'+(FIX_OBJ==='oportunidad'?' active':'')+'" data-fixobj="oportunidad">💠 Oportunidad</button>'
     +'<button class="chip'+(FIX_OBJ==='contacto'?' active':'')+'" data-fixobj="contacto">📇 Contacto</button>'
-    +'<button class="chip'+(FIX_OBJ==='empresa'?' active':'')+'" data-fixobj="empresa">🏢 Empresa</button>';
+    +'<button class="chip'+(FIX_OBJ==='empresa'?' active':'')+'" data-fixobj="empresa">🏢 Empresa</button>'
+    +'<button class="chip'+(FIX_OBJ==='tarea'?' active':'')+'" data-fixobj="tarea">✅ Tarea</button>';
   FIX_OBJ_PENDIENTES.forEach(function(p){
     H+='<button class="chip" disabled title="'+p.nota+'" style="opacity:.45;cursor:not-allowed">'+p.label+' <b>—</b></button>';
   });
@@ -2776,11 +2814,50 @@ function wireFixMenu(){
   }); });
 }
 
+function renderTareas(){
+  var fEl=document.getElementById('limpieza-filters');
+  var cEl=document.getElementById('limpieza-cards');
+  if(!cEl) return;
+  if(!TAREAS){ cEl.innerHTML='<div class="loading">Cargando tareas…</div>'; loadTareas(); return; }
+
+  var b=tareasBuckets().filter(function(x){ return x.k===FIX_OPC; })[0]||tareasBuckets()[0];
+  var _t=(TAREAS.truncado||{}).tareas;
+  var aviso=_t?('<div style="background:rgba(239,68,68,.10);border:1px solid var(--border);border-left:3px solid #EF4444;border-radius:8px;padding:8px 11px;margin:6px 0 2px;font-size:12px;color:#FCA5A5">🚨 Esta lista está incompleta: HubSpot reporta <b>'+_t.hay+'</b> y aquí solo caben <b>'+_t.mostrados+'</b>.</div>'):'';
+  if(fEl) fEl.innerHTML=aviso+'<div style="background:var(--bg-3);border:1px solid var(--border);border-left:3px solid var(--cyan);border-radius:8px;padding:8px 11px;margin:6px 0 2px;font-size:12px;line-height:1.45;color:var(--text-dim)">ℹ️ '+b.note+'</div>';
+
+  var _fecha=function(s){ if(!s) return '—'; var d=new Date(s); if(isNaN(d)) return '—'; return d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'2-digit'}); };
+  var _venc=function(s){ if(!s) return false; var d=new Date(s); return !isNaN(d) && d.getTime()<Date.now(); };
+  var _quien=function(id){ try{ return ownerIdToPersona(String(id||'')); }catch(e){ return id?'Otro':'—'; } };
+
+  var filas=b.arr.map(function(t){
+    var url='https://app.hubspot.com/tasks/49671716/view/all/task/'+t.id;
+    var vencida=_venc(t.vence);
+    return '<tr><td><a href="'+url+'" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600">'+grEsc(t.asunto)+'</a></td>'
+      +'<td style="font-size:12px;color:var(--text-dim)">'+(t.ownerId?_quien(t.ownerId):'<span style="color:var(--yellow);font-weight:700">sin dueño</span>')+'</td>'
+      +'<td style="font-size:12px;'+(vencida?'color:#FCA5A5;font-weight:700':'color:var(--text-dim)')+'">'+_fecha(t.vence)+(vencida?' ⚠️':'')+'</td>'
+      +'<td style="text-align:center;font-size:12px">'+(t.tieneOportunidad?'<span style="color:var(--mint)">sí</span>':'<span style="color:var(--yellow);font-weight:700">no</span>')+'</td>'
+      +'<td style="text-align:center;font-size:12px">'+(t.tieneContacto?'<span style="color:var(--mint)">sí</span>':'<span style="color:var(--yellow);font-weight:700">no</span>')+'</td></tr>';
+  }).join('');
+
+  var tabla=b.arr.length
+    ? '<table class="tbl"><thead><tr><th>Tarea</th><th>Responsable</th><th>Vence</th><th style="text-align:center">Oportunidad</th><th style="text-align:center">Contacto</th></tr></thead><tbody>'+filas+'</tbody></table>'
+    : '<div class="empty">Sin tareas en esta categoría 🎉</div>';
+
+  cEl.innerHTML='<div class="section-title" style="margin-top:8px"><span class="section-count">✅ '+b.label+' · '+b.arr.length+'</span><span style="margin-left:auto;color:var(--text-mute);font-size:11px">de '+(((TAREAS||{}).resumen||{}).pendientes||0)+' tareas pendientes · se arreglan en HubSpot</span></div>'+tabla;
+}
+
 function renderAlertasConLimpieza(){
   var p=document.getElementById('p-alertas'); if(!p) return;
   if(!LIMP) loadLimpieza();   // los conteos del menu salen de aqui
 
   var op=(FIX_NIVEL1==='arreglar') ? fixOpcionActiva() : null;
+
+  if(op && op.src==='tareas'){
+    p.innerHTML=fixMenuHTML()+'<div id="limpieza-filters"></div><div id="limpieza-cards" style="margin-top:14px"></div>';
+    wireFixMenu();
+    renderTareas();
+    return;
+  }
 
   if(op && op.src==='limp'){
     LIMP_FILTER=op.bucket;
