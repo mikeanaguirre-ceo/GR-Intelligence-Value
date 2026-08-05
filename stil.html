@@ -1363,6 +1363,33 @@ async function stilLoadTareas(){
     STAR_CARGANDO=false;
   }
 }
+/* Responsables asignables: los que existen de verdad en HubSpot. Si alguien no
+   tiene usuario en el CRM, no puede recibir tareas y no debe aparecer aqui. */
+function stilOwners(){ return (((STAR||{}).responsables)||[]).map(function(p){ return {id:p.id, label:p.nombre}; }); }
+function stilDealsVivos(){
+  return (((typeof DATA!=='undefined'&&DATA&&DATA.deals)?DATA.deals:[]) || [])
+    .map(function(d){ return {id:d.id, nombre:d.cliente||d.name||String(d.id)}; })
+    .sort(function(a,b){ return String(a.nombre).localeCompare(String(b.nombre)); });
+}
+var STAR_HECHAS={};
+var STL_TASK_LINK_URL='https://mikea.app.n8n.cloud/webhook/stil-task-link';
+async function stilAccionTarea(que, taskId, valor, el){
+  if(el) el.disabled=true;
+  var url, cuerpo;
+  if(que==='cerrar'){       url=TASK_CLOSE_URL;  cuerpo={taskId:taskId}; }
+  else if(que==='asignar'){ url=TASK_UPDATE_URL; cuerpo={taskId:taskId, ownerId:valor}; }
+  else {                    url=STL_TASK_LINK_URL; cuerpo={taskId:taskId, dealId:valor}; }
+  try{
+    var r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cuerpo)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    STAR_HECHAS[taskId]=true;
+    slimpRender();
+  }catch(e){
+    if(el) el.disabled=false;
+    alert('Error: '+e.message);
+  }
+}
+
 function stilTareasBuckets(){
   var T=(STAR&&STAR.tareas)||{};
   return [
@@ -1475,18 +1502,38 @@ function slimpRender(){
   if(a.tipo==='task'){
     var fecha=function(s){ if(!s) return '—'; var d=new Date(s); if(isNaN(d)) return '—'; return d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'2-digit'}); };
     var vencida=function(s){ if(!s) return false; var d=new Date(s); return !isNaN(d) && d.getTime()<Date.now(); };
+    var sel='background:#0d111a;border:1px solid #2A3142;color:#D1D5DB;border-radius:7px;padding:4px 7px;font-size:11px;margin-right:5px';
     var filas=a.arr.map(function(t){
       var url='https://app.hubspot.com/tasks/51496709/view/all/task/'+t.id;
       var v=vencida(t.vence);
-      return '<tr><td style="padding:7px 6px"><a href="'+url+'" target="_blank" style="color:#02ADBA;text-decoration:none;font-weight:600">'+esc(t.asunto)+'</a></td>'
+      var hecho=!!STAR_HECHAS[t.id];
+      var acc='';
+      if(hecho){
+        acc='<span style="color:#34d399;font-size:11px;font-weight:700">✓ listo · aprieta ↻ Actualizar</span>';
+      } else {
+        if(!t.ownerId && stilOwners().length){
+          acc+='<select class="tar-owner" data-id="'+t.id+'" style="'+sel+'"><option value="">Asignar a…</option>'
+            +stilOwners().map(function(p){ return '<option value="'+p.id+'">'+esc(p.label)+'</option>'; }).join('')+'</select>';
+        }
+        if(!t.tieneOportunidad && stilDealsVivos().length){
+          acc+='<select class="tar-deal" data-id="'+t.id+'" style="'+sel+';max-width:180px"><option value="">Vincular a…</option>'
+            +stilDealsVivos().map(function(d){ return '<option value="'+d.id+'">'+esc(d.nombre)+'</option>'; }).join('')+'</select>';
+        }
+        acc+='<button class="tar-cerrar" data-id="'+t.id+'" style="background:#1f2937;border:1px solid #374151;border-radius:7px;padding:5px 9px;color:#D1D5DB;font-size:11px;cursor:pointer">Cerrar</button>';
+      }
+      return '<tr'+(hecho?' style="opacity:.5"':'')+'><td style="padding:7px 6px"><a href="'+url+'" target="_blank" style="color:#02ADBA;text-decoration:none;font-weight:600">'+esc(t.asunto)+'</a></td>'
         +'<td style="padding:7px 6px;font-size:12px;color:#9CA3AF">'+(t.ownerId?'asignada':'<b style="color:#FCD34D">sin dueño</b>')+'</td>'
         +'<td style="padding:7px 6px;font-size:12px;'+(v?'color:#FCA5A5;font-weight:700':'color:#9CA3AF')+'">'+fecha(t.vence)+(v?' ⚠️':'')+'</td>'
         +'<td style="text-align:center;padding:7px 6px;font-size:12px">'+(t.tieneOportunidad?'<span style="color:#34d399">sí</span>':'<b style="color:#FCD34D">no</b>')+'</td>'
-        +'<td style="text-align:center;padding:7px 6px;font-size:12px">'+(t.tieneContacto?'<span style="color:#34d399">sí</span>':'<b style="color:#FCD34D">no</b>')+'</td></tr>';
+        +'<td style="text-align:center;padding:7px 6px;font-size:12px">'+(t.tieneContacto?'<span style="color:#34d399">sí</span>':'<b style="color:#FCD34D">no</b>')+'</td>'
+        +'<td style="padding:7px 6px;white-space:nowrap">'+acc+'</td></tr>';
     }).join('');
     b.innerHTML=a.arr.length
-      ? ('<div style="font-size:12px;color:#6B7280;margin:0 0 6px">'+a.arr.length+' de '+(((STAR||{}).resumen||{}).pendientes||0)+' tareas pendientes · se arreglan en HubSpot.</div><table style="width:100%;border-collapse:collapse;font-size:13px"><thead style="color:#6B7280;font-size:11px;text-transform:uppercase"><tr><th style="text-align:left">Tarea</th><th style="text-align:left">Responsable</th><th style="text-align:left">Vence</th><th style="text-align:center">Oportunidad</th><th style="text-align:center">Contacto</th></tr></thead><tbody>'+filas+'</tbody></table>')
+      ? ('<div style="font-size:12px;color:#6B7280;margin:0 0 6px">'+a.arr.length+' de '+(((STAR||{}).resumen||{}).pendientes||0)+' tareas pendientes.</div><table style="width:100%;border-collapse:collapse;font-size:13px"><thead style="color:#6B7280;font-size:11px;text-transform:uppercase"><tr><th style="text-align:left">Tarea</th><th style="text-align:left">Responsable</th><th style="text-align:left">Vence</th><th style="text-align:center">Oportunidad</th><th style="text-align:center">Contacto</th><th></th></tr></thead><tbody>'+filas+'</tbody></table>')
       : '<div style="color:#6B7280;padding:14px">Sin tareas en esta categoría 🎉</div>';
+    b.querySelectorAll('.tar-cerrar').forEach(function(x){ x.addEventListener('click',function(){ stilAccionTarea('cerrar',x.getAttribute('data-id'),null,x); }); });
+    b.querySelectorAll('.tar-owner').forEach(function(x){ x.addEventListener('change',function(){ if(x.value) stilAccionTarea('asignar',x.getAttribute('data-id'),x.value,x); }); });
+    b.querySelectorAll('.tar-deal').forEach(function(x){ x.addEventListener('change',function(){ if(x.value) stilAccionTarea('vincular',x.getAttribute('data-id'),x.value,x); }); });
     return;
   }
   var esDeal=(a.tipo==='deal');

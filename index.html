@@ -2736,7 +2736,12 @@ function fixOpciones(obj){
   }
   var o=[{k:'ALL', label:'Todas', src:'alertas', accion:'ALL'}];
   ACCION_DEFS.forEach(function(d){
-    if(d.cat==='Higienizar') o.push({k:d.id, label:d.icon+' '+d.label, src:'alertas', accion:d.id});
+    if(d.cat!=='Higienizar') return;
+    /* 'vincularContacto' se omite a proposito: es el mismo problema que la bandeja
+       'Sin contacto', medido sobre un universo mas chico. Dos botones para lo mismo
+       hacian que la misma oportunidad apareciera dos veces. Manda la bandeja. */
+    if(d.id==='vincularContacto') return;
+    o.push({k:d.id, label:d.icon+' '+d.label, src:'alertas', accion:d.id});
   });
   o.push({k:'d1', label:'📇 Sin contacto',              src:'limp', bucket:'d1'});
   o.push({k:'d2', label:'🗑️ Perdida que nunca arrancó', src:'limp', bucket:'d2'});
@@ -2787,12 +2792,32 @@ function fixMenuHTML(){
   H+='</div>';
 
   var ops=fixOpciones(FIX_OBJ);
-  H+='<div class="filters" style="margin-bottom:10px;gap:6px"><span class="filter-label">Problema:</span>';
+  H+='<div class="filters" style="margin-bottom:6px;gap:6px"><span class="filter-label">Problema:</span>';
   ops.forEach(function(o){
     H+='<button class="chip'+(FIX_OPC===o.k?' active':'')+'" data-fixopc="'+o.k+'">'+o.label+' <b>'+fixConteo(o)+'</b></button>';
   });
   H+='</div>';
+  H+=fixUniversoHTML(fixOpcionActiva());
   return H;
+}
+
+/* De que universo habla el numero que estas viendo. Sin esto, dos listas del mismo
+   problema con cifras distintas parecen un error, cuando en realidad miran cosas
+   distintas: las alertas solo ven el embudo vivo, la bandeja ve todo el CRM. */
+function fixUniversoHTML(op){
+  if(!op) return '';
+  var txt;
+  if(op.src==='alertas'){
+    var vivas=((typeof DATA!=='undefined' && DATA && DATA.deals) ? DATA.deals.length : 0);
+    txt='Cuenta solo el embudo vivo'+(vivas?(' — '+vivas+' oportunidades abiertas'):'')+'. No incluye ganadas ni perdidas.';
+  } else if(op.src==='tareas'){
+    txt='Cuenta todas las tareas pendientes de HubSpot, de cualquier etapa.';
+  } else if(FIX_OBJ==='oportunidad'){
+    txt='Cuenta todo HubSpot, incluidas ganadas y perdidas. Por eso da más que las listas de arriba.';
+  } else {
+    txt='Cuenta todo el CRM, sin filtrar por etapa.';
+  }
+  return '<div style="margin:0 0 10px;font-size:11px;color:var(--text-mute)">🔎 '+txt+'</div>';
 }
 
 function wireFixMenu(){
@@ -2829,21 +2854,71 @@ function renderTareas(){
   var _venc=function(s){ if(!s) return false; var d=new Date(s); return !isNaN(d) && d.getTime()<Date.now(); };
   var _quien=function(id){ try{ return ownerIdToPersona(String(id||'')); }catch(e){ return id?'Otro':'—'; } };
 
+  /* Responsables asignables: los que existen de verdad en HubSpot, no una lista
+     escrita a mano. Si alguien no tiene usuario en el CRM, no puede recibir tareas. */
+  var _personas=((TAREAS||{}).responsables||[]).map(function(p){ return {ownerId:p.id, label:p.nombre}; });
+  /* Oportunidades vivas, para poder vincular desde aqui. */
+  var _deals=((typeof DATA!=='undefined' && DATA && DATA.deals)?DATA.deals:[]).slice().sort(function(a,b){ return String(a.name||a.cliente||'').localeCompare(String(b.name||b.cliente||'')); });
+
   var filas=b.arr.map(function(t){
     var url='https://app.hubspot.com/tasks/49671716/view/all/task/'+t.id;
     var vencida=_venc(t.vence);
-    return '<tr><td><a href="'+url+'" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600">'+grEsc(t.asunto)+'</a></td>'
+    var hecho=!!TAREAS_HECHAS[t.id];
+
+    var acciones='';
+    if(hecho){
+      acciones='<span style="color:var(--mint);font-size:11px;font-weight:700">✓ listo · aprieta ↻ Actualizar</span>';
+    } else {
+      if(!t.ownerId && _personas.length){
+        acciones+='<select class="tar-owner" data-id="'+t.id+'" style="background:var(--bg-3);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:4px 7px;font-size:11px;margin-right:5px"><option value="">Asignar a…</option>'
+          +_personas.map(function(p){ return '<option value="'+p.ownerId+'">'+grEsc(p.label||p.id)+'</option>'; }).join('')+'</select>';
+      }
+      if(!t.tieneOportunidad && _deals.length){
+        acciones+='<select class="tar-deal" data-id="'+t.id+'" style="background:var(--bg-3);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:4px 7px;font-size:11px;margin-right:5px;max-width:190px"><option value="">Vincular a…</option>'
+          +_deals.map(function(d){ return '<option value="'+d.id+'">'+grEsc(d.name||d.cliente||d.id)+'</option>'; }).join('')+'</select>';
+      }
+      acciones+='<button class="btn-action tar-cerrar" data-id="'+t.id+'">Cerrar</button>';
+    }
+
+    return '<tr'+(hecho?' style="opacity:.5"':'')+'><td><a href="'+url+'" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600">'+grEsc(t.asunto)+'</a></td>'
       +'<td style="font-size:12px;color:var(--text-dim)">'+(t.ownerId?_quien(t.ownerId):'<span style="color:var(--yellow);font-weight:700">sin dueño</span>')+'</td>'
       +'<td style="font-size:12px;'+(vencida?'color:#FCA5A5;font-weight:700':'color:var(--text-dim)')+'">'+_fecha(t.vence)+(vencida?' ⚠️':'')+'</td>'
       +'<td style="text-align:center;font-size:12px">'+(t.tieneOportunidad?'<span style="color:var(--mint)">sí</span>':'<span style="color:var(--yellow);font-weight:700">no</span>')+'</td>'
-      +'<td style="text-align:center;font-size:12px">'+(t.tieneContacto?'<span style="color:var(--mint)">sí</span>':'<span style="color:var(--yellow);font-weight:700">no</span>')+'</td></tr>';
+      +'<td style="text-align:center;font-size:12px">'+(t.tieneContacto?'<span style="color:var(--mint)">sí</span>':'<span style="color:var(--yellow);font-weight:700">no</span>')+'</td>'
+      +'<td style="white-space:nowrap">'+acciones+'</td></tr>';
   }).join('');
 
   var tabla=b.arr.length
-    ? '<table class="tbl"><thead><tr><th>Tarea</th><th>Responsable</th><th>Vence</th><th style="text-align:center">Oportunidad</th><th style="text-align:center">Contacto</th></tr></thead><tbody>'+filas+'</tbody></table>'
+    ? '<table class="tbl"><thead><tr><th>Tarea</th><th>Responsable</th><th>Vence</th><th style="text-align:center">Oportunidad</th><th style="text-align:center">Contacto</th><th style="width:1%"></th></tr></thead><tbody>'+filas+'</tbody></table>'
     : '<div class="empty">Sin tareas en esta categoría 🎉</div>';
 
-  cEl.innerHTML='<div class="section-title" style="margin-top:8px"><span class="section-count">✅ '+b.label+' · '+b.arr.length+'</span><span style="margin-left:auto;color:var(--text-mute);font-size:11px">de '+(((TAREAS||{}).resumen||{}).pendientes||0)+' tareas pendientes · se arreglan en HubSpot</span></div>'+tabla;
+  cEl.innerHTML='<div class="section-title" style="margin-top:8px"><span class="section-count">✅ '+b.label+' · '+b.arr.length+'</span><span style="margin-left:auto;color:var(--text-mute);font-size:11px">de '+(((TAREAS||{}).resumen||{}).pendientes||0)+' tareas pendientes</span></div>'+tabla;
+
+  cEl.querySelectorAll('.tar-cerrar').forEach(function(x){ x.addEventListener('click',function(){ accionTarea('cerrar', x.getAttribute('data-id'), null, x); }); });
+  cEl.querySelectorAll('.tar-owner').forEach(function(x){ x.addEventListener('change',function(){ if(x.value) accionTarea('asignar', x.getAttribute('data-id'), x.value, x); }); });
+  cEl.querySelectorAll('.tar-deal').forEach(function(x){ x.addEventListener('change',function(){ if(x.value) accionTarea('vincular', x.getAttribute('data-id'), x.value, x); }); });
+}
+
+/* Marcadas en esta sesion. El dato real vuelve al apretar Actualizar. */
+var TAREAS_HECHAS = {};
+const TASK_LINK_URL = 'https://mikea.app.n8n.cloud/webhook/gr-task-link';
+
+async function accionTarea(que, taskId, valor, el){
+  if(el) el.disabled=true;
+  var url, cuerpo;
+  if(que==='cerrar'){       url=TASK_CLOSE_URL;  cuerpo={taskId:taskId}; }
+  else if(que==='asignar'){ url=TASK_UPDATE_URL; cuerpo={taskId:taskId, ownerId:valor}; }
+  else {                    url=TASK_LINK_URL;   cuerpo={taskId:taskId, dealId:valor}; }
+  try{
+    var r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cuerpo)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    TAREAS_HECHAS[taskId]=true;
+    taskToast(que==='cerrar'?'Tarea cerrada':(que==='asignar'?'Responsable asignado':'Tarea vinculada'), true);
+    renderTareas();
+  }catch(e){
+    if(el) el.disabled=false;
+    taskToast('Error: '+e.message, false);
+  }
 }
 
 function renderAlertasConLimpieza(){
