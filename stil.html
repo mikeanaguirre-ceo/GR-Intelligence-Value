@@ -621,6 +621,18 @@ function normClas(c){const s=String(c||'').toLowerCase().trim();return s==='aske
 // Clasificaciones de sistema: no son respuestas reales del prospecto. No se muestran ni suman.
 var CLAS_SISTEMA=new Set(['rebote','unsubscribe','evento_sistema']);
 function esReplyReal(e){return !CLAS_SISTEMA.has(normClas(e.clasificacion));}
+/* UNA OPORTUNIDAD = UN PROSPECTO — 4ago2026, decision de negocio de Mike.
+   Si un prospecto responde varias veces con la misma clasificacion, la conversacion esta
+   avanzando: no son oportunidades nuevas. Las respuestas siguientes se conservan en la
+   tabla y en el detalle; solo la primera suma en los numeros. */
+function keyOp(e){ return String(e.empresa||'').toLowerCase().trim()+'|'+String(e.prospecto||'').toLowerCase().trim()+'|'+normClas(e.clasificacion); }
+function mapaPrimeraOp(){
+  var PEV=(PROSPECCION_DATA&&Array.isArray(PROSPECCION_DATA.eventos))?PROSPECCION_DATA.eventos:[];
+  var m={};
+  PEV.forEach(function(e){ if(e.tipo==='open3'||!esReplyReal(e)) return; var k=keyOp(e), f=String(e.fecha||''); if(!m[k]||f<m[k]) m[k]=f; });
+  return m;
+}
+function esPrimeraOp(e,m){ m=m||mapaPrimeraOp(); return String(e.fecha||'')===m[keyOp(e)]; }
 // DUO: marca real es_duo (origen); guion como respaldo solo para filas historicas sin marca
 function esDuoReal(e){if(e.es_duo===true||e.es_duo==='true'||e.es_duo===1)return true;if(e.es_duo===false||e.es_duo==='false'||e.es_duo===0)return false;return !!(e.campana&&e.campana.includes(' – '));}
 function fmtLbl(s){return String(s||'').split('_').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ')}
@@ -1022,7 +1034,8 @@ function wc(n,win,ptype,pval,bold){
 }
 
 function rowR(clas,dot,color,label){
-  const evs=getEvsFiltrados().filter(e=>e.tipo!=='open3'&&normClas(e.clasificacion)===clas);
+  const _m=mapaPrimeraOp();
+  const evs=getEvsFiltrados().filter(e=>e.tipo!=='open3'&&esReplyReal(e)&&normClas(e.clasificacion)===clas&&esPrimeraOp(e,_m));
   if(!evs.length)return'';
   const w=winOf(evs);
   return `<tr><td><span class="dot ${dot}"></span>${label||fmtLbl(clas)}</td>${wc(w.hoy,'hoy','clas',clas,0)}${wc(w.d7,'d7','clas',clas,0)}${wc(w.d30,'d30','clas',clas,0)}${wc(w.d90,'d90','clas',clas,0)}${wc(w.total,'total','clas',clas,1)}</tr>`;
@@ -1033,8 +1046,10 @@ function secH(lbl,cls){return `<tr class="gh ${cls}"><td colspan="6"><span class
 function renderTablas(){
   const all=getEvsFiltrados();
   const replies=all.filter(e=>e.tipo!=='open3'&&esReplyReal(e));
+  const _mOp=mapaPrimeraOp();
+  const repliesCnt=replies.filter(e=>esPrimeraOp(e,_mOp));
   const isDUO=esDuoReal;
-  const duoR=replies.filter(e=>isDUO(e));
+  const duoR=repliesCnt.filter(e=>isDUO(e));
 
   let t='';
   if(duoR.length){const w=winOf(duoR);t+=`<tr class="gh duo"><td colspan="6"><span class="dot dp"></span>DUO — SEÑAL CONDUCTUAL + REPLY · corte por origen, estas respuestas tambien aparecen abajo en su clasificacion</td></tr><tr><td><span class="dot dp"></span>DUO Reply</td>${wc(w.hoy,'hoy','clas','__DUO_REPLY__',0)}${wc(w.d7,'d7','clas','__DUO_REPLY__',0)}${wc(w.d30,'d30','clas','__DUO_REPLY__',0)}${wc(w.d90,'d90','clas','__DUO_REPLY__',0)}${wc(w.total,'total','clas','__DUO_REPLY__',1)}</tr>`;}
@@ -1048,7 +1063,7 @@ function renderTablas(){
   const known=new Set(['interested','meeting_booked','forwarded_to_the_right_person','introduction','circle_back','ooo','not_the_right_person','not_interested','hard_no']);
   const seen=new Set();
   replies.forEach(e=>{const c=normClas(e.clasificacion);if(c&&!known.has(c)&&!seen.has(c)){seen.add(c);t+=rowR(c,'dg');}});
-  const wT=winOf(replies);
+  const wT=winOf(repliesCnt);
   t+=`<tr class="tot"><td>TOTAL replies</td>${wc(wT.hoy,'hoy','clas','__ALL_REPLIES__',1)}${wc(wT.d7,'d7','clas','__ALL_REPLIES__',1)}${wc(wT.d30,'d30','clas','__ALL_REPLIES__',1)}${wc(wT.d90,'d90','clas','__ALL_REPLIES__',1)}${wc(wT.total,'total','clas','__ALL_REPLIES__',1)}</tr>`;
   document.getElementById('tbody-r').innerHTML=t;
 
