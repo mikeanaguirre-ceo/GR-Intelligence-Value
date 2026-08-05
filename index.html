@@ -3520,6 +3520,20 @@ function renderProspeccion() {
   var duoArr = senalesArr.filter(function(e){ return isDUO(e); });
   var open3puro = senalesArr.filter(function(e){ return !isDUO(e); });
   var duoReplies = repliesArr.filter(function(e){ return isDUO(e); });
+  /* UNA OPORTUNIDAD = UN PROSPECTO — 4ago2026, decision de negocio de Mike.
+     Cuando un prospecto responde varias veces con la misma clasificacion, la conversacion
+     esta avanzando: no son oportunidades nuevas. Las respuestas siguientes se CONSERVAN
+     (siguen en la tabla y en el detalle, no se borra historial) pero solo la PRIMERA
+     cuenta en los numeros. Ojo: es distinto del agrupado que se quito el 4ago en la capa
+     de lectura; aquel BORRABA la respuesta vieja y se quedaba con la nueva. Aqui no se
+     borra nada, solo se decide cual suma. */
+  var _keyOp = function(e){ return String(e.empresa||'').toLowerCase().trim()+'|'+String(e.prospecto||'').toLowerCase().trim()+'|'+normClasP(e.clasificacion||''); };
+  var _primeraFecha = {};
+  repliesArr.forEach(function(e){ var k=_keyOp(e), f=String(e.fecha||''); if(!_primeraFecha[k] || f < _primeraFecha[k]) _primeraFecha[k] = f; });
+  var _yaContado = {};
+  var esPrimeraOp = function(e){ var k=_keyOp(e); if(String(e.fecha||'')!==_primeraFecha[k]) return false; if(_yaContado[k]) return false; _yaContado[k]=true; return true; };
+  var repliesCnt = repliesArr.filter(esPrimeraOp);
+  var duoRepliesCnt = repliesCnt.filter(function(e){ return isDUO(e); });
   var GR_PRODS=['TW','AM','AEO','360','GenIA','ITS','LT','BD','WB','HS'];
   var activeProd=GR_PRODS.filter(function(p){ return PEV.some(function(e){return (e.producto||'')===p;}); });
   var _cf=function(field,val,lbl,cur){ return '<button class="chip'+(cur===val?' active':'')+'" data-pf="'+field+'" data-pv="'+encodeURIComponent(val)+'" style="font-size:11px;padding:5px 11px;border-radius:18px;">'+lbl+'</button>'; };
@@ -3538,11 +3552,11 @@ function renderProspeccion() {
   var dot=function(c){ return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+c+';margin-right:7px;vertical-align:middle;"></span>'; };
   var H1='<thead><tr><th style="width:38%;">CLASIFICACIÓN</th><th style="text-align:center;">HOY</th><th style="text-align:center;">7D</th><th style="text-align:center;">30D</th><th style="text-align:center;">90D</th><th style="text-align:center;">TOTAL</th></tr></thead>';
   var wc=function(n,win,clas,bold){ var s=bold?'font-weight:700;':''; return n>0?'<td class="pcell" data-ptype="clas" data-pval="'+encodeURIComponent(clas)+'" data-pwin="'+win+'" style="text-align:center;'+s+'cursor:pointer;">'+n+'</td>':'<td style="text-align:center;color:var(--text-mute);'+s+'">0</td>'; };
-  var rowC=function(clas,col){ var sub=repliesArr.filter(function(e){return normClasP(e.clasificacion||'')===clas;}); if(!sub.length)return ''; var w=winOf(sub); return '<tr><td>'+dot(col)+fmtLbl(clas)+'</td>'+wc(w.hoy,'hoy',clas,0)+wc(w.d7,'d7',clas,0)+wc(w.d30,'d30',clas,0)+wc(w.d90,'d90',clas,0)+wc(w.total,'total',clas,1)+'</tr>'; };
+  var rowC=function(clas,col){ var sub=repliesCnt.filter(function(e){return normClasP(e.clasificacion||'')===clas;}); if(!sub.length)return ''; var w=winOf(sub); return '<tr><td>'+dot(col)+fmtLbl(clas)+'</td>'+wc(w.hoy,'hoy',clas,0)+wc(w.d7,'d7',clas,0)+wc(w.d30,'d30',clas,0)+wc(w.d90,'d90',clas,0)+wc(w.total,'total',clas,1)+'</tr>'; };
   var secH=function(lbl,col,bg){ return '<tr style="background:'+bg+';"><td colspan="6" style="font-size:11px;font-weight:800;text-transform:uppercase;color:'+col+';padding:8px 12px;">'+dot(col)+lbl+'</td></tr>'; };
   var t1='<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;">'+H1+'<tbody>';
   // Sección DUO en replies (contactos DUO que respondieron)
-  if(duoReplies.length){ t1+=secH('DUO — SEÑAL CONDUCTUAL + REPLY · corte por origen, estas respuestas tambien aparecen abajo en su clasificacion','#7C3AED','rgba(124,58,237,.08)'); var wDR=winOf(duoReplies); t1+='<tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#7C3AED;margin-right:7px;vertical-align:middle;"></span>DUO Reply</td>'+wc(wDR.hoy,'hoy','__DUO_REPLY__',0)+wc(wDR.d7,'d7','__DUO_REPLY__',0)+wc(wDR.d30,'d30','__DUO_REPLY__',0)+wc(wDR.d90,'d90','__DUO_REPLY__',0)+wc(wDR.total,'total','__DUO_REPLY__',1)+'</tr>'; }
+  if(duoReplies.length){ t1+=secH('DUO — SEÑAL CONDUCTUAL + REPLY · corte por origen, estas respuestas tambien aparecen abajo en su clasificacion','#7C3AED','rgba(124,58,237,.08)'); var wDR=winOf(duoRepliesCnt); t1+='<tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#7C3AED;margin-right:7px;vertical-align:middle;"></span>DUO Reply</td>'+wc(wDR.hoy,'hoy','__DUO_REPLY__',0)+wc(wDR.d7,'d7','__DUO_REPLY__',0)+wc(wDR.d30,'d30','__DUO_REPLY__',0)+wc(wDR.d90,'d90','__DUO_REPLY__',0)+wc(wDR.total,'total','__DUO_REPLY__',1)+'</tr>'; }
   t1+=secH('ALTA PRIORIDAD — ATENDER YA','#10B981','rgba(16,185,129,.08)');
   t1+=rowC('interested','#10B981')+rowC('meeting_booked','#10B981')+rowC('forwarded_to_the_right_person','#10B981')+rowC('introduction','#10B981');
   t1+=secH('MEDIA — PENDIENTE / RETOMAR','#F59E0B','rgba(245,158,11,.08)');
@@ -3552,7 +3566,7 @@ function renderProspeccion() {
   var known=new Set(['interested','meeting_booked','forwarded_to_the_right_person','introduction','circle_back','ooo','not_the_right_person','not_interested','hard_no']);
   var seen={}; repliesArr.forEach(function(e){ var c=e.clasificacion||''; if(c&&!known.has(c)&&!seen[c]){seen[c]=true;t1+=rowC(c,'#6B7280');} });
   if(!repliesArr.length) t1+='<tr><td colspan="6" style="font-size:12px;color:var(--text-mute);padding:12px;">Sin replies para este filtro.</td></tr>';
-  var wT=winOf(repliesArr);
+  var wT=winOf(repliesCnt);
   t1+='<tr style="border-top:2px solid var(--border,#2A3142);"><td style="font-weight:700;">TOTAL replies</td>'+wc(wT.hoy,'hoy','__ALL_REPLIES__',1)+wc(wT.d7,'d7','__ALL_REPLIES__',1)+wc(wT.d30,'d30','__ALL_REPLIES__',1)+wc(wT.d90,'d90','__ALL_REPLIES__',1)+wc(wT.total,'total','__ALL_REPLIES__',1)+'</tr></tbody></table></div>';
   var H2='<thead><tr><th style="width:38%;">PRODUCTO</th><th style="text-align:center;">HOY</th><th style="text-align:center;">7D</th><th style="text-align:center;">30D</th><th style="text-align:center;">90D</th><th style="text-align:center;">TOTAL</th></tr></thead>';
   var wcp=function(n,win,prod,bold){ var s=bold?'font-weight:700;':''; return n>0?'<td class="pcell" data-ptype="prod" data-pval="'+encodeURIComponent(prod)+'" data-pwin="'+win+'" style="text-align:center;'+s+'cursor:pointer;">'+n+'</td>':'<td style="text-align:center;color:var(--text-mute);'+s+'">0</td>'; };
