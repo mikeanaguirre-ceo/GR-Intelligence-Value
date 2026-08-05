@@ -1037,7 +1037,7 @@ function renderTablas(){
   const duoR=replies.filter(e=>isDUO(e));
 
   let t='';
-  if(duoR.length){const w=winOf(duoR);t+=`<tr class="gh duo"><td colspan="6"><span class="dot dp"></span>DUO — SEÑAL CONDUCTUAL + REPLY</td></tr><tr><td><span class="dot dp"></span>DUO Reply</td>${wc(w.hoy,'hoy','clas','__DUO_REPLY__',0)}${wc(w.d7,'d7','clas','__DUO_REPLY__',0)}${wc(w.d30,'d30','clas','__DUO_REPLY__',0)}${wc(w.d90,'d90','clas','__DUO_REPLY__',0)}${wc(w.total,'total','clas','__DUO_REPLY__',1)}</tr>`;}
+  if(duoR.length){const w=winOf(duoR);t+=`<tr class="gh duo"><td colspan="6"><span class="dot dp"></span>DUO — SEÑAL CONDUCTUAL + REPLY · corte por origen, estas respuestas tambien aparecen abajo en su clasificacion</td></tr><tr><td><span class="dot dp"></span>DUO Reply</td>${wc(w.hoy,'hoy','clas','__DUO_REPLY__',0)}${wc(w.d7,'d7','clas','__DUO_REPLY__',0)}${wc(w.d30,'d30','clas','__DUO_REPLY__',0)}${wc(w.d90,'d90','clas','__DUO_REPLY__',0)}${wc(w.total,'total','clas','__DUO_REPLY__',1)}</tr>`;}
   t+=secH('ALTA PRIORIDAD — ATENDER YA','alta');
   t+=rowR('interested','dg')+rowR('meeting_booked','dg')+rowR('forwarded_to_the_right_person','dg')+rowR('introduction','dg');
   t+=secH('MEDIA — PENDIENTE / RETOMAR','media');
