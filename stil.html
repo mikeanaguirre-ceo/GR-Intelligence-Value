@@ -1343,10 +1343,9 @@ var SLIMP=null, SLIMP_F='c2', SLIMP_M={};
    asi que aqui el primer nivel es directamente el objeto. */
 var SLIMP_OBJ='contacto';
 var SLIMP_OBJ_PENDIENTES=[
-  {k:'empresa', label:'🏢 Empresa', nota:'Falta construir la consulta de empresas sin contactos y sin oportunidades.'},
-  {k:'tarea',   label:'✅ Tarea',   nota:'Falta construir la consulta de tareas sin oportunidad y sin responsable.'}
+  {k:'tarea', label:'✅ Tarea', nota:'Falta construir la consulta de tareas sin oportunidad, sin contacto y sin responsable.'}
 ];
-var SLIMP_POR_OBJ={ contacto:['ctodos','c2','c3','c4'], oportunidad:['d1','d2'] };
+var SLIMP_POR_OBJ={ contacto:['ctodos','c2','c3','c4'], oportunidad:['d1','d2'], empresa:['e3','e1','e2'] };
 
 (function(){
   try{
@@ -1369,8 +1368,8 @@ var SLIMP_POR_OBJ={ contacto:['ctodos','c2','c3','c4'], oportunidad:['d1','d2'] 
 })();
 
 function slimpBuckets(){
-  var C=(SLIMP&&SLIMP.contactos)||{}, D=(SLIMP&&SLIMP.deals)||{};
-  var c2=C.c2||[], c3=C.c3||[], c4=C.c4||[];
+  var C=(SLIMP&&SLIMP.contactos)||{}, D=(SLIMP&&SLIMP.deals)||{}, E=(SLIMP&&SLIMP.empresas)||{};
+  var c2=C.c2||[], c3=C.c3||[], c4=C.c4||[], e1=E.e1||[];
   var seen={}, todos=[];
   c2.concat(c3).concat(c4).forEach(function(x){ if(x&&!seen[x.id]){seen[x.id]=1;todos.push(x);} });
   return [
@@ -1379,7 +1378,11 @@ function slimpBuckets(){
     {k:'c3',label:'Sin oportunidad · empresa viva',tipo:'contact',arr:c3,warn:true,note:'Sin oportunidad propia, PERO su empresa SÍ tiene oportunidades. Revisa antes de marcar: pueden ser un segundo contacto útil.'},
     {k:'c4',label:'Sin correo',tipo:'contact',arr:c4,warn:false,note:'Contactos sin correo. No se les puede contactar por email.'},
     {k:'d1',label:'📇 Sin contacto',tipo:'deal',arr:D.d1||[],warn:false,note:'Oportunidades sin ningún contacto asociado: no hay a quién escribirle.'},
-    {k:'d2',label:'🗑️ Perdida que nunca arrancó',tipo:'deal',arr:D.d2||[],warn:false,note:'Oportunidades marcadas como Perdida que nunca avanzaron en el funnel.'}
+    {k:'d2',label:'🗑️ Perdida que nunca arrancó',tipo:'deal',arr:D.d2||[],warn:false,note:'Oportunidades marcadas como Perdida que nunca avanzaron en el funnel.'},
+    /* e3 no viaja como lista propia: se deriva de e1 con la marca sinOportunidades. */
+    {k:'e3',label:'Sin contactos ni oportunidades',tipo:'company',arr:e1.filter(function(x){return x.sinOportunidades;}),warn:false,note:'Empresas completamente vacías: ni una persona ni un negocio. Las candidatas más claras a borrar.'},
+    {k:'e1',label:'Sin contactos',tipo:'company',arr:e1,warn:false,note:'Empresas sin una sola persona asociada. No hay a quién escribirle.'},
+    {k:'e2',label:'Sin oportunidades',tipo:'company',arr:E.e2||[],warn:false,note:'Empresas sin ninguna oportunidad, ni abierta ni cerrada.'}
   ];
 }
 
@@ -1418,12 +1421,20 @@ function slimpRender(){
     +'<span style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-right:4px">¿Qué arreglas?</span>'
     +btn('data-slimpobj','contacto','📇 Contacto',SLIMP_OBJ==='contacto',false,'')
     +btn('data-slimpobj','oportunidad','💠 Oportunidad',SLIMP_OBJ==='oportunidad',false,'')
+    +btn('data-slimpobj','empresa','🏢 Empresa',SLIMP_OBJ==='empresa',false,'')
     +SLIMP_OBJ_PENDIENTES.map(function(p){ return btn('','',p.label+' <b>—</b>',false,true,p.nota); }).join('')
     +'</div>'
     +'<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px">'
     +'<span style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-right:4px">Problema:</span>'
     +deObjeto.map(function(x){ return btn('data-slimp',x.k,x.label+' <b>'+x.arr.length+'</b>',SLIMP_F===x.k,false,''); }).join('')
     +'</div>'
+    +(function(){
+      /* Si la consulta se quedo corta hay que decirlo, no mostrar menos en silencio. */
+      var T=(SLIMP&&SLIMP.truncado)||{};
+      var k=(SLIMP_F==='c2'||SLIMP_F==='c3'||SLIMP_F==='ctodos')?'c2c3':(SLIMP_F==='e3'?'e1':SLIMP_F);
+      var t=T[k];
+      return t?('<div style="background:rgba(239,68,68,.10);border:1px solid #2A3142;border-left:3px solid #EF4444;border-radius:8px;padding:8px 11px;margin-top:8px;font-size:12px;color:#FCA5A5">🚨 Esta lista está incompleta: HubSpot reporta <b>'+t.hay+'</b> y aquí solo caben <b>'+t.mostrados+'</b>. Lo que no ves sigue sucio.</div>'):'';
+    })()
     +(a.note?('<div style="background:'+(a.warn?'rgba(245,158,11,.08)':'#0d111a')+';border:1px solid #2A3142;border-left:3px solid '+(a.warn?'#F59E0B':'#02ADBA')+';border-radius:8px;padding:8px 11px;margin-top:8px;font-size:12px;color:'+(a.warn?'#FCD34D':'#9CA3AF')+'">'+(a.warn?'⚠️ ':'ℹ️ ')+a.note+'</div>'):'');
   f.querySelectorAll('[data-slimp]').forEach(function(x){ x.addEventListener('click',function(){ SLIMP_F=x.getAttribute('data-slimp'); slimpRender(); }); });
   f.querySelectorAll('[data-slimpobj]').forEach(function(x){ x.addEventListener('click',function(){
@@ -1433,21 +1444,30 @@ function slimpRender(){
   }); });
 
   var esDeal=(a.tipo==='deal');
+  var esEmpresa=(a.tipo==='company');
   var edad=function(cd){ if(!cd) return '—'; var d=new Date(cd); if(isNaN(d)) return '—'; return Math.floor((Date.now()-d)/86400000)+'d'; };
   var head=esDeal
     ? '<tr><th style="text-align:left">Deal</th><th style="text-align:center">Días alta</th><th></th></tr>'
+    : esEmpresa
+    ? '<tr><th style="text-align:left">Empresa</th><th style="text-align:left">Dominio</th><th style="text-align:center">Contactos</th><th style="text-align:center">Oportunidades</th><th style="text-align:center">Días alta</th><th></th></tr>'
     : '<tr><th style="text-align:left">Nombre</th><th style="text-align:left">Puesto</th><th style="text-align:left">Empresa</th><th style="text-align:left">Teléfono</th><th></th></tr>';
   var rows=a.arr.map(function(it){
     var m=!!SLIMP_M[it.id];
-    var orig=esDeal?(it.nombre||''):(it.apellido||'');
-    var url='https://app.hubspot.com/contacts/51496709/record/'+(esDeal?'0-3':'0-1')+'/'+it.id;
+    var orig=(esDeal||esEmpresa)?(it.nombre||''):(it.apellido||'');
+    var url='https://app.hubspot.com/contacts/51496709/record/'+(esDeal?'0-3':(esEmpresa?'0-2':'0-1'))+'/'+it.id;
     var btn=m
       ?'<span style="color:#34d399;font-weight:700;font-size:11px">✓</span> <button class="slimp-undo" data-t="'+a.tipo+'" data-id="'+it.id+'" data-o="'+encodeURIComponent(orig)+'" style="background:#1f2937;border:1px solid #374151;border-radius:7px;padding:5px 9px;color:#D1D5DB;font-size:11px;cursor:pointer">Deshacer</button>'
       :'<button class="slimp-mark" data-t="'+a.tipo+'" data-id="'+it.id+'" data-o="'+encodeURIComponent(orig)+'" style="background:#1f2937;border:1px solid #374151;border-radius:7px;padding:5px 9px;color:#D1D5DB;font-size:11px;cursor:pointer">Marcar</button>';
     var vb='<button class="slimp-vinc" data-t="'+a.tipo+'" data-id="'+it.id+'" data-emp="'+encodeURIComponent(it.empresa||'')+'" data-nom="'+encodeURIComponent(it.nombre||'')+'" style="background:#0f3c40;border:1px solid #02ADBA;border-radius:7px;padding:5px 9px;color:#7fe3ea;font-size:11px;cursor:pointer;margin-right:5px">Vincular</button>';
-    if(!esDeal && !it.empresa) vb='';
+    /* En empresas no hay a qué vincular desde aquí: la acción es marcar o dejarla. */
+    if(esEmpresa) vb='';
+    else if(!esDeal && !it.empresa) vb='';
     btn=vb+btn;
     var nm='<a href="'+url+'" target="_blank" style="color:#02ADBA;text-decoration:none;font-weight:600">'+esc(it.nombre||'(sin nombre)')+'</a>';
+    if(esEmpresa){
+      var cero=function(n){ return Number(n||0)===0 ? '<b style="color:#FCD34D">0</b>' : String(n); };
+      return '<tr'+(m?' style="opacity:.5"':'')+'><td style="padding:7px 6px">'+nm+'</td><td style="padding:7px 6px;color:#9CA3AF;font-size:12px">'+esc(it.dominio||'—')+'</td><td style="text-align:center;padding:7px 6px;font-size:12px">'+cero(it.contactos)+'</td><td style="text-align:center;padding:7px 6px;font-size:12px">'+cero(it.oportunidades)+'</td><td style="text-align:center;padding:7px 6px;color:#9CA3AF;font-size:12px">'+edad(it.createdate)+'</td><td style="padding:7px 6px">'+btn+'</td></tr>';
+    }
     if(esDeal) return '<tr'+(m?' style="opacity:.5"':'')+'><td style="padding:7px 6px">'+nm+'</td><td style="text-align:center;padding:7px 6px;color:#9CA3AF;font-size:12px">'+edad(it.createdate)+'</td><td style="padding:7px 6px">'+btn+'</td></tr>';
     return '<tr'+(m?' style="opacity:.5"':'')+'><td style="padding:7px 6px">'+nm+'</td><td style="padding:7px 6px;color:#9CA3AF;font-size:12px">'+esc(it.puesto||'—')+'</td><td style="padding:7px 6px;color:#9CA3AF;font-size:12px">'+esc(it.empresa||'—')+'</td><td style="padding:7px 6px;color:#9CA3AF;font-size:12px">'+esc(it.telefono||'—')+'</td><td style="padding:7px 6px">'+btn+'</td></tr>';
   }).join('');
