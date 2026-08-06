@@ -5,7 +5,8 @@
       "label": "Mike",
       "alias": [
         "mike"
-      ]
+      ],
+      "tipo": "gr"
     },
     {
       "id": "Migue",
@@ -14,7 +15,8 @@
         "migue",
         "miguel"
       ],
-      "ownerId": "77808624"
+      "ownerId": "77808624",
+      "tipo": "gr"
     },
     {
       "id": "Martha",
@@ -22,7 +24,8 @@
       "alias": [
         "martha"
       ],
-      "ownerId": "82004391"
+      "ownerId": "82004391",
+      "tipo": "gr"
     },
     {
       "id": "Daniel",
@@ -30,7 +33,8 @@
       "alias": [
         "daniel",
         "dani"
-      ]
+      ],
+      "tipo": "gr"
     },
     {
       "id": "Fer",
@@ -38,7 +42,8 @@
       "alias": [
         "fer",
         "fernanda"
-      ]
+      ],
+      "tipo": "gr"
     },
     {
       "id": "Mine",
@@ -46,7 +51,8 @@
       "alias": [
         "mine",
         "minerva"
-      ]
+      ],
+      "tipo": "gr"
     },
     {
       "id": "Manu",
@@ -54,14 +60,16 @@
       "alias": [
         "manu",
         "manuel"
-      ]
+      ],
+      "tipo": "gr"
     },
     {
       "id": "Diana",
       "label": "Diana",
       "alias": [
         "diana"
-      ]
+      ],
+      "tipo": "gr"
     },
     {
       "id": "Nico",
@@ -70,21 +78,25 @@
         "nico",
         "nicolas",
         "nicolás"
-      ]
+      ],
+      "tipo": "partner",
+      "empresa": "Artool"
     },
     {
       "id": "Sara",
       "label": "Sara",
       "alias": [
         "sara"
-      ]
+      ],
+      "tipo": "gr"
     },
     {
       "id": "Sabrina",
       "label": "Sabrina",
       "alias": [
         "sabrina"
-      ]
+      ],
+      "tipo": "gr"
     },
     {
       "id": "Valeria",
@@ -92,14 +104,89 @@
       "alias": [
         "valeria",
         "vale"
-      ]
+      ],
+      "tipo": "gr"
     },
     {
       "id": "Uri",
       "label": "Uri",
       "alias": [
         "uri"
-      ]
+      ],
+      "tipo": "partner",
+      "empresa": "Artool"
+    },
+    {
+      "id": "Verónica",
+      "label": "Verónica",
+      "alias": [
+        "verónica"
+      ],
+      "tipo": "partner",
+      "empresa": "Artool"
+    },
+    {
+      "id": "Aldo",
+      "label": "Aldo",
+      "alias": [
+        "aldo"
+      ],
+      "tipo": "partner",
+      "empresa": "Roomie IT"
+    },
+    {
+      "id": "Fernando",
+      "label": "Fernando",
+      "alias": [
+        "fernando"
+      ],
+      "tipo": "partner",
+      "empresa": "Roomie IT"
+    },
+    {
+      "id": "Polo",
+      "label": "Polo",
+      "alias": [
+        "polo"
+      ],
+      "tipo": "partner",
+      "empresa": "Roomie IT"
+    },
+    {
+      "id": "Lenin",
+      "label": "Lenin",
+      "alias": [
+        "lenin"
+      ],
+      "tipo": "partner",
+      "empresa": "Roomie IT"
+    },
+    {
+      "id": "Jacopo",
+      "label": "Jacopo",
+      "alias": [
+        "jacopo"
+      ],
+      "tipo": "partner",
+      "empresa": "Hootsuite"
+    },
+    {
+      "id": "Abraham",
+      "label": "Abraham",
+      "alias": [
+        "abraham"
+      ],
+      "tipo": "partner",
+      "empresa": "Hootsuite"
+    },
+    {
+      "id": "Lissa",
+      "label": "Lissa",
+      "alias": [
+        "lissa"
+      ],
+      "tipo": "partner",
+      "empresa": "Hootsuite"
     }
   ],
   "productos": [
