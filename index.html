@@ -2852,13 +2852,18 @@ function renderTareas(){
 
   var _fecha=function(s){ if(!s) return '—'; var d=new Date(s); if(isNaN(d)) return '—'; return d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'2-digit'}); };
   var _venc=function(s){ if(!s) return false; var d=new Date(s); return !isNaN(d) && d.getTime()<Date.now(); };
-  var _quien=function(id){ try{ return ownerIdToPersona(String(id||'')); }catch(e){ return id?'Otro':'—'; } };
+  /* El responsable real vive en el marker del asunto, no en el owner de HubSpot:
+     el portal solo tiene dos owners y no dicen quien ejecuta. El owner es respaldo. */
+  var _quien=function(t){
+    var m=null; try{ m=personaFromSubject(t.asunto); }catch(e){}
+    if(m) return grEsc(m);
+    if(t.ownerId){ try{ return ownerIdToPersona(String(t.ownerId))+' <span style="color:var(--text-mute);font-size:10px">(por owner)</span>'; }catch(e){ return 'Otro'; } }
+    return '<span style="color:var(--yellow);font-weight:700">sin marcar</span>';
+  };
 
   /* Responsables asignables: los que existen de verdad en HubSpot, no una lista
      escrita a mano. Si alguien no tiene usuario en el CRM, no puede recibir tareas. */
   var _personas=((TAREAS||{}).responsables||[]).map(function(p){ return {ownerId:p.id, label:p.nombre}; });
-  /* Oportunidades vivas, para poder vincular desde aqui. */
-  var _deals=((typeof DATA!=='undefined' && DATA && DATA.deals)?DATA.deals:[]).slice().sort(function(a,b){ return String(a.name||a.cliente||'').localeCompare(String(b.name||b.cliente||'')); });
 
   var filas=b.arr.map(function(t){
     var url='https://app.hubspot.com/tasks/49671716/view/all/task/'+t.id;
@@ -2869,19 +2874,21 @@ function renderTareas(){
     if(hecho){
       acciones='<span style="color:var(--mint);font-size:11px;font-weight:700">✓ listo · aprieta ↻ Actualizar</span>';
     } else {
-      if(!t.ownerId && _personas.length){
-        acciones+='<select class="tar-owner" data-id="'+t.id+'" style="background:var(--bg-3);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:4px 7px;font-size:11px;margin-right:5px"><option value="">Asignar a…</option>'
-          +_personas.map(function(p){ return '<option value="'+p.ownerId+'">'+grEsc(p.label||p.id)+'</option>'; }).join('')+'</select>';
-      }
-      if(!t.tieneOportunidad && _deals.length){
-        acciones+='<select class="tar-deal" data-id="'+t.id+'" style="background:var(--bg-3);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:4px 7px;font-size:11px;margin-right:5px;max-width:190px"><option value="">Vincular a…</option>'
-          +_deals.map(function(d){ return '<option value="'+d.id+'">'+grEsc(d.name||d.cliente||d.id)+'</option>'; }).join('')+'</select>';
+      /* Vincular es la accion principal: una tarea que no cuelga de su negocio y
+         su gente es irrastreable. Ponerle responsable no la vuelve rastreable. */
+      if(!t.tieneOportunidad || !t.tieneContacto){
+        acciones+='<button class="btn-action tar-vinc" data-id="'+t.id+'" data-asunto="'+encodeURIComponent(t.asunto)+'" style="background:#02ADBA;border:none;color:#fff;font-weight:700;margin-right:5px">Vincular</button>';
       }
       acciones+='<button class="btn-action tar-cerrar" data-id="'+t.id+'">Cerrar</button>';
+      /* Secundario: el owner de HubSpot casi nunca es quien ejecuta. */
+      if(!t.ownerId && _personas.length){
+        acciones+='<select class="tar-owner" data-id="'+t.id+'" style="background:var(--bg-3);border:1px solid var(--border);color:var(--text-dim);border-radius:7px;padding:3px 6px;font-size:10px;margin-left:5px"><option value="">owner…</option>'
+          +_personas.map(function(p){ return '<option value="'+p.ownerId+'">'+grEsc(p.label||p.id)+'</option>'; }).join('')+'</select>';
+      }
     }
 
     return '<tr'+(hecho?' style="opacity:.5"':'')+'><td><a href="'+url+'" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600">'+grEsc(t.asunto)+'</a></td>'
-      +'<td style="font-size:12px;color:var(--text-dim)">'+(t.ownerId?_quien(t.ownerId):'<span style="color:var(--yellow);font-weight:700">sin dueño</span>')+'</td>'
+      +'<td style="font-size:12px;color:var(--text-dim)">'+_quien(t)+'</td>'
       +'<td style="font-size:12px;'+(vencida?'color:#FCA5A5;font-weight:700':'color:var(--text-dim)')+'">'+_fecha(t.vence)+(vencida?' ⚠️':'')+'</td>'
       +'<td style="text-align:center;font-size:12px">'+(t.tieneOportunidad?'<span style="color:var(--mint)">sí</span>':'<span style="color:var(--yellow);font-weight:700">no</span>')+'</td>'
       +'<td style="text-align:center;font-size:12px">'+(t.tieneContacto?'<span style="color:var(--mint)">sí</span>':'<span style="color:var(--yellow);font-weight:700">no</span>')+'</td>'
@@ -2896,7 +2903,74 @@ function renderTareas(){
 
   cEl.querySelectorAll('.tar-cerrar').forEach(function(x){ x.addEventListener('click',function(){ accionTarea('cerrar', x.getAttribute('data-id'), null, x); }); });
   cEl.querySelectorAll('.tar-owner').forEach(function(x){ x.addEventListener('change',function(){ if(x.value) accionTarea('asignar', x.getAttribute('data-id'), x.value, x); }); });
-  cEl.querySelectorAll('.tar-deal').forEach(function(x){ x.addEventListener('change',function(){ if(x.value) accionTarea('vincular', x.getAttribute('data-id'), x.value, x); }); });
+  cEl.querySelectorAll('.tar-vinc').forEach(function(x){ x.addEventListener('click',function(){ abrirVincularTarea(x.getAttribute('data-id'), decodeURIComponent(x.getAttribute('data-asunto'))); }); });
+}
+
+/* La empresa de una tarea vive en su asunto, por nomenclatura: EMPRESA — Accion.
+   De ahi sale la busqueda; el motor hace el resto. */
+function empresaDeAsunto(asunto){
+  var a=String(asunto||'');
+  if(a.indexOf(' — ')>0) return a.split(' — ')[0].trim();
+  if(a.indexOf(' - ')>0) return a.split(' - ')[0].trim();
+  if(a.indexOf('_')>0){ var t=a.split('_'); return (t.length>1 ? t[1] : t[0]).trim(); }
+  return a.trim();
+}
+
+var TAR_VINC={taskId:null, asunto:''};
+
+async function abrirVincularTarea(taskId, asunto, companyId, empresaManual){
+  TAR_VINC={taskId:taskId, asunto:asunto};
+  var empresa=empresaManual||empresaDeAsunto(asunto);
+  grfSet('Vincular tarea','<div style="color:#9CA3AF">Buscando <b>'+grfEsc(empresa)+'</b>…</div>', false);
+  try{
+    var r=await fetch(GRF_COMPANY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({empresa:empresa, companyId:companyId||''})});
+    var d=await r.json();
+    var cab=grfEmpresaHTML(d, {empresa:empresa});
+    var dls=(d&&d.deals)||[], cts=(d&&d.contactos)||[];
+
+    var H=cab+'<div style="color:#9CA3AF;margin-bottom:10px;font-size:12px">Tarea: <b style="color:#F3F4F6">'+grfEsc(asunto)+'</b></div>';
+    if(dls.length){
+      H+='<div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:4px">Oportunidad</div>'
+        +dls.map(function(x){ return '<label style="display:flex;gap:9px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)"><input type="radio" name="tv-deal" class="tv-deal" value="'+x.id+'"><span style="font-size:12px"><b>'+grfEsc(x.nombre)+'</b></span></label>'; }).join('');
+    }
+    if(cts.length){
+      H+='<div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin:12px 0 4px">Contacto</div>'
+        +cts.map(function(c){ return '<label style="display:flex;gap:9px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)"><input type="checkbox" class="tv-ct" value="'+c.id+'"><span style="font-size:12px"><b>'+grfEsc(c.nombre)+'</b>'+(c.puesto?('<span style="color:#9CA3AF"> · '+grfEsc(c.puesto)+'</span>'):'')+'</span></label>'; }).join('');
+    }
+    if(!dls.length && !cts.length){ H+='<div style="color:#FCD34D">Esta empresa no tiene nada a que ligar la tarea.</div>'; }
+
+    /* Sin esto el boton es un callejon sin salida justo cuando mas se necesita:
+       cuando el nombre del asunto no coincide con como esta escrita la empresa. */
+    H+='<div style="margin-top:12px;border-top:1px solid #2A3142;padding-top:10px">'
+      +'<div style="font-size:11px;color:#6B7280;margin-bottom:5px">¿No es la correcta? Búscala por otro nombre:</div>'
+      +'<div style="display:flex;gap:6px"><input id="tv-buscar" value="'+grfEsc(empresa)+'" style="flex:1;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;border-radius:7px;padding:6px 9px;font-size:12px">'
+      +'<button id="tv-buscar-btn" style="background:#1f2937;border:1px solid #374151;border-radius:7px;padding:6px 12px;color:#D1D5DB;font-size:12px;cursor:pointer">Buscar</button></div></div>';
+    grfSet('Vincular tarea', H, (dls.length||cts.length)>0);
+    GRF.accion='vincularTarea';
+    document.querySelectorAll('.grf-cand').forEach(function(b){
+      b.addEventListener('click', function(){ abrirVincularTarea(taskId, asunto, b.getAttribute('data-cid')); });
+    });
+    var relanzar=function(){ var v=document.getElementById('tv-buscar').value.trim(); if(v) abrirVincularTarea(taskId, asunto, null, v); };
+    document.getElementById('tv-buscar-btn').addEventListener('click', relanzar);
+    document.getElementById('tv-buscar').addEventListener('keydown', function(ev){ if(ev.key==='Enter') relanzar(); });
+  }catch(e){ grfSet('Vincular tarea','<div style="color:#DB0540">Error: '+grfEsc(e.message)+'</div>', false); }
+}
+
+async function guardarVincularTarea(){
+  var deal=document.querySelector('.tv-deal:checked');
+  var cts=[].slice.call(document.querySelectorAll('.tv-ct:checked')).map(function(x){return x.value;});
+  if(!deal && !cts.length){ grfStatus('Marca al menos una oportunidad o un contacto.','#FCD34D'); return; }
+  grfStatus('Vinculando…','#9CA3AF');
+  var ok=0, total=(deal?1:0)+cts.length;
+  if(deal){
+    try{ var r=await fetch(TASK_LINK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({taskId:TAR_VINC.taskId, objeto:'deals', toId:deal.value})}); if(r.ok) ok++; }catch(e){}
+  }
+  for(var i=0;i<cts.length;i++){
+    try{ var r2=await fetch(TASK_LINK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({taskId:TAR_VINC.taskId, objeto:'contacts', toId:cts[i]})}); if(r2.ok) ok++; }catch(e){}
+  }
+  grfStatus('✓ '+ok+' de '+total+' vinculados. Aprieta ↻ Actualizar.','#62D175');
+  TAREAS_HECHAS[TAR_VINC.taskId]=true;
+  setTimeout(function(){ grfCerrar(); renderTareas(); }, 1200);
 }
 
 /* Marcadas en esta sesion. El dato real vuelve al apretar Actualizar. */
@@ -5206,6 +5280,7 @@ async function grfGuardar(){
   var btn=document.getElementById('grf-save'); if(btn) btn.disabled=true;
   grfStatus('Guardando…','#9CA3AF');
   try{
+    if(GRF.accion==='vincularTarea'){ await guardarVincularTarea(); if(btn) btn.disabled=false; return; }
     if(GRF.accion==='etiquetarProducto'){
       var prod=document.getElementById('grf-prod').value;
       var nuevo=grfNombreConProducto((GRF.ctx&&GRF.ctx.nombre)||'', prod);
