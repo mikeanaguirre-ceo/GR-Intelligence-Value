@@ -718,6 +718,7 @@ body {
     <button class="tab" data-tab="amplemarket">Amplemarket</button>
     <button class="tab" data-tab="forecast">Forecast</button>
     <button class="tab" data-tab="metricas">Métricas</button>
+    <button class="tab" data-tab="reuniones">Reuniones <span class="badge-red" id="reu-count">—</span></button>
     <button class="tab" data-tab="chat">💬 Chat</button>
   </nav>
 
@@ -733,6 +734,7 @@ body {
     <section class="panel" id="p-amplemarket"></section>
     <section class="panel" id="p-forecast"></section>
     <section class="panel" id="p-metricas"></section>
+    <section class="panel" id="p-reuniones"></section>
     <section class="panel" id="p-chat"></section>
   </main>
 
@@ -757,6 +759,8 @@ const DATA_URL = 'https://mikea.app.n8n.cloud/webhook/gr-dashboard';
 const AM_URL = 'https://mikea.app.n8n.cloud/webhook/gr-amplemarket';
 const PROSPECCION_URL = 'https://mikea.app.n8n.cloud/webhook/gr-prospeccion';
 const EMPRESAS_URL = 'https://mikea.app.n8n.cloud/webhook/gr-empresas';
+const BITACORA_URL = 'https://mikea.app.n8n.cloud/webhook/gr-bitacora';
+const BITACORA_CERRAR_URL = 'https://mikea.app.n8n.cloud/webhook/gr-bitacora-cerrar';
 // --- Acciones de tareas (workflow "GR — Acciones Tareas Dashboard") ---
 const TASK_UPDATE_URL = 'https://mikea.app.n8n.cloud/webhook/gr-task-update';
 const GR_ASSOC_URL = 'https://mikea.app.n8n.cloud/webhook/gr-task-assoc';
@@ -1332,6 +1336,13 @@ function renderCurrentTab() {
   // Metricas no depende de los datos principales del dashboard: tiene su propio
   // origen. Se atiende antes del guard de DATA para que un fallo del endpoint
   // principal no deje la pestana en blanco.
+  if (currentTab === 'reuniones') {
+    try { renderReuniones(); } catch(e) {
+      var er = document.getElementById('p-reuniones');
+      if (er) er.innerHTML = '<div style="color:#ef4444;padding:16px;">Error en render: ' + e.message + '</div>';
+    }
+    return;
+  }
   if (currentTab === 'metricas') {
     try { renderMetricas(); } catch(e) {
       var em = document.getElementById('p-metricas');
@@ -1366,6 +1377,113 @@ function renderCurrentTab() {
     var ep = document.getElementById('p-' + currentTab);
     if (ep) ep.innerHTML = '<div style="color:#ef4444;padding:16px;">Error en render: ' + e.message + '</div>';
   }
+}
+
+
+// --- REUNIONES (bitacora post-reunion) ---
+var REU_DATA = null, REU_FILTRO = 'todas';
+var REU_ESTADOS = ['Abierto','Recuperado','Sin grabacion','Documentado a mano','No aplica','Analizada','Interna'];
+
+function reuMarca(v){ return v ? '<span style="color:#22c55e;font-weight:700;">&#10003;</span>' : '<span style="color:#6b7280;">&#8212;</span>'; }
+function reuEsc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function reuCorto(lista, n){
+  var xs = String(lista||'').split(',').map(function(x){ return x.trim().split('@')[0]; }).filter(Boolean);
+  if (!xs.length) return '—';
+  if (xs.length <= n) return reuEsc(xs.join(', '));
+  return reuEsc(xs.slice(0,n).join(', ')) + ' +' + (xs.length-n);
+}
+
+function renderReuniones(){
+  var p = document.getElementById('p-reuniones');
+  if (!p) return;
+  if (!REU_DATA) {
+    p.innerHTML = '<div class="loading">Cargando bitácora…</div>';
+    fetch(BITACORA_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ REU_DATA = d && d.reuniones ? d.reuniones : []; pintaReuniones(); })
+      .catch(function(){ p.innerHTML = '<div style="color:#ef4444;padding:16px;">No se pudo cargar la bitácora</div>'; });
+    return;
+  }
+  pintaReuniones();
+}
+
+function pintaReuniones(){
+  var p = document.getElementById('p-reuniones');
+  var todas = REU_DATA || [];
+  var abiertas = todas.filter(function(r){ return r.estado === 'Sin grabacion' && !r.cerrado_por; });
+  var badge = document.getElementById('reu-count');
+  if (badge) badge.textContent = abiertas.length ? abiertas.length : '0';
+
+  var lista = todas;
+  if (REU_FILTRO === 'sin') lista = abiertas;
+  else if (REU_FILTRO === 'pendientes') lista = todas.filter(function(r){ return r.estado === 'Analizada' && !(r.correo && r.minuta); });
+
+  var chips = [['todas','Todas ('+todas.length+')'],['sin','Sin grabación ('+abiertas.length+')'],['pendientes','Con algo pendiente']];
+  var h = '<div class="filtros-bar">';
+  chips.forEach(function(c){
+    h += '<button class="fbtn' + (REU_FILTRO===c[0]?' active':'') + '" data-reu-chip="' + c[0] + '">' + c[1] + '</button>';
+  });
+  h += '<button class="fbtn" data-reu-reload="1">Actualizar</button></div>';
+
+  if (!lista.length) {
+    h += '<div style="color:#9CA3AF;padding:16px;font-size:13px;">Sin reuniones en este filtro.</div>';
+    p.innerHTML = h;
+    enlazaReuniones();
+    return;
+  }
+
+  h += '<div style="overflow-x:auto;"><table><thead><tr>' +
+       '<th>Fecha</th><th>Reunión</th><th>Cliente</th><th>Prod</th><th>Responsable</th><th>Externos</th>' +
+       '<th>Estado</th><th title="Correo al cliente">Correo</th><th title="Minuta técnica">Minuta</th>' +
+       '<th>WA</th><th>Coach</th><th class="num">Tareas</th><th class="num">Días</th><th>Cerrar</th>' +
+       '</tr></thead><tbody>';
+  lista.forEach(function(r){
+    var alerta = (r.estado === 'Sin grabacion' && !r.cerrado_por && r.dias > 7);
+    h += '<tr' + (alerta ? ' style="background:rgba(239,68,68,0.08);"' : '') + '>' +
+      '<td>' + reuEsc(r.fecha) + '</td>' +
+      '<td>' + reuEsc(r.titulo) + '</td>' +
+      '<td>' + (r.cliente ? reuEsc(r.cliente) : '—') + '</td>' +
+      '<td>' + (r.producto ? reuEsc(r.producto) : '—') + '</td>' +
+      '<td>' + reuCorto(r.responsable,1) + '</td>' +
+      '<td>' + reuCorto(r.externos,2) + '</td>' +
+      '<td>' + reuEsc(r.estado) + (r.cerrado_por ? ' <span style="opacity:.6;">· ' + reuCorto(r.cerrado_por,1) + '</span>' : '') + '</td>' +
+      '<td>' + reuMarca(r.correo) + '</td>' +
+      '<td>' + reuMarca(r.minuta) + '</td>' +
+      '<td>' + reuMarca(r.whatsapp) + '</td>' +
+      '<td>' + reuMarca(r.coaching) + '</td>' +
+      '<td class="num">' + (r.tareas || 0) + '</td>' +
+      '<td class="num">' + (r.dias || 0) + '</td>' +
+      '<td><select data-reu-cerrar="' + reuEsc(r.clave) + '" style="font-size:11px;">' +
+        '<option value="">—</option>' +
+        REU_ESTADOS.map(function(e){ return '<option value="' + e + '"' + (e===r.estado?' selected':'') + '>' + e + '</option>'; }).join('') +
+        '</select></td>' +
+      '</tr>';
+  });
+  h += '</tbody></table></div>';
+  p.innerHTML = h;
+  enlazaReuniones();
+}
+
+function enlazaReuniones(){
+  var p = document.getElementById('p-reuniones');
+  p.querySelectorAll('[data-reu-chip]').forEach(function(b){
+    b.addEventListener('click', function(){ REU_FILTRO = b.getAttribute('data-reu-chip'); pintaReuniones(); });
+  });
+  p.querySelectorAll('[data-reu-reload]').forEach(function(b){
+    b.addEventListener('click', function(){ REU_DATA = null; renderReuniones(); });
+  });
+  p.querySelectorAll('[data-reu-cerrar]').forEach(function(sel){
+    sel.addEventListener('change', function(){
+      var clave = sel.getAttribute('data-reu-cerrar');
+      var estado = sel.value;
+      if (!estado) return;
+      sel.disabled = true;
+      fetch(BITACORA_CERRAR_URL, {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ clave: clave, estado: estado, quien: 'dashboard' })})
+        .then(function(){ REU_DATA = null; renderReuniones(); })
+        .catch(function(){ sel.disabled = false; });
+    });
+  });
 }
 
 // --- RECAP ---
