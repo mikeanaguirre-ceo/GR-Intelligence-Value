@@ -5012,6 +5012,53 @@ function grfCerrar(){ var m=document.getElementById('gr-modal-fix'); if(m) m.sty
 function grfSet(t,h,showSave){ grfModal(); document.getElementById('grf-title').textContent=t; document.getElementById('grf-body').innerHTML=h; document.getElementById('grf-status').textContent=''; var b=document.getElementById('grf-save'); b.style.display=showSave?'':'none'; b.disabled=false; document.getElementById('gr-modal-fix').style.display='flex'; }
 function grfStatus(msg,color){ var s=document.getElementById('grf-status'); if(s){ s.textContent=msg; s.style.color=color||'#9CA3AF'; } }
 
+/* Encabezado comun de todo modal de vincular: dice a que empresa le atino el
+   motor y por que, y cuando duda ofrece las candidatas en vez de decidir solo.
+   Vincular al cliente equivocado es un error silencioso: nadie lo descubre. */
+function grfEmpresaHTML(d, extra){
+  var e=(d&&d.empresa)||null;
+  var cands=(d&&d.candidatas)||[];
+  var H='';
+
+  if(e){
+    H+='<div style="background:#0d111a;border:1px solid #2A3142;border-radius:9px;padding:9px 11px;margin-bottom:10px;font-size:12px;color:#9CA3AF">'
+      +'Empresa: <b style="color:#F3F4F6">'+grfEsc(e.nombre)+'</b>'
+      +(e.dominio?('<span style="color:#6B7280"> · '+grfEsc(e.dominio)+'</span>'):'')
+      +'<br><span style="color:#6B7280">Elegida porque: '+grfEsc(e.motivo||'—')+'</span>'
+      +' · <b style="color:#F3F4F6">'+(((d||{}).resumen||{}).contactos||0)+'</b> contactos · <b style="color:#F3F4F6">'+(((d||{}).resumen||{}).deals||0)+'</b> oportunidades'
+      +'</div>';
+  } else {
+    H+='<div style="background:rgba(245,158,11,.08);border:1px solid #2A3142;border-left:3px solid #F59E0B;border-radius:9px;padding:9px 11px;margin-bottom:10px;font-size:12px;color:#FCD34D">'
+      +'No encontré una empresa que coincida de verdad. Antes de este cambio el sistema elegía la más parecida aunque no lo fuera; ahora prefiere preguntarte.</div>';
+  }
+
+  /* Las candidatas solo estorban cuando la respuesta es obvia. */
+  if((d&&d.ambigua) || !e){
+    if(cands.length){
+      H+='<div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:5px">¿Es alguna de estas?</div>'
+        +'<div style="max-height:190px;overflow:auto;margin-bottom:12px">'
+        +cands.map(function(c){
+          var act=(e&&c.id===e.id);
+          return '<button class="grf-cand" data-cid="'+c.id+'" style="display:block;width:100%;text-align:left;background:'+(act?'rgba(2,173,186,.15)':'#141827')+';border:1px solid '+(act?'#02ADBA':'#2A3142')+';border-radius:8px;padding:7px 10px;margin-bottom:5px;color:#D1D5DB;font-size:12px;cursor:pointer">'
+            +'<b>'+grfEsc(c.nombre)+'</b>'+(c.dominio?('<span style="color:#6B7280"> · '+grfEsc(c.dominio)+'</span>'):'')
+            +'<br><span style="color:#6B7280;font-size:11px">'+grfEsc(c.motivo)+'</span></button>';
+        }).join('')
+        +'</div>';
+    }
+  }
+  return H;
+}
+
+/* Reabre el mismo modal forzando una empresa concreta que eligió la persona. */
+function grfWireCandidatas(accion, extra){
+  document.querySelectorAll('.grf-cand').forEach(function(b){
+    b.addEventListener('click', function(){
+      var ex=Object.assign({}, extra||{}, { companyId: b.getAttribute('data-cid') });
+      abrirFixGR(accion, GRF.dealId, ex);
+    });
+  });
+}
+
 function grfDealDe(id){ var d=null; ((typeof DATA!=='undefined'&&DATA&&DATA.deals)?DATA.deals:[]).forEach(function(x){ if(String(x.id)===String(id)) d=x; }); return d; }
 function grfProductos(){ try{ return ((CAT().productos)||[]).map(function(p){return p.id;}); }catch(e){ return ['TW','AM','AEO','360','GenIA','ITS','LT','BD','WB','HS','PT']; } }
 
@@ -5055,27 +5102,42 @@ async function abrirFixGR(accion,dealId,extra){
   if(accion==='vincularContacto'){
     grfSet('Vincular contacto','<div style="color:#9CA3AF">Cargando contactos de la empresa…</div>', false);
     try{
-      var r=await fetch(GRF_COMPANY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:GRF.dealId,empresa:(extra&&extra.empresa)||''})});
+      var r=await fetch(GRF_COMPANY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:GRF.dealId,empresa:(extra&&extra.empresa)||'',companyId:(extra&&extra.companyId)||''})});
       var data=await r.json(); GRF.data=data;
       var cts=(data&&data.contactos)||[];
-      if(!cts.length){ grfSet('Vincular contacto','<div style="color:#FCD34D;margin-bottom:12px">No encontré contactos'+(data&&data.empresa?(' en '+grfEsc(data.empresa.nombre)):'')+'. Sin contacto no se puede trabajar esta oportunidad.</div>'
-        +'<button class="btn-action" onclick="grfMarcarDeal(\''+GRF.dealId+'\',\''+encodeURIComponent((extra&&extra.nombre)||'')+'\',this)">Marcar oportunidad para borrar</button>', false); return; }
+      var cab=grfEmpresaHTML(data, extra);
+      if(!cts.length){
+        grfSet('Vincular contacto', cab
+        +'<div style="color:#FCD34D;margin-bottom:12px">No hay contactos que ligar a esta oportunidad.</div>'
+        +'<button class="btn-action" onclick="grfMarcarDeal(\''+GRF.dealId+'\',\''+encodeURIComponent((extra&&extra.nombre)||'')+'\',this)">Marcar oportunidad para borrar</button>', false);
+        grfWireCandidatas('vincularContacto', extra);
+        return;
+      }
       grfSet('Vincular contacto',
-        '<div style="color:#9CA3AF;margin-bottom:10px">Empresa: <b>'+grfEsc((data.empresa&&data.empresa.nombre)||'—')+'</b>. Marca uno o varios contactos para vincular a esta oportunidad.</div>'
+        cab
+        +'<div style="color:#9CA3AF;margin-bottom:10px">Marca uno o varios contactos para vincular a esta oportunidad.</div>'
         +cts.map(function(c){ var nd=Number(c.deals||0); var badge=nd>0?('<span style="color:#62D175;font-size:11px;font-weight:700"> · '+nd+' oportunidad'+(nd!==1?'es':'')+'</span>'):'<span style="color:#6B7280;font-size:11px"> · sin oportunidades</span>'; return '<label style="display:flex;gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><input type="checkbox" class="grf-ct" value="'+c.id+'"><span><b>'+grfEsc(c.nombre)+'</b>'+(c.puesto?('<span style="color:#9CA3AF"> · '+grfEsc(c.puesto)+'</span>'):'')+badge+(c.email?('<br><span style="color:#6B7280;font-size:12px">'+grfEsc(c.email)+'</span>'):'')+'</span></label>'; }).join(''), true);
+      grfWireCandidatas('vincularContacto', extra);
     }catch(e){ grfSet('Vincular contacto','<div style="color:#DB0540">Error al cargar: '+grfEsc(e.message)+'</div>', false); }
     return;
   }
   if(accion==='vincularDeals'){
     grfSet('Vincular a oportunidad','<div style="color:#9CA3AF">Cargando oportunidades de la empresa…</div>', false);
     try{
-      var r2=await fetch(GRF_COMPANY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({empresa:(extra&&extra.empresa)||'',email:(extra&&extra.email)||''})});
+      var r2=await fetch(GRF_COMPANY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({empresa:(extra&&extra.empresa)||'',email:(extra&&extra.email)||'',companyId:(extra&&extra.companyId)||''})});
       var d2=await r2.json(); GRF.data=d2;
       var dls=(d2&&d2.deals)||[];
-      if(!dls.length){ grfSet('Vincular a oportunidad','<div style="color:#FCD34D">Esta empresa no tiene oportunidades. Si no aporta, puedes marcarlo para borrar.</div>', false); return; }
+      var cab2=grfEmpresaHTML(d2, extra);
+      if(!dls.length){
+        grfSet('Vincular a oportunidad', cab2+'<div style="color:#FCD34D">Esta empresa no tiene oportunidades a las cuales ligarlo.</div>', false);
+        grfWireCandidatas('vincularDeals', extra);
+        return;
+      }
       grfSet('Vincular a oportunidad',
-        '<div style="color:#9CA3AF;margin-bottom:10px">Contacto: <b>'+grfEsc((extra&&extra.nombre)||'')+'</b> · Empresa: <b>'+grfEsc((d2.empresa&&d2.empresa.nombre)||'—')+'</b>. Marca las oportunidades a las que lo quieres ligar.</div>'
+        cab2
+        +'<div style="color:#9CA3AF;margin-bottom:10px">Contacto: <b>'+grfEsc((extra&&extra.nombre)||'')+'</b>. Marca las oportunidades a las que lo quieres ligar.</div>'
         +dls.map(function(x){ var nc=Number(x.contactos||0); var cb=nc>0?(' · '+nc+' contacto'+(nc!==1?'s':'')+' ya vinculado'+(nc!==1?'s':'')):' · sin contactos'; return '<label style="display:flex;gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><input type="checkbox" class="grf-dl" value="'+x.id+'"><span><b>'+grfEsc(x.nombre)+'</b><br><span style="color:#6B7280;font-size:12px">'+(x.monto?('$'+Number(x.monto).toLocaleString('es-MX')):'')+(x.createdate?(' · alta '+fmtFecha(x.createdate)):'')+cb+'</span></span></label>'; }).join(''), true);
+      grfWireCandidatas('vincularDeals', extra);
     }catch(e){ grfSet('Vincular a oportunidad','<div style="color:#DB0540">Error al cargar: '+grfEsc(e.message)+'</div>', false); }
     return;
   }

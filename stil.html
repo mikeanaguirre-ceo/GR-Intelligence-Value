@@ -1589,7 +1589,33 @@ function slimpModal(){
     +'<button id="sv-save" onclick="slimpGuardarVinc()" style="background:#02ADBA;border:none;border-radius:9px;padding:9px 18px;color:#fff;font-weight:800;cursor:pointer">Vincular</button></div></div>';
   document.body.appendChild(m); return m;
 }
-async function slimpVincular(tipo,id,empresa,nombre){
+/* Encabezado del modal de vincular: dice a que empresa le atino el motor y por
+   que, y cuando duda ofrece las candidatas en vez de decidir solo. Vincular al
+   cliente equivocado es un error silencioso: nadie lo descubre. */
+function svEmpresaHTML(d){
+  var e=(d&&d.empresa)||null, cands=(d&&d.candidatas)||[], H='';
+  if(e){
+    H+='<div style="background:#0d111a;border:1px solid #2A3142;border-radius:9px;padding:9px 11px;margin-bottom:10px;font-size:12px;color:#9CA3AF">'
+      +'Empresa: <b style="color:#F3F4F6">'+esc(e.nombre)+'</b>'+(e.dominio?('<span style="color:#6B7280"> · '+esc(e.dominio)+'</span>'):'')
+      +'<br><span style="color:#6B7280">Elegida porque: '+esc(e.motivo||'—')+'</span>'
+      +' · <b style="color:#F3F4F6">'+(((d||{}).resumen||{}).contactos||0)+'</b> contactos · <b style="color:#F3F4F6">'+(((d||{}).resumen||{}).deals||0)+'</b> oportunidades</div>';
+  } else {
+    H+='<div style="background:rgba(245,158,11,.08);border:1px solid #2A3142;border-left:3px solid #F59E0B;border-radius:9px;padding:9px 11px;margin-bottom:10px;font-size:12px;color:#FCD34D">'
+      +'No encontré una empresa que coincida de verdad. Prefiero preguntarte antes que vincular al cliente equivocado.</div>';
+  }
+  if(((d&&d.ambigua) || !e) && cands.length){
+    H+='<div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:5px">¿Es alguna de estas?</div><div style="max-height:180px;overflow:auto;margin-bottom:12px">'
+      +cands.map(function(c){
+        var act=(e&&c.id===e.id);
+        return '<button class="sv-cand" data-cid="'+c.id+'" style="display:block;width:100%;text-align:left;background:'+(act?'rgba(2,173,186,.15)':'#141827')+';border:1px solid '+(act?'#02ADBA':'#2A3142')+';border-radius:8px;padding:7px 10px;margin-bottom:5px;color:#D1D5DB;font-size:12px;cursor:pointer"><b>'+esc(c.nombre)+'</b>'
+          +(c.dominio?('<span style="color:#6B7280"> · '+esc(c.dominio)+'</span>'):'')
+          +'<br><span style="color:#6B7280;font-size:11px">'+esc(c.motivo)+'</span></button>';
+      }).join('')+'</div>';
+  }
+  return H;
+}
+
+async function slimpVincular(tipo,id,empresa,nombre,companyId){
   SVINC={tipo:tipo,id:id};
   slimpModal();
   document.getElementById('sv-title').textContent=(tipo==='deal')?'Vincular contacto':'Vincular a oportunidad';
@@ -1598,14 +1624,26 @@ async function slimpVincular(tipo,id,empresa,nombre){
   document.getElementById('slimp-modal').style.display='flex';
   try{
     var body=(tipo==='deal')?{dealId:id}:{empresa:empresa};
+    if(companyId) body.companyId=companyId;
     var r=await fetch(STL_COMPANY_URL,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     var d=await r.json();
     var lista=(tipo==='deal')?((d&&d.contactos)||[]):((d&&d.deals)||[]);
-    if(!lista.length){ document.getElementById('sv-body').innerHTML='<div style="color:#FCD34D">No encontré '+((tipo==='deal')?'contactos':'oportunidades')+' de esta empresa. Si no aporta, márcalo para borrar.</div>'; document.getElementById('sv-save').style.display='none'; return; }
+    var cab=svEmpresaHTML(d);
+    var wire=function(){
+      document.querySelectorAll('.sv-cand').forEach(function(b){
+        b.addEventListener('click',function(){ slimpVincular(tipo,id,empresa,nombre,b.getAttribute('data-cid')); });
+      });
+    };
+    if(!lista.length){
+      document.getElementById('sv-body').innerHTML=cab+'<div style="color:#FCD34D">No hay '+((tipo==='deal')?'contactos':'oportunidades')+' que ligar aquí.</div>';
+      document.getElementById('sv-save').style.display='none';
+      wire(); return;
+    }
     document.getElementById('sv-save').style.display='';
-    document.getElementById('sv-body').innerHTML='<div style="color:#9CA3AF;margin-bottom:10px">'+esc(nombre||'')+' · Empresa: <b>'+esc((d.empresa&&d.empresa.nombre)||empresa||'—')+'</b>. Marca uno o varios.</div>'
+    document.getElementById('sv-body').innerHTML=cab+'<div style="color:#9CA3AF;margin-bottom:10px">'+esc(nombre||'')+' · Marca uno o varios.</div>'
       +lista.map(function(x){ var sub=(tipo==='deal')?((x.puesto?esc(x.puesto)+' · ':'')+(Number(x.deals||0)+' oportunidad'+(Number(x.deals||0)!==1?'es':''))):((Number(x.contactos||0))+' contacto'+(Number(x.contactos||0)!==1?'s':''));
         return '<label style="display:flex;gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><input type="checkbox" class="sv-ck" value="'+x.id+'"><span><b>'+esc(x.nombre)+'</b><br><span style="color:#6B7280;font-size:12px">'+sub+'</span></span></label>'; }).join('');
+    wire();
   }catch(e){ document.getElementById('sv-body').innerHTML='<div style="color:#EF4444">Error: '+e.message+'</div>'; }
 }
 async function slimpGuardarVinc(){
