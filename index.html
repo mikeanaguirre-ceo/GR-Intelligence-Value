@@ -1382,7 +1382,7 @@ function renderCurrentTab() {
 
 // --- REUNIONES (bitacora post-reunion) ---
 var REU_DATA = null, REU_FILTRO = 'recientes';
-var REU_ESTADOS = ['Analizada','Sin grabacion','Recuperado','Documentado a mano','No aplica'];
+var REU_ESTADOS = ['Pendiente','Analizada','Sin grabacion','Recuperado','Documentado a mano','Interna','No aplica'];
 
 function reuEsc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function reuMarca(v){ return v ? '<span style="color:#22c55e;font-size:14px;">&#10003;</span>' : '<span style="color:#4b5563;">&middot;</span>'; }
@@ -1403,6 +1403,8 @@ function reuBadge(estado, dias, cerrado){
   if (estado === 'Analizada') { c = '#22c55e'; b = 'rgba(34,197,94,.12)'; }
   else if (estado === 'Sin grabacion' && !cerrado) { c = (dias > 7 ? '#ef4444' : '#f59e0b'); b = (dias > 7 ? 'rgba(239,68,68,.14)' : 'rgba(245,158,11,.14)'); }
   else if (estado === 'Recuperado' || estado === 'Documentado a mano') { c = '#3b82f6'; b = 'rgba(59,130,246,.12)'; }
+  else if (estado === 'Pendiente') { c = '#a78bfa'; b = 'rgba(167,139,250,.12)'; }
+  else if (estado === 'Interna') { c = '#9ca3af'; b = 'rgba(156,163,175,.10)'; }
   var txt = estado === 'Sin grabacion' ? 'Sin grabación' : estado;
   return '<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:600;color:' + c + ';background:' + b + ';white-space:nowrap;">' + reuEsc(txt) + '</span>';
 }
@@ -1444,7 +1446,7 @@ function pintaReuniones(){
   var todas = REU_DATA || [];
   var recientes = todas.filter(function(r){ var w = reuSemana(r.fecha); return w === 'Esta semana' || w === 'Semana pasada'; });
   var sinGrab = todas.filter(function(r){ return r.estado === 'Sin grabacion' && !r.cerrado_por; });
-  var pendientes = todas.filter(function(r){ return r.estado === 'Analizada' && !(r.correo && r.minuta); });
+  var pendientes = todas.filter(function(r){ return (r.estado === 'Analizada' && !(r.correo && r.minuta)) || r.estado === 'Pendiente'; });
   var estaSem = todas.filter(function(r){ return reuSemana(r.fecha) === 'Esta semana'; });
   var tareas = todas.reduce(function(a,r){ return a + (Number(r.tareas)||0); }, 0);
 
