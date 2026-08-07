@@ -718,7 +718,6 @@ body {
     <button class="tab" data-tab="amplemarket">Amplemarket</button>
     <button class="tab" data-tab="forecast">Forecast</button>
     <button class="tab" data-tab="metricas">Métricas</button>
-    <button class="tab" data-tab="reuniones">Reuniones <span class="badge-red" id="reu-count">—</span></button>
     <button class="tab" data-tab="chat">💬 Chat</button>
   </nav>
 
@@ -734,7 +733,6 @@ body {
     <section class="panel" id="p-amplemarket"></section>
     <section class="panel" id="p-forecast"></section>
     <section class="panel" id="p-metricas"></section>
-    <section class="panel" id="p-reuniones"></section>
     <section class="panel" id="p-chat"></section>
   </main>
 
@@ -759,8 +757,6 @@ const DATA_URL = 'https://mikea.app.n8n.cloud/webhook/gr-dashboard';
 const AM_URL = 'https://mikea.app.n8n.cloud/webhook/gr-amplemarket';
 const PROSPECCION_URL = 'https://mikea.app.n8n.cloud/webhook/gr-prospeccion';
 const EMPRESAS_URL = 'https://mikea.app.n8n.cloud/webhook/gr-empresas';
-const BITACORA_URL = 'https://mikea.app.n8n.cloud/webhook/gr-bitacora';
-const BITACORA_CERRAR_URL = 'https://mikea.app.n8n.cloud/webhook/gr-bitacora-cerrar';
 // --- Acciones de tareas (workflow "GR — Acciones Tareas Dashboard") ---
 const TASK_UPDATE_URL = 'https://mikea.app.n8n.cloud/webhook/gr-task-update';
 const GR_ASSOC_URL = 'https://mikea.app.n8n.cloud/webhook/gr-task-assoc';
@@ -1336,13 +1332,6 @@ function renderCurrentTab() {
   // Metricas no depende de los datos principales del dashboard: tiene su propio
   // origen. Se atiende antes del guard de DATA para que un fallo del endpoint
   // principal no deje la pestana en blanco.
-  if (currentTab === 'reuniones') {
-    try { renderReuniones(); } catch(e) {
-      var er = document.getElementById('p-reuniones');
-      if (er) er.innerHTML = '<div style="color:#ef4444;padding:16px;">Error en render: ' + e.message + '</div>';
-    }
-    return;
-  }
   if (currentTab === 'metricas') {
     try { renderMetricas(); } catch(e) {
       var em = document.getElementById('p-metricas');
@@ -1377,191 +1366,6 @@ function renderCurrentTab() {
     var ep = document.getElementById('p-' + currentTab);
     if (ep) ep.innerHTML = '<div style="color:#ef4444;padding:16px;">Error en render: ' + e.message + '</div>';
   }
-}
-
-
-// --- REUNIONES (bitacora post-reunion) ---
-var REU_DATA = null, REU_FILTRO = 'recientes';
-var REU_AUTO = ['Pendiente','Analizada','Sin grabacion','Interna'];   // los pone el motor solo
-var REU_MANUALES = ['Recuperado','Documentado a mano','No aplica'];    // solo estos se eligen a mano
-
-function reuEsc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function reuMarca(v){ return v ? '<span style="color:#22c55e;font-size:14px;">&#10003;</span>' : '<span style="color:#4b5563;">&middot;</span>'; }
-function reuCap(t){ t = String(t||'').trim(); return t ? t.charAt(0).toUpperCase() + t.slice(1) : ''; }
-function reuNombre(e){
-  var base = String(e||'').trim().split('@')[0].replace(/[._-]+/g,' ').trim();
-  if (!base) return '';
-  return reuCap(base.split(' ')[0]);
-}
-function reuPersona(lista){
-  var xs = String(lista||'').split(',').map(function(x){ return reuNombre(x); }).filter(Boolean);
-  if (!xs.length) return '<span style="color:#4b5563;">&middot;</span>';
-  return reuEsc(xs[0]);
-}
-function reuGente(lista){
-  var xs = String(lista||'').split(',').map(function(x){ return x.trim(); }).filter(Boolean);
-  if (!xs.length) return '<span style="color:#4b5563;">&middot;</span>';
-  var nombres = xs.map(reuNombre).filter(Boolean);
-  var txt = nombres.slice(0,2).join(', ') + (nombres.length>2 ? ' +'+(nombres.length-2) : '');
-  return '<span title="' + reuEsc(xs.join(', ')) + '">' + reuEsc(txt) + '</span>';
-}
-function reuBadge(estado, dias, cerrado){
-  var c = '#6b7280', b = 'rgba(107,114,128,.15)';
-  if (estado === 'Analizada') { c = '#22c55e'; b = 'rgba(34,197,94,.12)'; }
-  else if (estado === 'Sin grabacion' && !cerrado) { c = (dias > 7 ? '#ef4444' : '#f59e0b'); b = (dias > 7 ? 'rgba(239,68,68,.14)' : 'rgba(245,158,11,.14)'); }
-  else if (estado === 'Recuperado' || estado === 'Documentado a mano') { c = '#3b82f6'; b = 'rgba(59,130,246,.12)'; }
-  else if (estado === 'Pendiente') { c = '#a78bfa'; b = 'rgba(167,139,250,.12)'; }
-  else if (estado === 'Interna') { c = '#9ca3af'; b = 'rgba(156,163,175,.10)'; }
-  var txt = estado === 'Sin grabacion' ? 'Sin grabación' : estado;
-  return '<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:600;color:' + c + ';background:' + b + ';white-space:nowrap;">' + reuEsc(txt) + '</span>';
-}
-function reuSemana(fecha){
-  if (!fecha) return 'Sin fecha';
-  var d = new Date(fecha + 'T12:00:00');
-  if (isNaN(d)) return 'Sin fecha';
-  var hoy = new Date(); hoy.setHours(12,0,0,0);
-  var lunes = new Date(hoy); lunes.setDate(hoy.getDate() - ((hoy.getDay()+6)%7));
-  var lunesPasado = new Date(lunes); lunesPasado.setDate(lunes.getDate()-7);
-  if (d >= lunes) return 'Esta semana';
-  if (d >= lunesPasado) return 'Semana pasada';
-  return 'Anteriores';
-}
-function reuDia(fecha){
-  var d = new Date((fecha||'') + 'T12:00:00');
-  if (isNaN(d)) return reuEsc(fecha);
-  var dias = ['dom','lun','mar','mié','jue','vie','sáb'];
-  var meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  return dias[d.getDay()] + ' ' + d.getDate() + ' ' + meses[d.getMonth()];
-}
-
-function renderReuniones(){
-  var p = document.getElementById('p-reuniones');
-  if (!p) return;
-  if (!REU_DATA) {
-    p.innerHTML = '<div class="loading">Cargando bitácora…</div>';
-    fetch(BITACORA_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'})
-      .then(function(r){ return r.json(); })
-      .then(function(d){ REU_DATA = d && d.reuniones ? d.reuniones : []; pintaReuniones(); })
-      .catch(function(){ p.innerHTML = '<div style="color:#ef4444;padding:16px;">No se pudo cargar la bitácora</div>'; });
-    return;
-  }
-  pintaReuniones();
-}
-
-function pintaReuniones(){
-  var p = document.getElementById('p-reuniones');
-  var todas = REU_DATA || [];
-  var recientes = todas.filter(function(r){ var w = reuSemana(r.fecha); return w === 'Esta semana' || w === 'Semana pasada'; });
-  var sinGrab = todas.filter(function(r){ return r.estado === 'Sin grabacion' && !r.cerrado_por; });
-  var pendientes = todas.filter(function(r){ return (r.estado === 'Analizada' && !(r.correo && r.minuta)) || r.estado === 'Pendiente'; });
-  var estaSem = todas.filter(function(r){ return reuSemana(r.fecha) === 'Esta semana'; });
-  var tareas = todas.reduce(function(a,r){ return a + (Number(r.tareas)||0); }, 0);
-
-  var badge = document.getElementById('reu-count');
-  if (badge) badge.textContent = sinGrab.length;
-
-  function stat(num, lbl, color){
-    return '<div class="recap-stat"><div class="recap-num" style="color:' + color + ';">' + num + '</div><div class="recap-lbl">' + lbl + '</div></div>';
-  }
-  var h = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;">' +
-    stat(estaSem.length, 'ESTA SEMANA', '#e5e7eb') +
-    stat(sinGrab.length, 'SIN GRABACIÓN', sinGrab.length ? '#ef4444' : '#6b7280') +
-    stat(pendientes.length, 'ALGO PENDIENTE', pendientes.length ? '#f59e0b' : '#6b7280') +
-    stat(tareas, 'TAREAS GENERADAS', '#22c55e') +
-    '</div>';
-
-  var lista = recientes;
-  if (REU_FILTRO === 'sin') lista = sinGrab;
-  else if (REU_FILTRO === 'pendientes') lista = pendientes;
-  else if (REU_FILTRO === 'todas') lista = todas;
-
-  var chips = [['recientes','Últimas 2 semanas ('+recientes.length+')'],['sin','Sin grabación ('+sinGrab.length+')'],['pendientes','Algo pendiente ('+pendientes.length+')'],['todas','Todas ('+todas.length+')']];
-  h += '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">';
-  chips.forEach(function(c){
-    var act = REU_FILTRO === c[0];
-    h += '<button data-reu-chip="' + c[0] + '" style="font-size:11px;padding:6px 12px;border-radius:6px;cursor:pointer;border:1px solid ' + (act?'#8b5cf6':'#374151') + ';background:' + (act?'rgba(139,92,246,.18)':'transparent') + ';color:' + (act?'#c4b5fd':'#9ca3af') + ';font-weight:' + (act?'600':'400') + ';">' + c[1] + '</button>';
-  });
-  h += '<button data-reu-reload="1" style="font-size:11px;padding:6px 12px;border-radius:6px;cursor:pointer;border:1px solid #374151;background:transparent;color:#9ca3af;margin-left:auto;">↻ Actualizar</button></div>';
-
-  if (!lista.length) {
-    h += '<div style="color:#6b7280;padding:28px;text-align:center;font-size:13px;">Sin reuniones en este filtro.</div>';
-    p.innerHTML = h;
-    enlazaReuniones();
-    return;
-  }
-
-  var grupos = {};
-  lista.forEach(function(r){ var g = reuSemana(r.fecha); (grupos[g] = grupos[g] || []).push(r); });
-
-  ['Esta semana','Semana pasada','Anteriores','Sin fecha'].forEach(function(g){
-    var rs = grupos[g];
-    if (!rs || !rs.length) return;
-    h += '<div style="margin:18px 0 8px 0;font-size:11px;letter-spacing:1.5px;color:#6b7280;font-weight:700;">' + g.toUpperCase() + ' · ' + rs.length + '</div>';
-    h += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;"><thead><tr>' +
-      '<th style="text-align:left;">Día</th>' +
-      '<th style="text-align:left;">Reunión</th>' +
-      '<th style="text-align:left;">Cliente</th>' +
-      '<th style="text-align:left;">Convocó</th>' +
-      '<th style="text-align:left;">Con quién</th>' +
-      '<th style="text-align:left;">Estado</th>' +
-      '<th style="text-align:center;" title="Correo al cliente enviado">Correo</th>' +
-      '<th style="text-align:center;" title="Minuta técnica enviada">Minuta</th>' +
-      '<th style="text-align:center;" title="WhatsApp registrado">WA</th>' +
-      '<th style="text-align:center;" title="Coaching generado">Coach</th>' +
-      '<th style="text-align:right;">Tareas</th>' +
-      '<th style="text-align:left;">Marcar</th>' +
-      '</tr></thead><tbody>';
-    rs.forEach(function(r){
-      var alerta = (r.estado === 'Sin grabacion' && !r.cerrado_por && r.dias > 7);
-      h += '<tr' + (alerta ? ' style="background:rgba(239,68,68,.06);"' : '') + '>' +
-        '<td style="white-space:nowrap;color:#9ca3af;">' + reuDia(r.fecha) + '</td>' +
-        '<td style="max-width:280px;"><div style="font-weight:600;">' + reuEsc(r.titulo) + '</div>' +
-          (r.producto ? '<div style="font-size:10px;color:#8b5cf6;letter-spacing:.5px;">' + reuEsc(r.producto) + '</div>' : '') + '</td>' +
-        '<td>' + (r.cliente ? reuEsc(r.cliente) : (r.estado === 'Interna' ? '<span style="color:#9ca3af;">Interna</span>' : '<span style="color:#4b5563;">&middot;</span>')) + '</td>' +
-        '<td>' + reuPersona(r.responsable) + '</td>' +
-        '<td>' + reuGente(r.externos) + '</td>' +
-        '<td>' + reuBadge(r.estado, r.dias, r.cerrado_por) +
-          (r.estado === 'Sin grabacion' && !r.cerrado_por && r.dias > 0 ? '<div style="font-size:10px;color:#6b7280;">' + r.dias + 'd abierto</div>' : '') + '</td>' +
-        '<td style="text-align:center;">' + reuMarca(r.correo) + '</td>' +
-        '<td style="text-align:center;">' + reuMarca(r.minuta) + '</td>' +
-        '<td style="text-align:center;">' + reuMarca(r.whatsapp) + '</td>' +
-        '<td style="text-align:center;">' + reuMarca(r.coaching) + '</td>' +
-        '<td style="text-align:right;font-weight:600;">' + (r.tareas || '<span style="color:#4b5563;">&middot;</span>') + '</td>' +
-        '<td><select data-reu-cerrar="' + reuEsc(r.clave) + '" style="font-size:10.5px;background:transparent;color:#9ca3af;border:1px solid #374151;border-radius:5px;padding:3px 6px;">' +
-          '<option value="" selected>' + (REU_AUTO.indexOf(r.estado) !== -1 ? '— automático —' : reuEsc(r.estado)) + '</option>' +
-          REU_MANUALES.map(function(e){ return '<option value="' + e + '">' + e + '</option>'; }).join('') +
-          '</select></td>' +
-        '</tr>';
-    });
-    h += '</tbody></table></div>';
-  });
-
-  h += '<div style="margin-top:18px;font-size:11px;color:#6b7280;line-height:1.7;">Convocó = quien organizó la reunión en el calendario.<br>Pendiente, Analizada, Sin grabación e Interna las pone el motor solo. Desde aquí solo se marca lo que el motor no puede saber: recuperado, documentado a mano o no aplica.</div>';
-  p.innerHTML = h;
-  enlazaReuniones();
-}
-
-function enlazaReuniones(){
-  var p = document.getElementById('p-reuniones');
-  p.querySelectorAll('[data-reu-chip]').forEach(function(b){
-    b.addEventListener('click', function(){ REU_FILTRO = b.getAttribute('data-reu-chip'); pintaReuniones(); });
-  });
-  p.querySelectorAll('[data-reu-reload]').forEach(function(b){
-    b.addEventListener('click', function(){ REU_DATA = null; renderReuniones(); });
-  });
-  p.querySelectorAll('[data-reu-cerrar]').forEach(function(sel){
-    var previo = sel.value;
-    sel.addEventListener('change', function(){
-      var clave = sel.getAttribute('data-reu-cerrar');
-      var estado = sel.value;
-      if (!estado || estado === previo) return;
-      sel.disabled = true;
-      fetch(BITACORA_CERRAR_URL, {method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ clave: clave, estado: estado, quien: 'dashboard' })})
-        .then(function(){ REU_DATA = null; renderReuniones(); })
-        .catch(function(){ sel.disabled = false; });
-    });
-  });
 }
 
 // --- RECAP ---
@@ -3785,7 +3589,7 @@ function renderProspeccion() {
   t2+='<tr style="border-top:2px solid var(--border,#2A3142);"><td style="font-weight:700;">TOTAL señales</td>'+wcp(wS.hoy,'hoy','__ALL_SENALES__',1)+wcp(wS.d7,'d7','__ALL_SENALES__',1)+wcp(wS.d30,'d30','__ALL_SENALES__',1)+wcp(wS.d90,'d90','__ALL_SENALES__',1)+wcp(wS.total,'total','__ALL_SENALES__',1)+'</tr></tbody></table></div>';
   // ETAPAS y sc eliminados (tabla dh quitada)
   // Tabla Oportunidades eliminada
-  cont.innerHTML=GR_SYNC_BOX + '<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Fuente: tabla de eventos (los 3 tenants), no HubSpot. Los 30d incluyen 7d y hoy.</div>'+chips+'<div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado. Toca un número para ver el detalle.</div>'+t1+'<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto</div>'+t2+'<div id="pipeline-metrics-gr" style="margin:16px 0 4px;"></div><div style="border:none;border-top:1px solid #252d50;margin:14px 0"></div><div id="prosp-detalle" style="margin-top:16px;"></div></div>';
+  cont.innerHTML=GR_SYNC_BOX + '<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Fuente: tabla de eventos (los 3 tenants), no HubSpot. Los 30d incluyen 7d y hoy.</div>'+chips+'<div id="pipeline-metrics-gr" style="margin:14px 0 4px;"></div><div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado. Toca un número para ver el detalle.</div>'+t1+'<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto</div>'+t2+'<div style="border:none;border-top:1px solid #252d50;margin:14px 0"></div><div id="prosp-detalle" style="margin-top:16px;"></div></div>';
   cont.querySelectorAll('[data-pf]').forEach(function(btn){ btn.addEventListener('click',function(){ var f=btn.dataset.pf, v=decodeURIComponent(btn.dataset.pv); if(f==='grupo'){prospGrupo=v; prospProducto='ALL';} else if(f==='prod')prospProducto=v; else if(f==='canal')prospCanal=v; else if(f==='sem')prospSem=v; else if(f==='stage')prospStage=v; renderProspeccion(); }); });
   renderPipelineMetricsGR();
   cont.querySelectorAll('.pcell').forEach(function(td){ td.addEventListener('click',function(){
@@ -4253,7 +4057,7 @@ function renderPipelineMetricsGR(pool){
     var col=GR_ETAPA_COLORES[k]||'#6B7280';
     var lbl=GR_ETAPA_LABEL[k]||k;
     var pct=totalActivos>0?Math.round(deals.length/totalActivos*100):0;
-    h+='<div style="display:flex;flex-direction:column;align-items:center;gap:2px;background:'+col+'18;border:1px solid '+col+'44;border-radius:14px;padding:10px 16px;min-width:80px;">'+
+    h+='<div class="pcell" data-ptype="etapa" data-pval="'+encodeURIComponent(k)+'" data-pwin="total" title="Ver los contactos en '+lbl+'" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;background:'+col+'18;border:1px solid '+col+'44;border-radius:14px;padding:10px 16px;min-width:80px;">'+
       '<div style="font-size:22px;font-weight:800;color:'+col+';line-height:1;">'+deals.length+'</div>'+
       '<div style="font-size:10px;font-weight:700;color:#F3F4F6;text-align:center;line-height:1.3;">'+lbl+'</div>'+
       '<div style="font-size:13px;font-weight:700;color:'+col+'cc;margin-top:2px;">'+pct+'%</div>'+
@@ -4319,7 +4123,9 @@ function renderProspDetalle(ptype, pval, pwin) {
 
   var pool=PEV.map(function(e){return Object.assign({},e,{clasificacion:normClas(e.clasificacion||'')});}).filter(function(e){return matchFilt(e)&&inWin(e);});
   var isDUOf=function(e){ if(e.es_duo===true||e.es_duo==='true'||e.es_duo===1) return true; if(e.es_duo===false||e.es_duo==='false'||e.es_duo===0) return false; return !!(e.campana && e.campana.indexOf(' – ')!==-1); };
-  if(ptype==='clas'){
+  // 7ago2026 — corte por etapa: cada cuadro de metricas abre los contactos de esa etapa.
+  if(ptype==='etapa'){ pool=pool.filter(function(e){ return String(e.etapa||'')===pval; }); }
+  else if(ptype==='clas'){
     if(pval==='__DUO_REPLY__'){
       // DUO replies: replies cuya campana tiene formato DuoCopilot
       pool=pool.filter(function(e){ return e.tipo!=='open3' && isDUOf(e); });
