@@ -1381,16 +1381,48 @@ function renderCurrentTab() {
 
 
 // --- REUNIONES (bitacora post-reunion) ---
-var REU_DATA = null, REU_FILTRO = 'todas';
-var REU_ESTADOS = ['Abierto','Recuperado','Sin grabacion','Documentado a mano','No aplica','Analizada','Interna'];
+var REU_DATA = null, REU_FILTRO = 'recientes';
+var REU_ESTADOS = ['Analizada','Sin grabacion','Recuperado','Documentado a mano','No aplica'];
 
-function reuMarca(v){ return v ? '<span style="color:#22c55e;font-weight:700;">&#10003;</span>' : '<span style="color:#6b7280;">&#8212;</span>'; }
 function reuEsc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function reuCorto(lista, n){
-  var xs = String(lista||'').split(',').map(function(x){ return x.trim().split('@')[0]; }).filter(Boolean);
-  if (!xs.length) return '—';
-  if (xs.length <= n) return reuEsc(xs.join(', '));
-  return reuEsc(xs.slice(0,n).join(', ')) + ' +' + (xs.length-n);
+function reuMarca(v){ return v ? '<span style="color:#22c55e;font-size:14px;">&#10003;</span>' : '<span style="color:#4b5563;">&middot;</span>'; }
+function reuPersona(lista){
+  var xs = String(lista||'').split(',').map(function(x){ return x.trim().split('@')[0].replace(/[._]/g,' '); }).filter(Boolean);
+  if (!xs.length) return '<span style="color:#4b5563;">&middot;</span>';
+  return reuEsc(xs[0].split(' ')[0]);
+}
+function reuGente(lista){
+  var xs = String(lista||'').split(',').map(function(x){ return x.trim(); }).filter(Boolean);
+  if (!xs.length) return '<span style="color:#4b5563;">&middot;</span>';
+  var nombres = xs.map(function(e){ return e.split('@')[0].replace(/[._]/g,' ').split(' ')[0]; });
+  var txt = nombres.slice(0,2).join(', ') + (nombres.length>2 ? ' +'+(nombres.length-2) : '');
+  return '<span title="' + reuEsc(xs.join(', ')) + '">' + reuEsc(txt) + '</span>';
+}
+function reuBadge(estado, dias, cerrado){
+  var c = '#6b7280', b = 'rgba(107,114,128,.15)';
+  if (estado === 'Analizada') { c = '#22c55e'; b = 'rgba(34,197,94,.12)'; }
+  else if (estado === 'Sin grabacion' && !cerrado) { c = (dias > 7 ? '#ef4444' : '#f59e0b'); b = (dias > 7 ? 'rgba(239,68,68,.14)' : 'rgba(245,158,11,.14)'); }
+  else if (estado === 'Recuperado' || estado === 'Documentado a mano') { c = '#3b82f6'; b = 'rgba(59,130,246,.12)'; }
+  var txt = estado === 'Sin grabacion' ? 'Sin grabación' : estado;
+  return '<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:600;color:' + c + ';background:' + b + ';white-space:nowrap;">' + reuEsc(txt) + '</span>';
+}
+function reuSemana(fecha){
+  if (!fecha) return 'Sin fecha';
+  var d = new Date(fecha + 'T12:00:00');
+  if (isNaN(d)) return 'Sin fecha';
+  var hoy = new Date(); hoy.setHours(12,0,0,0);
+  var lunes = new Date(hoy); lunes.setDate(hoy.getDate() - ((hoy.getDay()+6)%7));
+  var lunesPasado = new Date(lunes); lunesPasado.setDate(lunes.getDate()-7);
+  if (d >= lunes) return 'Esta semana';
+  if (d >= lunesPasado) return 'Semana pasada';
+  return 'Anteriores';
+}
+function reuDia(fecha){
+  var d = new Date((fecha||'') + 'T12:00:00');
+  if (isNaN(d)) return reuEsc(fecha);
+  var dias = ['dom','lun','mar','mié','jue','vie','sáb'];
+  var meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return dias[d.getDay()] + ' ' + d.getDate() + ' ' + meses[d.getMonth()];
 }
 
 function renderReuniones(){
@@ -1410,56 +1442,91 @@ function renderReuniones(){
 function pintaReuniones(){
   var p = document.getElementById('p-reuniones');
   var todas = REU_DATA || [];
-  var abiertas = todas.filter(function(r){ return r.estado === 'Sin grabacion' && !r.cerrado_por; });
+  var recientes = todas.filter(function(r){ var w = reuSemana(r.fecha); return w === 'Esta semana' || w === 'Semana pasada'; });
+  var sinGrab = todas.filter(function(r){ return r.estado === 'Sin grabacion' && !r.cerrado_por; });
+  var pendientes = todas.filter(function(r){ return r.estado === 'Analizada' && !(r.correo && r.minuta); });
+  var estaSem = todas.filter(function(r){ return reuSemana(r.fecha) === 'Esta semana'; });
+  var tareas = todas.reduce(function(a,r){ return a + (Number(r.tareas)||0); }, 0);
+
   var badge = document.getElementById('reu-count');
-  if (badge) badge.textContent = abiertas.length ? abiertas.length : '0';
+  if (badge) badge.textContent = sinGrab.length;
 
-  var lista = todas;
-  if (REU_FILTRO === 'sin') lista = abiertas;
-  else if (REU_FILTRO === 'pendientes') lista = todas.filter(function(r){ return r.estado === 'Analizada' && !(r.correo && r.minuta); });
+  function stat(num, lbl, color){
+    return '<div class="recap-stat"><div class="recap-num" style="color:' + color + ';">' + num + '</div><div class="recap-lbl">' + lbl + '</div></div>';
+  }
+  var h = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;">' +
+    stat(estaSem.length, 'ESTA SEMANA', '#e5e7eb') +
+    stat(sinGrab.length, 'SIN GRABACIÓN', sinGrab.length ? '#ef4444' : '#6b7280') +
+    stat(pendientes.length, 'ALGO PENDIENTE', pendientes.length ? '#f59e0b' : '#6b7280') +
+    stat(tareas, 'TAREAS GENERADAS', '#22c55e') +
+    '</div>';
 
-  var chips = [['todas','Todas ('+todas.length+')'],['sin','Sin grabación ('+abiertas.length+')'],['pendientes','Con algo pendiente']];
-  var h = '<div class="filtros-bar">';
+  var lista = recientes;
+  if (REU_FILTRO === 'sin') lista = sinGrab;
+  else if (REU_FILTRO === 'pendientes') lista = pendientes;
+  else if (REU_FILTRO === 'todas') lista = todas;
+
+  var chips = [['recientes','Últimas 2 semanas ('+recientes.length+')'],['sin','Sin grabación ('+sinGrab.length+')'],['pendientes','Algo pendiente ('+pendientes.length+')'],['todas','Todas ('+todas.length+')']];
+  h += '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">';
   chips.forEach(function(c){
-    h += '<button class="fbtn' + (REU_FILTRO===c[0]?' active':'') + '" data-reu-chip="' + c[0] + '">' + c[1] + '</button>';
+    var act = REU_FILTRO === c[0];
+    h += '<button data-reu-chip="' + c[0] + '" style="font-size:11px;padding:6px 12px;border-radius:6px;cursor:pointer;border:1px solid ' + (act?'#8b5cf6':'#374151') + ';background:' + (act?'rgba(139,92,246,.18)':'transparent') + ';color:' + (act?'#c4b5fd':'#9ca3af') + ';font-weight:' + (act?'600':'400') + ';">' + c[1] + '</button>';
   });
-  h += '<button class="fbtn" data-reu-reload="1">Actualizar</button></div>';
+  h += '<button data-reu-reload="1" style="font-size:11px;padding:6px 12px;border-radius:6px;cursor:pointer;border:1px solid #374151;background:transparent;color:#9ca3af;margin-left:auto;">↻ Actualizar</button></div>';
 
   if (!lista.length) {
-    h += '<div style="color:#9CA3AF;padding:16px;font-size:13px;">Sin reuniones en este filtro.</div>';
+    h += '<div style="color:#6b7280;padding:28px;text-align:center;font-size:13px;">Sin reuniones en este filtro.</div>';
     p.innerHTML = h;
     enlazaReuniones();
     return;
   }
 
-  h += '<div style="overflow-x:auto;"><table><thead><tr>' +
-       '<th>Fecha</th><th>Reunión</th><th>Cliente</th><th>Prod</th><th>Responsable</th><th>Externos</th>' +
-       '<th>Estado</th><th title="Correo al cliente">Correo</th><th title="Minuta técnica">Minuta</th>' +
-       '<th>WA</th><th>Coach</th><th class="num">Tareas</th><th class="num">Días</th><th>Cerrar</th>' +
-       '</tr></thead><tbody>';
-  lista.forEach(function(r){
-    var alerta = (r.estado === 'Sin grabacion' && !r.cerrado_por && r.dias > 7);
-    h += '<tr' + (alerta ? ' style="background:rgba(239,68,68,0.08);"' : '') + '>' +
-      '<td>' + reuEsc(r.fecha) + '</td>' +
-      '<td>' + reuEsc(r.titulo) + '</td>' +
-      '<td>' + (r.cliente ? reuEsc(r.cliente) : '—') + '</td>' +
-      '<td>' + (r.producto ? reuEsc(r.producto) : '—') + '</td>' +
-      '<td>' + reuCorto(r.responsable,1) + '</td>' +
-      '<td>' + reuCorto(r.externos,2) + '</td>' +
-      '<td>' + reuEsc(r.estado) + (r.cerrado_por ? ' <span style="opacity:.6;">· ' + reuCorto(r.cerrado_por,1) + '</span>' : '') + '</td>' +
-      '<td>' + reuMarca(r.correo) + '</td>' +
-      '<td>' + reuMarca(r.minuta) + '</td>' +
-      '<td>' + reuMarca(r.whatsapp) + '</td>' +
-      '<td>' + reuMarca(r.coaching) + '</td>' +
-      '<td class="num">' + (r.tareas || 0) + '</td>' +
-      '<td class="num">' + (r.dias || 0) + '</td>' +
-      '<td><select data-reu-cerrar="' + reuEsc(r.clave) + '" style="font-size:11px;">' +
-        '<option value="">—</option>' +
-        REU_ESTADOS.map(function(e){ return '<option value="' + e + '"' + (e===r.estado?' selected':'') + '>' + e + '</option>'; }).join('') +
-        '</select></td>' +
-      '</tr>';
+  var grupos = {};
+  lista.forEach(function(r){ var g = reuSemana(r.fecha); (grupos[g] = grupos[g] || []).push(r); });
+
+  ['Esta semana','Semana pasada','Anteriores','Sin fecha'].forEach(function(g){
+    var rs = grupos[g];
+    if (!rs || !rs.length) return;
+    h += '<div style="margin:18px 0 8px 0;font-size:11px;letter-spacing:1.5px;color:#6b7280;font-weight:700;">' + g.toUpperCase() + ' · ' + rs.length + '</div>';
+    h += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;"><thead><tr>' +
+      '<th style="text-align:left;">Día</th>' +
+      '<th style="text-align:left;">Reunión</th>' +
+      '<th style="text-align:left;">Cliente</th>' +
+      '<th style="text-align:left;">Convocó</th>' +
+      '<th style="text-align:left;">Con quién</th>' +
+      '<th style="text-align:left;">Estado</th>' +
+      '<th style="text-align:center;" title="Correo al cliente enviado">Correo</th>' +
+      '<th style="text-align:center;" title="Minuta técnica enviada">Minuta</th>' +
+      '<th style="text-align:center;" title="WhatsApp registrado">WA</th>' +
+      '<th style="text-align:center;" title="Coaching generado">Coach</th>' +
+      '<th style="text-align:right;">Tareas</th>' +
+      '<th style="text-align:left;">Marcar</th>' +
+      '</tr></thead><tbody>';
+    rs.forEach(function(r){
+      var alerta = (r.estado === 'Sin grabacion' && !r.cerrado_por && r.dias > 7);
+      h += '<tr' + (alerta ? ' style="background:rgba(239,68,68,.06);"' : '') + '>' +
+        '<td style="white-space:nowrap;color:#9ca3af;">' + reuDia(r.fecha) + '</td>' +
+        '<td style="max-width:280px;"><div style="font-weight:600;">' + reuEsc(r.titulo) + '</div>' +
+          (r.producto ? '<div style="font-size:10px;color:#8b5cf6;letter-spacing:.5px;">' + reuEsc(r.producto) + '</div>' : '') + '</td>' +
+        '<td>' + (r.cliente ? reuEsc(r.cliente) : '<span style="color:#4b5563;">&middot;</span>') + '</td>' +
+        '<td>' + reuPersona(r.responsable) + '</td>' +
+        '<td>' + reuGente(r.externos) + '</td>' +
+        '<td>' + reuBadge(r.estado, r.dias, r.cerrado_por) +
+          (r.estado === 'Sin grabacion' && !r.cerrado_por && r.dias > 0 ? '<div style="font-size:10px;color:#6b7280;">' + r.dias + 'd abierto</div>' : '') + '</td>' +
+        '<td style="text-align:center;">' + reuMarca(r.correo) + '</td>' +
+        '<td style="text-align:center;">' + reuMarca(r.minuta) + '</td>' +
+        '<td style="text-align:center;">' + reuMarca(r.whatsapp) + '</td>' +
+        '<td style="text-align:center;">' + reuMarca(r.coaching) + '</td>' +
+        '<td style="text-align:right;font-weight:600;">' + (r.tareas || '<span style="color:#4b5563;">&middot;</span>') + '</td>' +
+        '<td><select data-reu-cerrar="' + reuEsc(r.clave) + '" style="font-size:10.5px;background:transparent;color:#9ca3af;border:1px solid #374151;border-radius:5px;padding:3px 6px;">' +
+          REU_ESTADOS.map(function(e){ return '<option value="' + e + '"' + (e===r.estado?' selected':'') + '>' + (e==='Sin grabacion'?'Sin grabación':e) + '</option>'; }).join('') +
+          '</select></td>' +
+        '</tr>';
+    });
+    h += '</tbody></table></div>';
   });
-  h += '</tbody></table></div>';
+
+  h += '<div style="margin-top:18px;font-size:11px;color:#6b7280;">Convocó = quien organizó la reunión en el calendario. El selector cambia el estado del renglón y lo registra como cerrado.</div>';
   p.innerHTML = h;
   enlazaReuniones();
 }
@@ -1473,10 +1540,11 @@ function enlazaReuniones(){
     b.addEventListener('click', function(){ REU_DATA = null; renderReuniones(); });
   });
   p.querySelectorAll('[data-reu-cerrar]').forEach(function(sel){
+    var previo = sel.value;
     sel.addEventListener('change', function(){
       var clave = sel.getAttribute('data-reu-cerrar');
       var estado = sel.value;
-      if (!estado) return;
+      if (!estado || estado === previo) return;
       sel.disabled = true;
       fetch(BITACORA_CERRAR_URL, {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ clave: clave, estado: estado, quien: 'dashboard' })})
