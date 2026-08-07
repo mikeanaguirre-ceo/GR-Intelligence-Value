@@ -1382,19 +1382,26 @@ function renderCurrentTab() {
 
 // --- REUNIONES (bitacora post-reunion) ---
 var REU_DATA = null, REU_FILTRO = 'recientes';
-var REU_ESTADOS = ['Pendiente','Analizada','Sin grabacion','Recuperado','Documentado a mano','Interna','No aplica'];
+var REU_AUTO = ['Pendiente','Analizada','Sin grabacion','Interna'];   // los pone el motor solo
+var REU_MANUALES = ['Recuperado','Documentado a mano','No aplica'];    // solo estos se eligen a mano
 
 function reuEsc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function reuMarca(v){ return v ? '<span style="color:#22c55e;font-size:14px;">&#10003;</span>' : '<span style="color:#4b5563;">&middot;</span>'; }
+function reuCap(t){ t = String(t||'').trim(); return t ? t.charAt(0).toUpperCase() + t.slice(1) : ''; }
+function reuNombre(e){
+  var base = String(e||'').trim().split('@')[0].replace(/[._-]+/g,' ').trim();
+  if (!base) return '';
+  return reuCap(base.split(' ')[0]);
+}
 function reuPersona(lista){
-  var xs = String(lista||'').split(',').map(function(x){ return x.trim().split('@')[0].replace(/[._]/g,' '); }).filter(Boolean);
+  var xs = String(lista||'').split(',').map(function(x){ return reuNombre(x); }).filter(Boolean);
   if (!xs.length) return '<span style="color:#4b5563;">&middot;</span>';
-  return reuEsc(xs[0].split(' ')[0]);
+  return reuEsc(xs[0]);
 }
 function reuGente(lista){
   var xs = String(lista||'').split(',').map(function(x){ return x.trim(); }).filter(Boolean);
   if (!xs.length) return '<span style="color:#4b5563;">&middot;</span>';
-  var nombres = xs.map(function(e){ return e.split('@')[0].replace(/[._]/g,' ').split(' ')[0]; });
+  var nombres = xs.map(reuNombre).filter(Boolean);
   var txt = nombres.slice(0,2).join(', ') + (nombres.length>2 ? ' +'+(nombres.length-2) : '');
   return '<span title="' + reuEsc(xs.join(', ')) + '">' + reuEsc(txt) + '</span>';
 }
@@ -1510,7 +1517,7 @@ function pintaReuniones(){
         '<td style="white-space:nowrap;color:#9ca3af;">' + reuDia(r.fecha) + '</td>' +
         '<td style="max-width:280px;"><div style="font-weight:600;">' + reuEsc(r.titulo) + '</div>' +
           (r.producto ? '<div style="font-size:10px;color:#8b5cf6;letter-spacing:.5px;">' + reuEsc(r.producto) + '</div>' : '') + '</td>' +
-        '<td>' + (r.cliente ? reuEsc(r.cliente) : '<span style="color:#4b5563;">&middot;</span>') + '</td>' +
+        '<td>' + (r.cliente ? reuEsc(r.cliente) : (r.estado === 'Interna' ? '<span style="color:#9ca3af;">Interna</span>' : '<span style="color:#4b5563;">&middot;</span>')) + '</td>' +
         '<td>' + reuPersona(r.responsable) + '</td>' +
         '<td>' + reuGente(r.externos) + '</td>' +
         '<td>' + reuBadge(r.estado, r.dias, r.cerrado_por) +
@@ -1521,14 +1528,15 @@ function pintaReuniones(){
         '<td style="text-align:center;">' + reuMarca(r.coaching) + '</td>' +
         '<td style="text-align:right;font-weight:600;">' + (r.tareas || '<span style="color:#4b5563;">&middot;</span>') + '</td>' +
         '<td><select data-reu-cerrar="' + reuEsc(r.clave) + '" style="font-size:10.5px;background:transparent;color:#9ca3af;border:1px solid #374151;border-radius:5px;padding:3px 6px;">' +
-          REU_ESTADOS.map(function(e){ return '<option value="' + e + '"' + (e===r.estado?' selected':'') + '>' + (e==='Sin grabacion'?'Sin grabación':e) + '</option>'; }).join('') +
+          '<option value="" selected>' + (REU_AUTO.indexOf(r.estado) !== -1 ? '— automático —' : reuEsc(r.estado)) + '</option>' +
+          REU_MANUALES.map(function(e){ return '<option value="' + e + '">' + e + '</option>'; }).join('') +
           '</select></td>' +
         '</tr>';
     });
     h += '</tbody></table></div>';
   });
 
-  h += '<div style="margin-top:18px;font-size:11px;color:#6b7280;">Convocó = quien organizó la reunión en el calendario. El selector cambia el estado del renglón y lo registra como cerrado.</div>';
+  h += '<div style="margin-top:18px;font-size:11px;color:#6b7280;line-height:1.7;">Convocó = quien organizó la reunión en el calendario.<br>Pendiente, Analizada, Sin grabación e Interna las pone el motor solo. Desde aquí solo se marca lo que el motor no puede saber: recuperado, documentado a mano o no aplica.</div>';
   p.innerHTML = h;
   enlazaReuniones();
 }
