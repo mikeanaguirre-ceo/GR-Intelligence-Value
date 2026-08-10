@@ -3056,7 +3056,8 @@ function fixOpciones(obj){
     o.push({k:d.id, label:d.icon+' '+d.label, src:'alertas', accion:d.id});
   });
   o.push({k:'d1', label:'📇 Sin contacto',              src:'limp', bucket:'d1'});
-  o.push({k:'d2', label:'🗑️ Perdida que nunca arrancó', src:'limp', bucket:'d2'});
+  /* 'Perdida que nunca arranco' sale del menu: d3 y d4 la reparten completa
+     (82 + 98 = 180). Tenerla ademas era el mismo total contado dos veces. */
   o.push({k:'d3', label:'🧨 Perdida · única de su empresa', src:'limp', bucket:'d3'});
   o.push({k:'d4', label:'🗑️ Perdida · la empresa tiene más', src:'limp', bucket:'d4'});
   return o;
