@@ -968,12 +968,14 @@ function catProdsPresentes(){
   return pres;
 }
 // ===== Helpers compartidos de filtros (homologación) =====
+// Ventana de tareas cerradas que se muestra en Pendientes. Cambiar aqui y cambia en todos lados.
+var CERRADAS_DIAS = 15;
 function catProdMap(){ var m={}; ((CAT().productos)||CAT_FALLBACK.productos||[]).forEach(function(p){ m[p.id]=p; }); return m; }
 function grupoDeProd(prod){ var p=catProdMap()[prod]; if(p&&p.grupo) return p.grupo; if(prod==='Interno'||prod==='Otro'||prod==='P-Otro') return 'INTERNO'; return 'GR'; }
 var GRUPOS_ORDEN=['ALL','GR','PT','IMMMU','INTERNO'];
 function grupoLabel(g){ return g==='ALL'?'All':(g==='INTERNO'?'Interno':g); }
 // Semáforo de tiempo (uno solo): rojo=vencida, amarillo=hoy/próx 3d, verde=al día/futura
-function semList(menu){ var b=[ {id:'ALL',label:'Todos'},{id:'rojo',label:'🔴 Vencidas'},{id:'amarillo',label:'🟡 Próximas'},{id:'verde',label:'🟢 Al día'} ]; if(menu==='pendientes'){ b.splice(1,0,{id:'cerradas',label:'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6B7280;margin-right:5px;vertical-align:middle;"></span>Cerradas'}); } return b; }
+function semList(menu){ var b=[ {id:'ALL',label:'Todos'},{id:'rojo',label:'🔴 Vencidas'},{id:'amarillo',label:'🟡 Próximas'},{id:'verde',label:'🟢 Al día'} ]; if(menu==='pendientes'){ b.splice(1,0,{id:'cerradas',label:'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6B7280;margin-right:5px;vertical-align:middle;"></span>Cerradas ('+CERRADAS_DIAS+'d)'}); } return b; }
 function semDeItem(it,kind){ if(it&&it.semaforo) return it.semaforo; return 'verde'; }
 // Producto canónico presente en un arreglo dado (excluye Interno/Otro), en orden de catálogo
 function prodsPresentesDe(arr){
@@ -2360,12 +2362,19 @@ function renderPendientes() {
   let allT = [];
   if (_isCerradas) {
     const _det = (DATA.recapSemanal && DATA.recapSemanal.tareasCompletadas && DATA.recapSemanal.tareasCompletadas.detalle) || {};
+    // Ventana de cerradas: ultimos 15 dias. Mas atras se vuelve historia, no operacion,
+    // y cargar todo el historico hace lenta la pestana.
+    const _corteCerradas = (function(){ const d = new Date(); d.setDate(d.getDate() - CERRADAS_DIAS); return d.toISOString().slice(0,10); })();
     Object.keys(_det).forEach(p => {
-      (_det[p] || []).forEach(t => allT.push({
-        persona: p, title: t.title, client: t.client, action: t.action, type: t.action,
-        prod: t.prod, isInternal: t.isInternal, personas: [p],
-        date: t.completedDate || t.date, urgency: 'cerrada', semaforo: 'cerrada', dealStages: []
-      }));
+      (_det[p] || []).forEach(t => {
+        const _cierre = t.completedDate || t.date || '';
+        if (!_cierre || _cierre < _corteCerradas) return;
+        allT.push({
+          persona: p, title: t.title, client: t.client, action: t.action, type: t.action,
+          prod: t.prod, isInternal: t.isInternal, personas: [p],
+          date: _cierre, cierre: _cierre, urgency: 'cerrada', semaforo: 'cerrada', dealStages: []
+        });
+      });
     });
   } else {
     personas.forEach(p => {
@@ -2381,6 +2390,10 @@ function renderPendientes() {
   // Re-sort por opción elegida
   const sortMode = FILT.pendientes.sort || 'urgency';
   filtered.sort((a, b) => {
+    // Cerradas: siempre de lo mas recien cerrado a lo mas viejo, salvo que se pida al reves.
+    if (_isCerradas && sortMode !== 'date_asc') {
+      return (b.cierre || b.date || '0000').localeCompare(a.cierre || a.date || '0000');
+    }
     if (sortMode === 'date_asc') {
       return (a.date || '9999').localeCompare(b.date || '9999');
     }
