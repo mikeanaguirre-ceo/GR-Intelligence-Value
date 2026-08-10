@@ -860,7 +860,12 @@ function grEsc(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</
 function fmtFecha(s){ if(!s||s==='null') return ''; var d=new Date(s); if(isNaN(d)) return ''; var M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; return d.getUTCDate()+' '+M[d.getUTCMonth()]+' '+d.getUTCFullYear(); }
 function grStagesForSelect(){ var st=((CAT().stages)||CAT_FALLBACK.stages||[]).slice().sort(function(a,b){return a.prioridad-b.prioridad;}); var noP=st.filter(function(x){return !/Perdida/i.test(x.label);}); var pd=st.filter(function(x){return /Perdida/i.test(x.label);}); return noP.concat(pd); }
 var GR_OWNERS={'77808624':'Migue','82004391':'Martha'};
-function personaFromSubject(subj){ var m=String(subj||"").match(/\(([^()]*)\)\s*$/); if(!m) return null; var n=m[1].trim().replace(/^firma\s*=\s*/i,""); if(!n) return null; if(/^miguel\s+aguirre$/i.test(n)) n="Mike"; return n; }
+// Prospeccion: el nombre entre parentesis es quien FIRMA el mensaje, no quien hace la tarea.
+// Estas tareas son de Martha, que es ademas quien las tiene asignadas en HubSpot.
+function esProspeccion(subj){ var s=String(subj||"").toLowerCase(); return /whatsapp/.test(s) && /(open\s*\+?\s*3|forwarded|reply|circle\s*-?\s*back|duo|interested)/.test(s); }
+function personaFromSubject(subj){ if(esProspeccion(subj)) return "Martha"; var m=String(subj||"").match(/\(([^()]*)\)\s*$/); if(!m) return null; var n=m[1].trim().replace(/^firma\s*=\s*/i,""); if(!n) return null; if(/^miguel\s+aguirre$/i.test(n)) n="Mike"; return n; }
+// Responsable de una tarea: prospeccion siempre a Martha, lo demas se queda como venga del motor.
+function responsableTarea(titulo, personaMotor){ return esProspeccion(titulo) ? "Martha" : (personaMotor || "Sin asignar"); }
 function persResp(x,map){ var r=personaFromSubject((x.metadata||{}).subject); if(r) return r; var oid=String((x.engagement||{}).ownerId||""); return map[oid]||(oid?("Owner "+oid):"Sin asignar"); }
 async function cargarActividadesGR(dealId,containerId){
   var box=document.getElementById(containerId); if(!box) return;
@@ -2369,16 +2374,20 @@ function renderPendientes() {
       (_det[p] || []).forEach(t => {
         const _cierre = t.completedDate || t.date || '';
         if (!_cierre || _cierre < _corteCerradas) return;
+        const _resp = responsableTarea(t.title, p);
         allT.push({
-          persona: p, title: t.title, client: t.client, action: t.action, type: t.action,
-          prod: t.prod, isInternal: t.isInternal, personas: [p],
+          persona: _resp, title: t.title, client: t.client, action: t.action, type: t.action,
+          prod: t.prod, isInternal: t.isInternal, personas: [_resp],
           date: _cierre, cierre: _cierre, urgency: 'cerrada', semaforo: 'cerrada', dealStages: []
         });
       });
     });
   } else {
     personas.forEach(p => {
-      TASKS.tareas[p].forEach(t => allT.push({ ...t, persona: p }));
+      TASKS.tareas[p].forEach(t => {
+        const _resp = responsableTarea(t.title || t.asunto, p);
+        allT.push({ ...t, persona: _resp, personas: [_resp] });
+      });
     });
   }
   const _savedSem = FILT.pendientes.sem;
