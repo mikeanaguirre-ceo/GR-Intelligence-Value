@@ -831,11 +831,28 @@ let DATA = null;
 // ==== CATÁLOGOS (fuente única): live desde DATA.catalogos; fallback embebido de respaldo ====
 const CAT_FALLBACK = {
   personas: [
-    {id:'Mike',label:'Mike'},{id:'Migue',label:'Migue',ownerId:'77808624'},{id:'Martha',label:'Martha',ownerId:'82004391'},
-    {id:'Daniel',label:'Daniel'},{id:'Fer',label:'Fer'},{id:'Mine',label:'Mine'},{id:'Manu',label:'Manu'},
-    {id:'Diana',label:'Diana'},{id:'Nico',label:'Nico'},{id:'Sara',label:'Sara'},
-    {id:'Sabrina',label:'Sabrina'},{id:'Valeria',label:'Valeria'},{id:'Uri',label:'Uri'}
+    {id:'Mike', label:'Mike', alias:['mike'], tipo:'gr'},
+    {id:'Migue', label:'Migue', alias:['migue','miguel'], ownerId:'77808624', tipo:'gr'},
+    {id:'Martha', label:'Martha', alias:['martha'], ownerId:'82004391', tipo:'gr'},
+    {id:'Sabrina', label:'Sabrina', alias:['sabrina'], tipo:'gr'},
+    {id:'Daniel', label:'Daniel', alias:['daniel','dani'], tipo:'gr'},
+    {id:'Fer', label:'Fer', alias:['fer','fernanda'], tipo:'gr'},
+    {id:'Sara', label:'Sara', alias:['sara'], tipo:'gr'},
+    {id:'Manu', label:'Manu', alias:['manu','manuel'], tipo:'gr'},
+    {id:'Diana', label:'Diana', alias:['diana'], tipo:'gr'},
+    {id:'Nico', label:'Nico', alias:['nico','nicolas','nicolás'], tipo:'partner', empresa:'Artool'},
+    {id:'Uri', label:'Uri', alias:['uri'], tipo:'partner', empresa:'Artool'},
+    {id:'Verónica', label:'Verónica', alias:['verónica'], tipo:'partner', empresa:'Artool'},
+    {id:'Aldo', label:'Aldo', alias:['aldo'], tipo:'partner', empresa:'Roomie IT'},
+    {id:'Fernando', label:'Fernando', alias:['fernando'], tipo:'partner', empresa:'Roomie IT'},
+    {id:'Polo', label:'Polo', alias:['polo'], tipo:'partner', empresa:'Roomie IT'},
+    {id:'Lenin', label:'Lenin', alias:['lenin'], tipo:'partner', empresa:'Roomie IT'},
+    {id:'Jacopo', label:'Jacopo', alias:['jacopo'], tipo:'partner', empresa:'Hootsuite'},
+    {id:'Abraham', label:'Abraham', alias:['abraham'], tipo:'partner', empresa:'Hootsuite'},
+    {id:'Lissa', label:'Lissa', alias:['lissa'], tipo:'partner', empresa:'Hootsuite'}
   ],
+
+
   paleta: { morado:'#7D2AE4', azul:'#02ADBA', verde:'#62D175', amarillo:'#FFCD00', rojo:'#DB0540', gris:'#6B7280' },
   segmentos: [
     {id:'GR',label:'GR',linea:'GR',naturaleza:'cliente'},{id:'PT',label:'PT',linea:'PT',naturaleza:'cliente'},
@@ -855,6 +872,48 @@ const CAT_FALLBACK = {
     {id:'PT',grupo:'PT'},{id:'IMMMU',grupo:'IMMMU'},{id:'Interno',grupo:'INTERNO'},{id:'Otro',grupo:'INTERNO'}
   ]
 };
+// ==== DIRECTORIOS: quien es quien sale de los documentos, no de este archivo ====
+const PERSONAS_URL = 'https://mikea.app.n8n.cloud/webhook/gr-personas';
+const PARTNERS_URL = 'https://mikea.app.n8n.cloud/webhook/gr-directorio';
+async function cargarDirectorios(){
+  try{
+    const post = function(u){ return fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); };
+    const res = await Promise.all([post(PERSONAS_URL), post(PARTNERS_URL)]);
+    const dp = await res[0].json();
+    const da = await res[1].json();
+    const gente  = (dp && dp.personas)  ? dp.personas.filter(function(p){ return p.tablero; }) : [];
+    const socios = (da && da.contactos) ? da.contactos : [];
+    // Sin gente no se toca nada: la lista vieja sirve mas que una lista vacia.
+    if (!gente.length) return;
+    const previos = {};
+    (((DATA.catalogos||{}).personas) || CAT_FALLBACK.personas || []).forEach(function(p){ previos[p.id] = p; });
+    function alias(id, nombre, email){
+      const out = [];
+      const add = function(v){ v = String(v||'').toLowerCase(); if (v && out.indexOf(v) === -1) out.push(v); };
+      add(id);
+      add(String(nombre||'').split(' ')[0]);
+      // Del correo solo se toma el nombre largo cuando de verdad corresponde al marcador
+      // (miguel para Migue, manuel para Manu). Asi no entran alias sin sentido.
+      const loc = String(email||'').split('@')[0].split('.')[0].toLowerCase();
+      const m = String(id||'').toLowerCase();
+      if (/^[a-záéíóúñ]+$/.test(loc) && (loc.indexOf(m) === 0 || m.indexOf(loc) === 0)) add(loc);
+      const ant = previos[id];
+      if (ant && ant.alias) ant.alias.forEach(add);
+      return out;
+    }
+    const lista = gente.map(function(p){
+      const o = { id:p.marcador, label:p.marcador, alias:alias(p.marcador,p.persona,p.email), tipo:'gr' };
+      if (p.owner_hs) o.ownerId = p.owner_hs;
+      return o;
+    }).concat(socios.map(function(c){
+      return { id:c.marcador, label:c.marcador, alias:alias(c.marcador,c.nombre,c.email), tipo:'partner', empresa:c.partner };
+    }));
+    if (!DATA.catalogos) DATA.catalogos = {};
+    DATA.catalogos.personas = lista;
+    PERSONAS = catPersonaIds();
+  } catch(e) { /* si los directorios no responden, se queda la lista que ya venia */ }
+}
+
 function CAT(){ return (typeof DATA !== 'undefined' && DATA && DATA.catalogos) ? DATA.catalogos : CAT_FALLBACK; }
 function grEsc(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtFecha(s){ if(!s||s==='null') return ''; var d=new Date(s); if(isNaN(d)) return ''; var M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; return d.getUTCDate()+' '+M[d.getUTCMonth()]+' '+d.getUTCFullYear(); }
@@ -1182,6 +1241,9 @@ async function loadData() {
     }
     
     if (!DATA.ok) throw new Error('Webhook returned ok:false');
+
+    // Los filtros por persona salen de los directorios, no de una lista propia de aqui.
+    await cargarDirectorios();
 
     // AM data es opcional — si falla el dashboard sigue funcionando
     if (amRes && amRes.ok) {
@@ -2524,7 +2586,7 @@ function renderPendientes() {
 }
 
 // ====== EDITOR DE TAREAS v3 (campos controlados + calendario propio + nueva en blanco) ======
-const PERSONAS = catPersonaIds(); // centralizado en catálogo (CAT)
+let PERSONAS = catPersonaIds(); // sale del catálogo, y el catálogo sale de los directorios
 const EARLY_STAGES = ['Señal','Reply','Contactado','En Conv.'];
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MESES_CORTO = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
