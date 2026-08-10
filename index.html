@@ -1380,7 +1380,8 @@ function renderCurrentTab() {
 }
 
 // --- REUNIONES (bitacora post-reunion) ---
-var REU_DATA = null, REU_FILTRO = 'recientes';
+var REU_DATA = null;
+var REU_F = { semana:'todas', dia:'todos', tipo:'todas', sit:'todas', quien:'todos', prod:'todos' };
 var REU_AUTO = ['Pendiente','Analizada','Sin grabacion','Interna'];   // los pone el motor solo
 var REU_MANUALES = ['Recuperado','Documentado a mano','No aplica'];    // solo estos se eligen a mano
 
@@ -1425,12 +1426,33 @@ function reuSemana(fecha){
   if (d >= lunesPasado) return 'Semana pasada';
   return 'Anteriores';
 }
+var REU_DIAS = ['dom','lun','mar','mié','jue','vie','sáb'];
+function reuDiaIdx(fecha){ var d = new Date((fecha||'') + 'T12:00:00'); return isNaN(d) ? -1 : d.getDay(); }
 function reuDia(fecha){
   var d = new Date((fecha||'') + 'T12:00:00');
   if (isNaN(d)) return reuEsc(fecha);
-  var dias = ['dom','lun','mar','mié','jue','vie','sáb'];
   var meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  return dias[d.getDay()] + ' ' + d.getDate() + ' ' + meses[d.getMonth()];
+  return REU_DIAS[d.getDay()] + ' ' + d.getDate() + ' ' + meses[d.getMonth()];
+}
+function reuTipo(r){ return (r.externos || '').toString().trim() ? 'cliente' : 'interna'; }
+function reuQuien(r){ return reuNombre(String(r.responsable||'').split(',')[0]) || '—'; }
+function reuProd(r){ return (r.producto || '').toString().trim().toUpperCase() || '—'; }
+
+// Aplica todos los filtros menos el que se indique, para que los contadores sean contextuales
+function reuFiltra(base, excepto){
+  return base.filter(function(r){
+    if (excepto !== 'semana' && REU_F.semana !== 'todas' && reuSemana(r.fecha) !== REU_F.semana) return false;
+    if (excepto !== 'dia' && REU_F.dia !== 'todos' && String(reuDiaIdx(r.fecha)) !== REU_F.dia) return false;
+    if (excepto !== 'tipo' && REU_F.tipo !== 'todas' && reuTipo(r) !== REU_F.tipo) return false;
+    if (excepto !== 'quien' && REU_F.quien !== 'todos' && reuQuien(r) !== REU_F.quien) return false;
+    if (excepto !== 'prod' && REU_F.prod !== 'todos' && reuProd(r) !== REU_F.prod) return false;
+    if (excepto !== 'sit' && REU_F.sit !== 'todas') {
+      if (REU_F.sit === 'sin' && !(r.estado === 'Sin grabacion' && !r.cerrado_por)) return false;
+      if (REU_F.sit === 'pend' && !((r.estado === 'Analizada' && !(r.correo && r.minuta)) || r.estado === 'Pendiente')) return false;
+      if (REU_F.sit === 'analizadas' && r.estado !== 'Analizada') return false;
+    }
+    return true;
+  });
 }
 
 function renderReuniones(){
@@ -1447,47 +1469,103 @@ function renderReuniones(){
   pintaReuniones();
 }
 
+function reuChips(titulo, dim, opciones){
+  var h = '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:7px;">' +
+          '<span style="font-size:10px;letter-spacing:1.2px;color:#6b7280;font-weight:700;width:86px;flex:none;">' + titulo + '</span>';
+  opciones.forEach(function(o){
+    var act = REU_F[dim] === o.v;
+    if (o.n === 0 && !act) return;
+    h += '<button data-reu-f="' + dim + '" data-reu-v="' + reuEsc(o.v) + '" style="font-size:11px;padding:5px 11px;border-radius:6px;cursor:pointer;border:1px solid ' +
+         (act?'#8b5cf6':'#374151') + ';background:' + (act?'rgba(139,92,246,.18)':'transparent') + ';color:' + (act?'#c4b5fd':'#9ca3af') +
+         ';font-weight:' + (act?'600':'400') + ';">' + reuEsc(o.t) + (o.n === null ? '' : ' <span style="opacity:.6;">' + o.n + '</span>') + '</button>';
+  });
+  return h + '</div>';
+}
+
 function pintaReuniones(){
   var p = document.getElementById('p-reuniones');
   var todas = (REU_DATA || []).filter(function(r){ return r.estado !== 'No aplica'; });
-  var recientes = todas.filter(function(r){ var w = reuSemana(r.fecha); return w === 'Esta semana' || w === 'Semana pasada'; });
-  var sinGrab = todas.filter(function(r){ return r.estado === 'Sin grabacion' && !r.cerrado_por; });
-  var pendientes = todas.filter(function(r){ return (r.estado === 'Analizada' && !(r.correo && r.minuta)) || r.estado === 'Pendiente'; });
-  var estaSem = todas.filter(function(r){ return reuSemana(r.fecha) === 'Esta semana'; });
-  var tareas = todas.reduce(function(a,r){ return a + (Number(r.tareas)||0); }, 0);
 
+  // Indicadores: foto completa, no se mueven con los filtros
+  var estaSem = todas.filter(function(r){ return reuSemana(r.fecha) === 'Esta semana'; });
+  var sinGrabT = todas.filter(function(r){ return r.estado === 'Sin grabacion' && !r.cerrado_por; });
+  var pendT = todas.filter(function(r){ return (r.estado === 'Analizada' && !(r.correo && r.minuta)) || r.estado === 'Pendiente'; });
+  var tareasT = todas.reduce(function(a,r){ return a + (Number(r.tareas)||0); }, 0);
   var badge = document.getElementById('reu-count');
-  if (badge) badge.textContent = sinGrab.length;
+  if (badge) badge.textContent = sinGrabT.length;
 
   function stat(num, lbl, color){
     return '<div class="recap-stat"><div class="recap-num" style="color:' + color + ';">' + num + '</div><div class="recap-lbl">' + lbl + '</div></div>';
   }
   var h = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;">' +
     stat(estaSem.length, 'ESTA SEMANA', '#e5e7eb') +
-    stat(sinGrab.length, 'SIN GRABACIÓN', sinGrab.length ? '#ef4444' : '#6b7280') +
-    stat(pendientes.length, 'ALGO PENDIENTE', pendientes.length ? '#f59e0b' : '#6b7280') +
-    stat(tareas, 'TAREAS GENERADAS', '#22c55e') +
+    stat(sinGrabT.length, 'SIN GRABACIÓN', sinGrabT.length ? '#ef4444' : '#6b7280') +
+    stat(pendT.length, 'ALGO PENDIENTE', pendT.length ? '#f59e0b' : '#6b7280') +
+    stat(tareasT, 'TAREAS GENERADAS', '#22c55e') +
     '</div>';
 
-  var lista = recientes;
-  if (REU_FILTRO === 'sin') lista = sinGrab;
-  else if (REU_FILTRO === 'pendientes') lista = pendientes;
-  else if (REU_FILTRO === 'todas') lista = todas;
+  function cuenta(dim, prueba){ return reuFiltra(todas, dim).filter(prueba).length; }
 
-  var chips = [['recientes','Últimas 2 semanas ('+recientes.length+')'],['sin','Sin grabación ('+sinGrab.length+')'],['pendientes','Algo pendiente ('+pendientes.length+')'],['todas','Todas ('+todas.length+')']];
-  h += '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">';
-  chips.forEach(function(c){
-    var act = REU_FILTRO === c[0];
-    h += '<button data-reu-chip="' + c[0] + '" style="font-size:11px;padding:6px 12px;border-radius:6px;cursor:pointer;border:1px solid ' + (act?'#8b5cf6':'#374151') + ';background:' + (act?'rgba(139,92,246,.18)':'transparent') + ';color:' + (act?'#c4b5fd':'#9ca3af') + ';font-weight:' + (act?'600':'400') + ';">' + c[1] + '</button>';
+  h += '<div style="background:var(--card2,rgba(255,255,255,.03));border:1px solid var(--bdr,#2a2a35);border-radius:10px;padding:11px 13px;margin-bottom:14px;">';
+
+  h += reuChips('CUÁNDO', 'semana', [
+    { v:'todas', t:'Las dos', n:cuenta('semana', function(r){ var w=reuSemana(r.fecha); return w==='Esta semana'||w==='Semana pasada'; }) },
+    { v:'Esta semana', t:'Esta semana', n:cuenta('semana', function(r){ return reuSemana(r.fecha)==='Esta semana'; }) },
+    { v:'Semana pasada', t:'Semana pasada', n:cuenta('semana', function(r){ return reuSemana(r.fecha)==='Semana pasada'; }) },
+    { v:'Anteriores', t:'Anteriores', n:cuenta('semana', function(r){ return reuSemana(r.fecha)==='Anteriores'; }) }
+  ]);
+
+  var opsDia = [{ v:'todos', t:'Todos', n:reuFiltra(todas,'dia').length }];
+  [1,2,3,4,5,6,0].forEach(function(i){
+    opsDia.push({ v:String(i), t:reuCap(REU_DIAS[i]), n:cuenta('dia', function(r){ return reuDiaIdx(r.fecha)===i; }) });
   });
-  h += '<button data-reu-reload="1" style="font-size:11px;padding:6px 12px;border-radius:6px;cursor:pointer;border:1px solid #374151;background:transparent;color:#9ca3af;margin-left:auto;">↻ Actualizar</button></div>';
+  h += reuChips('DÍA', 'dia', opsDia);
+
+  h += reuChips('CON QUIÉN', 'tipo', [
+    { v:'todas', t:'Todas', n:reuFiltra(todas,'tipo').length },
+    { v:'cliente', t:'Con cliente', n:cuenta('tipo', function(r){ return reuTipo(r)==='cliente'; }) },
+    { v:'interna', t:'Internas', n:cuenta('tipo', function(r){ return reuTipo(r)==='interna'; }) }
+  ]);
+
+  var personas = {};
+  reuFiltra(todas,'quien').forEach(function(r){ var q=reuQuien(r); personas[q]=(personas[q]||0)+1; });
+  var opsQuien = [{ v:'todos', t:'Todos', n:reuFiltra(todas,'quien').length }];
+  Object.keys(personas).sort(function(a,b){ return personas[b]-personas[a]; }).forEach(function(q){
+    if (q === '—') return;
+    opsQuien.push({ v:q, t:q, n:personas[q] });
+  });
+  h += reuChips('CONVOCÓ', 'quien', opsQuien);
+
+  var prods = {};
+  reuFiltra(todas,'prod').forEach(function(r){ var q=reuProd(r); if(q!=='—') prods[q]=(prods[q]||0)+1; });
+  var opsProd = [{ v:'todos', t:'Todos', n:reuFiltra(todas,'prod').length }];
+  Object.keys(prods).sort(function(a,b){ return prods[b]-prods[a]; }).forEach(function(q){
+    opsProd.push({ v:q, t:q, n:prods[q] });
+  });
+  if (opsProd.length > 1) h += reuChips('PRODUCTO', 'prod', opsProd);
+
+  h += reuChips('SITUACIÓN', 'sit', [
+    { v:'todas', t:'Todas', n:reuFiltra(todas,'sit').length },
+    { v:'analizadas', t:'Analizadas', n:cuenta('sit', function(r){ return r.estado==='Analizada'; }) },
+    { v:'sin', t:'Sin grabación', n:cuenta('sit', function(r){ return r.estado==='Sin grabacion' && !r.cerrado_por; }) },
+    { v:'pend', t:'Algo pendiente', n:cuenta('sit', function(r){ return (r.estado==='Analizada' && !(r.correo && r.minuta)) || r.estado==='Pendiente'; }) }
+  ]);
+
+  h += '<div style="display:flex;gap:8px;align-items:center;margin-top:4px;">' +
+       '<button data-reu-limpiar="1" style="font-size:11px;padding:5px 11px;border-radius:6px;cursor:pointer;border:1px solid #374151;background:transparent;color:#9ca3af;">Limpiar filtros</button>' +
+       '<button data-reu-reload="1" style="font-size:11px;padding:5px 11px;border-radius:6px;cursor:pointer;border:1px solid #374151;background:transparent;color:#9ca3af;">↻ Actualizar</button>' +
+       '</div></div>';
+
+  var lista = reuFiltra(todas, null);
 
   if (!lista.length) {
-    h += '<div style="color:#6b7280;padding:28px;text-align:center;font-size:13px;">Sin reuniones en este filtro.</div>';
+    h += '<div style="color:#6b7280;padding:28px;text-align:center;font-size:13px;">Ninguna reunión cumple estos filtros.</div>';
     p.innerHTML = h;
     enlazaReuniones();
     return;
   }
+
+  h += '<div style="font-size:11px;color:#6b7280;margin-bottom:8px;">Mostrando ' + lista.length + ' de ' + todas.length + '</div>';
 
   var grupos = {};
   lista.forEach(function(r){ var g = reuSemana(r.fecha); (grupos[g] = grupos[g] || []).push(r); });
@@ -1495,6 +1573,7 @@ function pintaReuniones(){
   ['Esta semana','Semana pasada','Anteriores','Sin fecha'].forEach(function(g){
     var rs = grupos[g];
     if (!rs || !rs.length) return;
+    rs.sort(function(a,b){ return (b.fecha||'').localeCompare(a.fecha||''); });
     h += '<div style="margin:18px 0 8px 0;font-size:11px;letter-spacing:1.5px;color:#6b7280;font-weight:700;">' + g.toUpperCase() + ' · ' + rs.length + '</div>';
     h += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;"><thead><tr>' +
       '<th style="text-align:left;">Día</th>' +
@@ -1516,7 +1595,7 @@ function pintaReuniones(){
         '<td style="white-space:nowrap;color:#9ca3af;">' + reuDia(r.fecha) + '</td>' +
         '<td style="max-width:280px;"><div style="font-weight:600;">' + reuEsc(r.titulo) + '</div>' +
           (r.producto ? '<div style="font-size:10px;color:#8b5cf6;letter-spacing:.5px;">' + reuEsc(r.producto) + '</div>' : '') + '</td>' +
-        '<td>' + (r.cliente ? reuEsc(r.cliente) : (r.estado === 'Interna' ? '<span style="color:#9ca3af;">Interna</span>' : '<span style="color:#4b5563;">&middot;</span>')) + '</td>' +
+        '<td>' + (r.cliente ? reuEsc(r.cliente) : (reuTipo(r) === 'interna' ? '<span style="color:#9ca3af;">Interna</span>' : '<span style="color:#4b5563;">&middot;</span>')) + '</td>' +
         '<td>' + reuPersona(r.responsable) + '</td>' +
         '<td>' + reuGente(r.externos) + '</td>' +
         '<td>' + reuBadge(r.estado, r.dias, r.cerrado_por) +
@@ -1542,8 +1621,19 @@ function pintaReuniones(){
 
 function enlazaReuniones(){
   var p = document.getElementById('p-reuniones');
-  p.querySelectorAll('[data-reu-chip]').forEach(function(b){
-    b.addEventListener('click', function(){ REU_FILTRO = b.getAttribute('data-reu-chip'); pintaReuniones(); });
+  p.querySelectorAll('[data-reu-f]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var dim = b.getAttribute('data-reu-f'), val = b.getAttribute('data-reu-v');
+      var neutro = (dim === 'dia' || dim === 'quien' || dim === 'prod') ? 'todos' : 'todas';
+      REU_F[dim] = (REU_F[dim] === val) ? neutro : val;
+      pintaReuniones();
+    });
+  });
+  p.querySelectorAll('[data-reu-limpiar]').forEach(function(b){
+    b.addEventListener('click', function(){
+      REU_F = { semana:'todas', dia:'todos', tipo:'todas', sit:'todas', quien:'todos', prod:'todos' };
+      pintaReuniones();
+    });
   });
   p.querySelectorAll('[data-reu-reload]').forEach(function(b){
     b.addEventListener('click', function(){ REU_DATA = null; renderReuniones(); });
