@@ -769,6 +769,10 @@ const TASK_NEXT_URL   = 'https://mikea.app.n8n.cloud/webhook/gr-task-next';
 // --- Limpieza CRM (workflows "GR — Limpieza (datos)" y "GR — Marcar BORRAR") ---
 const LIMPIEZA_URL = 'https://mikea.app.n8n.cloud/webhook/gr-limpieza';
 const MARK_BORRAR_URL = 'https://mikea.app.n8n.cloud/webhook/gr-mark-borrar';
+/* Tareas viven en su propio endpoint: resolver sus vinculos es caro y solo se
+   paga cuando abres ese objeto, no en cada carga de la limpieza. */
+const TAREAS_URL = 'https://mikea.app.n8n.cloud/webhook/gr-tareas';
+const BORRAR_PERDIDA_URL = 'https://mikea.app.n8n.cloud/webhook/gr-borrar-perdida';
 // Responsables conocidos (ownerId HubSpot -> nombre). Ampliable.
 const OWNERS = { '77808624': 'Migue', '82004391': 'Martha' };
 let AM_DATA = null;
@@ -1039,10 +1043,10 @@ function filtrosHTML(menu, arr, kind){
     MONTO_OPC.forEach(function(o){ H+=_chip(menu,'monto',o.id,o.label, (f.monto||0)===o.id); });
     H+='</div>';
   }
-  // Categoría (solo alertas)
-  if(menu==='alertas'){
+  // Categoría (solo alertas). En "Arreglar" manda el menu por objeto, no esta fila.
+  if(menu==='alertas' && FIX_NIVEL1==='vender'){
     H+='<div class="filters"><span class="filter-label">Categoría:</span>';
-    [['ALL','Todas'],['Cerrar','Cerrar'],['ReActivar','ReActivar'],['Higienizar','Higienizar']].forEach(function(o){ H+=_chip(menu,'categoria',o[0],o[1], (f.categoria||'ALL')===o[0]); });
+    [['ALL','Todas'],['Cerrar','Cerrar'],['ReActivar','ReActivar']].forEach(function(o){ H+=_chip(menu,'categoria',o[0],o[1], (f.categoria||'ALL')===o[0]); });
     H+='</div>';
   }
   return H;
@@ -1056,6 +1060,11 @@ function pasaFiltro(menu, it, kind){
   if(f.prod && f.prod!=='ALL'){ if(it.prod!==f.prod) return false; }
   if((kind==='deal'||kind==='alerta') && f.stage && f.stage!=='ALL'){ var sl=it.stageLabel||it.stage; if(sl!==f.stage) return false; }
   if((kind==='deal'||kind==='alerta') && f.monto){ if((it.amount||0) < f.monto) return false; }
+  if(menu==='alertas'){
+    // Nivel 1: Vender = Cerrar + ReActivar. Arreglar = Higienizar (mas las bandejas de limpieza).
+    if(FIX_NIVEL1==='arreglar'){ if(it.categoria!=='Higienizar') return false; }
+    else if(it.categoria==='Higienizar') return false;
+  }
   if(menu==='alertas' && f.categoria && f.categoria!=='ALL'){ if(it.categoria!==f.categoria) return false; }
   return true;
 }
@@ -2836,6 +2845,10 @@ let LIMP_MARKED = {};
 
 function limpBuckets(){
   var _c2=(LIMP.contactos||{}).c2||[], _c3=(LIMP.contactos||{}).c3||[], _c4=(LIMP.contactos||{}).c4||[];
+  var _e1=(LIMP.empresas||{}).e1||[];
+  var _dP=(LIMP.deals||{}).d2||[];
+  var _d3=_dP.filter(function(x){return x.unicaDeSuEmpresa;});
+  var _d4=_dP.filter(function(x){return !x.unicaDeSuEmpresa;});
   var _seen={}, _todos=[]; _c2.concat(_c3).concat(_c4).forEach(function(x){ if(x&&!_seen[x.id]){_seen[x.id]=1;_todos.push(x);} });
   return [
     {k:'ctodos',label:'Todos los contactos',warn:false,note:'Unión de las tres categorías de contactos (sin deal, empresa activa y sin email), sin duplicados.',tipo:'contact',arr:_todos},
@@ -2843,20 +2856,34 @@ function limpBuckets(){
     {k:'c3',label:'Sin deal · empresa activa',warn:true,note:'Contactos sin oportunidad propia, PERO su empresa SÍ tiene oportunidades abiertas. Revisa antes de marcar: pueden ser un segundo contacto útil de una cuenta viva. No los borres a ciegas.',tipo:'contact',arr:(LIMP.contactos||{}).c3||[]},
     {k:'c4',label:'Sin email',warn:false,note:'Contactos sin correo electrónico. No se les puede contactar por email, así que aportan poco y saturan el CRM.',tipo:'contact',arr:(LIMP.contactos||{}).c4||[]},
     {k:'d1',label:'Deals sin contacto',warn:false,note:'Oportunidades (deals) sin ningún contacto asociado. No se pueden trabajar porque no hay a quién escribirle.',tipo:'deal',arr:(LIMP.deals||{}).d1||[]},
-    {k:'d2',label:'Deals perdidos',warn:false,note:'Oportunidades marcadas como Perdida que nunca pasaron de la fase de prospección (no llegaron a Atracción). Se dieron por perdidas antes de arrancar; prácticamente basura de prospección.',tipo:'deal',arr:(LIMP.deals||{}).d2||[]}
+    {k:'d2',label:'Deals perdidos',warn:false,note:'Oportunidades marcadas como Perdida que nunca pasaron de la fase de prospección (no llegaron a Atracción). Se dieron por perdidas antes de arrancar; prácticamente basura de prospección.',tipo:'deal',arr:(LIMP.deals||{}).d2||[]},
+    /* Una perdida solo se borra con su empresa si es la unica que esa empresa
+       tiene. Si comparte, la empresa se queda: puede seguir viva. */
+    {k:'d3',label:'Perdida · única de su empresa',warn:false,note:'Oportunidades perdidas cuya empresa no tiene ninguna otra. Al borrarlas se va también la ficha de la empresa y no queda residuo.',tipo:'deal',arr:_d3},
+    {k:'d4',label:'Perdida · la empresa tiene más',warn:true,note:'Oportunidades perdidas cuya empresa SÍ tiene otras. Aquí solo se borra la oportunidad: la empresa se queda porque puede seguir viva.',tipo:'deal',arr:_d4},
+    /* e3 no viaja como lista propia: se deriva de e1 con la marca sinOportunidades. */
+    {k:'e1',label:'Sin contactos',warn:false,note:'Empresas sin una sola persona asociada. No hay a quién escribirle: la cuenta existe pero no se puede trabajar.',tipo:'company',arr:_e1},
+    {k:'e2',label:'Sin oportunidades',warn:false,note:'Empresas sin ninguna oportunidad, ni abierta ni cerrada. Nunca se les ha abierto un negocio.',tipo:'company',arr:(LIMP.empresas||{}).e2||[]},
+    {k:'e3',label:'Sin contactos ni oportunidades',warn:false,note:'Empresas completamente vacías: ni una persona ni un negocio. Son las candidatas más claras a borrar.',tipo:'company',arr:_e1.filter(function(x){return x.sinOportunidades;})}
   ];
 }
 
+var LIMP_CARGANDO=false;
 async function loadLimpieza(){
+  if(LIMP_CARGANDO) return;
+  LIMP_CARGANDO=true;
   var cEl=document.getElementById('limpieza-cards');
   if(cEl && !LIMP) cEl.innerHTML='<div class="loading">Cargando candidatos de limpieza…</div>';
   try{
     var r=await fetch(LIMPIEZA_URL);
     if(!r.ok) throw new Error('HTTP '+r.status);
     LIMP=await r.json();
-    if(currentTab==='alertas') renderLimpieza();
+    /* Repinta el menu completo: los conteos por objeto salen de esta carga. */
+    if(currentTab==='alertas') renderAlertasConLimpieza();
   }catch(e){
     if(cEl) cEl.innerHTML='<div class="error">Error cargando limpieza: '+e.message+'<br>URL: '+LIMPIEZA_URL+'</div>';
+  }finally{
+    LIMP_CARGANDO=false;
   }
 }
 
@@ -2868,14 +2895,19 @@ function renderLimpieza(){
   var buckets=limpBuckets();
   if(!buckets.some(function(b){return b.k===LIMP_FILTER;})) LIMP_FILTER='c2';
   var active=buckets.filter(function(b){return b.k===LIMP_FILTER;})[0]||buckets[0];
-  var chips=buckets.map(function(b){return '<button class="chip'+(LIMP_FILTER===b.k?' active':'')+'" data-limp-chip="'+b.k+'">'+b.label+' <b>'+b.arr.length+'</b></button>';}).join(' ');
   var _nc=active.warn?'var(--yellow)':'var(--cyan)';var _nbg=active.warn?'rgba(245,158,11,.08)':'var(--bg-3)';var _ntx=active.warn?'#FCD34D':'var(--text-dim)';
   var note=active.note?('<div style="background:'+_nbg+';border:1px solid var(--border);border-left:3px solid '+_nc+';border-radius:8px;padding:8px 11px;margin:6px 0 2px;font-size:12px;line-height:1.45;color:'+_ntx+'">'+(active.warn?'⚠️ ':'ℹ️ ')+active.note+'</div>'):'';
-  if(fEl){
-    fEl.innerHTML='<div class="filters"><span class="filter-label">🧹 Limpieza:</span>'+chips+'</div>'+note;
-    fEl.querySelectorAll('[data-limp-chip]').forEach(function(c){c.addEventListener('click',function(){LIMP_FILTER=c.getAttribute('data-limp-chip');renderLimpieza();});});
-  }
+  /* Si la consulta se quedo corta hay que decirlo. Mostrar menos en silencio
+     hace creer que el CRM esta mas limpio de lo que esta. */
+  var _t=(LIMP.truncado||{});
+  var _tk=(LIMP_FILTER==='c2'||LIMP_FILTER==='c3'||LIMP_FILTER==='ctodos')?'c2c3':(LIMP_FILTER==='e3'?'e1':LIMP_FILTER);
+  var _tr=_t[_tk];
+  var aviso=_tr?('<div style="background:rgba(239,68,68,.10);border:1px solid var(--border);border-left:3px solid #EF4444;border-radius:8px;padding:8px 11px;margin:6px 0 2px;font-size:12px;line-height:1.45;color:#FCA5A5">🚨 Esta lista está incompleta: HubSpot reporta <b>'+_tr.hay+'</b> y aquí solo caben <b>'+_tr.mostrados+'</b>. Lo que no ves sigue sucio.</div>'):'';
+  /* Los chips de bandeja ya viven en el menu por objeto (fixMenuHTML).
+     Aqui solo queda la nota que explica que es cada categoria. */
+  if(fEl){ fEl.innerHTML=aviso+note; }
   var esDeal=(active.tipo==='deal');
+  var esEmpresa=(active.tipo==='company');
   var _cat=(typeof CAT==='function')?(CAT()||{}):{};
   var _stMap={}; ((_cat.stages)||[]).forEach(function(s){ _stMap[String(s.id)]=s.corto||s.label||s.id; });
   var stLabel=function(id){ return _stMap[String(id||'')]||(id||'—'); };
@@ -2883,16 +2915,24 @@ function renderLimpieza(){
   var ageOf=function(cd){ if(!cd) return '—'; var f=new Date(cd); if(isNaN(f)) return '—'; return Math.floor((Date.now()-f)/86400000)+'d'; };
   var thead=esDeal
     ? '<tr><th>Deal</th><th>Producto</th><th>Stage</th><th style="text-align:center;">Días alta</th><th style="width:1%"></th></tr>'
+    : esEmpresa
+    ? '<tr><th>Empresa</th><th>Dominio</th><th style="text-align:center;">Contactos</th><th style="text-align:center;">Oportunidades</th><th style="text-align:center;">Días alta</th><th style="width:1%"></th></tr>'
     : '<tr><th>Nombre</th><th>Puesto</th><th>Empresa</th><th>Teléfono</th><th>Empresa con deals</th><th style="width:1%"></th></tr>';
   var rows=active.arr.map(function(it){
     var marked=!!LIMP_MARKED[it.id];
-    var orig=esDeal?(it.nombre||''):(it.apellido||'');
-    var hsType=esDeal?'0-3':'0-1';
+    var orig=(esDeal||esEmpresa)?(it.nombre||''):(it.apellido||'');
+    var hsType=esDeal?'0-3':(esEmpresa?'0-2':'0-1');
     var hsUrl='https://app.hubspot.com/contacts/49671716/record/'+hsType+'/'+it.id;
     var vinc=esDeal
       ?'<button class="btn-action grf-open" data-acc="vincularContacto" data-did="'+it.id+'" data-nom="'+encodeURIComponent(it.nombre||'')+'">Vincular</button> '
       :'<button class="btn-action grf-open" data-acc="vincularDeals" data-cid="'+it.id+'" data-emp="'+encodeURIComponent(it.empresa||'')+'" data-eml="'+encodeURIComponent(it.email||'')+'" data-nom="'+encodeURIComponent(it.nombre||'')+'">Vincular</button> ';
-    if(!esDeal && !it.empresa) vinc='';
+    /* En perdidas la accion es borrar, no vincular: ya se dieron por muertas. */
+    if(esDeal && (LIMP_FILTER==='d3'||LIMP_FILTER==='d4')){
+      vinc='<button class="btn-action limp-borrar" data-id="'+it.id+'" data-cid="'+(LIMP_FILTER==='d3'?(it.companyId||''):'')+'" data-nom="'+encodeURIComponent(it.nombre||'')+'" style="background:#DB0540;border:none;color:#fff;font-weight:700">'+(LIMP_FILTER==='d3'?'Borrar con empresa':'Borrar oportunidad')+'</button> ';
+    }
+    /* En empresas no hay a qué vincular desde aquí: la acción es marcar o dejarla. */
+    if(esEmpresa) vinc='';
+    else if(!esDeal && !it.empresa) vinc='';
     var accion=vinc+(marked
       ?'<span style="color:var(--mint);font-weight:700;font-size:11px">✓</span> <button class="btn-action limp-undo" data-tipo="'+active.tipo+'" data-id="'+it.id+'" data-orig="'+encodeURIComponent(orig)+'">Deshacer</button>'
       :'<button class="btn-action limp-mark" data-tipo="'+active.tipo+'" data-id="'+it.id+'" data-orig="'+encodeURIComponent(orig)+'">Marcar</button>');
@@ -2900,15 +2940,35 @@ function renderLimpieza(){
     if(esDeal){
       return '<tr'+(marked?' style="opacity:.5"':'')+'><td>'+nombreCell+'</td><td><span class="tag tag-atraccion">'+prodDeName(it.nombre)+'</span></td><td style="color:var(--text-dim);font-size:12px">'+stLabel(it.stage)+'</td><td style="text-align:center;font-size:12px;color:var(--text-dim)">'+ageOf(it.createdate)+'</td><td>'+accion+'</td></tr>';
     }
+    if(esEmpresa){
+      var cero=function(n){ return Number(n||0)===0 ? '<span style="color:var(--yellow);font-weight:700">0</span>' : String(n); };
+      return '<tr'+(marked?' style="opacity:.5"':'')+'><td>'+nombreCell+'</td><td style="font-size:12px;color:var(--text-dim)">'+(it.dominio||'—')+'</td><td style="text-align:center;font-size:12px">'+cero(it.contactos)+'</td><td style="text-align:center;font-size:12px">'+cero(it.oportunidades)+'</td><td style="text-align:center;font-size:12px;color:var(--text-dim)">'+ageOf(it.createdate)+'</td><td>'+accion+'</td></tr>';
+    }
     var badge=it.empresaConDeals?'<span style="color:var(--yellow);font-size:11px">● sí</span>':'<span style="color:var(--text-mute);font-size:11px">—</span>';
     return '<tr'+(marked?' style="opacity:.5"':'')+'><td>'+nombreCell+'</td><td style="font-size:12px;color:var(--text-dim)">'+(it.puesto||'—')+'</td><td style="font-size:12px;color:var(--text-dim)">'+(it.empresa||'—')+'</td><td style="font-size:12px;color:var(--text-dim)">'+(it.telefono||'—')+'</td><td>'+badge+'</td><td>'+accion+'</td></tr>';
   }).join('');
   var tabla=active.arr.length?('<table class="tbl"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table>'):'<div class="empty">Sin registros en esta categoría 🎉</div>';
   if(cEl){
     cEl.innerHTML='<div class="section-title" style="margin-top:8px"><span class="section-count">🧹 '+active.label+' · '+active.arr.length+'</span><span style="margin-left:auto;color:var(--text-mute);font-size:11px">solo marca BORRAR · el borrado lo haces tú en HubSpot</span></div>'+tabla;
+    cEl.querySelectorAll('.limp-borrar').forEach(function(b){b.addEventListener('click',function(){borrarPerdida(b.getAttribute('data-id'),b.getAttribute('data-cid'),decodeURIComponent(b.getAttribute('data-nom')),b);});});
     cEl.querySelectorAll('.limp-mark').forEach(function(b){b.addEventListener('click',function(){markBorrar(b.getAttribute('data-tipo'),b.getAttribute('data-id'),decodeURIComponent(b.getAttribute('data-orig')),false,b);});});
     cEl.querySelectorAll('.limp-undo').forEach(function(b){b.addEventListener('click',function(){markBorrar(b.getAttribute('data-tipo'),b.getAttribute('data-id'),decodeURIComponent(b.getAttribute('data-orig')),true,b);});});
   }
+}
+
+/* Borrar de verdad, no marcar: estas ya estan perdidas. Si viene companyId, la
+   empresa se va con ella porque no tiene ninguna otra oportunidad. */
+async function borrarPerdida(dealId, companyId, nombre, btn){
+  var conEmpresa = !!companyId;
+  if(!confirm('Se va a borrar la oportunidad "'+nombre+'"'+(conEmpresa?' y también su empresa, que no tiene ninguna otra.':'.')+'\n\nVa a la papelera de HubSpot: se puede recuperar 90 días.')) return;
+  if(btn){ btn.disabled=true; btn.textContent='Borrando…'; }
+  try{
+    var r=await fetch(BORRAR_PERDIDA_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dealId:dealId, companyId:companyId||''})});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    LIMP_MARKED[dealId]=true;
+    taskToast(conEmpresa?'Oportunidad y empresa borradas':'Oportunidad borrada', true);
+    renderLimpieza();
+  }catch(e){ if(btn){btn.disabled=false;btn.textContent='Borrar';} taskToast('Error: '+e.message,false); }
 }
 
 async function markBorrar(tipo,id,nombreActual,quitar,btn){
@@ -2922,33 +2982,361 @@ async function markBorrar(tipo,id,nombreActual,quitar,btn){
   }catch(e){ if(btn){btn.disabled=false;btn.textContent=quitar?'Deshacer':'Marcar para borrar';} taskToast('Error: '+e.message,false); }
 }
 
-let ALERTAS_MODE='alertas';
+/* =========================================================================
+   MENU DE DOS NIVELES DE LA PESTANA ALERTAS
+   Nivel 1: que vengo a hacer  -> Vender | Arreglar
+   Nivel 2 (solo Arreglar): sobre que objeto -> Oportunidad | Contacto
+   Nivel 3: la opcion concreta, que puede venir de dos fuentes:
+     src 'alertas' = fila de DATA.alertas16 (categoria Higienizar)
+     src 'limp'    = bandeja de limpieza (LIMPIEZA_URL)
+   El usuario ve un solo arbol; por dentro cada opcion sabe de donde sale.
+   ========================================================================= */
+var FIX_NIVEL1 = 'vender';       // 'vender' | 'arreglar'
+var FIX_OBJ    = 'oportunidad';  // 'oportunidad' | 'contacto'
+var FIX_OPC    = 'ALL';          // clave de la opcion activa dentro del objeto
 
-function limpSwitchHTML(){
-  return '<div class="filters" style="margin-bottom:14px;gap:6px">'
-    +'<button class="chip'+(ALERTAS_MODE==='alertas'?' active':'')+'" data-amode="alertas" style="font-weight:700">🔔 Alertas</button>'
-    +'<button class="chip'+(ALERTAS_MODE==='limpieza'?' active':'')+'" data-amode="limpieza" style="font-weight:700">🧹 Limpieza</button>'
-    +'</div>';
+/* Objetos que todavia no tienen de donde leer. Se muestran apagados a proposito:
+   esconderlos daria la falsa impresion de que el CRM ya esta limpio de eso. */
+var FIX_OBJ_PENDIENTES = [];
+
+/* Bandeja de tareas: endpoint propio, se carga la primera vez que abres el objeto. */
+var TAREAS = null, TAREAS_CARGANDO = false;
+async function loadTareas(){
+  if(TAREAS_CARGANDO) return;
+  TAREAS_CARGANDO = true;
+  try{
+    var r = await fetch(TAREAS_URL);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    TAREAS = await r.json();
+    if(currentTab==='alertas') renderAlertasConLimpieza();
+  }catch(e){
+    var c=document.getElementById('limpieza-cards');
+    if(c) c.innerHTML='<div class="error">Error cargando tareas: '+e.message+'</div>';
+  }finally{
+    TAREAS_CARGANDO = false;
+  }
 }
 
-function wireModeSwitch(){
+function tareasBuckets(){
+  var T=(TAREAS&&TAREAS.tareas)||{};
+  return [
+    {k:'t1',label:'Sin oportunidad',          arr:T.t1||[], note:'Tareas que no cuelgan de ningún negocio. Se trabajan a ciegas: nadie sabe a qué venta pertenecen.'},
+    {k:'t2',label:'Sin contacto',             arr:T.t2||[], note:'Tareas sin persona asociada. Suelen ser las automáticas, que se crean colgadas del negocio pero no de quien lo atiende.'},
+    {k:'t3',label:'Sin responsable',          arr:T.t3||[], note:'Tareas que no son de nadie. Nadie las va a hacer.'},
+    {k:'t4',label:'Vencida y sin responsable',arr:T.t4||[], note:'Ya pasó su fecha y además no tienen dueño. Son las más muertas de todas.'}
+  ];
+}
+
+function fixOpciones(obj){
+  if(obj==='tarea'){
+    return tareasBuckets().map(function(b){ return {k:b.k, label:b.label, src:'tareas', bucket:b.k}; });
+  }
+  if(obj==='empresa'){
+    return [
+      {k:'e3', label:'Sin contactos ni oportunidades', src:'limp', bucket:'e3'},
+      {k:'e1', label:'Sin contactos',                  src:'limp', bucket:'e1'},
+      {k:'e2', label:'Sin oportunidades',              src:'limp', bucket:'e2'}
+    ];
+  }
+  if(obj==='contacto'){
+    return [
+      {k:'ctodos', label:'Todos',                     src:'limp', bucket:'ctodos'},
+      {k:'c2',     label:'Sin oportunidad',           src:'limp', bucket:'c2'},
+      {k:'c3',     label:'Sin oportunidad · empresa viva', src:'limp', bucket:'c3'},
+      {k:'c4',     label:'Sin correo',                src:'limp', bucket:'c4'}
+    ];
+  }
+  var o=[{k:'ALL', label:'Todas', src:'alertas', accion:'ALL'}];
+  ACCION_DEFS.forEach(function(d){
+    if(d.cat!=='Higienizar') return;
+    /* 'vincularContacto' se omite a proposito: es el mismo problema que la bandeja
+       'Sin contacto', medido sobre un universo mas chico. Dos botones para lo mismo
+       hacian que la misma oportunidad apareciera dos veces. Manda la bandeja. */
+    if(d.id==='vincularContacto') return;
+    o.push({k:d.id, label:d.icon+' '+d.label, src:'alertas', accion:d.id});
+  });
+  o.push({k:'d1', label:'📇 Sin contacto',              src:'limp', bucket:'d1'});
+  o.push({k:'d2', label:'🗑️ Perdida que nunca arrancó', src:'limp', bucket:'d2'});
+  o.push({k:'d3', label:'🧨 Perdida · única de su empresa', src:'limp', bucket:'d3'});
+  o.push({k:'d4', label:'🗑️ Perdida · la empresa tiene más', src:'limp', bucket:'d4'});
+  return o;
+}
+
+function fixOpcionActiva(){
+  var ops=fixOpciones(FIX_OBJ);
+  var hit=ops.filter(function(o){ return o.k===FIX_OPC; })[0];
+  if(!hit){ FIX_OPC=ops[0].k; hit=ops[0]; }
+  return hit;
+}
+
+/* Conteo de cada opcion. '…' mientras la bandeja de limpieza no ha cargado. */
+function fixConteo(op){
+  if(op.src==='tareas'){
+    if(!TAREAS) return '…';
+    var b=tareasBuckets().filter(function(x){ return x.k===op.bucket; })[0];
+    return b ? String(b.arr.length) : '0';
+  }
+  if(op.src==='limp'){
+    if(!LIMP) return '…';
+    var b=limpBuckets().filter(function(x){ return x.k===op.bucket; })[0];
+    return b ? String(b.arr.length) : '0';
+  }
+  var base=((DATA && DATA.alertas16)||[]).filter(function(a){
+    return a.accion!=='setearDealtype' && a.categoria==='Higienizar';
+  });
+  if(op.accion==='ALL') return String(base.length);
+  return String(base.filter(function(a){ return a.accion===op.accion; }).length);
+}
+
+function fixMenuHTML(){
+  var H='<div class="filters" style="margin-bottom:8px;gap:6px">'
+    +'<button class="chip'+(FIX_NIVEL1==='vender'?' active':'')+'" data-fix1="vender" style="font-weight:700">💼 Vender</button>'
+    +'<button class="chip'+(FIX_NIVEL1==='arreglar'?' active':'')+'" data-fix1="arreglar" style="font-weight:700">🧹 Arreglar</button>'
+    +'</div>';
+  if(FIX_NIVEL1!=='arreglar') return H;
+
+  H+='<div class="filters" style="margin-bottom:8px;gap:6px"><span class="filter-label">¿Qué arreglas?</span>'
+    +'<button class="chip'+(FIX_OBJ==='oportunidad'?' active':'')+'" data-fixobj="oportunidad">💠 Oportunidad</button>'
+    +'<button class="chip'+(FIX_OBJ==='contacto'?' active':'')+'" data-fixobj="contacto">📇 Contacto</button>'
+    +'<button class="chip'+(FIX_OBJ==='empresa'?' active':'')+'" data-fixobj="empresa">🏢 Empresa</button>'
+    +'<button class="chip'+(FIX_OBJ==='tarea'?' active':'')+'" data-fixobj="tarea">✅ Tarea</button>';
+  FIX_OBJ_PENDIENTES.forEach(function(p){
+    H+='<button class="chip" disabled title="'+p.nota+'" style="opacity:.45;cursor:not-allowed">'+p.label+' <b>—</b></button>';
+  });
+  H+='</div>';
+
+  var ops=fixOpciones(FIX_OBJ);
+  H+='<div class="filters" style="margin-bottom:6px;gap:6px"><span class="filter-label">Problema:</span>';
+  ops.forEach(function(o){
+    H+='<button class="chip'+(FIX_OPC===o.k?' active':'')+'" data-fixopc="'+o.k+'">'+o.label+' <b>'+fixConteo(o)+'</b></button>';
+  });
+  H+='</div>';
+  H+=fixUniversoHTML(fixOpcionActiva());
+  return H;
+}
+
+/* De que universo habla el numero que estas viendo. Sin esto, dos listas del mismo
+   problema con cifras distintas parecen un error, cuando en realidad miran cosas
+   distintas: las alertas solo ven el embudo vivo, la bandeja ve todo el CRM. */
+function fixUniversoHTML(op){
+  if(!op) return '';
+  var txt;
+  if(op.src==='alertas'){
+    var vivas=((typeof DATA!=='undefined' && DATA && DATA.deals) ? DATA.deals.length : 0);
+    txt='Cuenta solo el embudo vivo'+(vivas?(' — '+vivas+' oportunidades abiertas'):'')+'. No incluye ganadas ni perdidas.';
+  } else if(op.src==='tareas'){
+    txt='Cuenta todas las tareas pendientes de HubSpot, de cualquier etapa.';
+  } else if(FIX_OBJ==='oportunidad'){
+    txt='Cuenta todo HubSpot, incluidas ganadas y perdidas. Por eso da más que las listas de arriba.';
+  } else {
+    txt='Cuenta todo el CRM, sin filtrar por etapa.';
+  }
+  return '<div style="margin:0 0 10px;font-size:11px;color:var(--text-mute)">🔎 '+txt+'</div>';
+}
+
+function wireFixMenu(){
   var p=document.getElementById('p-alertas'); if(!p) return;
-  p.querySelectorAll('[data-amode]').forEach(function(b){ b.addEventListener('click',function(){ ALERTAS_MODE=b.getAttribute('data-amode'); renderAlertasConLimpieza(); }); });
+  p.querySelectorAll('[data-fix1]').forEach(function(b){ b.addEventListener('click',function(){
+    FIX_NIVEL1=b.getAttribute('data-fix1');
+    FILT.alertas.categoria='ALL'; FILT.alertas.accion='ALL';
+    if(FIX_NIVEL1==='arreglar'){ FIX_OPC=fixOpciones(FIX_OBJ)[0].k; }
+    renderAlertasConLimpieza();
+  }); });
+  p.querySelectorAll('[data-fixobj]').forEach(function(b){ b.addEventListener('click',function(){
+    FIX_OBJ=b.getAttribute('data-fixobj');
+    FIX_OPC=fixOpciones(FIX_OBJ)[0].k;
+    renderAlertasConLimpieza();
+  }); });
+  p.querySelectorAll('[data-fixopc]').forEach(function(b){ b.addEventListener('click',function(){
+    FIX_OPC=b.getAttribute('data-fixopc');
+    renderAlertasConLimpieza();
+  }); });
+}
+
+function renderTareas(){
+  var fEl=document.getElementById('limpieza-filters');
+  var cEl=document.getElementById('limpieza-cards');
+  if(!cEl) return;
+  if(!TAREAS){ cEl.innerHTML='<div class="loading">Cargando tareas…</div>'; loadTareas(); return; }
+
+  var b=tareasBuckets().filter(function(x){ return x.k===FIX_OPC; })[0]||tareasBuckets()[0];
+  var _t=(TAREAS.truncado||{}).tareas;
+  var aviso=_t?('<div style="background:rgba(239,68,68,.10);border:1px solid var(--border);border-left:3px solid #EF4444;border-radius:8px;padding:8px 11px;margin:6px 0 2px;font-size:12px;color:#FCA5A5">🚨 Esta lista está incompleta: HubSpot reporta <b>'+_t.hay+'</b> y aquí solo caben <b>'+_t.mostrados+'</b>.</div>'):'';
+  if(fEl) fEl.innerHTML=aviso+'<div style="background:var(--bg-3);border:1px solid var(--border);border-left:3px solid var(--cyan);border-radius:8px;padding:8px 11px;margin:6px 0 2px;font-size:12px;line-height:1.45;color:var(--text-dim)">ℹ️ '+b.note+'</div>';
+
+  var _fecha=function(s){ if(!s) return '—'; var d=new Date(s); if(isNaN(d)) return '—'; return d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'2-digit'}); };
+  var _venc=function(s){ if(!s) return false; var d=new Date(s); return !isNaN(d) && d.getTime()<Date.now(); };
+  /* El responsable real vive en el marker del asunto, no en el owner de HubSpot:
+     el portal solo tiene dos owners y no dicen quien ejecuta. El owner es respaldo. */
+  var _quien=function(t){
+    var m=null; try{ m=personaFromSubject(t.asunto); }catch(e){}
+    if(m) return grEsc(m);
+    if(t.ownerId){ try{ return ownerIdToPersona(String(t.ownerId))+' <span style="color:var(--text-mute);font-size:10px">(por owner)</span>'; }catch(e){ return 'Otro'; } }
+    return '<span style="color:var(--yellow);font-weight:700">sin marcar</span>';
+  };
+
+  /* Responsables asignables: los que existen de verdad en HubSpot, no una lista
+     escrita a mano. Si alguien no tiene usuario en el CRM, no puede recibir tareas. */
+  var _personas=((TAREAS||{}).responsables||[]).map(function(p){ return {ownerId:p.id, label:p.nombre}; });
+
+  var filas=b.arr.map(function(t){
+    var url='https://app.hubspot.com/tasks/49671716/view/all/task/'+t.id;
+    var vencida=_venc(t.vence);
+    var hecho=!!TAREAS_HECHAS[t.id];
+
+    var acciones='';
+    if(hecho){
+      acciones='<span style="color:var(--mint);font-size:11px;font-weight:700">✓ listo · aprieta ↻ Actualizar</span>';
+    } else {
+      /* Vincular es la accion principal: una tarea que no cuelga de su negocio y
+         su gente es irrastreable. Ponerle responsable no la vuelve rastreable. */
+      if(!t.tieneOportunidad || !t.tieneContacto){
+        acciones+='<button class="btn-action tar-vinc" data-id="'+t.id+'" data-asunto="'+encodeURIComponent(t.asunto)+'" style="background:#02ADBA;border:none;color:#fff;font-weight:700;margin-right:5px">Vincular</button>';
+      }
+      acciones+='<button class="btn-action tar-cerrar" data-id="'+t.id+'">Cerrar</button>';
+      /* Secundario: el owner de HubSpot casi nunca es quien ejecuta. */
+      if(!t.ownerId && _personas.length){
+        acciones+='<select class="tar-owner" data-id="'+t.id+'" style="background:var(--bg-3);border:1px solid var(--border);color:var(--text-dim);border-radius:7px;padding:3px 6px;font-size:10px;margin-left:5px"><option value="">owner…</option>'
+          +_personas.map(function(p){ return '<option value="'+p.ownerId+'">'+grEsc(p.label||p.id)+'</option>'; }).join('')+'</select>';
+      }
+    }
+
+    return '<tr'+(hecho?' style="opacity:.5"':'')+'><td><a href="'+url+'" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600">'+grEsc(t.asunto)+'</a></td>'
+      +'<td style="font-size:12px;color:var(--text-dim)">'+_quien(t)+'</td>'
+      +'<td style="font-size:12px;'+(vencida?'color:#FCA5A5;font-weight:700':'color:var(--text-dim)')+'">'+_fecha(t.vence)+(vencida?' ⚠️':'')+'</td>'
+      +'<td style="text-align:center;font-size:12px">'+(t.tieneOportunidad?'<span style="color:var(--mint)">sí</span>':'<span style="color:var(--yellow);font-weight:700">no</span>')+'</td>'
+      +'<td style="text-align:center;font-size:12px">'+(t.tieneContacto?'<span style="color:var(--mint)">sí</span>':'<span style="color:var(--yellow);font-weight:700">no</span>')+'</td>'
+      +'<td style="white-space:nowrap">'+acciones+'</td></tr>';
+  }).join('');
+
+  var tabla=b.arr.length
+    ? '<table class="tbl"><thead><tr><th>Tarea</th><th>Responsable</th><th>Vence</th><th style="text-align:center">Oportunidad</th><th style="text-align:center">Contacto</th><th style="width:1%"></th></tr></thead><tbody>'+filas+'</tbody></table>'
+    : '<div class="empty">Sin tareas en esta categoría 🎉</div>';
+
+  cEl.innerHTML='<div class="section-title" style="margin-top:8px"><span class="section-count">✅ '+b.label+' · '+b.arr.length+'</span><span style="margin-left:auto;color:var(--text-mute);font-size:11px">de '+(((TAREAS||{}).resumen||{}).pendientes||0)+' tareas pendientes</span></div>'+tabla;
+
+  cEl.querySelectorAll('.tar-cerrar').forEach(function(x){ x.addEventListener('click',function(){ accionTarea('cerrar', x.getAttribute('data-id'), null, x); }); });
+  cEl.querySelectorAll('.tar-owner').forEach(function(x){ x.addEventListener('change',function(){ if(x.value) accionTarea('asignar', x.getAttribute('data-id'), x.value, x); }); });
+  cEl.querySelectorAll('.tar-vinc').forEach(function(x){ x.addEventListener('click',function(){ abrirVincularTarea(x.getAttribute('data-id'), decodeURIComponent(x.getAttribute('data-asunto'))); }); });
+}
+
+/* La empresa de una tarea vive en su asunto, por nomenclatura: EMPRESA — Accion.
+   De ahi sale la busqueda; el motor hace el resto. */
+function empresaDeAsunto(asunto){
+  var a=String(asunto||'');
+  if(a.indexOf(' — ')>0) return a.split(' — ')[0].trim();
+  if(a.indexOf(' - ')>0) return a.split(' - ')[0].trim();
+  if(a.indexOf('_')>0){ var t=a.split('_'); return (t.length>1 ? t[1] : t[0]).trim(); }
+  return a.trim();
+}
+
+var TAR_VINC={taskId:null, asunto:''};
+
+async function abrirVincularTarea(taskId, asunto, companyId, empresaManual){
+  TAR_VINC={taskId:taskId, asunto:asunto};
+  var empresa=empresaManual||empresaDeAsunto(asunto);
+  grfSet('Vincular tarea','<div style="color:#9CA3AF">Buscando <b>'+grfEsc(empresa)+'</b>…</div>', false);
+  try{
+    var r=await fetch(GRF_COMPANY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({empresa:empresa, companyId:companyId||''})});
+    var d=await r.json();
+    var cab=grfEmpresaHTML(d, {empresa:empresa});
+    var dls=(d&&d.deals)||[], cts=(d&&d.contactos)||[];
+
+    var H=cab+'<div style="color:#9CA3AF;margin-bottom:10px;font-size:12px">Tarea: <b style="color:#F3F4F6">'+grfEsc(asunto)+'</b></div>';
+    if(dls.length){
+      H+='<div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:4px">Oportunidad</div>'
+        +dls.map(function(x){ return '<label style="display:flex;gap:9px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)"><input type="radio" name="tv-deal" class="tv-deal" value="'+x.id+'"><span style="font-size:12px"><b>'+grfEsc(x.nombre)+'</b></span></label>'; }).join('');
+    }
+    if(cts.length){
+      H+='<div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin:12px 0 4px">Contacto</div>'
+        +cts.map(function(c){ return '<label style="display:flex;gap:9px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)"><input type="checkbox" class="tv-ct" value="'+c.id+'"><span style="font-size:12px"><b>'+grfEsc(c.nombre)+'</b>'+(c.puesto?('<span style="color:#9CA3AF"> · '+grfEsc(c.puesto)+'</span>'):'')+'</span></label>'; }).join('');
+    }
+    if(!dls.length && !cts.length){ H+='<div style="color:#FCD34D">Esta empresa no tiene nada a que ligar la tarea.</div>'; }
+
+    /* Sin esto el boton es un callejon sin salida justo cuando mas se necesita:
+       cuando el nombre del asunto no coincide con como esta escrita la empresa. */
+    H+='<div style="margin-top:12px;border-top:1px solid #2A3142;padding-top:10px">'
+      +'<div style="font-size:11px;color:#6B7280;margin-bottom:5px">¿No es la correcta? Búscala por otro nombre:</div>'
+      +'<div style="display:flex;gap:6px"><input id="tv-buscar" value="'+grfEsc(empresa)+'" style="flex:1;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;border-radius:7px;padding:6px 9px;font-size:12px">'
+      +'<button id="tv-buscar-btn" style="background:#1f2937;border:1px solid #374151;border-radius:7px;padding:6px 12px;color:#D1D5DB;font-size:12px;cursor:pointer">Buscar</button></div></div>';
+    grfSet('Vincular tarea', H, (dls.length||cts.length)>0);
+    GRF.accion='vincularTarea';
+    document.querySelectorAll('.grf-cand').forEach(function(b){
+      b.addEventListener('click', function(){ abrirVincularTarea(taskId, asunto, b.getAttribute('data-cid')); });
+    });
+    var relanzar=function(){ var v=document.getElementById('tv-buscar').value.trim(); if(v) abrirVincularTarea(taskId, asunto, null, v); };
+    document.getElementById('tv-buscar-btn').addEventListener('click', relanzar);
+    document.getElementById('tv-buscar').addEventListener('keydown', function(ev){ if(ev.key==='Enter') relanzar(); });
+  }catch(e){ grfSet('Vincular tarea','<div style="color:#DB0540">Error: '+grfEsc(e.message)+'</div>', false); }
+}
+
+async function guardarVincularTarea(){
+  var deal=document.querySelector('.tv-deal:checked');
+  var cts=[].slice.call(document.querySelectorAll('.tv-ct:checked')).map(function(x){return x.value;});
+  if(!deal && !cts.length){ grfStatus('Marca al menos una oportunidad o un contacto.','#FCD34D'); return; }
+  grfStatus('Vinculando…','#9CA3AF');
+  var ok=0, total=(deal?1:0)+cts.length;
+  if(deal){
+    try{ var r=await fetch(TASK_LINK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({taskId:TAR_VINC.taskId, objeto:'deals', toId:deal.value})}); if(r.ok) ok++; }catch(e){}
+  }
+  for(var i=0;i<cts.length;i++){
+    try{ var r2=await fetch(TASK_LINK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({taskId:TAR_VINC.taskId, objeto:'contacts', toId:cts[i]})}); if(r2.ok) ok++; }catch(e){}
+  }
+  grfStatus('✓ '+ok+' de '+total+' vinculados. Aprieta ↻ Actualizar.','#62D175');
+  TAREAS_HECHAS[TAR_VINC.taskId]=true;
+  setTimeout(function(){ grfCerrar(); renderTareas(); }, 1200);
+}
+
+/* Marcadas en esta sesion. El dato real vuelve al apretar Actualizar. */
+var TAREAS_HECHAS = {};
+const TASK_LINK_URL = 'https://mikea.app.n8n.cloud/webhook/gr-task-link';
+
+async function accionTarea(que, taskId, valor, el){
+  if(el) el.disabled=true;
+  var url, cuerpo;
+  if(que==='cerrar'){       url=TASK_CLOSE_URL;  cuerpo={taskId:taskId}; }
+  else if(que==='asignar'){ url=TASK_UPDATE_URL; cuerpo={taskId:taskId, ownerId:valor}; }
+  else {                    url=TASK_LINK_URL;   cuerpo={taskId:taskId, dealId:valor}; }
+  try{
+    var r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cuerpo)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    TAREAS_HECHAS[taskId]=true;
+    taskToast(que==='cerrar'?'Tarea cerrada':(que==='asignar'?'Responsable asignado':'Tarea vinculada'), true);
+    renderTareas();
+  }catch(e){
+    if(el) el.disabled=false;
+    taskToast('Error: '+e.message, false);
+  }
 }
 
 function renderAlertasConLimpieza(){
   var p=document.getElementById('p-alertas'); if(!p) return;
-  if(ALERTAS_MODE==='limpieza'){
-    p.innerHTML=limpSwitchHTML()+'<div id="limpieza-filters"></div><div id="limpieza-cards" style="margin-top:14px"></div>';
-    wireModeSwitch();
-    renderLimpieza();
-  } else {
-    try{ renderAlertas(); }catch(e){}
-    var bar=document.createElement('div');
-    bar.innerHTML=limpSwitchHTML();
-    if(bar.firstChild) p.insertBefore(bar.firstChild, p.firstChild);
-    wireModeSwitch();
+  if(!LIMP) loadLimpieza();   // los conteos del menu salen de aqui
+
+  var op=(FIX_NIVEL1==='arreglar') ? fixOpcionActiva() : null;
+
+  if(op && op.src==='tareas'){
+    p.innerHTML=fixMenuHTML()+'<div id="limpieza-filters"></div><div id="limpieza-cards" style="margin-top:14px"></div>';
+    wireFixMenu();
+    renderTareas();
+    return;
   }
+
+  if(op && op.src==='limp'){
+    LIMP_FILTER=op.bucket;
+    p.innerHTML=fixMenuHTML()+'<div id="limpieza-filters"></div><div id="limpieza-cards" style="margin-top:14px"></div>';
+    wireFixMenu();
+    renderLimpieza();
+    return;
+  }
+
+  if(op) FILT.alertas.accion=op.accion;
+  try{ renderAlertas(); }catch(e){}
+  var bar=document.createElement('div');
+  bar.innerHTML=fixMenuHTML();
+  var nodos=[]; while(bar.firstChild){ nodos.push(bar.firstChild); bar.removeChild(bar.firstChild); }
+  nodos.reverse().forEach(function(n){ p.insertBefore(n, p.firstChild); });
+  wireFixMenu();
 }
 
 /* Limpieza se carga solo al abrir su pestana (evita 2 llamadas pesadas simultaneas al cargar) */
@@ -3071,12 +3459,18 @@ function renderAlertas() {
   // Filtros unificados (persona c/conteo · semáforo · grupo · producto · stage · monto · categoría)
   html += filtrosHTML('alertas', allAlertas, 'alerta');
 
-  var _accBase = allAlertas.filter(function(a){ return pasaFiltro('alertas', a, 'alerta'); });
-  var _accCounts = {}; _accBase.forEach(function(a){ _accCounts[a.accion]=(_accCounts[a.accion]||0)+1; });
-  html += '<div class="filters"><span class="filter-label">Acción:</span>';
-  html += _chip('alertas','accion','ALL','Todas ('+_accBase.length+')', FILT.alertas.accion==='ALL');
-  ACCION_DEFS.forEach(function(d){ var c=_accCounts[d.id]||0; html += _chip('alertas','accion',d.id, d.icon+' '+d.label+' ('+c+')', FILT.alertas.accion===d.id); });
-  html += '</div>';
+  /* Fila de acciones: solo en "Vender". En "Arreglar" la opcion la elige el menu por objeto. */
+  if(FIX_NIVEL1==='vender'){
+    var _accBase = allAlertas.filter(function(a){ return pasaFiltro('alertas', a, 'alerta'); });
+    var _accCounts = {}; _accBase.forEach(function(a){ _accCounts[a.accion]=(_accCounts[a.accion]||0)+1; });
+    html += '<div class="filters"><span class="filter-label">Acción:</span>';
+    html += _chip('alertas','accion','ALL','Todas ('+_accBase.length+')', FILT.alertas.accion==='ALL');
+    ACCION_DEFS.forEach(function(d){
+      if(d.cat==='Higienizar') return;
+      var c=_accCounts[d.id]||0; html += _chip('alertas','accion',d.id, d.icon+' '+d.label+' ('+c+')', FILT.alertas.accion===d.id);
+    });
+    html += '</div>';
+  }
 
   html += `<div class="filters">
     <span class="filter-label">Ordenar por:</span>
@@ -5061,6 +5455,53 @@ function grfCerrar(){ var m=document.getElementById('gr-modal-fix'); if(m) m.sty
 function grfSet(t,h,showSave){ grfModal(); document.getElementById('grf-title').textContent=t; document.getElementById('grf-body').innerHTML=h; document.getElementById('grf-status').textContent=''; var b=document.getElementById('grf-save'); b.style.display=showSave?'':'none'; b.disabled=false; document.getElementById('gr-modal-fix').style.display='flex'; }
 function grfStatus(msg,color){ var s=document.getElementById('grf-status'); if(s){ s.textContent=msg; s.style.color=color||'#9CA3AF'; } }
 
+/* Encabezado comun de todo modal de vincular: dice a que empresa le atino el
+   motor y por que, y cuando duda ofrece las candidatas en vez de decidir solo.
+   Vincular al cliente equivocado es un error silencioso: nadie lo descubre. */
+function grfEmpresaHTML(d, extra){
+  var e=(d&&d.empresa)||null;
+  var cands=(d&&d.candidatas)||[];
+  var H='';
+
+  if(e){
+    H+='<div style="background:#0d111a;border:1px solid #2A3142;border-radius:9px;padding:9px 11px;margin-bottom:10px;font-size:12px;color:#9CA3AF">'
+      +'Empresa: <b style="color:#F3F4F6">'+grfEsc(e.nombre)+'</b>'
+      +(e.dominio?('<span style="color:#6B7280"> · '+grfEsc(e.dominio)+'</span>'):'')
+      +'<br><span style="color:#6B7280">Elegida porque: '+grfEsc(e.motivo||'—')+'</span>'
+      +' · <b style="color:#F3F4F6">'+(((d||{}).resumen||{}).contactos||0)+'</b> contactos · <b style="color:#F3F4F6">'+(((d||{}).resumen||{}).deals||0)+'</b> oportunidades'
+      +'</div>';
+  } else {
+    H+='<div style="background:rgba(245,158,11,.08);border:1px solid #2A3142;border-left:3px solid #F59E0B;border-radius:9px;padding:9px 11px;margin-bottom:10px;font-size:12px;color:#FCD34D">'
+      +'No encontré una empresa que coincida de verdad. Antes de este cambio el sistema elegía la más parecida aunque no lo fuera; ahora prefiere preguntarte.</div>';
+  }
+
+  /* Las candidatas solo estorban cuando la respuesta es obvia. */
+  if((d&&d.ambigua) || !e){
+    if(cands.length){
+      H+='<div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;margin-bottom:5px">¿Es alguna de estas?</div>'
+        +'<div style="max-height:190px;overflow:auto;margin-bottom:12px">'
+        +cands.map(function(c){
+          var act=(e&&c.id===e.id);
+          return '<button class="grf-cand" data-cid="'+c.id+'" style="display:block;width:100%;text-align:left;background:'+(act?'rgba(2,173,186,.15)':'#141827')+';border:1px solid '+(act?'#02ADBA':'#2A3142')+';border-radius:8px;padding:7px 10px;margin-bottom:5px;color:#D1D5DB;font-size:12px;cursor:pointer">'
+            +'<b>'+grfEsc(c.nombre)+'</b>'+(c.dominio?('<span style="color:#6B7280"> · '+grfEsc(c.dominio)+'</span>'):'')
+            +'<br><span style="color:#6B7280;font-size:11px">'+grfEsc(c.motivo)+'</span></button>';
+        }).join('')
+        +'</div>';
+    }
+  }
+  return H;
+}
+
+/* Reabre el mismo modal forzando una empresa concreta que eligió la persona. */
+function grfWireCandidatas(accion, extra){
+  document.querySelectorAll('.grf-cand').forEach(function(b){
+    b.addEventListener('click', function(){
+      var ex=Object.assign({}, extra||{}, { companyId: b.getAttribute('data-cid') });
+      abrirFixGR(accion, GRF.dealId, ex);
+    });
+  });
+}
+
 function grfDealDe(id){ var d=null; ((typeof DATA!=='undefined'&&DATA&&DATA.deals)?DATA.deals:[]).forEach(function(x){ if(String(x.id)===String(id)) d=x; }); return d; }
 function grfProductos(){ try{ return ((CAT().productos)||[]).map(function(p){return p.id;}); }catch(e){ return ['TW','AM','AEO','360','GenIA','ITS','LT','BD','WB','HS','PT']; } }
 
@@ -5104,27 +5545,42 @@ async function abrirFixGR(accion,dealId,extra){
   if(accion==='vincularContacto'){
     grfSet('Vincular contacto','<div style="color:#9CA3AF">Cargando contactos de la empresa…</div>', false);
     try{
-      var r=await fetch(GRF_COMPANY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:GRF.dealId,empresa:(extra&&extra.empresa)||''})});
+      var r=await fetch(GRF_COMPANY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:GRF.dealId,empresa:(extra&&extra.empresa)||'',companyId:(extra&&extra.companyId)||''})});
       var data=await r.json(); GRF.data=data;
       var cts=(data&&data.contactos)||[];
-      if(!cts.length){ grfSet('Vincular contacto','<div style="color:#FCD34D;margin-bottom:12px">No encontré contactos'+(data&&data.empresa?(' en '+grfEsc(data.empresa.nombre)):'')+'. Sin contacto no se puede trabajar esta oportunidad.</div>'
-        +'<button class="btn-action" onclick="grfMarcarDeal(\''+GRF.dealId+'\',\''+encodeURIComponent((extra&&extra.nombre)||'')+'\',this)">Marcar oportunidad para borrar</button>', false); return; }
+      var cab=grfEmpresaHTML(data, extra);
+      if(!cts.length){
+        grfSet('Vincular contacto', cab
+        +'<div style="color:#FCD34D;margin-bottom:12px">No hay contactos que ligar a esta oportunidad.</div>'
+        +'<button class="btn-action" onclick="grfMarcarDeal(\''+GRF.dealId+'\',\''+encodeURIComponent((extra&&extra.nombre)||'')+'\',this)">Marcar oportunidad para borrar</button>', false);
+        grfWireCandidatas('vincularContacto', extra);
+        return;
+      }
       grfSet('Vincular contacto',
-        '<div style="color:#9CA3AF;margin-bottom:10px">Empresa: <b>'+grfEsc((data.empresa&&data.empresa.nombre)||'—')+'</b>. Marca uno o varios contactos para vincular a esta oportunidad.</div>'
+        cab
+        +'<div style="color:#9CA3AF;margin-bottom:10px">Marca uno o varios contactos para vincular a esta oportunidad.</div>'
         +cts.map(function(c){ var nd=Number(c.deals||0); var badge=nd>0?('<span style="color:#62D175;font-size:11px;font-weight:700"> · '+nd+' oportunidad'+(nd!==1?'es':'')+'</span>'):'<span style="color:#6B7280;font-size:11px"> · sin oportunidades</span>'; return '<label style="display:flex;gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><input type="checkbox" class="grf-ct" value="'+c.id+'"><span><b>'+grfEsc(c.nombre)+'</b>'+(c.puesto?('<span style="color:#9CA3AF"> · '+grfEsc(c.puesto)+'</span>'):'')+badge+(c.email?('<br><span style="color:#6B7280;font-size:12px">'+grfEsc(c.email)+'</span>'):'')+'</span></label>'; }).join(''), true);
+      grfWireCandidatas('vincularContacto', extra);
     }catch(e){ grfSet('Vincular contacto','<div style="color:#DB0540">Error al cargar: '+grfEsc(e.message)+'</div>', false); }
     return;
   }
   if(accion==='vincularDeals'){
     grfSet('Vincular a oportunidad','<div style="color:#9CA3AF">Cargando oportunidades de la empresa…</div>', false);
     try{
-      var r2=await fetch(GRF_COMPANY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({empresa:(extra&&extra.empresa)||'',email:(extra&&extra.email)||''})});
+      var r2=await fetch(GRF_COMPANY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({empresa:(extra&&extra.empresa)||'',email:(extra&&extra.email)||'',companyId:(extra&&extra.companyId)||''})});
       var d2=await r2.json(); GRF.data=d2;
       var dls=(d2&&d2.deals)||[];
-      if(!dls.length){ grfSet('Vincular a oportunidad','<div style="color:#FCD34D">Esta empresa no tiene oportunidades. Si no aporta, puedes marcarlo para borrar.</div>', false); return; }
+      var cab2=grfEmpresaHTML(d2, extra);
+      if(!dls.length){
+        grfSet('Vincular a oportunidad', cab2+'<div style="color:#FCD34D">Esta empresa no tiene oportunidades a las cuales ligarlo.</div>', false);
+        grfWireCandidatas('vincularDeals', extra);
+        return;
+      }
       grfSet('Vincular a oportunidad',
-        '<div style="color:#9CA3AF;margin-bottom:10px">Contacto: <b>'+grfEsc((extra&&extra.nombre)||'')+'</b> · Empresa: <b>'+grfEsc((d2.empresa&&d2.empresa.nombre)||'—')+'</b>. Marca las oportunidades a las que lo quieres ligar.</div>'
+        cab2
+        +'<div style="color:#9CA3AF;margin-bottom:10px">Contacto: <b>'+grfEsc((extra&&extra.nombre)||'')+'</b>. Marca las oportunidades a las que lo quieres ligar.</div>'
         +dls.map(function(x){ var nc=Number(x.contactos||0); var cb=nc>0?(' · '+nc+' contacto'+(nc!==1?'s':'')+' ya vinculado'+(nc!==1?'s':'')):' · sin contactos'; return '<label style="display:flex;gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><input type="checkbox" class="grf-dl" value="'+x.id+'"><span><b>'+grfEsc(x.nombre)+'</b><br><span style="color:#6B7280;font-size:12px">'+(x.monto?('$'+Number(x.monto).toLocaleString('es-MX')):'')+(x.createdate?(' · alta '+fmtFecha(x.createdate)):'')+cb+'</span></span></label>'; }).join(''), true);
+      grfWireCandidatas('vincularDeals', extra);
     }catch(e){ grfSet('Vincular a oportunidad','<div style="color:#DB0540">Error al cargar: '+grfEsc(e.message)+'</div>', false); }
     return;
   }
@@ -5193,6 +5649,7 @@ async function grfGuardar(){
   var btn=document.getElementById('grf-save'); if(btn) btn.disabled=true;
   grfStatus('Guardando…','#9CA3AF');
   try{
+    if(GRF.accion==='vincularTarea'){ await guardarVincularTarea(); if(btn) btn.disabled=false; return; }
     if(GRF.accion==='etiquetarProducto'){
       var prod=document.getElementById('grf-prod').value;
       var nuevo=grfNombreConProducto((GRF.ctx&&GRF.ctx.nombre)||'', prod);

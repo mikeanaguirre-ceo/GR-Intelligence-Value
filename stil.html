@@ -1382,7 +1382,7 @@ var SLIMP=null, SLIMP_F='c2', SLIMP_M={};
    asi que aqui el primer nivel es directamente el objeto. */
 var SLIMP_OBJ='contacto';
 var SLIMP_OBJ_PENDIENTES=[];
-var SLIMP_POR_OBJ={ contacto:['ctodos','c2','c3','c4'], oportunidad:['d1','d2'], empresa:['e3','e1','e2'], tarea:['t1','t2','t3','t4'] };
+var SLIMP_POR_OBJ={ contacto:['ctodos','c2','c3','c4'], oportunidad:['d1','d2','d3','d4'], empresa:['e3','e1','e2'], tarea:['t1','t2','t3','t4'] };
 
 /* Tareas: endpoint propio, resolver sus vinculos es caro y solo se paga al abrirlas. */
 var STL_TAREAS_URL='https://mikea.app.n8n.cloud/webhook/stil-tareas';
@@ -1485,6 +1485,7 @@ async function stilGuardarVincTarea(){
   setTimeout(function(){ document.getElementById('slimp-modal').style.display='none'; slimpRender(); },1200);
 }
 var STL_TASK_LINK_URL='https://mikea.app.n8n.cloud/webhook/stil-task-link';
+var STL_BORRAR_PERDIDA_URL='https://mikea.app.n8n.cloud/webhook/stil-borrar-perdida';
 async function stilAccionTarea(que, taskId, valor, el){
   if(el) el.disabled=true;
   var url, cuerpo;
@@ -1535,6 +1536,9 @@ function stilTareasBuckets(){
 function slimpBuckets(){
   var C=(SLIMP&&SLIMP.contactos)||{}, D=(SLIMP&&SLIMP.deals)||{}, E=(SLIMP&&SLIMP.empresas)||{};
   var c2=C.c2||[], c3=C.c3||[], c4=C.c4||[], e1=E.e1||[];
+  var dP=D.d2||[];
+  var d3=dP.filter(function(x){return x.unicaDeSuEmpresa;});
+  var d4=dP.filter(function(x){return !x.unicaDeSuEmpresa;});
   var seen={}, todos=[];
   c2.concat(c3).concat(c4).forEach(function(x){ if(x&&!seen[x.id]){seen[x.id]=1;todos.push(x);} });
   return [
@@ -1544,6 +1548,8 @@ function slimpBuckets(){
     {k:'c4',label:'Sin correo',tipo:'contact',arr:c4,warn:false,note:'Contactos sin correo. No se les puede contactar por email.'},
     {k:'d1',label:'📇 Sin contacto',tipo:'deal',arr:D.d1||[],warn:false,note:'Oportunidades sin ningún contacto asociado: no hay a quién escribirle.'},
     {k:'d2',label:'🗑️ Perdida que nunca arrancó',tipo:'deal',arr:D.d2||[],warn:false,note:'Oportunidades marcadas como Perdida que nunca avanzaron en el funnel.'},
+    {k:'d3',label:'🧨 Perdida · única de su empresa',tipo:'deal',arr:d3,warn:false,note:'Su empresa no tiene ninguna otra oportunidad. Al borrarla se va también la empresa y no queda residuo.'},
+    {k:'d4',label:'🗑️ Perdida · la empresa tiene más',tipo:'deal',arr:d4,warn:true,note:'Su empresa SÍ tiene otras oportunidades. Solo se borra la oportunidad; la empresa se queda.'},
     /* e3 no viaja como lista propia: se deriva de e1 con la marca sinOportunidades. */
     {k:'e3',label:'Sin contactos ni oportunidades',tipo:'company',arr:e1.filter(function(x){return x.sinOportunidades;}),warn:false,note:'Empresas completamente vacías: ni una persona ni un negocio. Las candidatas más claras a borrar.'},
     {k:'e1',label:'Sin contactos',tipo:'company',arr:e1,warn:false,note:'Empresas sin una sola persona asociada. No hay a quién escribirle.'},
@@ -1665,6 +1671,9 @@ function slimpRender(){
       ?'<span style="color:#34d399;font-weight:700;font-size:11px">✓</span> <button class="slimp-undo" data-t="'+a.tipo+'" data-id="'+it.id+'" data-o="'+encodeURIComponent(orig)+'" style="background:#1f2937;border:1px solid #374151;border-radius:7px;padding:5px 9px;color:#D1D5DB;font-size:11px;cursor:pointer">Deshacer</button>'
       :'<button class="slimp-mark" data-t="'+a.tipo+'" data-id="'+it.id+'" data-o="'+encodeURIComponent(orig)+'" style="background:#1f2937;border:1px solid #374151;border-radius:7px;padding:5px 9px;color:#D1D5DB;font-size:11px;cursor:pointer">Marcar</button>';
     var vb='<button class="slimp-vinc" data-t="'+a.tipo+'" data-id="'+it.id+'" data-emp="'+encodeURIComponent(it.empresa||'')+'" data-nom="'+encodeURIComponent(it.nombre||'')+'" style="background:#0f3c40;border:1px solid #02ADBA;border-radius:7px;padding:5px 9px;color:#7fe3ea;font-size:11px;cursor:pointer;margin-right:5px">Vincular</button>';
+    if(esDeal && (SLIMP_F==='d3'||SLIMP_F==='d4')){
+      vb='<button class="slimp-borrar" data-id="'+it.id+'" data-cid="'+(SLIMP_F==='d3'?(it.companyId||''):'')+'" data-nom="'+encodeURIComponent(it.nombre||'')+'" style="background:#DB0540;border:none;border-radius:7px;padding:5px 9px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;margin-right:5px">'+(SLIMP_F==='d3'?'Borrar con empresa':'Borrar oportunidad')+'</button>';
+    }
     /* En empresas no hay a qué vincular desde aquí: la acción es marcar o dejarla. */
     if(esEmpresa) vb='';
     else if(!esDeal && !it.empresa) vb='';
@@ -1680,6 +1689,7 @@ function slimpRender(){
   b.innerHTML=a.arr.length
     ? ('<div style="font-size:12px;color:#6B7280;margin:0 0 6px">Solo marca la etiqueta BORRAR · el borrado lo haces tú en HubSpot filtrando “contiene BORRAR”.</div><table style="width:100%;border-collapse:collapse;font-size:13px"><thead style="color:#6B7280;font-size:11px;text-transform:uppercase">'+head+'</thead><tbody>'+rows+'</tbody></table>')
     : '<div style="color:#6B7280;padding:14px">Sin registros en esta categoría 🎉</div>';
+  b.querySelectorAll('.slimp-borrar').forEach(function(x){ x.addEventListener('click',function(){ stilBorrarPerdida(x.getAttribute('data-id'),x.getAttribute('data-cid'),decodeURIComponent(x.getAttribute('data-nom')),x); }); });
   b.querySelectorAll('.slimp-mark').forEach(function(x){ x.addEventListener('click',function(){ slimpMark(x.getAttribute('data-t'),x.getAttribute('data-id'),decodeURIComponent(x.getAttribute('data-o')),false,x); }); });
   b.querySelectorAll('.slimp-undo').forEach(function(x){ x.addEventListener('click',function(){ slimpMark(x.getAttribute('data-t'),x.getAttribute('data-id'),decodeURIComponent(x.getAttribute('data-o')),true,x); }); });
   b.querySelectorAll('.slimp-vinc').forEach(function(x){ x.addEventListener('click',function(){ slimpVincular(x.getAttribute('data-t'),x.getAttribute('data-id'),decodeURIComponent(x.getAttribute('data-emp')),decodeURIComponent(x.getAttribute('data-nom'))); }); });
@@ -1772,6 +1782,17 @@ async function slimpGuardarVinc(){
   }
   st.textContent='✓ '+ok+' de '+ids.length+' vinculados. Aprieta ↺ Actualizar.'; st.style.color='#34d399';
   SLIMP=null; setTimeout(function(){ document.getElementById('slimp-modal').style.display='none'; slimpLoad(); }, 1200);
+}
+
+async function stilBorrarPerdida(dealId, companyId, nombre, btn){
+  var conEmpresa=!!companyId;
+  if(!confirm('Se va a borrar la oportunidad "'+nombre+'"'+(conEmpresa?' y también su empresa, que no tiene ninguna otra.':'.')+'\n\nVa a la papelera de HubSpot: se puede recuperar 90 días.')) return;
+  if(btn){ btn.disabled=true; btn.textContent='Borrando…'; }
+  try{
+    var r=await fetch(STL_BORRAR_PERDIDA_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dealId:dealId, companyId:companyId||''})});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    SLIMP_M[dealId]=true; slimpRender();
+  }catch(e){ if(btn){btn.disabled=false;btn.textContent='Borrar';} alert('Error: '+e.message); }
 }
 
 async function slimpMark(tipo,id,nombre,quitar,btn){
