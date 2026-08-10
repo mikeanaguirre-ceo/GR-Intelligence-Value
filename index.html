@@ -3871,9 +3871,41 @@ function renderProspeccion() {
   Object.keys(ps).sort().forEach(function(p){ var sub=senalesArr.filter(function(e){return (e.producto||'(sin producto)')===p;}); var w=winOf(sub); t2+='<tr><td style="font-weight:600;">'+p+'</td>'+wcp(w.hoy,'hoy',p,0)+wcp(w.d7,'d7',p,0)+wcp(w.d30,'d30',p,0)+wcp(w.d90,'d90',p,0)+wcp(w.total,'total',p,1)+'</tr>'; });
   if(!senalesArr.length) t2+='<tr><td colspan="6" style="font-size:12px;color:var(--text-mute);padding:12px;">Sin señales para este filtro.</td></tr>';
   t2+='<tr style="border-top:2px solid var(--border,#2A3142);"><td style="font-weight:700;">TOTAL señales</td>'+wcp(wS.hoy,'hoy','__ALL_SENALES__',1)+wcp(wS.d7,'d7','__ALL_SENALES__',1)+wcp(wS.d30,'d30','__ALL_SENALES__',1)+wcp(wS.d90,'d90','__ALL_SENALES__',1)+wcp(wS.total,'total','__ALL_SENALES__',1)+'</tr></tbody></table></div>';
+  // NUEVO 6ago2026 — Open+3 por tipo de interes. Las tres categorias no valen igual:
+  // "en curso" sigue recibiendo la secuencia, "maduro" ya no le llega nada, y "reapertura"
+  // es alguien ya contactado que volvio solo. Esta ultima es la senal mas fuerte.
+  var CAT_DEF = [
+    {k:'reapertura',       lbl:'Reapertura',       col:'#0EA5E9', nota:'Ya contactado, no respondio, y volvio a abrir por su cuenta'},
+    {k:'interes maduro',   lbl:'Interes maduro',   col:'#10B981', nota:'Su secuencia ya termino: no le estabamos escribiendo'},
+    {k:'interes en curso', lbl:'Interes en curso', col:'#F59E0B', nota:'Su secuencia sigue corriendo: le siguen llegando correos'}
+  ];
+  var _catOf = function(e){
+    var c = String(e.clasificacion||'').toLowerCase().replace(/\s+/g,' ').trim();
+    c = c.replace(/interés/g,'interes');
+    if(c.indexOf('reapertura')!==-1) return 'reapertura';
+    if(c.indexOf('maduro')!==-1) return 'interes maduro';
+    if(c.indexOf('en curso')!==-1) return 'interes en curso';
+    return '';
+  };
+  var wcc=function(n,win,cat,bold){ var st=bold?'font-weight:700;':''; return n>0?'<td class="pcell" data-ptype="cat" data-pval="'+encodeURIComponent(cat)+'" data-pwin="'+win+'" style="text-align:center;'+st+'cursor:pointer;">'+n+'</td>':'<td style="text-align:center;color:var(--text-mute);'+st+'">0</td>'; };
+  var H3='<thead><tr><th style="width:38%;">TIPO DE INTERES</th><th style="text-align:center;">HOY</th><th style="text-align:center;">7D</th><th style="text-align:center;">30D</th><th style="text-align:center;">90D</th><th style="text-align:center;">TOTAL</th></tr></thead>';
+  var t3='<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;">'+H3+'<tbody>';
+  var _catTot=0;
+  CAT_DEF.forEach(function(cd){
+    var sub=senalesArr.filter(function(e){ return _catOf(e)===cd.k; });
+    _catTot+=sub.length;
+    var w=winOf(sub);
+    t3+='<tr><td>'+dot(cd.col)+cd.lbl+'<div style="font-size:10.5px;color:var(--text-dim);margin-top:2px;">'+cd.nota+'</div></td>'
+      +wcc(w.hoy,'hoy',cd.k,0)+wcc(w.d7,'d7',cd.k,0)+wcc(w.d30,'d30',cd.k,0)+wcc(w.d90,'d90',cd.k,0)+wcc(w.total,'total',cd.k,1)+'</tr>';
+  });
+  var _sinCat=senalesArr.filter(function(e){ return !_catOf(e); });
+  if(_sinCat.length){ var wSC=winOf(_sinCat); t3+='<tr><td>'+dot('#6B7280')+'Sin clasificar<div style="font-size:10.5px;color:var(--text-dim);margin-top:2px;">Senales anteriores al 5-ago-2026, cuando aun no se guardaba el tipo</div></td>'+wcc(wSC.hoy,'hoy','__SIN_CAT__',0)+wcc(wSC.d7,'d7','__SIN_CAT__',0)+wcc(wSC.d30,'d30','__SIN_CAT__',0)+wcc(wSC.d90,'d90','__SIN_CAT__',0)+wcc(wSC.total,'total','__SIN_CAT__',1)+'</tr>'; }
+  if(!senalesArr.length) t3+='<tr><td colspan="6" style="font-size:12px;color:var(--text-mute);padding:12px;">Sin senales para este filtro.</td></tr>';
+  t3+='</tbody></table></div>';
+
   // ETAPAS y sc eliminados (tabla dh quitada)
   // Tabla Oportunidades eliminada
-  cont.innerHTML=GR_SYNC_BOX + '<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Fuente: tabla de eventos (los 3 tenants), no HubSpot. Los 30d incluyen 7d y hoy.</div>'+chips+'<div id="pipeline-metrics-gr" style="margin:14px 0 4px;"></div><div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado. Toca un número para ver el detalle.</div>'+t1+'<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto</div>'+t2+'<div style="border:none;border-top:1px solid #252d50;margin:14px 0"></div><div id="prosp-detalle" style="margin-top:16px;"></div></div>';
+  cont.innerHTML=GR_SYNC_BOX + '<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Fuente: tabla de eventos (los 3 tenants), no HubSpot. Los 30d incluyen 7d y hoy.</div>'+chips+'<div id="pipeline-metrics-gr" style="margin:14px 0 4px;"></div><div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado. Toca un número para ver el detalle.</div>'+t1+'<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto</div>'+t2+'<div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:18px 0 6px;">Open+3 por tipo de interés</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">La reapertura es la señal más fuerte: volvió solo, sin que le escribiéramos. Toca un número para ver el detalle.</div>'+t3+'<div style="border:none;border-top:1px solid #252d50;margin:14px 0"></div><div id="prosp-detalle" style="margin-top:16px;"></div></div>';
   cont.querySelectorAll('[data-pf]').forEach(function(btn){ btn.addEventListener('click',function(){ var f=btn.dataset.pf, v=decodeURIComponent(btn.dataset.pv); if(f==='grupo'){prospGrupo=v; prospProducto='ALL';} else if(f==='prod')prospProducto=v; else if(f==='canal')prospCanal=v; else if(f==='sem')prospSem=v; else if(f==='stage')prospStage=v; renderProspeccion(); }); });
   renderPipelineMetricsGR();
   cont.querySelectorAll('.pcell').forEach(function(td){ td.addEventListener('click',function(){
@@ -4409,6 +4441,19 @@ function renderProspDetalle(ptype, pval, pwin) {
   var isDUOf=function(e){ if(e.es_duo===true||e.es_duo==='true'||e.es_duo===1) return true; if(e.es_duo===false||e.es_duo==='false'||e.es_duo===0) return false; return !!(e.campana && e.campana.indexOf(' – ')!==-1); };
   // 7ago2026 — corte por etapa: cada cuadro de metricas abre los contactos de esa etapa.
   if(ptype==='etapa'){ pool=pool.filter(function(e){ return String(e.etapa||'')===pval; }); }
+  else if(ptype==='cat'){
+    // NUEVO 6ago2026 — corte por tipo de interes del Open+3 (reapertura / maduro / en curso).
+    var _catOf2=function(e){
+      var c=String(e.clasificacion||'').toLowerCase().replace(/\s+/g,' ').trim().replace(/interés/g,'interes');
+      if(c.indexOf('reapertura')!==-1) return 'reapertura';
+      if(c.indexOf('maduro')!==-1) return 'interes maduro';
+      if(c.indexOf('en curso')!==-1) return 'interes en curso';
+      return '';
+    };
+    pool=pool.filter(function(e){ return e.tipo==='open3'; });
+    if(pval==='__SIN_CAT__') pool=pool.filter(function(e){ return !_catOf2(e); });
+    else pool=pool.filter(function(e){ return _catOf2(e)===pval; });
+  }
   else if(ptype==='clas'){
     if(pval==='__DUO_REPLY__'){
       // DUO replies: replies cuya campana tiene formato DuoCopilot

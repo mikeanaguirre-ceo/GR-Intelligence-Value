@@ -184,6 +184,9 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
     <div class="tw"><table class="tbl"><thead><tr><th style="width:38%">CLASIFICACIÓN</th><th>HOY</th><th>7D</th><th>30D</th><th>90D</th><th>TOTAL</th></tr></thead><tbody id="tbody-r"></tbody></table></div>
     <div class="stitle y">Open+3 (señales) por producto</div>
     <div class="tw"><table class="tbl"><thead><tr><th style="width:38%">PRODUCTO</th><th>HOY</th><th>7D</th><th>30D</th><th>90D</th><th>TOTAL</th></tr></thead><tbody id="tbody-o"></tbody></table></div>
+    <div class="stitle c">Open+3 por tipo de interés</div>
+    <div class="shint">La reapertura es la señal más fuerte: volvió solo, sin que le escribiéramos. Toca un número para ver el detalle.</div>
+    <div class="tw"><table class="tbl"><thead><tr><th style="width:38%">TIPO DE INTERÉS</th><th>HOY</th><th>7D</th><th>30D</th><th>90D</th><th>TOTAL</th></tr></thead><tbody id="tbody-cat"></tbody></table></div>
     <div id="pipeline-metrics" style="margin:14px 0 4px"></div>
     <div class="divider"></div>
     <div id="prosp-detalle"></div>
@@ -1086,6 +1089,31 @@ function renderTablas(){
   t2+=`<tr class="tot"><td>TOTAL señales</td>${wc(wS.hoy,'hoy','prod','__ALL_SENALES__',1)}${wc(wS.d7,'d7','prod','__ALL_SENALES__',1)}${wc(wS.d30,'d30','prod','__ALL_SENALES__',1)}${wc(wS.d90,'d90','prod','__ALL_SENALES__',1)}${wc(wS.total,'total','prod','__ALL_SENALES__',1)}</tr>`;
   document.getElementById('tbody-o').innerHTML=t2;
 
+  // NUEVO 6ago2026 - Open+3 por tipo de interes. Las tres categorias no valen igual:
+  // "en curso" sigue recibiendo la secuencia, "maduro" ya no le llega nada, y "reapertura"
+  // es alguien ya contactado que volvio solo. Esta ultima es la senal mas fuerte.
+  const catOf=e=>{
+    const c=String(e.clasificacion||'').toLowerCase().replace(/\s+/g,' ').trim().replace(/interés/g,'interes');
+    if(c.includes('reapertura'))return 'reapertura';
+    if(c.includes('maduro'))return 'interes maduro';
+    if(c.includes('en curso'))return 'interes en curso';
+    return '';
+  };
+  const CATS=[
+    {k:'reapertura',lbl:'Reapertura',col:'var(--cyan,#06B6D4)',nota:'Ya contactado, no respondio, y volvio a abrir por su cuenta'},
+    {k:'interes maduro',lbl:'Interes maduro',col:'var(--green,#10B981)',nota:'Su secuencia ya termino: no le estabamos escribiendo'},
+    {k:'interes en curso',lbl:'Interes en curso',col:'var(--yellow,#F59E0B)',nota:'Su secuencia sigue corriendo: le siguen llegando correos'}
+  ];
+  let t3='';
+  CATS.forEach(cd=>{
+    const sub=open3.filter(e=>catOf(e)===cd.k), w=winOf(sub);
+    t3+=`<tr><td style="font-weight:600;color:${cd.col}">${cd.lbl}<div style="font-size:10.5px;color:#9CA3AF;font-weight:400;margin-top:2px">${cd.nota}</div></td>${wc(w.hoy,'hoy','cat',cd.k,0)}${wc(w.d7,'d7','cat',cd.k,0)}${wc(w.d30,'d30','cat',cd.k,0)}${wc(w.d90,'d90','cat',cd.k,0)}${wc(w.total,'total','cat',cd.k,1)}</tr>`;
+  });
+  const sinCat=open3.filter(e=>!catOf(e));
+  if(sinCat.length){ const wSC=winOf(sinCat); t3+=`<tr><td style="font-weight:600;color:#9CA3AF">Sin clasificar<div style="font-size:10.5px;color:#9CA3AF;font-weight:400;margin-top:2px">Senales anteriores al 5-ago-2026, cuando aun no se guardaba el tipo</div></td>${wc(wSC.hoy,'hoy','cat','__SIN_CAT__',0)}${wc(wSC.d7,'d7','cat','__SIN_CAT__',0)}${wc(wSC.d30,'d30','cat','__SIN_CAT__',0)}${wc(wSC.d90,'d90','cat','__SIN_CAT__',0)}${wc(wSC.total,'total','cat','__SIN_CAT__',1)}</tr>`; }
+  if(!open3.length) t3='<tr><td colspan="6" style="font-size:12px;color:#9CA3AF;padding:12px">Sin senales para este filtro.</td></tr>';
+  document.getElementById('tbody-cat').innerHTML=t3;
+
   // Vincular clicks en pcell
   document.querySelectorAll('.pcell').forEach(td=>{
     td.addEventListener('click',()=>{
@@ -1121,7 +1149,18 @@ function renderDetalle(ptype,pval,pwin){
   let pool=all.map(e=>Object.assign({},e,{clasificacion:normClas(e.clasificacion||'')}))
     .filter(e=>inW(e,pwin));
 
-  if(ptype==='clas'){
+  if(ptype==='cat'){
+    // NUEVO 6ago2026 - corte por tipo de interes del Open+3.
+    const catOf2=e=>{
+      const c=String(e.clasificacion||'').toLowerCase().replace(/\s+/g,' ').trim().replace(/interés/g,'interes');
+      if(c.includes('reapertura'))return 'reapertura';
+      if(c.includes('maduro'))return 'interes maduro';
+      if(c.includes('en curso'))return 'interes en curso';
+      return '';
+    };
+    pool=pool.filter(e=>e.tipo==='open3');
+    pool=(pval==='__SIN_CAT__')?pool.filter(e=>!catOf2(e)):pool.filter(e=>catOf2(e)===pval);
+  } else if(ptype==='clas'){
     if(pval==='__DUO_REPLY__') pool=pool.filter(e=>e.tipo!=='open3'&&isDUO(e));
     else{pool=pool.filter(e=>e.tipo!=='open3'&&esReplyReal(e));if(pval!=='__ALL_REPLIES__')pool=pool.filter(e=>e.clasificacion===pval);}
   } else {
