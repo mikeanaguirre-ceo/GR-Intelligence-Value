@@ -862,10 +862,13 @@ function grStagesForSelect(){ var st=((CAT().stages)||CAT_FALLBACK.stages||[]).s
 var GR_OWNERS={'77808624':'Migue','82004391':'Martha'};
 // Prospeccion: el nombre entre parentesis es quien FIRMA el mensaje, no quien hace la tarea.
 // Estas tareas son de Martha, que es ademas quien las tiene asignadas en HubSpot.
-function esProspeccion(subj){ var s=String(subj||"").toLowerCase(); return /whatsapp/.test(s) && /(open\s*\+?\s*3|forwarded|reply|circle\s*-?\s*back|duo|interested)/.test(s); }
-function personaFromSubject(subj){ if(esProspeccion(subj)) return "Martha"; var m=String(subj||"").match(/\(([^()]*)\)\s*$/); if(!m) return null; var n=m[1].trim().replace(/^firma\s*=\s*/i,""); if(!n) return null; if(/^miguel\s+aguirre$/i.test(n)) n="Mike"; return n; }
+// "firma=" en el sufijo significa quien firma el mensaje al prospecto. Nunca al responsable.
+// El responsable de esas tareas es Martha, que es quien las tiene asignadas en HubSpot.
+// Un sufijo sin "firma=" — "(Sabrina)", "(Mike)" — si nombra al responsable y se respeta.
+function esFirma(subj){ var m=String(subj||"").match(/\(([^()]*)\)\s*$/); return !!(m && /firma\s*[:=]/i.test(m[1])); }
+function personaFromSubject(subj){ if(esFirma(subj)) return "Martha"; var m=String(subj||"").match(/\(([^()]*)\)\s*$/); if(!m) return null; var n=m[1].trim(); if(!n) return null; if(/^miguel\s+aguirre$/i.test(n)) n="Mike"; return n; }
 // Responsable de una tarea: prospeccion siempre a Martha, lo demas se queda como venga del motor.
-function responsableTarea(titulo, personaMotor){ return esProspeccion(titulo) ? "Martha" : (personaMotor || "Sin asignar"); }
+function responsableTarea(titulo, personaMotor){ return esFirma(titulo) ? "Martha" : (personaMotor || "Sin asignar"); }
 function persResp(x,map){ var r=personaFromSubject((x.metadata||{}).subject); if(r) return r; var oid=String((x.engagement||{}).ownerId||""); return map[oid]||(oid?("Owner "+oid):"Sin asignar"); }
 async function cargarActividadesGR(dealId,containerId){
   var box=document.getElementById(containerId); if(!box) return;
