@@ -773,6 +773,7 @@ const MARK_BORRAR_URL = 'https://mikea.app.n8n.cloud/webhook/gr-mark-borrar';
    paga cuando abres ese objeto, no en cada carga de la limpieza. */
 const TAREAS_URL = 'https://mikea.app.n8n.cloud/webhook/gr-tareas';
 const BORRAR_PERDIDA_URL = 'https://mikea.app.n8n.cloud/webhook/gr-borrar-perdida';
+const CUENTA_DETALLE_URL = 'https://mikea.app.n8n.cloud/webhook/gr-cuenta-detalle';
 // Responsables conocidos (ownerId HubSpot -> nombre). Ampliable.
 const OWNERS = { '77808624': 'Migue', '82004391': 'Martha' };
 let AM_DATA = null;
@@ -2953,7 +2954,7 @@ function renderLimpieza(){
       :'<button class="btn-action grf-open" data-acc="vincularDeals" data-cid="'+it.id+'" data-emp="'+encodeURIComponent(it.empresa||'')+'" data-eml="'+encodeURIComponent(it.email||'')+'" data-nom="'+encodeURIComponent(it.nombre||'')+'">Vincular</button> ';
     /* En perdidas la accion es borrar, no vincular: ya se dieron por muertas. */
     if(esDeal && (LIMP_FILTER==='d3'||LIMP_FILTER==='d4')){
-      vinc='<button class="btn-action limp-borrar" data-id="'+it.id+'" data-cid="'+(LIMP_FILTER==='d3'?(it.companyId||''):'')+'" data-nom="'+encodeURIComponent(it.nombre||'')+'" style="background:#DB0540;border:none;color:#fff;font-weight:700">'+(LIMP_FILTER==='d3'?'Borrar con empresa':'Borrar oportunidad')+'</button> ';
+      vinc='<button class="btn-action limp-borrar" data-id="'+it.id+'" data-emp="'+(it.companyId||'')+'" data-caso="'+LIMP_FILTER+'" data-nom="'+encodeURIComponent(it.nombre||'')+'" style="background:#DB0540;border:none;color:#fff;font-weight:700">'+(LIMP_FILTER==='d3'?'Borrar con empresa':'Borrar oportunidad')+'</button> ';
     }
     /* En empresas no hay a qué vincular desde aquí: la acción es marcar o dejarla. */
     if(esEmpresa) vinc='';
@@ -2975,25 +2976,108 @@ function renderLimpieza(){
   var tabla=active.arr.length?('<table class="tbl"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table>'):'<div class="empty">Sin registros en esta categoría 🎉</div>';
   if(cEl){
     cEl.innerHTML='<div class="section-title" style="margin-top:8px"><span class="section-count">🧹 '+active.label+' · '+active.arr.length+'</span><span style="margin-left:auto;color:var(--text-mute);font-size:11px">solo marca BORRAR · el borrado lo haces tú en HubSpot</span></div>'+tabla;
-    cEl.querySelectorAll('.limp-borrar').forEach(function(b){b.addEventListener('click',function(){borrarPerdida(b.getAttribute('data-id'),b.getAttribute('data-cid'),decodeURIComponent(b.getAttribute('data-nom')),b);});});
+    cEl.querySelectorAll('.limp-borrar').forEach(function(b){b.addEventListener('click',function(){abrirPreviaBorrado(b.getAttribute('data-id'),b.getAttribute('data-emp'),b.getAttribute('data-caso'),decodeURIComponent(b.getAttribute('data-nom')),b);});});
     cEl.querySelectorAll('.limp-mark').forEach(function(b){b.addEventListener('click',function(){markBorrar(b.getAttribute('data-tipo'),b.getAttribute('data-id'),decodeURIComponent(b.getAttribute('data-orig')),false,b);});});
     cEl.querySelectorAll('.limp-undo').forEach(function(b){b.addEventListener('click',function(){markBorrar(b.getAttribute('data-tipo'),b.getAttribute('data-id'),decodeURIComponent(b.getAttribute('data-orig')),true,b);});});
   }
 }
 
-/* Borrar de verdad, no marcar: estas ya estan perdidas. Si viene companyId, la
-   empresa se va con ella porque no tiene ninguna otra oportunidad. */
-async function borrarPerdida(dealId, companyId, nombre, btn){
-  var conEmpresa = !!companyId;
-  if(!confirm('Se va a borrar la oportunidad "'+nombre+'"'+(conEmpresa?' y también su empresa, que no tiene ninguna otra.':'.')+'\n\nVa a la papelera de HubSpot: se puede recuperar 90 días.')) return;
-  if(btn){ btn.disabled=true; btn.textContent='Borrando…'; }
+/* Borrar de verdad, no marcar: estas ya estan perdidas.
+   Antes de tocar nada se abre la cuenta completa. Dos casos distintos:
+     d3 — unica de su empresa: se va la oportunidad Y la empresa.
+     d4 — la empresa tiene mas: se va SOLO la oportunidad, la empresa se queda viva.
+   En los dos, una persona solo se borra si se queda sin ninguna oportunidad. */
+var PREVIA = null;
+
+async function abrirPreviaBorrado(dealId, companyId, caso, nombre, btn){
+  if(btn){ btn.disabled=true; btn.textContent='Revisando…'; }
   try{
-    var r=await fetch(BORRAR_PERDIDA_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dealId:dealId, companyId:companyId||''})});
+    var r=await fetch(CUENTA_DETALLE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dealId:dealId, companyId:companyId||''})});
     if(!r.ok) throw new Error('HTTP '+r.status);
-    LIMP_MARKED[dealId]=true;
-    taskToast(conEmpresa?'Oportunidad y empresa borradas':'Oportunidad borrada', true);
+    var j=await r.json(); if(Array.isArray(j)) j=j[0]||{};
+    PREVIA={ dealId:dealId, companyId:companyId||'', caso:caso, nombre:nombre, datos:j, btn:btn };
+    pintarPreviaBorrado();
+  }catch(e){
+    if(btn){btn.disabled=false;btn.textContent=(caso==='d3'?'Borrar con empresa':'Borrar oportunidad');}
+    taskToast('No se pudo leer la cuenta: '+e.message,false);
+  }
+}
+
+function etapaLabel(id){ var c=(typeof CAT==='function')?(CAT()||{}):{}; var m={}; ((c.stages)||[]).forEach(function(x){ m[String(x.id)]=x.corto||x.label||x.id; }); return m[String(id||'')]||(id||'—'); }
+function pintarPreviaBorrado(){
+  var d=PREVIA.datos||{}, esUnica=(PREVIA.caso==='d3');
+  var ops=d.oportunidades||[], pers=d.personas||[];
+  var otras=ops.filter(function(o){ return !o.esLaQueBorras; });
+  /* La empresa solo se va si de verdad no le queda ninguna otra oportunidad.
+     Si el motor y la bandeja no coinciden, manda lo que se acaba de leer en vivo. */
+  var empresaSeVa = esUnica && otras.length===0;
+
+  var avisoDesfase = (esUnica && otras.length>0)
+    ? '<div style="background:rgba(255,205,0,.12);border:1px solid rgba(255,205,0,.4);border-radius:8px;padding:9px 11px;margin-bottom:11px;font-size:12px;color:#FFCD00">Ojo: la bandeja la traía como única de su empresa, pero la empresa tiene '+otras.length+' oportunidad(es) más. La empresa NO se va a borrar.</div>'
+    : '';
+
+  var htmlOps = ops.length ? ops.map(function(o){
+    var yo=o.esLaQueBorras;
+    return '<tr'+(yo?' style="background:rgba(219,5,64,.12)"':'')+'>'
+      +'<td style="padding:6px 8px;font-size:12px">'+grEsc(o.nombre)+(yo?' <span style="color:#DB0540;font-weight:700">← esta</span>':'')+'</td>'
+      +'<td style="padding:6px 8px;font-size:12px;color:var(--text-dim)">'+etapaLabel(o.stage)+'</td>'
+      +'<td style="padding:6px 8px;font-size:12px;color:var(--text-dim);text-align:right">'+(o.monto?fmtK(o.monto):'—')+'</td></tr>';
+  }).join('') : '<tr><td colspan="3" style="padding:8px;color:var(--text-mute);font-size:12px">La empresa no tiene ninguna otra oportunidad.</td></tr>';
+
+  var htmlPers = pers.length ? pers.map(function(p){
+    return '<label style="display:flex;align-items:center;gap:9px;padding:7px 2px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">'
+      +'<input type="checkbox" class="previa-persona" value="'+p.id+'"'+(p.sugerido?' checked':'')+'>'
+      +'<span style="flex:1;font-size:13px">'+grEsc(p.nombre)+' <span style="color:var(--text-mute);font-size:11px">'+grEsc(p.email||'')+'</span></span>'
+      +'<span style="font-size:11px;color:'+(p.sugerido?'#DB0540':'var(--text-dim)')+'">'+grEsc(p.motivo)+'</span></label>';
+  }).join('') : '<div style="padding:8px;color:var(--text-mute);font-size:12px">La oportunidad no tiene ninguna persona asociada.</div>';
+
+  var resumen = esUnica
+    ? (empresaSeVa ? 'Se borra la oportunidad <b>y la empresa</b>, que no tiene ninguna otra.' : 'Se borra <b>solo la oportunidad</b>. La empresa se queda.')
+    : 'Se borra <b>solo la oportunidad</b>. La empresa se queda porque tiene otras vivas.';
+
+  var cuerpo='<div style="max-width:640px">'
+    +avisoDesfase
+    +'<div style="font-size:13px;margin-bottom:12px">'+resumen+' Todo va a la papelera de HubSpot y se recupera hasta 90 días.</div>'
+    +'<div class="section-title" style="margin:0 0 6px"><span class="section-count">Oportunidades de la empresa · '+ops.length+'</span></div>'
+    +'<table class="tbl" style="margin-bottom:14px"><tbody>'+htmlOps+'</tbody></table>'
+    +'<div class="section-title" style="margin:0 0 6px"><span class="section-count">Personas de esta oportunidad · '+pers.length+'</span></div>'
+    +'<div style="font-size:11px;color:var(--text-mute);margin-bottom:6px">Vienen marcadas solo las que se quedan sin ninguna oportunidad. Puedes cambiarlo.</div>'
+    +htmlPers
+    +'<div style="display:flex;gap:9px;margin-top:16px;justify-content:flex-end">'
+    +'<button class="btn-action" onclick="cerrarPreviaBorrado()">Cancelar</button>'
+    +'<button class="btn-action" id="previa-ok" onclick="confirmarBorrado('+(empresaSeVa?'true':'false')+')" style="background:#DB0540;border:none;color:#fff;font-weight:700">Borrar lo seleccionado</button>'
+    +'</div></div>';
+
+  grfSet('Antes de borrar: '+grEsc(PREVIA.nombre), cuerpo, false);
+}
+
+function cerrarPreviaBorrado(){
+  if(PREVIA && PREVIA.btn){ PREVIA.btn.disabled=false; PREVIA.btn.textContent=(PREVIA.caso==='d3'?'Borrar con empresa':'Borrar oportunidad'); }
+  PREVIA=null;
+  grfCerrar();
+}
+
+async function confirmarBorrado(empresaSeVa){
+  if(!PREVIA) return;
+  var ids=[].slice.call(document.querySelectorAll('.previa-persona:checked')).map(function(c){ return c.value; });
+  var ok=document.getElementById('previa-ok');
+  if(ok){ ok.disabled=true; ok.textContent='Borrando…'; }
+  try{
+    var r=await fetch(BORRAR_PERDIDA_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({dealId:PREVIA.dealId, companyId:empresaSeVa?(PREVIA.companyId||''):'', contactIds:ids})});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    LIMP_MARKED[PREVIA.dealId]=true;
+    var partes=['Oportunidad'];
+    if(empresaSeVa) partes.push('empresa');
+    if(ids.length) partes.push(ids.length===1?'1 persona':(ids.length+' personas'));
+    var btn=PREVIA.btn; PREVIA=null; grfCerrar();
+    if(btn){ btn.disabled=true; btn.textContent='Borrado'; }
+    taskToast(partes.join(' + ')+': borrado', true);
     renderLimpieza();
-  }catch(e){ if(btn){btn.disabled=false;btn.textContent='Borrar';} taskToast('Error: '+e.message,false); }
+  }catch(e){
+    if(ok){ ok.disabled=false; ok.textContent='Borrar lo seleccionado'; }
+    taskToast('Error: '+e.message,false);
+  }
 }
 
 async function markBorrar(tipo,id,nombreActual,quitar,btn){
