@@ -1158,25 +1158,52 @@ function tagForStage(stage, stageLabel) {
   return `<span class="tag ${cls}">${label}</span>`;
 }
 
+// --- Memoria local de respuestas ---
+/* Cada carga del tablero despertaba media docena de motores. Abrirlo tres veces
+   seguidas costaba lo mismo tres veces, aunque el dato fuera identico. Ahora la
+   respuesta se guarda en el navegador unos minutos; el boton Actualizar siempre
+   trae dato fresco. */
+var CACHE_MIN = 10;
+function cacheLeer(clave){
+  try{
+    var raw = sessionStorage.getItem('gr_cache_'+clave);
+    if(!raw) return null;
+    var o = JSON.parse(raw);
+    if(!o || !o.t || (Date.now()-o.t) > CACHE_MIN*60000) return null;
+    return o.v;
+  }catch(e){ return null; }
+}
+function cacheGuardar(clave, valor){
+  try{ sessionStorage.setItem('gr_cache_'+clave, JSON.stringify({t:Date.now(), v:valor})); }catch(e){}
+}
+/* Trae texto de un webhook, usando lo guardado si sigue fresco. */
+async function traer(clave, url, forzar){
+  if(!forzar){ var g = cacheLeer(clave); if(g!==null) return g; }
+  var r = await fetch(url);
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  var t = await r.text();
+  if(t && t.trim()!=='' && !t.trim().startsWith('<')) cacheGuardar(clave, t);
+  return t;
+}
+
 // --- Data fetch ---
+var LOAD_FORZAR = false;
+async function loadDataFresco(){ LOAD_FORZAR = true; try { await loadData(); } finally { LOAD_FORZAR = false; } }
 async function loadData() {
+  var forzar = LOAD_FORZAR;
   try {
     // Fetch principal v10 + AM v1 en paralelo
     // Prospección carga en paralelo pero NO bloquea el dashboard principal
-    const prospPromise = fetch(PROSPECCION_URL).catch(e => { console.warn('Prospeccion endpoint failed:', e); return null; });
-    const [dealsRes, amRes] = await Promise.all([
-      fetch(DATA_URL),
-      fetch(AM_URL + '?period=' + amPeriod).catch(e => { console.warn('AM endpoint failed:', e); return null; })
+    const prospPromise = traer('prosp', PROSPECCION_URL, forzar).catch(e => { console.warn('Prospeccion endpoint failed:', e); return null; });
+    const [dealsText, amText] = await Promise.all([
+      traer('datos', DATA_URL, forzar),
+      Promise.resolve(null) /* gr-amplemarket no esta registrado en n8n: llamarlo solo gastaba una peticion 404 por carga */
     ]);
-    const prospRes = await prospPromise;
-    const empresasRes = null;
-
-    if (!dealsRes.ok) throw new Error('HTTP ' + dealsRes.status);
-    
-    // Leer como texto primero para diagnosticar mejor
-    const dealsText = await dealsRes.text();
+    const prospText = await prospPromise;
     if (!dealsText || dealsText.trim() === '') {
-      throw new Error('QUOTA_LIMIT');
+      /* Vacio casi siempre es que la consulta tardo demasiado y se corto,
+         no que se haya agotado el plan. Solo n8n dice lo del limite. */
+      throw new Error('SIN_RESPUESTA');
     }
     // Si la respuesta es HTML (típico de n8n cuando hay error de plan)
     if (dealsText.trim().startsWith('<')) {
@@ -1195,12 +1222,9 @@ async function loadData() {
     if (!DATA.ok) throw new Error('Webhook returned ok:false');
 
     // AM data es opcional — si falla el dashboard sigue funcionando
-    if (amRes && amRes.ok) {
+    if (amText) {
       try {
-        const amText = await amRes.text();
-        if (amText && amText.trim() !== '' && !amText.trim().startsWith('<')) {
-          AM_DATA = JSON.parse(amText);
-        }
+        if (amText.trim() !== '' && !amText.trim().startsWith('<')) AM_DATA = JSON.parse(amText);
       } catch (e) {
         console.warn('AM data parse failed:', e);
         AM_DATA = null;
@@ -1208,21 +1232,9 @@ async function loadData() {
     }
 
     // Prospección eventos (opcional) — si falla, el dashboard sigue
-    if (prospRes && prospRes.ok) {
+    if (prospText) {
       try {
-        try {
-          if (empresasRes) {
-            const eText = await empresasRes.text();
-            if (eText && eText.trim() !== '' && !eText.trim().startsWith('<')) {
-              EMPRESAS_DATA = JSON.parse(eText);
-            }
-          }
-        } catch(e2) { console.warn('Empresas error:', e2); }
-
-        const pText = await prospRes.text();
-        if (pText && pText.trim() !== '' && !pText.trim().startsWith('<')) {
-          PROSPECCION_DATA = JSON.parse(pText);
-        }
+        if (prospText.trim() !== '' && !prospText.trim().startsWith('<')) PROSPECCION_DATA = JSON.parse(prospText);
       } catch (e) {
         console.warn('Prospeccion data parse failed:', e);
         PROSPECCION_DATA = null;
@@ -1239,9 +1251,9 @@ async function loadData() {
     // Re-ligar cada tarea a su oportunidad por el VINCULO REAL de HubSpot (asociacion, 2 portales).
     // Si la tarea no tiene asociacion, se conserva lo que mando el backend (fallback).
     try {
-      const ra = await fetch(GR_ASSOC_URL);
-      if (ra && ra.ok) {
-        const am = await ra.json();
+      const raText = await traer('assoc', GR_ASSOC_URL, forzar);
+      {
+        const am = JSON.parse(raText);
         if (am && typeof am === 'object') {
           window.__assocMap = am;
           const _byId = {}; (DATA.deals || []).forEach(function(d){ _byId[String(d.id)] = d; });
@@ -1260,17 +1272,27 @@ async function loadData() {
     updateFooter();
     renderCurrentTab();
     // Cargar datos de empresa en background (no bloquea)
-    fetch(EMPRESAS_URL).then(function(r){ return r.json(); }).then(function(data){
-      EMPRESAS_DATA = data;
+    traer('empresas', EMPRESAS_URL, forzar).then(function(t){
+      EMPRESAS_DATA = JSON.parse(t);
       if(currentTab === 'prospeccion') renderCurrentTab();
     }).catch(function(e){ console.warn('Empresas endpoint failed:', e); });
   } catch (err) {
     console.error('Load error:', err);
     let html = '';
-    if (err.message === 'QUOTA_LIMIT') {
+    if (err.message === 'SIN_RESPUESTA') {
+      html = `<div class="error" style="background:#78350F;border-left:3px solid #F59E0B;padding:16px 20px;border-radius:8px;color:#FCD34D">
+        <div style="font-size:16px;font-weight:700;margin-bottom:8px;color:#FDE68A">⏱️ La consulta tardó demasiado</div>
+        <div style="color:#F3F4F6;line-height:1.5;margin-bottom:8px">El motor no alcanzó a contestar antes de que se cortara la conexión. Casi siempre es eso, no falta de crédito. Vuelve a apretar Actualizar; si pasa tres veces seguidas, entonces sí hay que revisar el plan.</div>
+        <div style="font-size:13px;color:#9CA3AF;margin-top:12px;padding-top:12px;border-top:1px solid #92400E">
+          <strong style="color:#F3F4F6">Si insiste:</strong><br>
+          1. Revisa el consumo del mes en <a href="https://app.n8n.cloud/account/change-plan" target="_blank" style="color:#FCD34D;text-decoration:underline">n8n Cloud</a><br>
+          2. Prueba desde una red más estable
+        </div>
+      </div>`;
+    } else if (err.message === 'QUOTA_LIMIT') {
       html = `<div class="error" style="background:#7F1D1D;border-left:3px solid #EF4444;padding:16px 20px;border-radius:8px;color:#FCA5A5">
         <div style="font-size:16px;font-weight:700;margin-bottom:8px;color:#FECACA">⚠️ Límite mensual de n8n alcanzado</div>
-        <div style="color:#F3F4F6;line-height:1.5;margin-bottom:8px">El webhook de HubSpot no responde porque el plan de n8n llegó a su límite de ejecuciones del mes.</div>
+        <div style="color:#F3F4F6;line-height:1.5;margin-bottom:8px">n8n contestó que el plan llegó a su límite de ejecuciones del mes.</div>
         <div style="font-size:13px;color:#9CA3AF;margin-top:12px;padding-top:12px;border-top:1px solid #991B1B">
           <strong style="color:#F3F4F6">Soluciones:</strong><br>
           1. Subir el plan en <a href="https://app.n8n.cloud/account/change-plan" target="_blank" style="color:#FCA5A5;text-decoration:underline">n8n Cloud</a><br>
@@ -5495,7 +5517,7 @@ function init() {
   $$('.tab').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
-  $('#btn-refresh').addEventListener('click', loadData);
+  $('#btn-refresh').addEventListener('click', loadDataFresco);
   loadData();
   // Auto-refresh DESACTIVADO — solo manual via botón "Actualizar" para conservar ejecuciones de n8n
 }
