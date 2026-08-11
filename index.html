@@ -2873,8 +2873,11 @@ function limpBuckets(){
   var _c2=(LIMP.contactos||{}).c2||[], _c3=(LIMP.contactos||{}).c3||[], _c4=(LIMP.contactos||{}).c4||[];
   var _e1=(LIMP.empresas||{}).e1||[];
   var _dP=(LIMP.deals||{}).d2||[];
-  var _d3=_dP.filter(function(x){return x.unicaDeSuEmpresa;});
-  var _d4=_dP.filter(function(x){return !x.unicaDeSuEmpresa;});
+  /* Tres casos, no dos. Una perdida SIN empresa no es "la empresa tiene mas":
+     no esta ligada a ninguna. Mezclarlas hacia ver un panel vacio y sin sentido. */
+  var _d3=_dP.filter(function(x){return x.companyId && x.unicaDeSuEmpresa;});
+  var _d4=_dP.filter(function(x){return x.companyId && !x.unicaDeSuEmpresa;});
+  var _d5=_dP.filter(function(x){return !x.companyId;});
   var _seen={}, _todos=[]; _c2.concat(_c3).concat(_c4).forEach(function(x){ if(x&&!_seen[x.id]){_seen[x.id]=1;_todos.push(x);} });
   return [
     {k:'ctodos',label:'Todos los contactos',warn:false,note:'Unión de las tres categorías de contactos (sin deal, empresa activa y sin email), sin duplicados.',tipo:'contact',arr:_todos},
@@ -2887,6 +2890,7 @@ function limpBuckets(){
        tiene. Si comparte, la empresa se queda: puede seguir viva. */
     {k:'d3',label:'Perdida · única de su empresa',warn:false,note:'Oportunidades perdidas cuya empresa no tiene ninguna otra. Al borrarlas se va también la ficha de la empresa y no queda residuo.',tipo:'deal',arr:_d3},
     {k:'d4',label:'Perdida · la empresa tiene más',warn:true,note:'Oportunidades perdidas cuya empresa SÍ tiene otras. Aquí solo se borra la oportunidad: la empresa se queda porque puede seguir viva.',tipo:'deal',arr:_d4},
+    {k:'d5',label:'Perdida · sin empresa',warn:false,note:'Oportunidades perdidas que no están ligadas a ninguna empresa. No hay empresa que conservar ni que borrar: se va la oportunidad sola, y con ella cualquier persona que quede sin ninguna otra.',tipo:'deal',arr:_d5},
     /* e3 no viaja como lista propia: se deriva de e1 con la marca sinOportunidades. */
     {k:'e1',label:'Sin contactos',warn:false,note:'Empresas sin una sola persona asociada. No hay a quién escribirle: la cuenta existe pero no se puede trabajar.',tipo:'company',arr:_e1},
     {k:'e2',label:'Sin oportunidades',warn:false,note:'Empresas sin ninguna oportunidad, ni abierta ni cerrada. Nunca se les ha abierto un negocio.',tipo:'company',arr:(LIMP.empresas||{}).e2||[]},
@@ -2953,7 +2957,7 @@ function renderLimpieza(){
       ?'<button class="btn-action grf-open" data-acc="vincularContacto" data-did="'+it.id+'" data-nom="'+encodeURIComponent(it.nombre||'')+'">Vincular</button> '
       :'<button class="btn-action grf-open" data-acc="vincularDeals" data-cid="'+it.id+'" data-emp="'+encodeURIComponent(it.empresa||'')+'" data-eml="'+encodeURIComponent(it.email||'')+'" data-nom="'+encodeURIComponent(it.nombre||'')+'">Vincular</button> ';
     /* En perdidas la accion es borrar, no vincular: ya se dieron por muertas. */
-    if(esDeal && (LIMP_FILTER==='d3'||LIMP_FILTER==='d4')){
+    if(esDeal && (LIMP_FILTER==='d3'||LIMP_FILTER==='d4'||LIMP_FILTER==='d5')){
       vinc='<button class="btn-action limp-borrar" data-id="'+it.id+'" data-emp="'+(it.companyId||'')+'" data-caso="'+LIMP_FILTER+'" data-nom="'+encodeURIComponent(it.nombre||'')+'" style="background:#DB0540;border:none;color:#fff;font-weight:700">'+(LIMP_FILTER==='d3'?'Borrar con empresa':'Borrar oportunidad')+'</button> ';
     }
     /* En empresas no hay a qué vincular desde aquí: la acción es marcar o dejarla. */
@@ -3006,13 +3010,15 @@ async function abrirPreviaBorrado(dealId, companyId, caso, nombre, btn){
 function etapaLabel(id){ var c=(typeof CAT==='function')?(CAT()||{}):{}; var m={}; ((c.stages)||[]).forEach(function(x){ m[String(x.id)]=x.corto||x.label||x.id; }); return m[String(id||'')]||(id||'—'); }
 function pintarPreviaBorrado(){
   var d=PREVIA.datos||{}, esUnica=(PREVIA.caso==='d3');
+  /* Sin empresa no hay nada que conservar ni que borrar del lado de la cuenta. */
+  var sinEmpresa = !PREVIA.companyId;
   var ops=d.oportunidades||[], pers=d.personas||[];
   var otras=ops.filter(function(o){ return !o.esLaQueBorras; });
   /* La empresa solo se va si de verdad no le queda ninguna otra oportunidad.
      Si el motor y la bandeja no coinciden, manda lo que se acaba de leer en vivo. */
-  var empresaSeVa = esUnica && otras.length===0;
+  var empresaSeVa = esUnica && !sinEmpresa && otras.length===0;
 
-  var avisoDesfase = (esUnica && otras.length>0)
+  var avisoDesfase = (esUnica && !sinEmpresa && otras.length>0)
     ? '<div style="background:rgba(255,205,0,.12);border:1px solid rgba(255,205,0,.4);border-radius:8px;padding:9px 11px;margin-bottom:11px;font-size:12px;color:#FFCD00">Ojo: la bandeja la traía como única de su empresa, pero la empresa tiene '+otras.length+' oportunidad(es) más. La empresa NO se va a borrar.</div>'
     : '';
 
@@ -3031,15 +3037,17 @@ function pintarPreviaBorrado(){
       +'<span style="font-size:11px;color:'+(p.sugerido?'#DB0540':'var(--text-dim)')+'">'+grEsc(p.motivo)+'</span></label>';
   }).join('') : '<div style="padding:8px;color:var(--text-mute);font-size:12px">La oportunidad no tiene ninguna persona asociada.</div>';
 
-  var resumen = esUnica
-    ? (empresaSeVa ? 'Se borra la oportunidad <b>y la empresa</b>, que no tiene ninguna otra.' : 'Se borra <b>solo la oportunidad</b>. La empresa se queda.')
-    : 'Se borra <b>solo la oportunidad</b>. La empresa se queda porque tiene otras vivas.';
+  var resumen = sinEmpresa
+    ? 'Se borra <b>solo la oportunidad</b>. No está ligada a ninguna empresa, así que no hay empresa que borrar ni que conservar.'
+    : (esUnica
+        ? (empresaSeVa ? 'Se borra la oportunidad <b>y la empresa</b>, que no tiene ninguna otra.' : 'Se borra <b>solo la oportunidad</b>. La empresa se queda.')
+        : 'Se borra <b>solo la oportunidad</b>. La empresa se queda porque tiene otras vivas.');
 
   var cuerpo='<div style="max-width:640px">'
     +avisoDesfase
     +'<div style="font-size:13px;margin-bottom:12px">'+resumen+' Todo va a la papelera de HubSpot y se recupera hasta 90 días.</div>'
-    +'<div class="section-title" style="margin:0 0 6px"><span class="section-count">Oportunidades de la empresa · '+ops.length+'</span></div>'
-    +'<table class="tbl" style="margin-bottom:14px"><tbody>'+htmlOps+'</tbody></table>'
+    +(sinEmpresa ? '' : ('<div class="section-title" style="margin:0 0 6px"><span class="section-count">Oportunidades de la empresa · '+ops.length+'</span></div>'
+      +'<table class="tbl" style="margin-bottom:14px"><tbody>'+htmlOps+'</tbody></table>'))
     +'<div class="section-title" style="margin:0 0 6px"><span class="section-count">Personas de esta oportunidad · '+pers.length+'</span></div>'
     +'<div style="font-size:11px;color:var(--text-mute);margin-bottom:6px">Vienen marcadas solo las que se quedan sin ninguna oportunidad. Puedes cambiarlo.</div>'
     +htmlPers
