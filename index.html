@@ -1348,10 +1348,20 @@ async function loadData() {
 }
 
 function updateTimer() {
+  /* La hora de corte tiene que verse. Sin ella, comparar el tablero contra Amplemarket es
+     comparar dos fotos tomadas a horas distintas: asi salio el "faltan 2" del 12-ago. */
   const d = new Date(DATA.generadoEn);
-  $('#timer').textContent = d.toLocaleString('es-MX', {
-    hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short'
-  });
+  const el = $('#timer');
+  const hora = d.toLocaleString('es-MX', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
+  const minutos = Math.floor((Date.now() - d.getTime()) / 60000);
+  el.textContent = 'Datos al ' + hora;
+  el.title = 'Momento exacto del corte. Lo que llegó después no aparece hasta que aprietes Actualizar.';
+  if (minutos >= 15) {
+    el.style.color = 'var(--yellow)';
+    el.textContent += ' · hace ' + (minutos >= 120 ? Math.floor(minutos/60) + ' h' : minutos + ' min');
+  } else {
+    el.style.color = '';
+  }
 }
 
 function updateFooter() {
@@ -4389,6 +4399,26 @@ function renderProspeccion() {
   t1+=rowC('circle_back','#F59E0B')+rowC('ooo','#F59E0B');
   t1+=secH('DESCARTADO — YA NO INTERESA','#6B7280','rgba(107,114,128,.08)');
   t1+=rowC('not_the_right_person','#6B7280')+rowC('not_interested','#6B7280')+rowC('hard_no','#6B7280');
+  /* POR REVISAR — es un CORTE, no una clasificacion nueva: estas mismas respuestas ya estan
+     contadas arriba en su categoria. Junta en un solo lugar lo que el motor no pudo resolver
+     solo, para que deje de descubrirse revisando a mano semanas despues. */
+  var rowP=function(etiqueta, clave, col, pred, nota){
+    var sub=repliesCnt.filter(pred); if(!sub.length) return '';
+    var w=winOf(sub);
+    var lbl='<td>'+dot(col)+etiqueta+(nota?' <span style="color:var(--text-mute);font-size:11px">'+nota+'</span>':'')+'</td>';
+    return '<tr>'+lbl+wc(w.hoy,'hoy',clave,0)+wc(w.d7,'d7',clave,0)+wc(w.d30,'d30',clave,0)+wc(w.d90,'d90',clave,0)+wc(w.total,'total',clave,1)+'</tr>';
+  };
+  var _sinProducto=function(e){ return e.producto_revisar===true || !String(e.producto||'').trim(); };
+  var _dudaEtiqueta=function(e){ return e.revisar_etiqueta===true; };
+  var CLAS_POSITIVA=new Set(['interested','meeting_booked','forwarded_to_the_right_person','introduction','circle_back']);
+  var _noLeVendemos=function(e){ return String(e.fit_comercial||'')==='no' && CLAS_POSITIVA.has(normClasP(e.clasificacion||'')); };
+  var _revisables=repliesCnt.filter(function(e){ return _sinProducto(e)||_dudaEtiqueta(e)||_noLeVendemos(e); });
+  if(_revisables.length){
+    t1+=secH('POR REVISAR · corte, estas respuestas tambien estan contadas arriba en su clasificacion','#02ADBA','rgba(2,173,186,.08)');
+    t1+=rowP('No le podemos vender','__SIN_FIT__','#02ADBA',_noLeVendemos,'pidio algo que no ofrecemos');
+    t1+=rowP('Etiqueta en duda','__DUDA_ETIQUETA__','#02ADBA',_dudaEtiqueta,'Amplemarket y el motor no coinciden');
+    t1+=rowP('Sin producto','__SIN_PRODUCTO__','#02ADBA',_sinProducto,'el motor no supo cual es');
+  }
   var known=new Set(['interested','meeting_booked','forwarded_to_the_right_person','introduction','circle_back','ooo','not_the_right_person','not_interested','hard_no']);
   var seen={}; repliesArr.forEach(function(e){ var c=e.clasificacion||''; if(c&&!known.has(c)&&!seen[c]){seen[c]=true;t1+=rowC(c,'#6B7280');} });
   if(!repliesArr.length) t1+='<tr><td colspan="6" style="font-size:12px;color:var(--text-mute);padding:12px;">Sin replies para este filtro.</td></tr>';
@@ -4992,6 +5022,15 @@ function renderProspDetalle(ptype, pval, pwin) {
     if(pval==='__DUO_REPLY__'){
       // DUO replies: replies cuya campana tiene formato DuoCopilot
       pool=pool.filter(function(e){ return e.tipo!=='open3' && isDUOf(e); });
+    } else if(pval==='__SIN_FIT__'){
+      // Sigue contando como interes, pero pidio algo que no vendemos. Sobre un rechazo no aporta.
+      var _CP=new Set(['interested','meeting_booked','forwarded_to_the_right_person','introduction','circle_back']);
+      pool=pool.filter(function(e){ return e.tipo!=='open3' && String(e.fit_comercial||'')==='no' && _CP.has(String(e.clasificacion||'').toLowerCase()); });
+    } else if(pval==='__DUDA_ETIQUETA__'){
+      // La etiqueta de Amplemarket y la lectura del motor no coinciden.
+      pool=pool.filter(function(e){ return e.tipo!=='open3' && e.revisar_etiqueta===true; });
+    } else if(pval==='__SIN_PRODUCTO__'){
+      pool=pool.filter(function(e){ return e.tipo!=='open3' && (e.producto_revisar===true || !String(e.producto||'').trim()); });
     } else {
       pool=pool.filter(function(e){return e.tipo!=='open3';});
       if(pval!=='__ALL_REPLIES__') pool=pool.filter(function(e){return (e.clasificacion||'')===pval;});
@@ -5016,7 +5055,8 @@ function renderProspDetalle(ptype, pval, pwin) {
   pool.forEach(function(e){var key=(e.empresa||'')+'||'+(e.prospecto||'');if(!dedupMapGR.has(key))dedupMapGR.set(key,e);});
   pool=Array.from(dedupMapGR.values());
   var winLbl={hoy:'Hoy',d7:'7d',d30:'30d',d90:'90d',total:'Total'}[pwin]||pwin;
-  var titulo=ptype==='clas'?(pval==='__ALL_REPLIES__'?'Todos los replies':fmtLbl(pval)):('Open+3 · '+(pval==='__ALL_SENALES__'?'todos':pval));
+  var TIT_CORTE={'__DUO_REPLY__':'DUO Reply','__SIN_FIT__':'No le podemos vender','__DUDA_ETIQUETA__':'Etiqueta en duda','__SIN_PRODUCTO__':'Sin producto','__ALL_REPLIES__':'Todos los replies'};
+  var titulo=ptype==='clas'?(TIT_CORTE[pval]||fmtLbl(pval)):('Open+3 · '+(pval==='__ALL_SENALES__'?'todos':pval));
 
   var fase=function(et){if(!et)return'gray';if(/Ganada/i.test(et))return'green';if(/Perdida/i.test(et))return'gray';if(/Atracci|Educaci|Propuesta|Aprobaci|Contract|Reunion|Renovaci/i.test(et))return'green';if(/Conversaci/i.test(et))return'yellow';return'red';};
   var FC={green:'#10B981',yellow:'#F59E0B',red:'#EF4444',gray:'#6B7280'};
