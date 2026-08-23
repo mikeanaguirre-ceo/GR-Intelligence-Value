@@ -900,7 +900,9 @@ function abrirEditarDealGR(dealId){
   var stgs=grStagesForSelect(); var curId=''; stgs.forEach(function(x){ if(x.id===d.stage) curId=x.id; });
   document.getElementById('grmd-stage').innerHTML=stgs.map(function(x){return '<option value="'+x.id+'"'+(x.id===curId?' selected':'')+'>'+grEsc(x.label)+'</option>';}).join('');
   document.getElementById('grmd-close').value=(d.closedate&&d.closedate!=='null')?String(d.closedate).slice(0,10):'';
+  window.__grEditDias=(d.diasEnEtapa===undefined?null:d.diasEnEtapa);
   grmdPretty();
+  grmdAplicarBloqueo();
   grmdCargarContactos(dealId, d.cliente||d.name||'');
   document.getElementById('grmd-status').textContent=''; document.getElementById('grmd-save').disabled=false;
   document.getElementById('gr-modal-edit').style.display='flex';
@@ -918,6 +920,24 @@ function grmdNuevaTarea(){
   if(_ps){ _ps.value=(d.prod||''); _ps.disabled=true; _ps.style.opacity='.7'; }
 }
 window.__grContactos=[];
+// En prospeccion el reloj lo lleva la etapa, no la fecha de cierre: los plazos ya estan
+// definidos y son los mismos para todos. Dejar editar la fecha ahi solo confunde los dos
+// relojes. En cuanto la oportunidad sale de prospeccion, la fecha se abre: ahi si se mueve.
+var GRMD_PROSPECCION={'1332596061':['Senal Detectada',2],'1332596062':['Reply Recibido',2],'1332596063':['Contactado',10],'1332596064':['En Conversacion',10],'appointmentscheduled':['Atraccion',7]};
+function grmdEsProspeccion(stage){ return !!GRMD_PROSPECCION[String(stage||'')]; }
+function grmdAplicarBloqueo(){
+  var sel=document.getElementById('grmd-stage'), inp=document.getElementById('grmd-close'), nota=document.getElementById('grmd-close-nota');
+  if(!sel||!inp||!nota) return;
+  var cfg=GRMD_PROSPECCION[String(sel.value||'')];
+  if(cfg){
+    inp.disabled=true; inp.style.opacity='.45'; inp.style.cursor='not-allowed';
+    var d=window.__grEditDias;
+    nota.textContent='En prospeccion la fecha no se edita. El plazo de '+cfg[0]+' es de '+cfg[1]+' dias'+((d===null||d===undefined)?'':(' y esta lleva '+d))+'.';
+  } else {
+    inp.disabled=false; inp.style.opacity='1'; inp.style.cursor='';
+    nota.textContent='Ya es oportunidad: la fecha de cierre es tu pronostico y se puede mover.';
+  }
+}
 function grmdPretty(){ var el=document.getElementById('grmd-close'); var out=document.getElementById('grmd-close-pretty'); if(!el||!out) return; var v=el.value; if(!v){ out.textContent=''; return; } var pr=fmtFecha(v+'T00:00:00Z'); out.textContent=pr?('\u2192 '+pr):''; }
 function grmdSyncPhone(){ var sel=document.getElementById('grmd-contact'); var ph=document.getElementById('grmd-phone'); if(!sel||!ph) return; var c=(window.__grContactos||[]).filter(function(x){return String(x.id)===String(sel.value);})[0]; ph.value=c?(c.telefono||''):''; ph.setAttribute('data-orig', ph.value); }
 async function grmdCargarContactos(dealId, empresa){
@@ -935,13 +955,13 @@ async function grmdCargarContactos(dealId, empresa){
 async function guardarDealGR(){
   var dealId=window.__grEditId; if(!dealId) return;
   var stage=document.getElementById('grmd-stage').value;
-  var close=document.getElementById('grmd-close').value;
+  var close=grmdEsProspeccion(stage)?null:document.getElementById('grmd-close').value;
   var stt=document.getElementById('grmd-status'); var btn=document.getElementById('grmd-save');
   var _sel=document.getElementById('grmd-contact'); var _ph=document.getElementById('grmd-phone');
   var phoneChanged=!!(_sel&&_ph&&_sel.value&&_ph.value!==(_ph.getAttribute('data-orig')||''));
   stt.textContent='Guardando…'; stt.style.color='#9CA3AF'; btn.disabled=true;
   try{
-    var r=await fetch('https://mikea.app.n8n.cloud/webhook/gr-deal',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:dealId,dealstage:stage,closedate:close})});
+    var r=await fetch('https://mikea.app.n8n.cloud/webhook/gr-deal',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(close===null?{dealId:dealId,dealstage:stage}:{dealId:dealId,dealstage:stage,closedate:close})});
     if(!r.ok) throw new Error('HTTP '+r.status);
     if(phoneChanged){
       try{
@@ -5577,10 +5597,11 @@ if (document.readyState === 'loading') {
     </div>
     <div id="grmd-info" style="font-size:12px;color:#9CA3AF;margin-bottom:16px;line-height:1.7;"></div>
     <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Etapa</label>
-    <select id="grmd-stage" style="width:100%;margin:5px 0 14px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;"></select>
+    <select id="grmd-stage" onchange="grmdAplicarBloqueo()" style="width:100%;margin:5px 0 14px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;"></select>
     <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Fecha de cierre de la oportunidad</label>
     <input id="grmd-close" type="date" onfocus="try{this.showPicker&&this.showPicker()}catch(e){}" onclick="try{this.showPicker&&this.showPicker()}catch(e){}" oninput="grmdPretty()" style="width:100%;margin:5px 0 2px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;">
-    <div id="grmd-close-pretty" style="font-size:12px;color:#02ADBA;font-weight:700;margin:0 0 14px;min-height:15px;"></div>
+    <div id="grmd-close-pretty" style="font-size:12px;color:#02ADBA;font-weight:700;margin:0 0 2px;min-height:15px;"></div>
+    <div id="grmd-close-nota" style="font-size:11px;color:#9CA3AF;line-height:1.5;margin:0 0 14px;"></div>
     <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Contacto</label>
     <select id="grmd-contact" onchange="grmdSyncPhone()" style="width:100%;margin:5px 0 8px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;"></select>
     <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Teléfono</label>
