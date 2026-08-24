@@ -2010,7 +2010,7 @@ function renderPipeline() {
         const subtitleHtml = d.cliente && d.cliente !== d.name
           ? `<div class="kanban-card-sub" style="font-size:10px;color:var(--text-dim);margin-top:2px;">${d.name}</div>`
           : '';
-        const _semCol = ({rojo:'#DB0540',amarillo:'#FFCD00',verde:'#62D175',gris:'#9CA3AF'})[d.semaforo] || 'transparent';
+        const _semCol = ({rojo:'#DB0540',amarillo:'#FFCD00',verde:'#62D175',gris:'#9CA3AF',aparcada:'#7C93B8'})[d.semaforo] || 'transparent';
         const _perChips = (d.personas && d.personas.length)
           ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;">${d.personas.slice(0,3).map(p=>`<span style="font-size:10px;padding:1px 7px;border-radius:8px;background:rgba(125,42,228,.16);color:#C4A5F0;">${p}</span>`).join('')}</div>`
           : '';
@@ -2031,7 +2031,7 @@ function renderPipeline() {
             ${subtitleHtml}
             <div class="kanban-card-meta">
               <span class="kanban-card-amount">${fmtK(d.amount)}</span>
-              <span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--text-dim);"><span style="width:8px;height:8px;border-radius:50%;background:${_semCol};display:inline-block;"></span>${(function(){ if(d.semaforo==='gris') return 'Sin fecha'; var _t=({rojo:'Vencida',amarillo:'Próxima',verde:'Al día'})[d.semaforo]||''; return (d.diasEnEtapa!=null && _t) ? _t+' · '+d.diasEnEtapa+'d en etapa' : _t; })()}</span>
+              <span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--text-dim);"><span style="width:8px;height:8px;border-radius:50%;background:${_semCol};display:inline-block;"></span>${(function(){ if(d.semaforo==='aparcada') return 'Aparcada'+(d.fechaRetomar?(' · retomar '+d.fechaRetomar):''); if(d.semaforo==='gris') return 'Sin fecha'; var _t=({rojo:'Vencida',amarillo:'Próxima',verde:'Al día'})[d.semaforo]||''; return (d.diasEnEtapa!=null && _t) ? _t+' · '+d.diasEnEtapa+'d en etapa' : _t; })()}</span>
               <span title="Antigüedad de creación" style="width:8px;height:8px;border-radius:50%;background:${nuevaCol(d)};display:inline-block;margin-left:auto;"></span>
             </div>
             ${_perChips}
