@@ -998,12 +998,13 @@ function catProdsPresentes(){
 }
 // ===== Helpers compartidos de filtros (homologación) =====
 // Ventana de tareas cerradas que se muestra en Pendientes. Cambiar aqui y cambia en todos lados.
-// El motor arma el resumen de la semana: siete dias. Poner 15 aqui prometia una quincena
-// que nunca podia mostrarse. Es la ventana que el equipo revisa de verdad.
-var CERRADAS_DIAS = 7;
+// El motor le pide a HubSpot solo los ultimos 15 dias de tareas cerradas: la ventana esta
+// acotada en el origen y no crece con el historial. El tablero usa la que diga el motor.
+var CERRADAS_DIAS = 15;
 var CERRADAS_CARGANDO = false;
 // Las tareas cerradas de la semana pesan 406 KB: el 56% de la respuesta. Solo se piden
 // cuando alguien abre el filtro, y una sola vez por sesion.
+function cerradasVentana(){ var r=(DATA&&DATA.recapSemanal&&DATA.recapSemanal.tareasCompletadas)||{}; return Number(r.ventanaDias)||CERRADAS_DIAS; }
 function cerradasCargadas(){ var r=(DATA&&DATA.recapSemanal&&DATA.recapSemanal.tareasCompletadas)||{}; var d=r.detalle||{}; return Object.keys(d).length>0 || (r.total||0)===0; }
 async function cargarCerradas(){
   if(CERRADAS_CARGANDO || cerradasCargadas()) return;
@@ -2445,7 +2446,7 @@ function renderPendientes() {
     const _det = (DATA.recapSemanal && DATA.recapSemanal.tareasCompletadas && DATA.recapSemanal.tareasCompletadas.detalle) || {};
     // Ventana de cerradas: ultimos 15 dias. Mas atras se vuelve historia, no operacion,
     // y cargar todo el historico hace lenta la pestana.
-    const _corteCerradas = (function(){ const d = new Date(); d.setDate(d.getDate() - CERRADAS_DIAS); return d.toISOString().slice(0,10); })();
+    const _corteCerradas = (function(){ const d = new Date(); d.setDate(d.getDate() - cerradasVentana()); return d.toISOString().slice(0,10); })();
     Object.keys(_det).forEach(p => {
       (_det[p] || []).forEach(t => {
         const _cierre = t.completedDate || t.date || '';
