@@ -1004,6 +1004,22 @@ var CERRADAS_DIAS = 15;
 var CERRADAS_CARGANDO = false;
 // Las tareas cerradas de la semana pesan 406 KB: el 56% de la respuesta. Solo se piden
 // cuando alguien abre el filtro, y una sola vez por sesion.
+// Los avisos de higiene del CRM pesan ~103 KB y solo se miran al abrir su pestana.
+// Se piden una vez por sesion, igual que las tareas cerradas. No se pierde nada.
+var ALERTAS_CARGANDO = false;
+function alertasCargadas(){ var s=(DATA&&DATA.statsAlertas16)||{}; var a=(DATA&&DATA.alertas16)||[]; return a.length>0 || (Number(s.total)||0)===0; }
+async function cargarAlertas(){
+  if(ALERTAS_CARGANDO || alertasCargadas()) return;
+  ALERTAS_CARGANDO = true;
+  try{
+    var r = await fetch(DATA_URL + '?alertas=1');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    var j = await r.json();
+    if(j && Array.isArray(j.alertas16)){ DATA.alertas16 = j.alertas16; }
+  }catch(e){ }
+  ALERTAS_CARGANDO = false;
+  try{ renderCurrentTab(); }catch(e){}
+}
 function cerradasVentana(){ var r=(DATA&&DATA.recapSemanal&&DATA.recapSemanal.tareasCompletadas)||{}; return Number(r.ventanaDias)||CERRADAS_DIAS; }
 function cerradasCargadas(){ var r=(DATA&&DATA.recapSemanal&&DATA.recapSemanal.tareasCompletadas)||{}; var d=r.detalle||{}; return Object.keys(d).length>0 || (r.total||0)===0; }
 async function cargarCerradas(){
@@ -3272,6 +3288,7 @@ function fixConteo(op){
     var b=limpBuckets().filter(function(x){ return x.k===op.bucket; })[0];
     return b ? String(b.arr.length) : '0';
   }
+  if (!alertasCargadas()) { cargarAlertas(); return '…'; }
   var base=((DATA && DATA.alertas16)||[]).filter(function(a){
     return a.accion!=='setearDealtype' && a.categoria==='Higienizar';
   });
@@ -3595,6 +3612,7 @@ function applyAlertasFilters(alertas) {
 }
 
 function renderAlertas() {
+  if (!alertasCargadas()) { cargarAlertas(); }
   const allAlertas = ((DATA && DATA.alertas16) || []).filter(function(a){ return a.accion !== 'setearDealtype'; });
   const stats = (DATA && DATA.statsAlertas16) || { total: 0, revenueEnRiesgo: 0, porCategoria: {}, porAccion: {} };
 
