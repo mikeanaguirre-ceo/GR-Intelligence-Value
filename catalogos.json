@@ -28,6 +28,14 @@
       "tipo": "gr"
     },
     {
+      "id": "Sabrina",
+      "label": "Sabrina",
+      "alias": [
+        "sabrina"
+      ],
+      "tipo": "gr"
+    },
+    {
       "id": "Daniel",
       "label": "Daniel",
       "alias": [
@@ -46,11 +54,10 @@
       "tipo": "gr"
     },
     {
-      "id": "Mine",
-      "label": "Mine",
+      "id": "Sara",
+      "label": "Sara",
       "alias": [
-        "mine",
-        "minerva"
+        "sara"
       ],
       "tipo": "gr"
     },
@@ -81,31 +88,6 @@
       ],
       "tipo": "partner",
       "empresa": "Artool"
-    },
-    {
-      "id": "Sara",
-      "label": "Sara",
-      "alias": [
-        "sara"
-      ],
-      "tipo": "gr"
-    },
-    {
-      "id": "Sabrina",
-      "label": "Sabrina",
-      "alias": [
-        "sabrina"
-      ],
-      "tipo": "gr"
-    },
-    {
-      "id": "Valeria",
-      "label": "Valeria",
-      "alias": [
-        "valeria",
-        "vale"
-      ],
-      "tipo": "gr"
     },
     {
       "id": "Uri",
