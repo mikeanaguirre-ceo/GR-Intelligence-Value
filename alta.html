@@ -75,7 +75,6 @@ footer{text-align:center;color:var(--g);font-size:12px;padding:24px}
 (function () {
   var API = 'https://mikea.app.n8n.cloud/webhook/motor-portal-api';
   var CLIENT_ID = '984882033131-fc761rdsqc65vks90b4mt0sfhbkj1gbl.apps.googleusercontent.com';
-  var ALTA_FORM = 'https://mikea.app.n8n.cloud/form/motor-alta-compania';
   var estado = { sesion: null, companias: [], sel: null };
   function $(id) { return document.getElementById(id); }
   function h(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -117,10 +116,48 @@ footer{text-align:center;color:var(--g);font-size:12px;padding:24px}
     }).join('') + '<button class="nueva" id="nueva">+ Nueva compañía</button>';
     $('lista').innerHTML = html;
     Array.prototype.forEach.call(document.querySelectorAll('.cia'), function (b) { b.onclick = function () { elegir(b.getAttribute('data-t')); }; });
-    $('nueva').onclick = function () { window.open(ALTA_FORM, '_blank'); };
+    $('nueva').onclick = nueva;
+  }
+
+  // Alta de compania nueva: solo lo acordado (nombre y sitio, manual de identidad, carpeta de logos y administradora).
+  // La marca no se captura aqui: la propone GR a partir del manual y los logos, y despues se aprueba.
+  function nueva() {
+    estado.sel = null; pintarLista();
+    $('panel').innerHTML = '<div class="card"><h2>Nueva compañía</h2><p class="sub">Con esto basta para empezar. La marca (colores, logo, tipografía) se propone después a partir del manual y los logos, y tú la apruebas.</p>'
+      + '<div class="dos">'
+      + '<label>Nombre de la compañía<input id="n-nombre" placeholder="IT Institute by Itera"></label>'
+      + '<label>Sitio web<input id="n-sitio" placeholder="https://it-institute.org"></label>'
+      + '<label>Manual de identidad: PDF<input id="n-pdf" type="file" accept="application/pdf"></label>'
+      + '<label>o liga de Drive al manual<input id="n-manual" placeholder="https://drive.google.com/file/d/..."></label>'
+      + '<label>Carpeta de Drive con logos y archivos<input id="n-logos" placeholder="https://drive.google.com/drive/folders/..."></label>'
+      + '<label>Administradora (correo de Google, opcional)<input id="n-admin" placeholder="nombre@compania.com"></label>'
+      + '</div></div>'
+      + '<div class="acciones"><button class="p" id="n-alta">Dar de alta</button><button class="s" id="n-cancelar">Cancelar</button><span class="msg" id="m-alta"></span></div>';
+    $('n-cancelar').onclick = function () { elegir(estado.companias[0] && estado.companias[0].tenant); };
+    $('n-alta').onclick = darDeAlta;
+  }
+  function darDeAlta() {
+    var m = $('m-alta'), f = $('n-pdf').files[0];
+    var cuerpo = { accion: 'alta', sesion: estado.sesion, nombre: $('n-nombre').value.trim(), sitio_web: $('n-sitio').value.trim(), manual_url: $('n-manual').value.trim(), logos_url: $('n-logos').value.trim(), admin: $('n-admin').value.trim() };
+    if (f && f.size > 10 * 1024 * 1024) { m.className = 'msg bad'; m.textContent = 'El PDF pesa más de 10 MB. Súbelo a Drive y pega la liga.'; return; }
+    m.className = 'msg'; m.textContent = f ? 'Subiendo el manual...' : 'Dando de alta...'; $('n-alta').disabled = true;
+    var listo = function () {
+      api(cuerpo).then(function (d) {
+        $('n-alta').disabled = false;
+        if (d._codigo === 401) { salir(d.error); return; }
+        if (!d.ok) { m.className = 'msg bad'; m.textContent = d.error || 'No se pudo dar de alta.'; return; }
+        estado.sel = d.tenant; m.className = 'msg ok'; m.textContent = 'Lista. Abriendo la compañía...'; setTimeout(cargar, 600);
+      });
+    };
+    if (!f) { listo(); return; }
+    var r = new FileReader();
+    r.onload = function () { cuerpo.manual_pdf = { nombre: f.name, base64: String(r.result).split(',')[1] || '' }; listo(); };
+    r.onerror = function () { $('n-alta').disabled = false; m.className = 'msg bad'; m.textContent = 'No se pudo leer el PDF.'; };
+    r.readAsDataURL(f);
   }
 
   var CAMPOS = [
+    ['Origen de la marca', [['sitio_web', 'Sitio web'], ['marca_manual_url', 'Manual de identidad (liga)'], ['marca_logos_carpeta', 'Carpeta de Drive con logos']]],
     ['Marca', [['marca_nombre', 'Nombre de la marca'], ['marca_logo_url', 'Logo (direccion https de una imagen PNG)'], ['marca_color_primario', 'Color principal', 'color'], ['marca_color_oscuro', 'Color oscuro', 'color'], ['marca_pie', 'Pie de los avisos'], ['marca_remitente_interno', 'Remitente de los avisos'], ['marca_prefijo_asunto', 'Prefijo del asunto']]],
     ['Portal de la compañía', [['portal_nombre', 'Nombre del portal'], ['portal_admins', 'Administradores (correos de Google, separados por coma)'], ['usuarios_max', 'Usuarios maximos (incluye a la administradora)'], ['modo', 'Modo', 'modo']]],
     ['Avisos: quién los recibe', [['aviso_fallas_correos', 'Fallas del motor'], ['resumen_diario_correos', 'Resumen de las 7:30'], ['revision_semanal_correos', 'Revision de los lunes'], ['respuestas_sin_accion_correos', 'Corte de las 18:00'], ['aviso_vendedor_correos', 'Aviso al vendedor'], ['llaves_avisar_a', 'Conexiones nuevas']]]
@@ -134,7 +171,16 @@ footer{text-align:center;color:var(--g);font-size:12px;padding:24px}
     var c = estado.companias.filter(function (x) { return x.tenant === t; })[0]; if (!c) { $('panel').innerHTML = ''; return; }
     estado.sel = t; pintarLista();
     var html = '<div class="card"><h2>Vista previa</h2><div id="prev"></div></div>';
-    if (c.faltan.length) html += '<div class="faltan">Faltan datos para operar: ' + h(c.faltan.join(', ')) + '.</div>';
+    var inf = c.info || {}; estado.fuente = inf.marca_fuente_interna || '';
+    if (inf.alta_estado === 'marca_por_proponer') html += '<div class="faltan">Dada de alta el ' + h(inf.alta_fecha || '') + '. Siguiente paso: proponer la marca a partir del manual y los logos, y aprobarla.</div>';
+    else if (c.faltan.length) html += '<div class="faltan">Faltan datos para operar: ' + h(c.faltan.join(', ')) + '.</div>';
+    if (inf.operacion_actual || inf.marca_diferencias_manual || inf.marca_fuente_interna) {
+      html += '<div class="card"><h2>Cómo opera hoy</h2>'
+        + (inf.operacion_actual ? '<p style="margin:0 0 8px">' + h(inf.operacion_actual) + '</p>' : '')
+        + (inf.marca_fuente_interna ? '<p style="margin:0 0 8px"><b>Tipografía de los avisos:</b> ' + h(inf.marca_fuente_interna) + '</p>' : '')
+        + (inf.marca_diferencias_manual ? '<p style="margin:0"><b>Diferencias contra el manual:</b> ' + h(inf.marca_diferencias_manual) + '</p>' : '')
+        + '</div>';
+    }
     CAMPOS.forEach(function (g) { html += '<div class="card"><h2>' + h(g[0]) + '</h2><div class="dos">' + g[1].map(function (f) { return campo(f[0], f[1], f[2], c.datos[f[0]] || ''); }).join('') + '</div></div>'; });
     html += '<div class="card"><h2>Ligas de ' + h(c.datos.marca_nombre || c.tenant) + '</h2>' + liga('Tablero', c.ligas.tablero) + liga('Portal de conexiones', c.ligas.portal) + '<p class="sub" style="margin:8px 0 0">Llevan claves privadas: compártelas solo con la compañía.</p></div>';
     html += '<div class="acciones"><button class="p" id="guardar">Guardar cambios</button><button class="s" id="deshacer">Deshacer</button><span class="msg" id="m-guardar"></span></div>';
@@ -152,7 +198,7 @@ footer{text-align:center;color:var(--g);font-size:12px;padding:24px}
     var Y = /^#[0-9a-fA-F]{6}$/.test(val('marca_color_primario')) ? val('marca_color_primario') : '#cccccc';
     var K = /^#[0-9a-fA-F]{6}$/.test(val('marca_color_oscuro')) ? val('marca_color_oscuro') : '#111111';
     var logo = val('marca_logo_url');
-    $('prev').innerHTML = '<div class="prev"><div class="top">' + (logo ? '<img src="' + h(logo) + '" alt="">' : '<b>' + h(val('marca_nombre')) + '</b>') + '</div>'
+    $('prev').innerHTML = '<div class="prev"' + (estado.fuente ? ' style="font-family:' + h(estado.fuente).replace(/&quot;/g, "'") + '"' : '') + '><div class="top">' + (logo ? '<img src="' + h(logo) + '" alt="">' : '<b>' + h(val('marca_nombre')) + '</b>') + '</div>'
       + '<div class="band" style="background:' + Y + ';color:' + K + '">Resumen del pipeline</div>'
       + '<div class="body" style="color:' + K + '"><b>16 oportunidades abiertas por 628,000.</b><div class="kpis">'
       + '<div class="kpi" style="background:' + Y + '"><b>16</b>Abiertas</div><div class="kpi" style="background:' + mezcla(Y, .45) + '"><b>628,000</b>Valor</div><div class="kpi" style="background:' + mezcla(Y, .18) + '"><b>2</b>Sin atender</div></div>'
