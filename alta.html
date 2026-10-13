@@ -15,28 +15,37 @@ header{background:var(--grk);color:#fff;padding:14px 20px;display:flex;justify-c
 header b{font-family:var(--disp);font-weight:700;letter-spacing:.02em}header span{color:#c9c6d6;font-size:13px}
 .barra{height:5px;background:linear-gradient(90deg,#22d3ee,#a3e635,#7c3aed,#db2777)}
 main{max-width:1180px;margin:0 auto;padding:20px}
-h1{font-family:var(--disp);font-weight:900;font-size:28px;margin:6px 0 4px}h2{font-family:var(--disp);font-size:16px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.04em}
+h1{font-family:var(--disp);font-weight:900;font-size:28px;margin:6px 0 4px}h2{font-family:var(--disp);font-size:16px;margin:0;text-transform:uppercase;letter-spacing:.04em}
 .sub{color:var(--g);margin:0 0 18px}
 .entrar{background:#fff;border:1px solid var(--line);border-radius:12px;padding:28px;max-width:460px;display:grid;gap:14px}
-.grid{display:grid;grid-template-columns:260px minmax(0,1fr);gap:18px}@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.grid{display:grid;grid-template-columns:240px minmax(0,1fr);gap:18px}@media(max-width:860px){.grid{grid-template-columns:1fr}}
 .lista{display:grid;gap:10px;align-content:start}
 .cia{background:#fff;border:2px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;display:grid;gap:6px;text-align:left;font:inherit}
 .cia.on{border-color:var(--gr)}.cia img{max-width:140px;max-height:44px;object-fit:contain}.cia small{color:var(--g)}
 .nueva{background:transparent;border:2px dashed var(--line);border-radius:12px;padding:12px;color:var(--g);font:inherit;cursor:pointer;text-align:left}
 .panel{display:grid;gap:16px;min-width:0}
-.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0;display:grid;gap:12px}
+.card-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--gr);color:#fff;font:700 12px var(--disp);margin-right:8px}
 .dos{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
 label{display:grid;gap:4px;font-size:13px;color:var(--g)}
-input,select{font:inherit;color:var(--grk);border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;min-width:0}
+input,select,textarea{font:inherit;color:var(--grk);border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;min-width:0}
+textarea{resize:vertical}
 .color{display:flex;gap:8px}.color input[type=color]{width:44px;padding:2px;height:38px}
 .acciones{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-button.p{background:var(--gr);color:#fff;border:0;border-radius:8px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer}
-button.s{background:#fff;color:var(--grk);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font:inherit;cursor:pointer}
+button.p,a.p{background:var(--gr);color:#fff;border:0;border-radius:8px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}
+button.s,a.s{background:#fff;color:var(--grk);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font:inherit;cursor:pointer;text-decoration:none;display:inline-block}
+button:disabled{opacity:.6;cursor:wait}
 .msg{font-size:14px}.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
 .liga{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;word-break:break-all}.liga code{background:var(--bg);padding:4px 8px;border-radius:6px}
-.faltan{background:#fff4e5;border:1px solid #f3c47a;color:#7a4a00;border-radius:8px;padding:8px 12px;font-size:13px}
-/* Vista previa del aviso con la marca de la compania */
-.prev{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;font-family:Calibri,Carlito,"Segoe UI",Arial,sans-serif}
+.aviso{background:#fff4e5;border:1px solid #f3c47a;color:#7a4a00;border-radius:8px;padding:8px 12px;font-size:13px}
+.nota{background:var(--bg);border:1px solid var(--line);color:var(--g);border-radius:8px;padding:8px 12px;font-size:13px}
+.vitrina{width:100%;height:640px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.pedir{border-top:1px dashed var(--line);padding-top:12px;display:grid;gap:10px}
+.sol{display:grid;gap:6px;margin:0;padding:0;list-style:none}.sol li{font-size:13px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:grid;gap:2px}
+.chip{display:inline-block;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;margin-right:6px}.chip.pendiente{background:#fff4e5;color:#7a4a00}.chip.aplicado{background:#e6f4ea;color:#1e6b34}.chip.descartado{background:#eee;color:#555}
+/* Vista previa de un aviso con la marca de la compania */
+.prev{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;font-family:Calibri,Carlito,"Segoe UI",Arial,sans-serif;max-width:560px}
 .prev .top{padding:12px 16px}.prev .top img{height:34px;max-width:160px;object-fit:contain;display:block}
 .prev .band{padding:10px 16px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
 .prev .body{padding:14px 16px;display:grid;gap:10px}
@@ -52,7 +61,7 @@ footer{text-align:center;color:var(--g);font-size:12px;padding:24px}
 <main>
   <section id="v-entrar">
     <h1>Portal de alta</h1>
-    <p class="sub">Aquí Great Revenue da de alta a cada compañía: el origen de su marca, su marca, su administradora y cuántos usuarios tiene.</p>
+    <p class="sub">Aquí Great Revenue da de alta a cada compañía y deja lista su configuración inicial: vista previa de su marca, cómo opera, origen y marca, quién recibe la operación, su administradora y sus ligas.</p>
     <div class="entrar">
       <b>Entra con tu cuenta de Google</b>
       <div id="gbtn"></div>
@@ -62,7 +71,7 @@ footer{text-align:center;color:var(--g);font-size:12px;padding:24px}
 
   <section id="v-portal" hidden>
     <h1>Compañías</h1>
-    <p class="sub">Elige una compañía para ver su vitrina de marca y ajustar su configuración inicial. Objetivos, avisos y proceso comercial se configuran en el portal de la compañía.</p>
+    <p class="sub">Todas las compañías tienen las mismas siete secciones. Objetivos, avisos por objetivo y proceso comercial se configuran en el portal de la compañía.</p>
     <div class="grid">
       <div class="lista" id="lista"></div>
       <div class="panel" id="panel"></div>
@@ -75,7 +84,7 @@ footer{text-align:center;color:var(--g);font-size:12px;padding:24px}
 (function () {
   var API = 'https://mikea.app.n8n.cloud/webhook/motor-portal-api';
   var CLIENT_ID = '984882033131-fc761rdsqc65vks90b4mt0sfhbkj1gbl.apps.googleusercontent.com';
-  var estado = { sesion: null, companias: [], sel: null };
+  var estado = { sesion: null, companias: [], sel: null, vitrinas: {} };
   function $(id) { return document.getElementById(id); }
   function h(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function guardarSesion(s) { try { if (s) sessionStorage.setItem('gr_sesion', s); else sessionStorage.removeItem('gr_sesion'); } catch (e) {} estado.sesion = s; }
@@ -85,11 +94,13 @@ footer{text-align:center;color:var(--g);font-size:12px;padding:24px}
       .then(function (r) { return r.json().catch(function () { return { error: 'Respuesta no valida' }; }).then(function (d) { d._codigo = r.status; return d; }); });
   }
   function salir(motivo) { guardarSesion(null); $('v-portal').hidden = true; $('v-entrar').hidden = false; $('quien').textContent = 'Portal de alta'; $('m-entrar').textContent = motivo || ''; }
+  function msg(id, clase, texto) { var m = $(id); if (m) { m.className = 'msg ' + (clase || ''); m.textContent = texto; } }
 
   window.alEntrar = function (resp) {
     $('m-entrar').textContent = 'Revisando tu acceso...';
     api({ accion: 'entrar', id_token: resp.credential }).then(function (d) {
       if (!d.sesion) { $('m-entrar').textContent = d.error || 'No se pudo entrar.'; return; }
+      if (d.usuario && d.usuario.rol !== 'gr') { $('m-entrar').innerHTML = 'Este es el portal de Great Revenue. Tu portal está en <a href="compania.html">compania.html</a>.'; return; }
       guardarSesion(d.sesion); $('m-entrar').textContent = ''; $('quien').textContent = d.usuario.nombre + ' · ' + d.usuario.email; cargar();
     });
   };
@@ -102,7 +113,8 @@ footer{text-align:center;color:var(--g);font-size:12px;padding:24px}
   function cargar() {
     api({ accion: 'companias', sesion: estado.sesion }).then(function (d) {
       if (d._codigo === 401 || d._codigo === 403) { salir(d.error); return; }
-      if (!d.companias) { salir(d.error || 'No se pudo leer la configuracion.'); return; }
+      if (!d.companias) { salir(d.error || 'No se pudo leer la configuración.'); return; }
+      if (d.usuario && d.usuario.rol !== 'gr') { salir('Este es el portal de Great Revenue.'); return; }
       estado.companias = d.companias; $('v-entrar').hidden = true; $('v-portal').hidden = false;
       if (d.usuario) $('quien').textContent = d.usuario.nombre + ' · ' + d.usuario.email;
       pintarLista(); elegir(estado.sel || (d.companias[0] && d.companias[0].tenant));
@@ -119,11 +131,10 @@ footer{text-align:center;color:var(--g);font-size:12px;padding:24px}
     $('nueva').onclick = nueva;
   }
 
-  // Alta de compania nueva: solo lo acordado (nombre y sitio, manual de identidad, carpeta de logos y administradora).
-  // La marca no se captura aqui: la propone GR a partir del manual y los logos, y despues se aprueba.
+  // Alta de compania nueva: nombre y sitio, manual de identidad, carpeta de logos y administradora.
   function nueva() {
     estado.sel = null; pintarLista();
-    $('panel').innerHTML = '<div class="card"><h2>Nueva compañía</h2><p class="sub">Con esto basta para empezar. La marca (colores, logo, tipografía) se propone después a partir del manual y los logos, y tú la apruebas.</p>'
+    $('panel').innerHTML = '<div class="card"><h2>Nueva compañía</h2><p class="sub" style="margin:0">Con esto basta para empezar. La marca se propone después a partir del manual y los logos, y tú la apruebas.</p>'
       + '<div class="dos">'
       + '<label>Nombre de la compañía<input id="n-nombre" placeholder="IT Institute by Itera"></label>'
       + '<label>Sitio web<input id="n-sitio" placeholder="https://it-institute.org"></label>'
@@ -136,64 +147,136 @@ footer{text-align:center;color:var(--g);font-size:12px;padding:24px}
     $('n-cancelar').onclick = function () { elegir(estado.companias[0] && estado.companias[0].tenant); };
     $('n-alta').onclick = darDeAlta;
   }
+  function leerPdf(f) {
+    return new Promise(function (ok, mal) { var r = new FileReader(); r.onload = function () { ok({ nombre: f.name, base64: String(r.result).split(',')[1] || '' }); }; r.onerror = mal; r.readAsDataURL(f); });
+  }
   function darDeAlta() {
-    var m = $('m-alta'), f = $('n-pdf').files[0];
+    var f = $('n-pdf').files[0];
     var cuerpo = { accion: 'alta', sesion: estado.sesion, nombre: $('n-nombre').value.trim(), sitio_web: $('n-sitio').value.trim(), manual_url: $('n-manual').value.trim(), logos_url: $('n-logos').value.trim(), admin: $('n-admin').value.trim() };
-    if (f && f.size > 10 * 1024 * 1024) { m.className = 'msg bad'; m.textContent = 'El PDF pesa más de 10 MB. Súbelo a Drive y pega la liga.'; return; }
-    m.className = 'msg'; m.textContent = f ? 'Subiendo el manual...' : 'Dando de alta...'; $('n-alta').disabled = true;
-    var listo = function () {
-      api(cuerpo).then(function (d) {
-        $('n-alta').disabled = false;
-        if (d._codigo === 401) { salir(d.error); return; }
-        if (!d.ok) { m.className = 'msg bad'; m.textContent = d.error || 'No se pudo dar de alta.'; return; }
-        estado.sel = d.tenant; m.className = 'msg ok'; m.textContent = 'Lista. Abriendo la compañía...'; setTimeout(cargar, 600);
-      });
-    };
-    if (!f) { listo(); return; }
-    var r = new FileReader();
-    r.onload = function () { cuerpo.manual_pdf = { nombre: f.name, base64: String(r.result).split(',')[1] || '' }; listo(); };
-    r.onerror = function () { $('n-alta').disabled = false; m.className = 'msg bad'; m.textContent = 'No se pudo leer el PDF.'; };
-    r.readAsDataURL(f);
+    if (f && f.size > 10 * 1024 * 1024) { msg('m-alta', 'bad', 'El PDF pesa más de 10 MB. Súbelo a Drive y pega la liga.'); return; }
+    msg('m-alta', '', f ? 'Subiendo el manual...' : 'Dando de alta...'); $('n-alta').disabled = true;
+    (f ? leerPdf(f) : Promise.resolve(null)).then(function (pdf) {
+      if (pdf) cuerpo.manual_pdf = pdf;
+      return api(cuerpo);
+    }).then(function (d) {
+      $('n-alta').disabled = false;
+      if (d._codigo === 401) { salir(d.error); return; }
+      if (!d.ok) { msg('m-alta', 'bad', d.error || 'No se pudo dar de alta.'); return; }
+      estado.sel = d.tenant; msg('m-alta', 'ok', 'Lista. Abriendo la compañía...'); setTimeout(cargar, 600);
+    }, function () { $('n-alta').disabled = false; msg('m-alta', 'bad', 'No se pudo leer el PDF.'); });
   }
 
-  var CAMPOS = [
-    ['Origen de la marca', [['sitio_web', 'Sitio web'], ['marca_manual_url', 'Manual de identidad (liga)'], ['marca_logos_carpeta', 'Carpeta de Drive con logos'], ['marca_vitrina_url', 'Vitrina de marca (liga)']]],
-    ['Marca', [['marca_nombre', 'Nombre de la marca'], ['marca_logo_url', 'Logo (dirección https de una imagen PNG)'], ['marca_color_primario', 'Color principal', 'color'], ['marca_color_oscuro', 'Color oscuro', 'color'], ['marca_pie', 'Pie de los avisos'], ['marca_remitente_interno', 'Remitente de los avisos'], ['marca_prefijo_asunto', 'Prefijo del asunto']]],
-    ['Portal de la compañía', [['portal_nombre', 'Nombre del portal'], ['portal_admins', 'Administradora (correo de Google)'], ['usuarios_max', 'Usuarios máximos (incluye a la administradora)'], ['modo', 'Modo', 'modo']]]
+  // Las siete secciones del portal de alta, iguales para todas las companias.
+  var SECCIONES = [
+    { id: 'opera', titulo: 'Cómo opera hoy', campos: [['crm', 'CRM'], ['motor_propio', 'Dónde corren sus avisos', 'largo'], ['marca_diferencias_manual', 'Diferencias contra el manual y decisiones', 'largo'], ['operacion_actual', 'Equipo y operación actual', 'largo']] },
+    { id: 'origen', titulo: 'Origen de la marca', campos: [['sitio_web', 'Sitio web', 'liga'], ['marca_manual_url', 'Manual de identidad (liga)', 'liga'], ['marca_logos_carpeta', 'Carpeta de Drive con logos', 'liga'], ['marca_vitrina_url', 'Vitrina de marca en pantalla completa (liga)', 'liga']] },
+    { id: 'marca', titulo: 'Marca', campos: [['marca_nombre', 'Nombre de la marca'], ['marca_logo_url', 'Logo (dirección https de una imagen PNG)'], ['marca_color_primario', 'Color principal', 'color'], ['marca_color_oscuro', 'Color oscuro', 'color'], ['marca_fuente_interna', 'Tipografía de los avisos'], ['marca_pie', 'Pie de los avisos'], ['marca_remitente_interno', 'Remitente de los avisos'], ['marca_prefijo_asunto', 'Prefijo del asunto']] },
+    { id: 'operacion', titulo: 'Operación: quién recibe', campos: [['aviso_fallas_correos', 'Fallas del motor'], ['llaves_avisar_a', 'Conexiones nuevas']] },
+    { id: 'portal', titulo: 'Portal de la compañía', campos: [['portal_nombre', 'Nombre del portal'], ['portal_admins', 'Administradora (correo de Google)'], ['usuarios_max', 'Usuarios máximos (incluye a la administradora)'], ['modo', 'Modo', 'modo']] }
   ];
   function campo(k, etiqueta, tipo, v) {
     if (tipo === 'color') return '<label>' + h(etiqueta) + '<span class="color"><input type="color" data-par="' + k + '" value="' + h(/^#[0-9a-fA-F]{6}$/.test(v) ? v : '#cccccc') + '"><input id="f-' + k + '" data-k="' + k + '" value="' + h(v) + '" placeholder="#ffcc00"></span></label>';
     if (tipo === 'modo') return '<label>' + h(etiqueta) + '<select id="f-' + k + '" data-k="' + k + '"><option value="prueba"' + (v !== 'real' ? ' selected' : '') + '>Prueba</option><option value="real"' + (v === 'real' ? ' selected' : '') + '>Real</option></select></label>';
-    if (tipo === 'largo') return '<label style="grid-column:1/-1">' + h(etiqueta) + '<textarea id="f-' + k + '" data-k="' + k + '" rows="3" style="font:inherit;border:1px solid var(--line);border-radius:8px;padding:8px 10px">' + h(v) + '</textarea></label>';
-    return '<label>' + h(etiqueta) + '<input id="f-' + k + '" data-k="' + k + '" value="' + h(v) + '"></label>';
+    if (tipo === 'largo') return '<label style="grid-column:1/-1">' + h(etiqueta) + '<textarea id="f-' + k + '" data-k="' + k + '" rows="3">' + h(v) + '</textarea></label>';
+    var abrir = tipo === 'liga' && /^https:\/\//.test(v) ? ' <a href="' + h(v.split(/\s+/)[0]) + '" target="_blank" rel="noopener">Abrir</a>' : '';
+    return '<label>' + h(etiqueta) + abrir + '<input id="f-' + k + '" data-k="' + k + '" value="' + h(v) + '"></label>';
+  }
+  function tarjeta(n, titulo, cuerpo, extra) { return '<div class="card" id="s-' + n + '"><div class="card-h"><h2><span class="num">' + n + '</span>' + h(titulo) + '</h2>' + (extra || '') + '</div>' + cuerpo + '</div>'; }
+  function formPedir(seccionPorDefecto) {
+    var ops = ['Vista previa general', 'Correos de ejemplo', 'Tipografía', 'Colores', 'Logo', 'Cómo opera hoy', 'Origen de la marca', 'Otro'];
+    return '<div class="pedir"><b>Pedir un cambio</b><div class="dos"><label>¿Qué parte?<select id="p-seccion">' + ops.map(function (o) { return '<option' + (o === seccionPorDefecto ? ' selected' : '') + '>' + h(o) + '</option>'; }).join('') + '</select></label>'
+      + '<label style="grid-column:1/-1">Instrucción<textarea id="p-instruccion" rows="3" placeholder="Ej.: en el correo de Open+3 usa el logo a color y sube el tamaño del título"></textarea></label></div>'
+      + '<div class="acciones"><button class="s" id="p-enviar">Enviar instrucción</button><span class="msg" id="m-pedir"></span></div></div>';
+  }
+  function listaSolicitudes(sol) {
+    if (!sol || !sol.length) return '<p class="sub" style="margin:0">Aún no hay cambios pedidos.</p>';
+    return '<ul class="sol">' + sol.map(function (s) { return '<li><span><span class="chip ' + h(s.estado) + '">' + h(s.estado) + '</span><b>' + h(s.seccion) + '</b> · ' + h(s.fecha) + ' · ' + h(s.por) + '</span><span>' + h(s.instruccion) + '</span>' + (s.respuesta ? '<span style="color:var(--g)">Respuesta: ' + h(s.respuesta) + '</span>' : '') + '</li>'; }).join('') + '</ul>';
   }
   function elegir(t) {
     var c = estado.companias.filter(function (x) { return x.tenant === t; })[0]; if (!c) { $('panel').innerHTML = ''; return; }
     estado.sel = t; pintarLista();
-    var html = '';
-    var inf = c.info || {}; estado.fuente = inf.marca_fuente_interna || '';
-    if (inf.alta_estado === 'marca_por_proponer') html += '<div class="faltan">Dada de alta el ' + h(inf.alta_fecha || '') + '. Siguiente paso: llena la marca a partir del manual y los logos, guarda y apruébala. <button class="s" id="aprobar" style="margin-left:8px">Aprobar marca</button> <span class="msg" id="m-aprobar"></span></div>';
-    else if (c.faltan.length) html += '<div class="faltan">Faltan datos para operar: ' + h(c.faltan.join(', ')) + '.</div>';
-    html += '<div class="card"><h2>Vitrina de marca</h2>' + (c.datos.marca_vitrina_url
-      ? '<p class="sub" style="margin:0 0 10px">Todas las piezas que llevan la marca de ' + h(c.datos.marca_nombre || c.tenant) + ': correos, avisos y documentos, y las diferencias contra su manual.</p><a class="p" style="display:inline-block;background:var(--gr);color:#fff;border-radius:8px;padding:10px 18px;font-weight:700;text-decoration:none" href="' + h(c.datos.marca_vitrina_url) + '" target="_blank" rel="noopener">Abrir vitrina de marca</a>'
-      : '<p class="sub" style="margin:0">Pendiente: se arma con el manual y los logos cuando la marca esté aprobada.</p>') + '</div>';
-    html += '<div class="card"><h2>Vista previa de un aviso</h2><div id="prev"></div></div>';
-    CAMPOS.forEach(function (g) { html += '<div class="card"><h2>' + h(g[0]) + '</h2><div class="dos">' + g[1].map(function (f) { return campo(f[0], f[1], f[2], c.datos[f[0]] || ''); }).join('') + '</div></div>'; });
-    html += '<div class="faltan" style="background:var(--bg);border-color:var(--line);color:var(--g)"><b>Invitación a la administradora:</b> al guardar su correo se le enviará la invitación para entrar al portal de la compañía y conectarse. Se activa con el portal de la compañía (siguiente ciclo).</div>';
-    html += '<div class="card"><h2>Ligas de ' + h(c.datos.marca_nombre || c.tenant) + '</h2>' + liga('Tablero', c.ligas.tablero) + '<p class="sub" style="margin:8px 0 0">Lleva una clave privada: compártela solo con la compañía.</p></div>';
+    var inf = c.info || {}, html = '';
+    if (inf.alta_estado === 'marca_por_proponer') html += '<div class="aviso">Dada de alta el ' + h(inf.alta_fecha || '') + '. Siguiente paso: llena la marca a partir del manual y los logos, guarda y apruébala. <button class="s" id="aprobar" style="margin-left:8px">Aprobar marca</button> <span class="msg" id="m-aprobar"></span></div>';
+    else if (c.faltan.length) html += '<div class="aviso">Faltan datos para operar: ' + h(c.faltan.join(', ')) + '.</div>';
+    // 1. Vista previa
+    html += tarjeta(1, 'Vista previa', (inf.tiene_vitrina ? '<iframe class="vitrina" id="vitrina" title="Vitrina de marca" sandbox="allow-same-origin allow-popups"></iframe>' : '<p class="sub" style="margin:0">La vitrina de marca se arma con el manual y los logos cuando la marca esté aprobada.</p>')
+      + '<div><b style="font-size:13px;color:var(--g)">Un aviso con la marca actual (cambia en vivo al editar la sección Marca)</b><div id="prev" style="margin-top:8px"></div></div>'
+      + formPedir('Vista previa general') + '<div><b style="font-size:13px">Cambios pedidos</b>' + listaSolicitudes(c.solicitudes) + '</div>',
+      '<span class="acciones">' + (inf.tiene_vitrina ? '<button class="s" id="v-completa">Pantalla completa</button>' : '') + (c.ligas.vitrina ? '<a class="s" href="' + h(c.ligas.vitrina) + '" target="_blank" rel="noopener">Abrir vitrina</a>' : '') + '</span>');
+    // 2 a 6. Secciones con campos
+    SECCIONES.forEach(function (s, i) {
+      var cuerpo = '<div class="dos">' + s.campos.map(function (f) { return campo(f[0], f[1], f[2], c.datos[f[0]] || ''); }).join('') + '</div>';
+      if (s.id === 'origen') cuerpo += '<div class="acciones"><label style="display:flex;gap:8px;align-items:center">Subir el manual en PDF<input type="file" id="m-pdf" accept="application/pdf"></label><button class="s" id="subir-manual">Subir manual</button><span class="msg" id="m-manual"></span></div>';
+      if (s.id === 'portal') cuerpo += '<div class="nota">' + (inf.alta_invitacion_fecha ? 'Invitación enviada el ' + h(inf.alta_invitacion_fecha) + ' a ' + h(inf.alta_invitacion_para) + '. ' : '') + 'La invitación sale de mike.aguirre@greatrevenue.com con la marca de la compañía, su configuración y la liga a su portal. Guarda el correo de la administradora antes de enviarla.</div>'
+        + '<div class="acciones"><button class="p" id="invitar">' + (inf.alta_invitacion_fecha ? 'Volver a enviar invitación' : 'Enviar invitación') + '</button><a class="s" href="compania.html?c=' + h(c.tenant) + '" target="_blank" rel="noopener">Ver su portal</a><span class="msg" id="m-invitar"></span></div>';
+      html += tarjeta(i + 2, s.titulo, cuerpo);
+    });
+    // 7. Ligas
+    html += tarjeta(7, 'Ligas', liga('Tablero', c.ligas.tablero) + liga('Portal de la compañía', c.ligas.portal_compania) + liga('Vitrina de marca', c.ligas.vitrina) + '<p class="sub" style="margin:0">El tablero lleva una clave privada: compártelo solo con la compañía.</p>');
     html += '<div class="acciones"><button class="p" id="guardar">Guardar cambios</button><button class="s" id="deshacer">Deshacer</button><span class="msg" id="m-guardar"></span></div>';
     $('panel').innerHTML = html;
+    estado.fuente = c.datos.marca_fuente_interna || '';
     Array.prototype.forEach.call(document.querySelectorAll('[data-par]'), function (p) { p.oninput = function () { $('f-' + p.getAttribute('data-par')).value = p.value; vista(); }; });
-    Array.prototype.forEach.call(document.querySelectorAll('[data-k]'), function (i) { i.oninput = function () { var par = document.querySelector('[data-par="' + i.getAttribute('data-k') + '"]'); if (par && /^#[0-9a-fA-F]{6}$/.test(i.value)) par.value = i.value; vista(); }; });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-k]'), function (i) { i.oninput = function () { var par = document.querySelector('[data-par="' + i.getAttribute('data-k') + '"]'); if (par && /^#[0-9a-fA-F]{6}$/.test(i.value)) par.value = i.value; if (i.getAttribute('data-k') === 'marca_fuente_interna') estado.fuente = i.value; vista(); }; });
     Array.prototype.forEach.call(document.querySelectorAll('[data-copiar]'), function (b) { b.onclick = function () { var v = b.getAttribute('data-copiar'); (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(function () { b.textContent = 'Copiada'; }, function () { b.textContent = 'Selecciona y copia'; }); }; });
     if ($('aprobar')) $('aprobar').onclick = function () { aprobar(t); };
+    if ($('v-completa')) $('v-completa').onclick = function () { var html = estado.vitrinas[t]; if (!html) return; var u = URL.createObjectURL(new Blob([html], { type: 'text/html' })); window.open(u, '_blank'); };
+    $('p-enviar').onclick = function () { pedirCambio(t); };
+    $('subir-manual').onclick = function () { subirManual(t); };
+    $('invitar').onclick = function () { invitar(t); };
     $('guardar').onclick = guardar; $('deshacer').onclick = function () { elegir(t); };
     vista();
+    if (inf.tiene_vitrina) cargarVitrina(t);
+  }
+  function cargarVitrina(t) {
+    var poner = function (html) { var f = $('vitrina'); if (f && estado.sel === t) f.srcdoc = html; };
+    if (estado.vitrinas[t]) { poner(estado.vitrinas[t]); return; }
+    api({ accion: 'vitrina', sesion: estado.sesion, tenant: t }).then(function (d) {
+      if (d._codigo === 401) { salir(d.error); return; }
+      if (d.html) { estado.vitrinas[t] = d.html; poner(d.html); } else poner('<p style="font-family:sans-serif;padding:20px">' + h(d.error || 'No se pudo cargar la vitrina.') + '</p>');
+    });
+  }
+  function pedirCambio(t) {
+    var ins = $('p-instruccion').value.trim();
+    if (ins.length < 5) { msg('m-pedir', 'bad', 'Escribe qué quieres cambiar.'); return; }
+    msg('m-pedir', '', 'Enviando...'); $('p-enviar').disabled = true;
+    api({ accion: 'pedir_cambio', sesion: estado.sesion, tenant: t, seccion: $('p-seccion').value, instruccion: ins }).then(function (d) {
+      $('p-enviar').disabled = false;
+      if (d._codigo === 401) { salir(d.error); return; }
+      if (!d.ok) { msg('m-pedir', 'bad', d.error || 'No se pudo enviar.'); return; }
+      msg('m-pedir', 'ok', d.mensaje || 'Recibido.'); setTimeout(cargar, 900);
+    });
+  }
+  function subirManual(t) {
+    var f = $('m-pdf').files[0];
+    if (!f) { msg('m-manual', 'bad', 'Elige el PDF.'); return; }
+    if (f.size > 10 * 1024 * 1024) { msg('m-manual', 'bad', 'El PDF pesa más de 10 MB. Súbelo a Drive y pega la liga.'); return; }
+    msg('m-manual', '', 'Subiendo...'); $('subir-manual').disabled = true;
+    leerPdf(f).then(function (pdf) { return api({ accion: 'subir_manual', sesion: estado.sesion, tenant: t, manual_pdf: pdf }); }).then(function (d) {
+      $('subir-manual').disabled = false;
+      if (d._codigo === 401) { salir(d.error); return; }
+      if (!d.ok) { msg('m-manual', 'bad', d.error || 'No se pudo subir.'); return; }
+      msg('m-manual', 'ok', 'Manual guardado en Drive.'); setTimeout(cargar, 800);
+    }, function () { $('subir-manual').disabled = false; msg('m-manual', 'bad', 'No se pudo leer el PDF.'); });
+  }
+  function invitar(t) {
+    var c = estado.companias.filter(function (x) { return x.tenant === t; })[0];
+    var b = $('invitar');
+    if (!c.datos.portal_admins) { msg('m-invitar', 'bad', 'Primero guarda el correo de la administradora.'); return; }
+    if (!b.getAttribute('data-confirmar')) { b.setAttribute('data-confirmar', '1'); b.textContent = 'Confirmar envío a ' + c.datos.portal_admins; msg('m-invitar', '', 'Se enviará ahora desde tu cuenta.'); return; }
+    b.disabled = true; msg('m-invitar', '', 'Enviando invitación...');
+    api({ accion: 'invitar', sesion: estado.sesion, tenant: t }).then(function (d) {
+      b.disabled = false;
+      if (d._codigo === 401) { salir(d.error); return; }
+      if (!d.ok) { msg('m-invitar', 'bad', d.error || 'No se pudo enviar.'); return; }
+      msg('m-invitar', 'ok', 'Invitación enviada.'); setTimeout(cargar, 900);
+    });
   }
   function liga(t, u) { return '<div class="liga"><b>' + h(t) + ':</b> ' + (u ? '<code>' + h(u) + '</code> <button class="s" data-copiar="' + h(u) + '">Copiar</button> <a href="' + h(u) + '" target="_blank" rel="noopener">Abrir</a>' : 'pendiente') + '</div>'; }
   function val(k) { var e = $('f-' + k); return e ? e.value.trim() : ''; }
   function mezcla(hex, a) { var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; function f(c) { return Math.round(c + (255 - c) * (1 - a)).toString(16).padStart(2, '0'); } return '#' + f(r) + f(g) + f(b); }
   function vista() {
+    if (!$('prev')) return;
     var Y = /^#[0-9a-fA-F]{6}$/.test(val('marca_color_primario')) ? val('marca_color_primario') : '#cccccc';
     var K = /^#[0-9a-fA-F]{6}$/.test(val('marca_color_oscuro')) ? val('marca_color_oscuro') : '#111111';
     var logo = val('marca_logo_url');
@@ -201,28 +284,28 @@ footer{text-align:center;color:var(--g);font-size:12px;padding:24px}
       + '<div class="band" style="background:' + Y + ';color:' + K + '">Resumen del pipeline</div>'
       + '<div class="body" style="color:' + K + '"><b>16 oportunidades abiertas por 628,000.</b><div class="kpis">'
       + '<div class="kpi" style="background:' + Y + '"><b>16</b>Abiertas</div><div class="kpi" style="background:' + mezcla(Y, .45) + '"><b>628,000</b>Valor</div><div class="kpi" style="background:' + mezcla(Y, .18) + '"><b>2</b>Sin atender</div></div>'
-      + '<table><tr><th style="background:' + K + ';color:' + Y + '">Oportunidad</th><th style="background:' + K + ';color:' + Y + '">Etapa</th></tr><tr><td>Ejemplo</td><td>Calificacion</td></tr></table>'
+      + '<table><tr><th style="background:' + K + ';color:' + Y + '">Oportunidad</th><th style="background:' + K + ';color:' + Y + '">Etapa</th></tr><tr><td>Ejemplo</td><td>Calificación</td></tr></table>'
       + '<div style="font-size:12px;color:#666">Asunto: ' + h(val('marca_prefijo_asunto')) + ' Pipeline · Remitente: ' + h(val('marca_remitente_interno')) + '</div></div>'
       + '<div class="pie" style="background:' + K + '">' + h(val('marca_pie')) + '</div></div>';
   }
   function aprobar(t) {
-    var m = $('m-aprobar'); m.className = 'msg'; m.textContent = 'Aprobando...'; $('aprobar').disabled = true;
+    msg('m-aprobar', '', 'Aprobando...'); $('aprobar').disabled = true;
     api({ accion: 'aprobar', sesion: estado.sesion, tenant: t }).then(function (d) {
       $('aprobar').disabled = false;
       if (d._codigo === 401) { salir(d.error); return; }
-      if (!d.ok) { m.className = 'msg bad'; m.textContent = d.error || 'No se pudo aprobar.'; return; }
-      m.className = 'msg ok'; m.textContent = 'Aprobada. Ya tiene tablero y ligas.'; setTimeout(cargar, 800);
+      if (!d.ok) { msg('m-aprobar', 'bad', d.error || 'No se pudo aprobar.'); return; }
+      msg('m-aprobar', 'ok', 'Aprobada. Ya tiene tablero y ligas.'); setTimeout(cargar, 800);
     });
   }
   function guardar() {
     var c = estado.companias.filter(function (x) { return x.tenant === estado.sel; })[0]; var cambios = {};
     Array.prototype.forEach.call(document.querySelectorAll('[data-k]'), function (i) { var k = i.getAttribute('data-k'); if ((c.datos[k] || '') !== i.value.trim()) cambios[k] = i.value.trim(); });
-    if (!Object.keys(cambios).length) { $('m-guardar').className = 'msg'; $('m-guardar').textContent = 'No hay cambios.'; return; }
-    $('m-guardar').className = 'msg'; $('m-guardar').textContent = 'Guardando...';
+    if (!Object.keys(cambios).length) { msg('m-guardar', '', 'No hay cambios.'); return; }
+    msg('m-guardar', '', 'Guardando...');
     api({ accion: 'guardar', sesion: estado.sesion, tenant: estado.sel, cambios: cambios }).then(function (d) {
       if (d._codigo === 401) { salir(d.error); return; }
-      if (!d.ok) { $('m-guardar').className = 'msg bad'; $('m-guardar').textContent = d.error || 'No se pudo guardar.'; return; }
-      $('m-guardar').className = 'msg ok'; $('m-guardar').textContent = 'Guardado (' + d.guardados + ' datos). Los avisos de mañana ya salen así.';
+      if (!d.ok) { msg('m-guardar', 'bad', d.error || 'No se pudo guardar.'); return; }
+      msg('m-guardar', 'ok', 'Guardado (' + d.guardados + ' datos).');
       setTimeout(cargar, 600);
     });
   }
