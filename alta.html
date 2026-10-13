@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
 <link rel="stylesheet" href="portal_comun.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="correo_estilos.js"></script>
 <script src="portal_comun.js"></script>
 </head>
 <body>
@@ -32,6 +33,7 @@
   var P = window.GRP, $ = P.$, h = P.h;
   var LLAVE = 'gr_sesion';
   var estado = { companias: [], sel: null, muestras: {} };
+  var EDITABLE = true;
   var ses = function () { return P.sesion(LLAVE); };
   function salir(motivo) { P.sesion(LLAVE, null); $('v-portal').hidden = true; $('v-entrar').hidden = false; $('quien').textContent = 'Portal de alta'; $('m-entrar').textContent = motivo || ''; }
 
@@ -95,7 +97,7 @@
   var SECCIONES = [
     { n: 2, id: 'opera', titulo: 'Cómo opera hoy', campos: [['crm', 'CRM'], ['motor_propio', 'Dónde corren sus avisos', 'largo'], ['marca_diferencias_manual', 'Diferencias contra el manual y decisiones', 'largo'], ['operacion_actual', 'Equipo y operación actual', 'largo']] },
     { n: 3, id: 'origen', titulo: 'Origen de la marca', campos: [['sitio_web', 'Sitio web', 'liga'], ['marca_manual_url', 'Manual de identidad (liga)', 'liga'], ['marca_logos_carpeta', 'Carpeta de Drive con logos', 'liga'], ['marca_vitrina_url', 'Documento completo de marca (liga)', 'liga']] },
-    { n: 4, id: 'marca', titulo: 'Marca', campos: [['marca_nombre', 'Nombre de la marca'], ['marca_logo_url', 'Logo (dirección https de una imagen PNG)'], ['marca_color_primario', 'Color principal', 'color'], ['marca_color_oscuro', 'Color oscuro', 'color'], ['marca_fuente_interna', 'Tipografía de los avisos'], ['marca_pie', 'Pie de los avisos'], ['marca_remitente_interno', 'Remitente de los avisos'], ['marca_prefijo_asunto', 'Prefijo del asunto']] },
+    { n: 4, id: 'marca', titulo: 'Marca', campos: [['marca_nombre', 'Nombre de la marca'], ['marca_logo_url', 'Logo (dirección https de una imagen PNG)'], ['marca_color_primario', 'Color principal', 'color'], ['marca_color_oscuro', 'Color oscuro', 'color'], ['marca_colores_secundarios', 'Colores secundarios (separados por coma)'], ['marca_fuente_interna', 'Tipografía de los avisos'], ['marca_pie', 'Pie de los avisos'], ['marca_remitente_interno', 'Remitente de los avisos'], ['marca_prefijo_asunto', 'Prefijo del asunto']] },
     { n: 5, id: 'operacion', titulo: 'Operación: quién recibe', campos: [['aviso_fallas_correos', 'Fallas del motor'], ['llaves_avisar_a', 'Conexiones nuevas']] },
     { n: 6, id: 'portal', titulo: 'Portal de la compañía', campos: [['portal_nombre', 'Nombre del portal'], ['portal_admins', 'Administradora (correo de Google)'], ['usuarios_max', 'Usuarios máximos (incluye a la administradora)'], ['modo', 'Modo', 'modo'], ['portal_usuarios', 'Usuarios (correos de Google, uno por línea o separados por coma)', 'largo']] }
   ];
@@ -115,7 +117,7 @@
     if (inf.alta_estado === 'marca_por_proponer') html += '<div class="aviso">Dada de alta el ' + h(inf.alta_fecha || '') + '. Siguiente paso: llena la marca, guarda y apruébala. <button class="s" id="aprobar" style="margin-left:8px">Aprobar marca</button> <span class="msg" id="m-aprobar"></span></div>';
     else if (c.faltan.length) html += '<div class="aviso">Faltan datos para operar: ' + h(c.faltan.join(', ')) + '.</div>';
     // 1. Vista previa por grupos
-    html += tarjeta(1, 'Vista previa', '<p class="nota" style="margin:0">Un ejemplo real de cada tipo de correo de ' + h(c.datos.marca_nombre) + ', agrupado por objetivo. Cada grupo tiene su recuadro de cambios.</p><div id="grupos">' + (inf.tiene_muestras ? '<p class="vacio">Cargando ejemplos...</p>' : '<p class="vacio">Aún no hay ejemplos de esta compañía.</p>') + '</div>',
+    html += tarjeta(1, 'Vista previa', '<p class="nota" style="margin:0">Todos los tipos de correo de ' + h(c.datos.marca_nombre) + ', por objetivo. Cada uno con 3 diseños con sus colores; elige uno y guarda el grupo. Lo que guardes es lo que se envía.</p><div id="grupos"><p class="vacio">Cargando tipos de correo...</p></div>',
       inf.tiene_vitrina ? '<button class="s" id="doc-completo">Documento completo de marca</button>' : '');
     SECCIONES.forEach(function (s) {
       var cuerpo = '<div class="dos">' + s.campos.map(function (f) { return campo(f[0], f[1], f[2], c.datos[f[0]] || ''); }).join('') + '</div>';
@@ -138,7 +140,7 @@
     $('subir-manual').onclick = function () { subirManual(t); };
     $('invitar').onclick = function () { invitar(c); };
     vivo();
-    if (inf.tiene_muestras) cargarMuestras(c);
+    cargarMuestras(c);
   }
   function datosVivos() { var d = {}; Array.prototype.forEach.call(document.querySelectorAll('[data-k]'), function (i) { d[i.getAttribute('data-k')] = i.value.trim(); }); return d; }
   function vivo() {
@@ -147,11 +149,23 @@
     if ($('uso')) { var n = P.correos(d.portal_usuarios).length, m = Number(d.usuarios_max || 0); $('uso').textContent = n + ' de ' + m; $('uso').className = 'uso' + (n > m ? ' lleno' : ''); }
   }
   function cargarMuestras(c) {
-    var poner = function (doc) { if (estado.sel !== c.tenant) return; $('grupos').innerHTML = P.muestras(doc, c.datos.marca_nombre, c.solicitudes); P.llenarMuestras(doc); P.activarPedir(ses, c.tenant, cargar); };
-    if (estado.muestras[c.tenant]) { poner(estado.muestras[c.tenant]); return; }
-    P.api({ accion: 'muestras', sesion: ses(), tenant: c.tenant }).then(function (d) {
+    var poner = function (actuales) {
+      if (estado.sel !== c.tenant) return;
+      $('grupos').innerHTML = P.vistaPrevia(c, actuales, EDITABLE); P.llenarVistaPrevia(c, actuales); P.activarPedir(ses, c.tenant, cargar);
+      Array.prototype.forEach.call(document.querySelectorAll('[data-guardar-diseno]'), function (b) { b.onclick = function () { guardarDiseno(c, b.getAttribute('data-guardar-diseno')); }; });
+    };
+    var actuales = estado.muestras[c.tenant];
+    var pedirActuales = actuales ? Promise.resolve(actuales) : (c.info.tiene_muestras ? P.api({ accion: 'muestras', sesion: ses(), tenant: c.tenant }).then(function (d) { if (d._codigo === 401) { salir(d.error); return {}; } return (d.muestras && d.muestras.actuales) || {}; }) : Promise.resolve({}));
+    Promise.all([P.cargarCatalogo(), pedirActuales]).then(function (r) { estado.muestras[c.tenant] = r[1]; poner(r[1]); }, function () { $('grupos').innerHTML = '<p class="vacio">No se pudieron cargar los tipos de correo.</p>'; });
+  }
+  function guardarDiseno(c, g) {
+    var v = P.disenoDeGrupo(c, g);
+    if (v === (c.datos.marca_estilos || '{}')) { P.msg('md-' + g, '', 'Sin cambios.'); return; }
+    P.msg('md-' + g, '', 'Guardando...');
+    P.api({ accion: 'guardar', sesion: ses(), tenant: c.tenant, cambios: { marca_estilos: v } }).then(function (d) {
       if (d._codigo === 401) { salir(d.error); return; }
-      if (d.muestras) { estado.muestras[c.tenant] = d.muestras; poner(d.muestras); } else $('grupos').innerHTML = '<p class="vacio">' + h(d.error || 'No se pudieron cargar los ejemplos.') + '</p>';
+      if (!d.ok) { P.msg('md-' + g, 'bad', d.error || 'No se pudo guardar.'); return; }
+      c.datos.marca_estilos = v; P.msg('md-' + g, 'ok', c.tenant === 'GR' ? 'Guardado. Aplica cuando GR pase al motor común.' : 'Guardado. Los siguientes correos ya salen así.');
     });
   }
   function camposDe(id) { return Array.prototype.slice.call($('s-' + id).querySelectorAll('[data-k]')); }
