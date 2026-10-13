@@ -60,26 +60,51 @@
       };
     });
   };
-  // Vista previa: un ejemplo real de cada tipo de correo, agrupado por objetivo, con su recuadro de cambios.
-  P.muestras = function (doc, marca, sol) {
-    var html = '';
-    (doc.grupos || []).forEach(function (g) {
-      var sec = 'Vista previa · ' + g.nombre;
-      html += '<div class="grupo"><div class="grupo-h"><h3>' + P.h(g.nombre) + '</h3><small>' + (g.muestras.length ? g.muestras.length + (g.muestras.length === 1 ? ' tipo de correo' : ' tipos de correo') : 'sin envíos aún') + '</small></div>';
-      html += g.muestras.length ? '<div class="muestras">' + g.muestras.map(function (m, i) {
-        return '<div class="muestra"><div class="mh"><b>' + P.h(m.titulo) + '</b><small>' + P.h(m.para) + ' · ' + P.h(m.cuando) + '</small></div><div class="marco"><iframe title="' + P.h(m.titulo) + '" sandbox="" loading="lazy" data-m="' + P.h(g.id) + ':' + i + '"></iframe></div><button data-ver="' + P.h(g.id) + ':' + i + '">Ver completo</button></div>';
-      }).join('') + '</div>' : '<p class="vacio">' + P.h(marca) + ' todavía no envía este tipo de correo. Cuando salga el primero aparece aquí.</p>';
-      html += P.pedir('g-' + g.id, sec, 'Ej.: en este grupo usa el logo a color y sube el tamaño del título') + P.solicitudes(sol, sec) + '</div>';
+  // Vista previa: todos los tipos de correo del catalogo (tipos_correo.json), cada uno con sus 3 disenos
+  // (correo_estilos.js, el mismo codigo que viste los envios reales) y el correo actual cuando ya existe.
+  P.catalogo = null;
+  P.cargarCatalogo = function () {
+    if (P.catalogo) return Promise.resolve(P.catalogo);
+    return fetch('tipos_correo.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (c) { P.catalogo = c; return c; });
+  };
+  var ESTADO = { opera: ['Opera hoy', 'aplicado'], construir: ['Por construir', 'pendiente'], distinto: ['Opera distinto', 'descartado'] };
+  P.vistaPrevia = function (c, actuales, editable) {
+    var d = c.datos, elegidos = {}; try { elegidos = JSON.parse(d.marca_estilos || '{}'); } catch (e) { elegidos = {}; }
+    var esGR = c.tenant === 'GR', grupos = [], html = '';
+    (P.catalogo || []).forEach(function (t) { if (grupos.indexOf(t.objetivo) < 0) grupos.push(t.objetivo); });
+    if (esGR) html += '<p class="nota" style="margin:0">Great Revenue envía hoy con su formato propio (la opción «Actual»). Lo que elijas aquí aplica cuando GR pase al motor común.</p>';
+    grupos.forEach(function (g) {
+      var tipos = P.catalogo.filter(function (t) { return t.objetivo === g; }), nombre = tipos[0].objetivo_nombre, sec = 'Vista previa · ' + nombre;
+      html += '<div class="grupo" data-grupo="' + P.h(g) + '"><div class="grupo-h"><h3>' + P.h(nombre) + '</h3><small>' + tipos.length + (tipos.length === 1 ? ' tipo de correo' : ' tipos de correo') + '</small></div>';
+      tipos.forEach(function (t) {
+        var est = ESTADO[esGR ? t.estado.GR : t.estado.MOTOR] || ESTADO.construir, sel = elegidos[t.id] || 'A';
+        html += '<div class="tipo"><div class="tipo-h"><b>' + P.h(t.nombre) + '</b><span class="chip ' + est[1] + '">' + est[0] + '</span><small>' + P.h(t.cuando) + '</small></div><p class="vacio" style="margin:0 0 6px">' + P.h(t.diferencia) + '</p><div class="muestras">';
+        if (actuales && actuales[t.id]) html += '<div class="muestra"><div class="mh"><b>Actual</b><small>Como sale hoy</small></div><div class="marco"><iframe sandbox="" loading="lazy" title="Actual" data-actual="' + P.h(t.id) + '"></iframe></div><button data-ver-actual="' + P.h(t.id) + '">Ver completo</button></div>';
+        ['A', 'B', 'C'].forEach(function (e) {
+          var info = window.CorreoEstilos.ESTILOS[e];
+          html += '<label class="muestra opcion' + (sel === e ? ' elegida' : '') + '"><div class="mh"><span><input type="radio" name="op-' + P.h(t.id) + '" value="' + e + '"' + (sel === e ? ' checked' : '') + (editable ? '' : ' disabled') + '> <b>Opción ' + e + ' · ' + P.h(info.nombre) + '</b></span><small>' + P.h(info.descripcion) + '</small></div><div class="marco"><iframe sandbox="" loading="lazy" title="Opción ' + e + '" data-op="' + P.h(t.id) + ':' + e + '"></iframe></div><button type="button" data-ver-op="' + P.h(t.id) + ':' + e + '">Ver completo</button></label>';
+        });
+        html += '</div></div>';
+      });
+      if (editable) html += '<div class="pie-sec"><button class="p" data-guardar-diseno="' + P.h(g) + '">Guardar diseño de ' + P.h(nombre) + '</button><span class="msg" id="md-' + P.h(g) + '"></span></div>';
+      html += P.pedir('g-' + g, sec, 'Ej.: en estos correos usa el logo a color y más espacio entre secciones') + P.solicitudes(c.solicitudes, sec) + '</div>';
     });
     return html;
   };
-  P.llenarMuestras = function (doc) {
-    var mapa = {};
-    (doc.grupos || []).forEach(function (g) { g.muestras.forEach(function (m, i) { mapa[g.id + ':' + i] = m; }); });
-    Array.prototype.forEach.call(document.querySelectorAll('iframe[data-m]'), function (f) { var m = mapa[f.getAttribute('data-m')]; if (m) f.srcdoc = m.html || '<p>Sin contenido</p>'; });
-    Array.prototype.forEach.call(document.querySelectorAll('[data-ver]'), function (b) {
-      b.onclick = function () { var m = mapa[b.getAttribute('data-ver')]; if (m) window.open(URL.createObjectURL(new Blob([m.html], { type: 'text/html' })), '_blank'); };
-    });
+  P.llenarVistaPrevia = function (c, actuales) {
+    var porTipo = {}; (P.catalogo || []).forEach(function (t) { porTipo[t.id] = t; });
+    var render = function (id, e) { var t = porTipo[id]; return window.CorreoEstilos.vestir(c.datos, { etiqueta: t.etiqueta, html: t.ejemplo.html, asunto: t.ejemplo.asunto }, e).html; };
+    Array.prototype.forEach.call(document.querySelectorAll('iframe[data-op]'), function (f) { var x = f.getAttribute('data-op').split(':'); f.srcdoc = render(x[0], x[1]); });
+    Array.prototype.forEach.call(document.querySelectorAll('iframe[data-actual]'), function (f) { var a = actuales[f.getAttribute('data-actual')]; if (a) f.srcdoc = a.html; });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-ver-op]'), function (b) { b.onclick = function (ev) { ev.preventDefault(); var x = b.getAttribute('data-ver-op').split(':'); P.abrirHtml(render(x[0], x[1])); }; });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-ver-actual]'), function (b) { b.onclick = function () { var a = actuales[b.getAttribute('data-ver-actual')]; if (a) P.abrirHtml(a.html); }; });
+    Array.prototype.forEach.call(document.querySelectorAll('.opcion input[type=radio]'), function (r) { r.onchange = function () { var caja = r.closest('.muestras'); Array.prototype.forEach.call(caja.querySelectorAll('.opcion'), function (o) { o.classList.toggle('elegida', o.contains(r)); }); }; });
+  };
+  // Elecciones de un grupo, mezcladas con las que ya estaban guardadas.
+  P.disenoDeGrupo = function (c, g) {
+    var e = {}; try { e = JSON.parse(c.datos.marca_estilos || '{}'); } catch (x) { e = {}; }
+    Array.prototype.forEach.call(document.querySelectorAll('[data-grupo="' + g + '"] input[type=radio]:checked'), function (r) { e[r.name.replace(/^op-/, '')] = r.value; });
+    return JSON.stringify(e);
   };
   P.abrirHtml = function (html) { window.open(URL.createObjectURL(new Blob([html], { type: 'text/html' })), '_blank'); };
   // Aviso de ejemplo con la marca (cambia en vivo cuando se edita la marca).
