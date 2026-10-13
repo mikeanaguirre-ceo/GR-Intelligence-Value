@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Great Revenue Intelligence</title>
+<style>
+  body{margin:0;font-family:Calibri,Carlito,"Segoe UI",Arial,sans-serif;background:#f4f4f1;color:#1e1e1e}
+  .y{background:#7c3aed;padding:28px 20px}
+  .y h1{margin:0;font-family:"Segoe UI",Arial,sans-serif;font-weight:900;font-size:30px;text-transform:uppercase}
+  main{max-width:640px;margin:0 auto;padding:24px 20px}
+  p{font-size:16px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="y"><h1>Pipeline</h1></div>
+<main><p id="msg">Cargando el tablero de Great Revenue...</p></main>
+<script>
+// Pagina de Great Revenue dentro de GR Intelligence. La genera MOTOR - Alta de compania (base); no editar a mano.
+(function () {
+  var CLIENTE = "gr";
+  var MOTOR = "https://mikea.app.n8n.cloud/webhook/2bdae4ff-5d97-48e3-8828-9c94cdecaee3/motor-tablero/";
+  var m = /[?&]t=([^&]+)/.exec(location.search);
+  var t = m ? decodeURIComponent(m[1]) : "";
+  var msg = document.getElementById("msg");
+  if (!t) { msg.textContent = "Este enlace no trae la clave. Pide a Great Revenue el enlace completo."; return; }
+  fetch(MOTOR + CLIENTE + "?t=" + encodeURIComponent(t), { cache: "no-store" })
+    .then(function (r) { return r.text().then(function (x) { return { ok: r.ok, h: x }; }); })
+    .then(function (x) {
+      if (!x.ok) { msg.textContent = "Enlace no valido. Pide a Great Revenue un enlace nuevo."; return; }
+      document.open(); document.write(x.h); document.close();
+    })
+    .catch(function () { msg.textContent = "No se pudo cargar el tablero. Intenta de nuevo en unos minutos."; });
+})();
+</script>
+</body>
+</html>
