@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Portal de la compañía | Great Revenue Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+/* Portal de la compania: toma los colores, logo y tipografia de cada compania desde su configuracion. */
+:root{--prim:#7c3aed;--osc:#1e1e1e;--bg:#f6f6f4;--line:#e4e4df;--g:#5f5f5a;--ok:#2e7d32;--bad:#b3261e;--disp:"Poppins","Segoe UI",Arial,sans-serif;--body:"Segoe UI",Calibri,Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--osc);font-family:var(--body);font-size:15px}
+.top{background:#fff;border-bottom:1px solid var(--line);padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.top img{height:40px;max-width:200px;object-fit:contain;display:block}.top b{font-family:var(--disp)}.top span{color:var(--g);font-size:13px}
+.banda{background:var(--prim);color:var(--osc);padding:22px 20px}
+.banda .in{max-width:1080px;margin:0 auto}
+.banda h1{font-family:var(--disp);font-weight:900;font-size:clamp(22px,4vw,32px);margin:0;text-transform:uppercase;letter-spacing:.02em}
+.banda p{margin:6px 0 0;font-size:15px}
+main{max-width:1080px;margin:0 auto;padding:20px;display:grid;gap:16px}
+h2{font-family:var(--disp);font-size:15px;margin:0;text-transform:uppercase;letter-spacing:.05em}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:12px;min-width:0}
+.card-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:3px solid var(--prim);padding-bottom:8px}
+.dato{display:grid;grid-template-columns:minmax(140px,220px) minmax(0,1fr);gap:4px 14px;font-size:14px}.dato dt{color:var(--g)}.dato dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:620px){.dato{grid-template-columns:1fr}.dato dd{margin-bottom:6px}}
+.sw{display:inline-flex;align-items:center;gap:8px;margin-right:14px}.sw i{width:22px;height:22px;border-radius:6px;border:1px solid rgba(0,0,0,.12);display:inline-block}
+.vitrina{width:100%;height:640px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.entrar{background:#fff;border:1px solid var(--line);border-radius:12px;padding:28px;max-width:460px;display:grid;gap:14px}
+label{display:grid;gap:4px;font-size:13px;color:var(--g)}
+input,select,textarea{font:inherit;color:var(--osc);border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;min-width:0}
+.dos{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.acciones{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+button.p,a.p{background:var(--osc);color:#fff;border:0;border-radius:8px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}
+button.s,a.s{background:#fff;color:var(--osc);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font:inherit;cursor:pointer;text-decoration:none;display:inline-block}
+button:disabled{opacity:.6;cursor:wait}
+.msg{font-size:14px}.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
+.nota{background:var(--bg);border:1px solid var(--line);color:var(--g);border-radius:8px;padding:8px 12px;font-size:13px}
+.sol{display:grid;gap:6px;margin:0;padding:0;list-style:none}.sol li{font-size:13px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:grid;gap:2px}
+.chip{display:inline-block;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;margin-right:6px}.chip.pendiente{background:#fff4e5;color:#7a4a00}.chip.aplicado{background:#e6f4ea;color:#1e6b34}.chip.descartado{background:#eee;color:#555}
+.liga{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;word-break:break-all}.liga code{background:var(--bg);padding:4px 8px;border-radius:6px}
+footer{text-align:center;color:var(--g);font-size:12px;padding:24px}
+</style>
+</head>
+<body>
+<div class="top"><span id="logo"><b>Great Revenue Intelligence</b></span><span id="quien">Portal de la compañía</span></div>
+<div class="banda"><div class="in"><h1 id="titulo">Tu portal</h1><p id="bajada">Entra con tu cuenta de Google para ver la configuración de tu compañía.</p></div></div>
+<main>
+  <section id="v-entrar">
+    <div class="entrar">
+      <b>Entra con tu cuenta de Google</b>
+      <div id="gbtn"></div>
+      <p class="msg bad" id="m-entrar"></p>
+    </div>
+  </section>
+  <section id="v-portal" hidden style="display:grid;gap:16px">
+    <div id="selector"></div>
+    <div id="panel" style="display:grid;gap:16px"></div>
+  </section>
+</main>
+<footer>Operado por Great Revenue Intelligence · <a href="privacidad.html">Aviso de privacidad</a></footer>
+
+<script>
+(function () {
+  var API = 'https://mikea.app.n8n.cloud/webhook/motor-portal-api';
+  var CLIENT_ID = '984882033131-fc761rdsqc65vks90b4mt0sfhbkj1gbl.apps.googleusercontent.com';
+  var estado = { sesion: null, companias: [], sel: null, rol: '', vitrinas: {} };
+  var pedida = (/[?&]c=([A-Za-z0-9]+)/.exec(location.search) || [])[1];
+  function $(id) { return document.getElementById(id); }
+  function h(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function guardarSesion(s) { try { if (s) sessionStorage.setItem('gr_sesion_cia', s); else sessionStorage.removeItem('gr_sesion_cia'); } catch (e) {} estado.sesion = s; }
+  function leerSesion() { try { return sessionStorage.getItem('gr_sesion_cia'); } catch (e) { return null; } }
+  function api(cuerpo) {
+    return fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(cuerpo) })
+      .then(function (r) { return r.json().catch(function () { return { error: 'Respuesta no valida' }; }).then(function (d) { d._codigo = r.status; return d; }); });
+  }
+  function msg(id, clase, texto) { var m = $(id); if (m) { m.className = 'msg ' + (clase || ''); m.textContent = texto; } }
+  function salir(motivo) { guardarSesion(null); $('v-portal').hidden = true; $('v-entrar').hidden = false; $('m-entrar').textContent = motivo || ''; }
+
+  window.alEntrar = function (resp) {
+    $('m-entrar').textContent = 'Revisando tu acceso...';
+    api({ accion: 'entrar', id_token: resp.credential }).then(function (d) {
+      if (!d.sesion) { $('m-entrar').textContent = d.error || 'No se pudo entrar.'; return; }
+      guardarSesion(d.sesion); $('m-entrar').textContent = ''; $('quien').textContent = d.usuario.nombre + ' · ' + d.usuario.email; cargar();
+    });
+  };
+  function iniciarGoogle() {
+    if (!window.google || !google.accounts) { setTimeout(iniciarGoogle, 300); return; }
+    google.accounts.id.initialize({ client_id: CLIENT_ID, callback: window.alEntrar, ux_mode: 'popup' });
+    google.accounts.id.renderButton($('gbtn'), { theme: 'outline', size: 'large', text: 'signin_with', locale: 'es' });
+  }
+  function cargar() {
+    api({ accion: 'companias', sesion: estado.sesion }).then(function (d) {
+      if (d._codigo === 401 || d._codigo === 403) { salir(d.error); return; }
+      if (!d.companias || !d.companias.length) { salir(d.error || 'Tu cuenta no tiene una compañía asignada.'); return; }
+      estado.companias = d.companias; estado.rol = (d.usuario || {}).rol;
+      if (d.usuario) $('quien').textContent = d.usuario.nombre + ' · ' + d.usuario.email;
+      $('v-entrar').hidden = true; $('v-portal').hidden = false;
+      var t = estado.sel || (pedida && d.companias.some(function (c) { return c.tenant === pedida.toUpperCase(); }) ? pedida.toUpperCase() : d.companias[0].tenant);
+      pintarSelector(); elegir(t);
+    });
+  }
+  function pintarSelector() {
+    if (estado.companias.length < 2) { $('selector').innerHTML = estado.rol === 'gr' ? '<div class="nota">Vista de Great Revenue: así lo ve la administradora.</div>' : ''; return; }
+    $('selector').innerHTML = '<div class="nota">' + (estado.rol === 'gr' ? 'Vista de Great Revenue: así lo ve la administradora de ' : 'Compañía: ') + '<select id="sel-cia">' + estado.companias.map(function (c) { return '<option value="' + h(c.tenant) + '">' + h(c.datos.marca_nombre || c.tenant) + '</option>'; }).join('') + '</select></div>';
+    $('sel-cia').onchange = function () { elegir(this.value); };
+  }
+  function color(v, d) { return /^#[0-9a-fA-F]{6}$/.test(v || '') ? v : d; }
+  function aplicarMarca(c) {
+    var r = document.documentElement.style;
+    r.setProperty('--prim', color(c.datos.marca_color_primario, '#7c3aed'));
+    r.setProperty('--osc', color(c.datos.marca_color_oscuro, '#1e1e1e'));
+    if (c.datos.marca_fuente_interna) r.setProperty('--body', c.datos.marca_fuente_interna);
+    $('logo').innerHTML = c.datos.marca_logo_url ? '<img src="' + h(c.datos.marca_logo_url) + '" alt="' + h(c.datos.marca_nombre) + '">' : '<b>' + h(c.datos.marca_nombre) + '</b>';
+    $('titulo').textContent = 'Portal de ' + (c.datos.portal_nombre || c.datos.marca_nombre || c.tenant);
+    $('bajada').textContent = 'Tu marca, cómo operas, quién recibe los avisos y tu equipo. Si algo no se ve como esperas, pide el cambio.';
+    document.title = 'Portal de ' + (c.datos.marca_nombre || c.tenant);
+  }
+  function dl(pares) { return '<dl class="dato">' + pares.map(function (p) { return '<dt>' + h(p[0]) + '</dt><dd>' + (p[2] ? p[1] : h(p[1] || '—')) + '</dd>'; }).join('') + '</dl>'; }
+  function tarjeta(titulo, cuerpo, extra) { return '<div class="card"><div class="card-h"><h2>' + h(titulo) + '</h2>' + (extra || '') + '</div>' + cuerpo + '</div>'; }
+  function abrir(u) { return /^https:\/\//.test(u || '') ? '<a href="' + h(u.split(/\s+/)[0]) + '" target="_blank" rel="noopener">Abrir</a>' : '—'; }
+  function listaSolicitudes(sol) {
+    if (!sol || !sol.length) return '<p style="margin:0;color:var(--g);font-size:13px">Aún no hay cambios pedidos.</p>';
+    return '<ul class="sol">' + sol.map(function (s) { return '<li><span><span class="chip ' + h(s.estado) + '">' + h(s.estado) + '</span><b>' + h(s.seccion) + '</b> · ' + h(s.fecha) + '</span><span>' + h(s.instruccion) + '</span>' + (s.respuesta ? '<span style="color:var(--g)">Respuesta: ' + h(s.respuesta) + '</span>' : '') + '</li>'; }).join('') + '</ul>';
+  }
+  function elegir(t) {
+    var c = estado.companias.filter(function (x) { return x.tenant === t; })[0]; if (!c) return;
+    estado.sel = t; aplicarMarca(c); if ($('sel-cia')) $('sel-cia').value = t;
+    var d = c.datos, inf = c.info || {}, html = '';
+    html += tarjeta('Vista previa de tu marca', (inf.tiene_vitrina ? '<iframe class="vitrina" id="vitrina" title="Vitrina de marca" sandbox="allow-same-origin allow-popups"></iframe>' : '<p style="margin:0;color:var(--g)">Tu vitrina de marca estará lista cuando Great Revenue apruebe tu marca.</p>'),
+      inf.tiene_vitrina ? '<button class="s" id="v-completa">Pantalla completa</button>' : '');
+    html += tarjeta('Cómo opera hoy', dl([['CRM', d.crm], ['Dónde corren los avisos', d.motor_propio], ['Marca y decisiones', d.marca_diferencias_manual], ['Equipo y operación', d.operacion_actual]]));
+    html += tarjeta('Origen de tu marca', dl([['Sitio web', abrir(d.sitio_web), true], ['Manual de identidad', abrir(d.marca_manual_url), true], ['Carpeta de logos', abrir(d.marca_logos_carpeta), true]]));
+    html += tarjeta('Tu marca', dl([['Nombre', d.marca_nombre], ['Colores', '<span class="sw"><i style="background:' + h(color(d.marca_color_primario, '#ccc')) + '"></i>' + h(d.marca_color_primario) + '</span><span class="sw"><i style="background:' + h(color(d.marca_color_oscuro, '#111')) + '"></i>' + h(d.marca_color_oscuro) + '</span>', true], ['Tipografía de los avisos', d.marca_fuente_interna], ['Remitente', d.marca_remitente_interno], ['Prefijo del asunto', d.marca_prefijo_asunto], ['Pie', d.marca_pie]]));
+    html += tarjeta('Quién recibe la operación', dl([['Fallas del motor', d.aviso_fallas_correos], ['Conexiones nuevas', d.llaves_avisar_a]]));
+    html += tarjeta('Tu equipo', dl([['Administradora', d.portal_admins], ['Usuarios máximos', d.usuarios_max + ' (contándote)'], ['Modo', d.modo === 'real' ? 'Real' : 'Prueba']]) + '<div class="nota">Siguiente paso: desde aquí invitarás a tu equipo y conectarás tus cuentas (Google, CRM y prospección).</div>');
+    html += tarjeta('Pedir un cambio', '<div class="dos"><label>¿Qué parte?<select id="p-seccion"><option>Vista previa general</option><option>Correos de ejemplo</option><option>Tipografía</option><option>Colores</option><option>Logo</option><option>Cómo opera hoy</option><option>Quién recibe la operación</option><option>Otro</option></select></label>'
+      + '<label style="grid-column:1/-1">Instrucción<textarea id="p-instruccion" rows="3" placeholder="Ej.: el resumen diario también debe llegarle a Sara"></textarea></label></div>'
+      + '<div class="acciones"><button class="p" id="p-enviar">Enviar</button><span class="msg" id="m-pedir"></span></div><div><b style="font-size:13px">Cambios pedidos</b>' + listaSolicitudes(c.solicitudes) + '</div>');
+    if (c.ligas.tablero) html += tarjeta('Ligas', '<div class="liga"><b>Tablero del pipeline:</b> <a href="' + h(c.ligas.tablero) + '" target="_blank" rel="noopener">Abrir</a></div>');
+    $('panel').innerHTML = html;
+    if ($('v-completa')) $('v-completa').onclick = function () { var x = estado.vitrinas[t]; if (!x) return; window.open(URL.createObjectURL(new Blob([x], { type: 'text/html' })), '_blank'); };
+    $('p-enviar').onclick = function () { pedirCambio(t); };
+    if (inf.tiene_vitrina) cargarVitrina(t);
+  }
+  function cargarVitrina(t) {
+    var poner = function (x) { var f = $('vitrina'); if (f && estado.sel === t) f.srcdoc = x; };
+    if (estado.vitrinas[t]) { poner(estado.vitrinas[t]); return; }
+    api({ accion: 'vitrina', sesion: estado.sesion, tenant: t }).then(function (d) {
+      if (d._codigo === 401) { salir(d.error); return; }
+      if (d.html) { estado.vitrinas[t] = d.html; poner(d.html); } else poner('<p style="font-family:sans-serif;padding:20px">' + h(d.error || 'No se pudo cargar la vitrina.') + '</p>');
+    });
+  }
+  function pedirCambio(t) {
+    var ins = $('p-instruccion').value.trim();
+    if (ins.length < 5) { msg('m-pedir', 'bad', 'Escribe qué quieres cambiar.'); return; }
+    msg('m-pedir', '', 'Enviando...'); $('p-enviar').disabled = true;
+    api({ accion: 'pedir_cambio', sesion: estado.sesion, tenant: t, seccion: $('p-seccion').value, instruccion: ins }).then(function (d) {
+      $('p-enviar').disabled = false;
+      if (d._codigo === 401) { salir(d.error); return; }
+      if (!d.ok) { msg('m-pedir', 'bad', d.error || 'No se pudo enviar.'); return; }
+      msg('m-pedir', 'ok', d.mensaje || 'Recibido.'); setTimeout(cargar, 900);
+    });
+  }
+
+  estado.sesion = leerSesion();
+  iniciarGoogle();
+  if (estado.sesion) cargar();
+})();
+</script>
+</body>
+</html>
