@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
 <link rel="stylesheet" href="portal_comun.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="correo_estilos.js"></script>
 <script src="portal_comun.js"></script>
 </head>
 <body>
@@ -30,6 +31,7 @@
   var P = window.GRP, $ = P.$, h = P.h;
   var LLAVE = 'gr_sesion_cia';
   var estado = { companias: [], sel: null, rol: '', muestras: {} };
+  var EDITABLE = false;
   var pedida = (/[?&]c=([A-Za-z0-9]+)/.exec(location.search) || [])[1];
   var ses = function () { return P.sesion(LLAVE); };
   function salir(motivo) { P.sesion(LLAVE, null); $('v-portal').hidden = true; $('v-entrar').hidden = false; $('m-entrar').textContent = motivo || ''; }
@@ -69,7 +71,7 @@
     P.aplicarMarca(d, 'Portal de ' + (d.portal_nombre || d.marca_nombre || t), 'Tu marca, cómo operas, quién recibe los avisos y tu equipo. En cada sección puedes pedir cambios.');
     document.title = 'Portal de ' + (d.marca_nombre || t);
     var usados = P.correos(d.portal_usuarios).length;
-    html += tarjeta(1, 'Vista previa de tus correos', '<p class="nota" style="margin:0">Un ejemplo real de cada tipo de correo que sale con tu marca, agrupado por objetivo.</p><div id="grupos">' + (inf.tiene_muestras ? '<p class="vacio">Cargando ejemplos...</p>' : '<p class="vacio">Tus ejemplos estarán listos cuando salgan los primeros correos.</p>') + '</div>',
+    html += tarjeta(1, 'Vista previa de tus correos', '<p class="nota" style="margin:0">Todos los tipos de correo que salen con tu marca, por objetivo. La opción marcada es la que se usa hoy; si prefieres otra, pídelo en el recuadro del grupo.</p><div id="grupos"><p class="vacio">Cargando tipos de correo...</p></div>',
       inf.tiene_vitrina ? '<button class="s" id="doc-completo">Documento completo de marca</button>' : '');
     html += seccion(2, 'opera', 'Cómo opera hoy', dl([['CRM', d.crm], ['Dónde corren los avisos', d.motor_propio], ['Marca y decisiones', d.marca_diferencias_manual], ['Equipo y operación', d.operacion_actual]]), c);
     html += seccion(3, 'origen', 'Origen de tu marca', dl([['Sitio web', abrir(d.sitio_web), true], ['Manual de identidad', abrir(d.marca_manual_url), true], ['Carpeta de logos', abrir(d.marca_logos_carpeta), true]]), c);
@@ -80,15 +82,17 @@
     $('panel').innerHTML = html;
     P.activarPedir(ses, t, cargar);
     if ($('doc-completo')) $('doc-completo').onclick = function () { P.api({ accion: 'vitrina', sesion: ses(), tenant: t }).then(function (x) { if (x.html) P.abrirHtml(x.html); }); };
-    if (inf.tiene_muestras) cargarMuestras(c);
+    cargarMuestras(c);
   }
   function cargarMuestras(c) {
-    var poner = function (doc) { if (estado.sel !== c.tenant) return; $('grupos').innerHTML = P.muestras(doc, c.datos.marca_nombre, c.solicitudes); P.llenarMuestras(doc); P.activarPedir(ses, c.tenant, cargar); };
-    if (estado.muestras[c.tenant]) { poner(estado.muestras[c.tenant]); return; }
-    P.api({ accion: 'muestras', sesion: ses(), tenant: c.tenant }).then(function (x) {
-      if (x._codigo === 401) { salir(x.error); return; }
-      if (x.muestras) { estado.muestras[c.tenant] = x.muestras; poner(x.muestras); } else $('grupos').innerHTML = '<p class="vacio">' + h(x.error || 'No se pudieron cargar los ejemplos.') + '</p>';
-    });
+    var poner = function (actuales) {
+      if (estado.sel !== c.tenant) return;
+      $('grupos').innerHTML = P.vistaPrevia(c, actuales, EDITABLE); P.llenarVistaPrevia(c, actuales); P.activarPedir(ses, c.tenant, cargar);
+      Array.prototype.forEach.call(document.querySelectorAll('[data-guardar-diseno]'), function (b) { b.onclick = function () { guardarDiseno(c, b.getAttribute('data-guardar-diseno')); }; });
+    };
+    var actuales = estado.muestras[c.tenant];
+    var pedirActuales = actuales ? Promise.resolve(actuales) : (c.info.tiene_muestras ? P.api({ accion: 'muestras', sesion: ses(), tenant: c.tenant }).then(function (d) { if (d._codigo === 401) { salir(d.error); return {}; } return (d.muestras && d.muestras.actuales) || {}; }) : Promise.resolve({}));
+    Promise.all([P.cargarCatalogo(), pedirActuales]).then(function (r) { estado.muestras[c.tenant] = r[1]; poner(r[1]); }, function () { $('grupos').innerHTML = '<p class="vacio">No se pudieron cargar los tipos de correo.</p>'; });
   }
 
   if (ses()) cargar();
