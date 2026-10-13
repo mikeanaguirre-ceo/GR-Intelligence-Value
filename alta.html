@@ -95,18 +95,20 @@
 
   // Secciones con campos. Cada una se guarda y se deshace por separado.
   var SECCIONES = [
-    { n: 2, id: 'opera', titulo: 'Cómo opera hoy', campos: [['crm', 'CRM'], ['motor_propio', 'Dónde corren sus avisos', 'largo'], ['marca_diferencias_manual', 'Diferencias contra el manual y decisiones', 'largo'], ['operacion_actual', 'Equipo y operación actual', 'largo']] },
+    { n: 2, id: 'opera', titulo: 'Cómo opera hoy', campos: [['crm', 'CRM'], ['motor', 'Motor de sus correos', 'motor'], ['motor_propio', 'Dónde corren sus avisos', 'largo'], ['marca_diferencias_manual', 'Diferencias contra el manual y decisiones', 'largo'], ['operacion_actual', 'Equipo y operación actual', 'largo']] },
     { n: 3, id: 'origen', titulo: 'Origen de la marca', campos: [['sitio_web', 'Sitio web', 'liga'], ['marca_manual_url', 'Manual de identidad (liga)', 'liga'], ['marca_logos_carpeta', 'Carpeta de Drive con logos', 'liga'], ['marca_vitrina_url', 'Documento completo de marca (liga)', 'liga']] },
     { n: 4, id: 'marca', titulo: 'Marca', campos: [['marca_nombre', 'Nombre de la marca'], ['marca_logo_url', 'Logo (dirección https de una imagen PNG)'], ['marca_color_primario', 'Color principal', 'color'], ['marca_color_oscuro', 'Color oscuro', 'color'], ['marca_colores_secundarios', 'Colores secundarios (separados por coma)'], ['marca_fuente_interna', 'Tipografía de los avisos'], ['marca_pie', 'Pie de los avisos'], ['marca_remitente_interno', 'Remitente de los avisos'], ['marca_prefijo_asunto', 'Prefijo del asunto']] },
     { n: 5, id: 'operacion', titulo: 'Operación: quién recibe', campos: [['aviso_fallas_correos', 'Fallas del motor'], ['llaves_avisar_a', 'Conexiones nuevas']] },
     { n: 6, id: 'portal', titulo: 'Portal de la compañía', campos: [['portal_nombre', 'Nombre del portal'], ['portal_admins', 'Administradora (correo de Google)'], ['usuarios_max', 'Usuarios máximos (incluye a la administradora)'], ['modo', 'Modo', 'modo'], ['portal_usuarios', 'Usuarios (correos de Google, uno por línea o separados por coma)', 'largo']] }
   ];
   function campo(k, etiqueta, tipo, v) {
-    if (tipo === 'color') return '<label>' + h(etiqueta) + '<span class="color"><input type="color" data-par="' + k + '" value="' + h(P.color(v, '#cccccc')) + '" aria-label="' + h(etiqueta) + '"><input id="f-' + k + '" data-k="' + k + '" value="' + h(v) + '" placeholder="#ffcc00"></span></label>';
-    if (tipo === 'modo') return '<label>' + h(etiqueta) + '<select id="f-' + k + '" data-k="' + k + '"><option value="prueba"' + (v !== 'real' ? ' selected' : '') + '>Prueba</option><option value="real"' + (v === 'real' ? ' selected' : '') + '>Real</option></select></label>';
-    if (tipo === 'largo') return '<label style="grid-column:1/-1">' + h(etiqueta) + '<textarea id="f-' + k + '" data-k="' + k + '" rows="3">' + h(k === 'portal_usuarios' ? P.correos(v).join('\n') : v) + '</textarea></label>';
+    var et = '<span>' + h(etiqueta) + P.ayuda(k) + '</span>';
+    if (tipo === 'color') return '<label>' + et + '<span class="color"><input type="color" data-par="' + k + '" value="' + h(P.color(v, '#cccccc')) + '" aria-label="' + h(etiqueta) + '"><input id="f-' + k + '" data-k="' + k + '" value="' + h(v) + '" placeholder="#ffcc00"></span></label>';
+    if (tipo === 'motor') return '<label>' + et + '<select id="f-' + k + '" data-k="' + k + '"><option value="comun"' + (v !== 'propio' ? ' selected' : '') + '>Motor común</option><option value="propio"' + (v === 'propio' ? ' selected' : '') + '>Motor propio</option></select></label>';
+    if (tipo === 'modo') return '<label>' + et + '<select id="f-' + k + '" data-k="' + k + '"><option value="prueba"' + (v !== 'real' ? ' selected' : '') + '>Prueba</option><option value="real"' + (v === 'real' ? ' selected' : '') + '>Real</option></select></label>';
+    if (tipo === 'largo') return '<label style="grid-column:1/-1">' + et + '<textarea id="f-' + k + '" data-k="' + k + '" rows="3">' + h(k === 'portal_usuarios' ? P.correos(v).join('\n') : v) + '</textarea></label>';
     var abrir = tipo === 'liga' && /^https:\/\//.test(v) ? ' <a href="' + h(v.split(/\s+/)[0]) + '" target="_blank" rel="noopener">Abrir</a>' : '';
-    return '<label>' + h(etiqueta) + abrir + '<input id="f-' + k + '" data-k="' + k + '" value="' + h(v) + '"></label>';
+    return '<label>' + et + abrir + '<input id="f-' + k + '" data-k="' + k + '" value="' + h(v) + '"></label>';
   }
   function tarjeta(n, titulo, cuerpo, extra, id) { return '<div class="card" id="s-' + (id || n) + '"><div class="card-h"><h2><span class="num">' + n + '</span>' + h(titulo) + '</h2>' + (extra || '') + '</div>' + cuerpo + '</div>'; }
   function pieGuardar(id) { return '<div class="pie-sec"><button class="p" data-guardar="' + id + '">Guardar</button><button class="s" data-deshacer="' + id + '">Deshacer</button><span class="msg" id="mg-' + id + '"></span></div>'; }
@@ -117,17 +119,21 @@
     if (inf.alta_estado === 'marca_por_proponer') html += '<div class="aviso">Dada de alta el ' + h(inf.alta_fecha || '') + '. Siguiente paso: llena la marca, guarda y apruébala. <button class="s" id="aprobar" style="margin-left:8px">Aprobar marca</button> <span class="msg" id="m-aprobar"></span></div>';
     else if (c.faltan.length) html += '<div class="aviso">Faltan datos para operar: ' + h(c.faltan.join(', ')) + '.</div>';
     // 1. Vista previa por grupos
-    html += tarjeta(1, 'Vista previa', '<p class="nota" style="margin:0">Todos los tipos de correo de ' + h(c.datos.marca_nombre) + ', por objetivo. Cada uno con 3 diseños con sus colores; elige uno y guarda el grupo. Lo que guardes es lo que se envía.</p><div id="grupos"><p class="vacio">Cargando tipos de correo...</p></div>',
+    html += tarjeta(1, 'Vista previa', '<p class="nota" style="margin:0">Todos los tipos de correo de ' + h(c.datos.marca_nombre) + ', por objetivo, con 3 diseños con sus colores. Elige uno por tipo y guarda el grupo: lo que guardes es lo que se envía.</p><div id="grupos"><p class="vacio">Cargando tipos de correo...</p></div>',
       inf.tiene_vitrina ? '<button class="s" id="doc-completo">Documento completo de marca</button>' : '');
     SECCIONES.forEach(function (s) {
       var cuerpo = '<div class="dos">' + s.campos.map(function (f) { return campo(f[0], f[1], f[2], c.datos[f[0]] || ''); }).join('') + '</div>';
+      if (s.id === 'opera') cuerpo += '<div><b style="font-size:13px;color:var(--g)">Mejoras contra el manual</b>' + P.ayuda('marca_diferencias_manual') + '<div id="mejoras" style="margin-top:8px">' + P.listaMejoras(c, true) + '</div><span class="msg" id="m-mejora"></span></div>';
       if (s.id === 'origen') cuerpo += '<div class="acciones"><label style="display:flex;gap:8px;align-items:center">Subir el manual en PDF<input type="file" id="m-pdf" accept="application/pdf"></label><button class="s" id="subir-manual">Subir manual</button><span class="msg" id="m-manual"></span></div>';
       if (s.id === 'marca') cuerpo += '<div><b style="font-size:13px;color:var(--g)">Así se ve un aviso con esta marca (cambia mientras editas)</b><div id="prev" style="margin-top:8px"></div></div>';
       if (s.id === 'portal') cuerpo += '<div class="nota">Usuarios en uso: <span class="uso" id="uso"></span>. ' + (inf.alta_invitacion_fecha ? 'Última invitación: ' + h(inf.alta_invitacion_fecha) + ' a ' + h(inf.alta_invitacion_para) + '.' : 'Aún no se envía la invitación.') + '</div>'
-        + '<div class="acciones"><button class="s" id="invitar">' + (inf.alta_invitacion_fecha ? 'Volver a enviar invitación' : 'Enviar invitación') + '</button><a class="s" href="compania.html?c=' + h(c.tenant) + '" target="_blank" rel="noopener">Ver su portal</a><span class="msg" id="m-invitar"></span></div>';
+        + '<div class="acciones"><button class="s" id="invitar">' + (inf.alta_invitacion_fecha ? 'Volver a enviar invitación' : 'Enviar invitación') + '</button><a class="s" href="compania.html?c=' + h(c.tenant) + '" target="_blank" rel="noopener">Ver como la administradora</a><span class="msg" id="m-invitar"></span></div>';
       html += tarjeta(s.n, s.titulo, cuerpo + pieGuardar(s.id), '', s.id);
     });
-    html += tarjeta(7, 'Ligas', liga('Tablero del pipeline', c.ligas.tablero) + liga('Portal de la compañía', c.ligas.portal_compania) + liga('Documento completo de marca', c.ligas.vitrina) + '<p class="vacio">El tablero lleva una clave privada: compártelo solo con la compañía.</p>');
+    var propio = c.datos.motor === 'propio';
+    html += tarjeta(7, 'Ligas', (propio ? '<div class="liga"><b>Tablero del pipeline:</b> no aplica: ' + h(c.datos.marca_nombre) + ' usa el tablero de su propio motor.</div>' : liga('Tablero del pipeline', c.ligas.tablero, true))
+      + liga('Entrada al portal de la compañía (va en la invitación)', c.ligas.portal_compania) + liga('Documento completo de marca', c.ligas.vitrina, true)
+      + (propio ? '' : '<p class="vacio">El tablero lleva una clave privada: compártelo solo con la compañía.</p>'));
     $('panel').innerHTML = html;
     // Eventos
     Array.prototype.forEach.call(document.querySelectorAll('[data-par]'), function (p) { p.oninput = function () { $('f-' + p.getAttribute('data-par')).value = p.value; vivo(); }; });
@@ -139,6 +145,7 @@
     if ($('doc-completo')) $('doc-completo').onclick = function () { P.msg('m-invitar', '', ''); P.api({ accion: 'vitrina', sesion: ses(), tenant: t }).then(function (d) { if (d.html) P.abrirHtml(d.html); }); };
     $('subir-manual').onclick = function () { subirManual(t); };
     $('invitar').onclick = function () { invitar(c); };
+    activarMejoras(c);
     vivo();
     cargarMuestras(c);
   }
@@ -153,6 +160,7 @@
       if (estado.sel !== c.tenant) return;
       $('grupos').innerHTML = P.vistaPrevia(c, actuales, EDITABLE); P.llenarVistaPrevia(c, actuales); P.activarPedir(ses, c.tenant, cargar);
       Array.prototype.forEach.call(document.querySelectorAll('[data-guardar-diseno]'), function (b) { b.onclick = function () { guardarDiseno(c, b.getAttribute('data-guardar-diseno')); }; });
+      Array.prototype.forEach.call(document.querySelectorAll('[data-deshacer-diseno]'), function (b) { b.onclick = function () { var g = b.getAttribute('data-deshacer-diseno'); P.deshacerGrupo(c, g); P.msg('md-' + g, '', 'Sin cambios.'); }; });
     };
     var actuales = estado.muestras[c.tenant];
     var pedirActuales = actuales ? Promise.resolve(actuales) : (c.info.tiene_muestras ? P.api({ accion: 'muestras', sesion: ses(), tenant: c.tenant }).then(function (d) { if (d._codigo === 401) { salir(d.error); return {}; } return (d.muestras && d.muestras.actuales) || {}; }) : Promise.resolve({}));
@@ -165,7 +173,7 @@
     P.api({ accion: 'guardar', sesion: ses(), tenant: c.tenant, cambios: { marca_estilos: v } }).then(function (d) {
       if (d._codigo === 401) { salir(d.error); return; }
       if (!d.ok) { P.msg('md-' + g, 'bad', d.error || 'No se pudo guardar.'); return; }
-      c.datos.marca_estilos = v; P.msg('md-' + g, 'ok', c.tenant === 'GR' ? 'Guardado. Aplica cuando GR pase al motor común.' : 'Guardado. Los siguientes correos ya salen así.');
+      c.datos.marca_estilos = v; P.msg('md-' + g, 'ok', c.datos.motor === 'propio' ? 'Guardado. Los que quedan en «Actual» siguen igual; un diseño A, B o C aplica cuando ese correo pase al motor común.' : 'Guardado. Los siguientes correos ya salen así.');
     });
   }
   function camposDe(id) { return Array.prototype.slice.call($('s-' + id).querySelectorAll('[data-k]')); }
@@ -219,7 +227,28 @@
       P.msg('m-invitar', 'ok', 'Invitación enviada a ' + admin + '.'); setTimeout(cargar, 1200);
     });
   }
-  function liga(t, u) { return '<div class="liga"><b>' + h(t) + ':</b> ' + (u ? '<code>' + h(u) + '</code> <button class="s" data-copiar="' + h(u) + '">Copiar</button> <a href="' + h(u) + '" target="_blank" rel="noopener">Abrir</a>' : 'pendiente') + '</div>'; }
+  // Aplicar o revertir una mejora contra el manual: guarda sus cambios y deja anotado lo que habia antes.
+  function activarMejoras(c) {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-mejora]'), function (b) {
+      b.onclick = function () {
+        var ms = P.mejoras(c.datos), i = Number(b.getAttribute('data-mejora')), m = ms[i]; if (!m) return;
+        var cambios = {};
+        if (!m.aplicada) { m.antes = {}; Object.keys(m.cambios).forEach(function (k) { m.antes[k] = c.datos[k] || ''; cambios[k] = m.cambios[k]; }); m.aplicada = true; }
+        else { Object.keys(m.antes || {}).forEach(function (k) { cambios[k] = m.antes[k]; }); m.aplicada = false; }
+        cambios.marca_mejoras = JSON.stringify(ms);
+        b.disabled = true; P.msg('m-mejora', '', 'Guardando...');
+        P.api({ accion: 'guardar', sesion: ses(), tenant: c.tenant, cambios: cambios }).then(function (d) {
+          b.disabled = false;
+          if (d._codigo === 401) { salir(d.error); return; }
+          if (!d.ok) { P.msg('m-mejora', 'bad', d.error || 'No se pudo guardar.'); return; }
+          Object.keys(cambios).forEach(function (k) { c.datos[k] = cambios[k]; });
+          elegir(c.tenant);
+          P.msg('m-mejora', 'ok', (m.aplicada ? 'Aplicada.' : 'Revertida.') + (c.datos.motor === 'propio' ? ' Ya se ve en la vista previa; en sus correos aplica cuando pasen al motor común.' : ' Los siguientes correos ya salen así.'));
+        });
+      };
+    });
+  }
+  function liga(t, u, abrir) { return '<div class="liga"><b>' + h(t) + ':</b> ' + (u ? '<code>' + h(u) + '</code> <button class="s" data-copiar="' + h(u) + '">Copiar</button>' + (abrir ? ' <a href="' + h(u) + '" target="_blank" rel="noopener">Abrir</a>' : '') : 'pendiente') + '</div>'; }
 
   if (ses()) cargar();
 })();
