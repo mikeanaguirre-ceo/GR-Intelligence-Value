@@ -34,6 +34,9 @@ button.p{background:var(--gr);color:#fff;border:0;border-radius:8px;padding:10px
 button.s{background:#fff;color:var(--grk);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font:inherit;cursor:pointer}
 .msg{font-size:14px}.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
 .liga{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;word-break:break-all}.liga code{background:var(--bg);padding:4px 8px;border-radius:6px}
+.obj{border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:8px}.obj.on{border-color:var(--gr)}.obj>label{display:flex;gap:10px;align-items:flex-start;font-size:15px;color:var(--grk)}.obj>label input{margin-top:3px}.obj small{color:var(--g)}
+.aviso{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:8px;align-items:center;padding:8px 0 0 28px}@media(max-width:700px){.aviso{grid-template-columns:1fr;padding-left:0}}
+.chip{display:inline-block;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;margin-left:6px}.chip.ok{background:#e6f4ea;color:#1e6b34}.chip.no{background:#fff4e5;color:#7a4a00}.chip.gr{background:#ede9fe;color:#5b21b6}
 .faltan{background:#fff4e5;border:1px solid #f3c47a;color:#7a4a00;border-radius:8px;padding:8px 12px;font-size:13px}
 /* Vista previa del aviso con la marca de la compania */
 .prev{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;font-family:Calibri,Carlito,"Segoe UI",Arial,sans-serif}
@@ -103,7 +106,7 @@ footer{text-align:center;color:var(--g);font-size:12px;padding:24px}
     api({ accion: 'companias', sesion: estado.sesion }).then(function (d) {
       if (d._codigo === 401 || d._codigo === 403) { salir(d.error); return; }
       if (!d.companias) { salir(d.error || 'No se pudo leer la configuracion.'); return; }
-      estado.companias = d.companias; $('v-entrar').hidden = true; $('v-portal').hidden = false;
+      estado.companias = d.companias; estado.catalogo = d.catalogo || []; estado.operacion = d.operacion || []; $('v-entrar').hidden = true; $('v-portal').hidden = false;
       if (d.usuario) $('quien').textContent = d.usuario.nombre + ' · ' + d.usuario.email;
       pintarLista(); elegir(estado.sel || (d.companias[0] && d.companias[0].tenant));
     });
@@ -158,13 +161,33 @@ footer{text-align:center;color:var(--g);font-size:12px;padding:24px}
 
   var CAMPOS = [
     ['Origen de la marca', [['sitio_web', 'Sitio web'], ['marca_manual_url', 'Manual de identidad (liga)'], ['marca_logos_carpeta', 'Carpeta de Drive con logos']]],
-    ['Marca', [['marca_nombre', 'Nombre de la marca'], ['marca_logo_url', 'Logo (direccion https de una imagen PNG)'], ['marca_color_primario', 'Color principal', 'color'], ['marca_color_oscuro', 'Color oscuro', 'color'], ['marca_pie', 'Pie de los avisos'], ['marca_remitente_interno', 'Remitente de los avisos'], ['marca_prefijo_asunto', 'Prefijo del asunto']]],
-    ['Portal de la compañía', [['portal_nombre', 'Nombre del portal'], ['portal_admins', 'Administradores (correos de Google, separados por coma)'], ['usuarios_max', 'Usuarios maximos (incluye a la administradora)'], ['modo', 'Modo', 'modo']]],
-    ['Avisos: quién los recibe', [['aviso_fallas_correos', 'Fallas del motor'], ['resumen_diario_correos', 'Resumen de las 7:30'], ['revision_semanal_correos', 'Revision de los lunes'], ['respuestas_sin_accion_correos', 'Corte de las 18:00'], ['aviso_vendedor_correos', 'Aviso al vendedor'], ['llaves_avisar_a', 'Conexiones nuevas']]]
+    ['Marca', [['marca_nombre', 'Nombre de la marca'], ['marca_logo_url', 'Logo (dirección https de una imagen PNG)'], ['marca_color_primario', 'Color principal', 'color'], ['marca_color_oscuro', 'Color oscuro', 'color'], ['marca_pie', 'Pie de los avisos'], ['marca_remitente_interno', 'Remitente de los avisos'], ['marca_prefijo_asunto', 'Prefijo del asunto']]],
+    ['Portal de la compañía', [['portal_nombre', 'Nombre del portal'], ['portal_admins', 'Administradores (correos de Google, separados por coma)'], ['usuarios_max', 'Usuarios máximos (incluye a la administradora)'], ['modo', 'Modo', 'modo']]],
+    ['Operación: quién recibe', [['aviso_fallas_correos', 'Fallas del motor'], ['llaves_avisar_a', 'Conexiones nuevas']]],
+    ['Proceso comercial', [['etapa_respuesta', 'Etapa cuando responde con interés'], ['etapa_open3', 'Etapa por Open+3'], ['etapa_cita', 'Etapa al agendar reunión'], ['etapas_cerradas', 'Etapas cerradas'], ['etapas_perdidas', 'Etapas perdidas'], ['dias_cierre', 'Días para fecha de cierre'], ['dias_retomar_default', 'Días para retomar'], ['open3_umbral', 'Aperturas para Open+3'], ['formato_nombre_oportunidad', 'Nombre de la oportunidad'], ['prefijos_secuencia', 'Prefijos de secuencia'], ['dominios_envio', 'Dominios de envío'], ['firma_vendedor', 'Firma'], ['reglas_redaccion', 'Reglas de redacción', 'largo']]]
   ];
+  // Objetivos: salen del catalogo del motor. Cada objetivo activo muestra sus avisos con su destinatario y si ya opera.
+  function objetivos(c) {
+    var activos = (c.datos.objetivos_activos || '').split(',').filter(Boolean), vistos = {}, propio = !!(c.info || {}).motor_propio;
+    var html = '<div class="card"><h2>Objetivos</h2><p class="sub" style="margin:0 0 10px">Marca lo que la compañía contrata. Cada objetivo trae sus avisos; aquí defines quién los recibe.</p><input type="hidden" id="f-objetivos_activos" data-k="objetivos_activos" value="' + h(activos.join(',')) + '"><div style="display:grid;gap:10px">';
+    (estado.catalogo || []).forEach(function (o) {
+      var on = activos.indexOf(o.id) >= 0;
+      html += '<div class="obj' + (on ? ' on' : '') + '"><label><input type="checkbox" data-obj="' + h(o.id) + '"' + (on ? ' checked' : '') + '><span><b>' + h(o.nombre) + '</b><br><small>' + h(o.proposito) + '</small></span></label>';
+      html += '<div data-avisos="' + h(o.id) + '"' + (on ? '' : ' hidden') + '>';
+      (o.avisos || []).forEach(function (a) {
+        var chip = propio ? '<span class="chip gr">Opera en motor GR</span>' : (a.listo ? '<span class="chip ok">Listo</span>' : '<span class="chip no">Por construir</span>');
+        var campoA = vistos[a.clave] ? '<small>Mismo destinatario que «' + h(vistos[a.clave]) + '»</small>' : '<input id="f-' + h(a.clave) + '" data-k="' + h(a.clave) + '" value="' + h(c.datos[a.clave] || '') + '" placeholder="correos separados por coma">';
+        if (!vistos[a.clave]) vistos[a.clave] = a.nombre;
+        html += '<div class="aviso"><div>' + h(a.nombre) + chip + '<br><small>' + h(a.cuando) + '</small></div><div>' + campoA + '</div></div>';
+      });
+      html += '</div></div>';
+    });
+    return html + '</div></div>';
+  }
   function campo(k, etiqueta, tipo, v) {
     if (tipo === 'color') return '<label>' + h(etiqueta) + '<span class="color"><input type="color" data-par="' + k + '" value="' + h(/^#[0-9a-fA-F]{6}$/.test(v) ? v : '#cccccc') + '"><input id="f-' + k + '" data-k="' + k + '" value="' + h(v) + '" placeholder="#ffcc00"></span></label>';
     if (tipo === 'modo') return '<label>' + h(etiqueta) + '<select id="f-' + k + '" data-k="' + k + '"><option value="prueba"' + (v !== 'real' ? ' selected' : '') + '>Prueba</option><option value="real"' + (v === 'real' ? ' selected' : '') + '>Real</option></select></label>';
+    if (tipo === 'largo') return '<label style="grid-column:1/-1">' + h(etiqueta) + '<textarea id="f-' + k + '" data-k="' + k + '" rows="3" style="font:inherit;border:1px solid var(--line);border-radius:8px;padding:8px 10px">' + h(v) + '</textarea></label>';
     return '<label>' + h(etiqueta) + '<input id="f-' + k + '" data-k="' + k + '" value="' + h(v) + '"></label>';
   }
   function elegir(t) {
@@ -172,22 +195,28 @@ footer{text-align:center;color:var(--g);font-size:12px;padding:24px}
     estado.sel = t; pintarLista();
     var html = '<div class="card"><h2>Vista previa</h2><div id="prev"></div></div>';
     var inf = c.info || {}; estado.fuente = inf.marca_fuente_interna || '';
-    if (inf.alta_estado === 'marca_por_proponer') html += '<div class="faltan">Dada de alta el ' + h(inf.alta_fecha || '') + '. Siguiente paso: proponer la marca a partir del manual y los logos, y aprobarla.</div>';
+    if (inf.alta_estado === 'marca_por_proponer') html += '<div class="faltan">Dada de alta el ' + h(inf.alta_fecha || '') + '. Siguiente paso: llena la marca a partir del manual y los logos, guarda y apruébala. <button class="s" id="aprobar" style="margin-left:8px">Aprobar marca</button> <span class="msg" id="m-aprobar"></span></div>';
     else if (c.faltan.length) html += '<div class="faltan">Faltan datos para operar: ' + h(c.faltan.join(', ')) + '.</div>';
-    if (inf.operacion_actual || inf.marca_diferencias_manual || inf.marca_fuente_interna) {
+    if (inf.operacion_actual || inf.marca_diferencias_manual || inf.marca_fuente_interna || inf.crm) {
       html += '<div class="card"><h2>Cómo opera hoy</h2>'
+        + (inf.crm ? '<p style="margin:0 0 8px"><b>CRM:</b> ' + h(inf.crm) + (inf.motor_propio ? ' · ' + h(inf.motor_propio) : '') + '</p>' : '')
         + (inf.operacion_actual ? '<p style="margin:0 0 8px">' + h(inf.operacion_actual) + '</p>' : '')
         + (inf.marca_fuente_interna ? '<p style="margin:0 0 8px"><b>Tipografía de los avisos:</b> ' + h(inf.marca_fuente_interna) + '</p>' : '')
         + (inf.marca_diferencias_manual ? '<p style="margin:0"><b>Diferencias contra el manual:</b> ' + h(inf.marca_diferencias_manual) + '</p>' : '')
         + '</div>';
     }
-    CAMPOS.forEach(function (g) { html += '<div class="card"><h2>' + h(g[0]) + '</h2><div class="dos">' + g[1].map(function (f) { return campo(f[0], f[1], f[2], c.datos[f[0]] || ''); }).join('') + '</div></div>'; });
+    CAMPOS.forEach(function (g, i) { if (i === 3) html += objetivos(c); html += '<div class="card"><h2>' + h(g[0]) + '</h2><div class="dos">' + g[1].map(function (f) { return campo(f[0], f[1], f[2], c.datos[f[0]] || ''); }).join('') + '</div></div>'; });
     html += '<div class="card"><h2>Ligas de ' + h(c.datos.marca_nombre || c.tenant) + '</h2>' + liga('Tablero', c.ligas.tablero) + liga('Portal de conexiones', c.ligas.portal) + '<p class="sub" style="margin:8px 0 0">Llevan claves privadas: compártelas solo con la compañía.</p></div>';
     html += '<div class="acciones"><button class="p" id="guardar">Guardar cambios</button><button class="s" id="deshacer">Deshacer</button><span class="msg" id="m-guardar"></span></div>';
     $('panel').innerHTML = html;
     Array.prototype.forEach.call(document.querySelectorAll('[data-par]'), function (p) { p.oninput = function () { $('f-' + p.getAttribute('data-par')).value = p.value; vista(); }; });
     Array.prototype.forEach.call(document.querySelectorAll('[data-k]'), function (i) { i.oninput = function () { var par = document.querySelector('[data-par="' + i.getAttribute('data-k') + '"]'); if (par && /^#[0-9a-fA-F]{6}$/.test(i.value)) par.value = i.value; vista(); }; });
     Array.prototype.forEach.call(document.querySelectorAll('[data-copiar]'), function (b) { b.onclick = function () { var v = b.getAttribute('data-copiar'); (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(function () { b.textContent = 'Copiada'; }, function () { b.textContent = 'Selecciona y copia'; }); }; });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-obj]'), function (x) { x.onchange = function () {
+      var ids = Array.prototype.filter.call(document.querySelectorAll('[data-obj]'), function (y) { return y.checked; }).map(function (y) { return y.getAttribute('data-obj'); });
+      $('f-objetivos_activos').value = ids.join(','); x.closest('.obj').classList.toggle('on', x.checked);
+      document.querySelector('[data-avisos="' + x.getAttribute('data-obj') + '"]').hidden = !x.checked; }; });
+    if ($('aprobar')) $('aprobar').onclick = function () { aprobar(t); };
     $('guardar').onclick = guardar; $('deshacer').onclick = function () { elegir(t); };
     vista();
   }
@@ -205,6 +234,15 @@ footer{text-align:center;color:var(--g);font-size:12px;padding:24px}
       + '<table><tr><th style="background:' + K + ';color:' + Y + '">Oportunidad</th><th style="background:' + K + ';color:' + Y + '">Etapa</th></tr><tr><td>Ejemplo</td><td>Calificacion</td></tr></table>'
       + '<div style="font-size:12px;color:#666">Asunto: ' + h(val('marca_prefijo_asunto')) + ' Pipeline · Remitente: ' + h(val('marca_remitente_interno')) + '</div></div>'
       + '<div class="pie" style="background:' + K + '">' + h(val('marca_pie')) + '</div></div>';
+  }
+  function aprobar(t) {
+    var m = $('m-aprobar'); m.className = 'msg'; m.textContent = 'Aprobando...'; $('aprobar').disabled = true;
+    api({ accion: 'aprobar', sesion: estado.sesion, tenant: t }).then(function (d) {
+      $('aprobar').disabled = false;
+      if (d._codigo === 401) { salir(d.error); return; }
+      if (!d.ok) { m.className = 'msg bad'; m.textContent = d.error || 'No se pudo aprobar.'; return; }
+      m.className = 'msg ok'; m.textContent = 'Aprobada. Ya tiene tablero y ligas.'; setTimeout(cargar, 800);
+    });
   }
   function guardar() {
     var c = estado.companias.filter(function (x) { return x.tenant === estado.sel; })[0]; var cambios = {};
