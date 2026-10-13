@@ -41,7 +41,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .dato{display:grid;grid-template-columns:minmax(140px,220px) minmax(0,1fr);gap:4px 14px;font-size:14px;margin:0}.dato dt{color:var(--g)}.dato dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:620px){.dato{grid-template-columns:1fr}.dato dd{margin-bottom:6px}}
 .sw{display:inline-flex;align-items:center;gap:8px;margin-right:14px}.sw i{width:22px;height:22px;border-radius:6px;border:1px solid rgba(0,0,0,.12);display:inline-block}
-/* Vista previa por grupo */
+/* Vista previa por grupo y tipo de correo */
+.tipo{border-top:1px solid var(--line);padding-top:10px;display:grid;gap:4px}.tipo-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.tipo-h small{color:var(--g)}
+.opcion{cursor:pointer}.opcion.elegida{border:2px solid var(--osc);box-shadow:0 0 0 3px var(--prim)}.opcion .mh span{display:flex;gap:6px;align-items:center}
 .grupo{border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:10px}
 .grupo-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.grupo-h small{color:var(--g)}
 .muestras{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
