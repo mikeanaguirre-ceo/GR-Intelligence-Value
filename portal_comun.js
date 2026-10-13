@@ -68,45 +68,70 @@
     return fetch('tipos_correo.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (c) { P.catalogo = c; return c; });
   };
   var ESTADO = { opera: ['Opera hoy', 'aplicado'], construir: ['Por construir', 'pendiente'], distinto: ['Opera distinto', 'descartado'] };
+  // Como esta hoy cada tipo en esta compania: nativo = sale con el formato propio de su motor (motor=propio);
+  // si no, sale del motor comun con el diseno guardado (A si no hay eleccion).
+  P.elegidos = function (d) { try { var e = JSON.parse(d.marca_estilos || '{}'); return e && typeof e === 'object' ? e : {}; } catch (x) { return {}; } };
+  P.estadoTipo = function (c, t) {
+    var est = t.estado[c.tenant] || t.estado.MOTOR, opera = est !== 'construir', nativo = opera && c.datos.motor === 'propio' && !t.siempre_comun;
+    var guardado = P.elegidos(c.datos)[t.id], hoy = nativo ? 'actual' : (['A', 'B', 'C'].indexOf(guardado) >= 0 ? guardado : 'A');
+    return { est: est, opera: opera, nativo: nativo, hoy: hoy, sel: nativo ? (guardado || 'actual') : hoy };
+  };
   P.vistaPrevia = function (c, actuales, editable) {
-    var d = c.datos, elegidos = {}; try { elegidos = JSON.parse(d.marca_estilos || '{}'); } catch (e) { elegidos = {}; }
-    var esGR = c.tenant === 'GR', grupos = [], html = '';
+    var grupos = [], html = '';
     (P.catalogo || []).forEach(function (t) { if (grupos.indexOf(t.objetivo) < 0) grupos.push(t.objetivo); });
-    if (esGR) html += '<p class="nota" style="margin:0">Great Revenue envía hoy con su formato propio (la opción «Actual»). Lo que elijas aquí aplica cuando GR pase al motor común.</p>';
+    html += '<p class="nota" style="margin:0"><b>Qué cambia y qué no.</b> El diseño solo cambia cómo se ve el correo: encabezado, colores, cajas y botones. La redacción, las secciones, el orden y los datos de cada correo se quedan igual. Para dejar un correo como está, deja marcada la opción que dice «Así sale hoy».'
+      + (c.datos.motor === 'propio' ? ' ' + P.h(c.datos.marca_nombre) + ' envía hoy con el formato de su propio motor («Actual»); un diseño A, B o C aplica cuando ese correo pase al motor común.' : '') + '</p>';
     grupos.forEach(function (g) {
       var tipos = P.catalogo.filter(function (t) { return t.objetivo === g; }), nombre = tipos[0].objetivo_nombre, sec = 'Vista previa · ' + nombre;
       html += '<div class="grupo" data-grupo="' + P.h(g) + '"><div class="grupo-h"><h3>' + P.h(nombre) + '</h3><small>' + tipos.length + (tipos.length === 1 ? ' tipo de correo' : ' tipos de correo') + '</small></div>';
       tipos.forEach(function (t) {
-        var est = ESTADO[esGR ? t.estado.GR : t.estado.MOTOR] || ESTADO.construir, sel = elegidos[t.id] || 'A';
-        html += '<div class="tipo"><div class="tipo-h"><b>' + P.h(t.nombre) + '</b><span class="chip ' + est[1] + '">' + est[0] + '</span><small>' + P.h(t.cuando) + '</small></div><p class="vacio" style="margin:0 0 6px">' + P.h(t.diferencia) + '</p><div class="muestras">';
-        if (actuales && actuales[t.id]) html += '<div class="muestra"><div class="mh"><b>Actual</b><small>Como sale hoy</small></div><div class="marco"><iframe sandbox="" loading="lazy" title="Actual" data-actual="' + P.h(t.id) + '"></iframe></div><button data-ver-actual="' + P.h(t.id) + '">Ver completo</button></div>';
-        ['A', 'B', 'C'].forEach(function (e) {
-          var info = window.CorreoEstilos.ESTILOS[e];
-          html += '<label class="muestra opcion' + (sel === e ? ' elegida' : '') + '"><div class="mh"><span><input type="radio" name="op-' + P.h(t.id) + '" value="' + e + '"' + (sel === e ? ' checked' : '') + (editable ? '' : ' disabled') + '> <b>Opción ' + e + ' · ' + P.h(info.nombre) + '</b></span><small>' + P.h(info.descripcion) + '</small></div><div class="marco"><iframe sandbox="" loading="lazy" title="Opción ' + e + '" data-op="' + P.h(t.id) + ':' + e + '"></iframe></div><button type="button" data-ver-op="' + P.h(t.id) + ':' + e + '">Ver completo</button></label>';
+        var e = P.estadoTipo(c, t), chip = ESTADO[e.est] || ESTADO.construir, real = actuales && actuales[t.id];
+        var nota = e.nativo ? 'Hoy sale con su formato propio.' : (e.opera ? 'Hoy sale con la opción ' + e.hoy + '.' : 'Aún no se envía: nacerá con la opción que elijas.');
+        html += '<div class="tipo" data-tipo="' + P.h(t.id) + '" data-hoy="' + e.sel + '"><div class="tipo-h"><b>' + P.h(t.nombre) + '</b><span class="chip ' + chip[1] + '">' + chip[0] + '</span><small>' + P.h(t.cuando) + '</small></div>'
+          + '<p class="vacio" style="margin:0 0 6px">' + P.h(nota) + ' ' + P.h(t.diferencia) + (real && !e.nativo ? ' <a href="#" data-ver-actual="' + P.h(t.id) + '">Ver el correo real de hoy</a>' : '') + '</p><div class="muestras">';
+        var opcion = function (v, titulo, desc, marco, ver) {
+          var hoy = v === e.hoy && e.opera;
+          return '<label class="muestra opcion' + (e.sel === v ? ' elegida' : '') + '"><div class="mh"><span><input type="radio" name="op-' + P.h(t.id) + '" value="' + v + '"' + (e.sel === v ? ' checked' : '') + (editable ? '' : ' disabled') + '> <b>' + titulo + '</b>' + (hoy ? '<span class="chip aplicado">Así sale hoy</span>' : '') + '</span><small>' + desc + '</small></div><div class="marco">' + marco + '</div>' + ver + '</label>';
+        };
+        if (e.nativo) html += opcion('actual', 'Actual · formato propio', 'Sigue saliendo como hoy, sin cambios.',
+          real ? '<iframe sandbox="" loading="lazy" title="Actual" data-actual="' + P.h(t.id) + '"></iframe>' : '<p class="vacio" style="padding:12px">Sin ejemplo guardado. Sigue saliendo igual que hoy.</p>',
+          real ? '<button type="button" data-ver-actual="' + P.h(t.id) + '">Ver completo</button>' : '');
+        ['A', 'B', 'C'].forEach(function (v) {
+          var info = window.CorreoEstilos.ESTILOS[v];
+          html += opcion(v, 'Opción ' + v + ' · ' + P.h(info.nombre), P.h(info.descripcion), '<iframe sandbox="" loading="lazy" title="Opción ' + v + '" data-op="' + P.h(t.id) + ':' + v + '"></iframe>', '<button type="button" data-ver-op="' + P.h(t.id) + ':' + v + '">Ver completo</button>');
         });
         html += '</div></div>';
       });
-      if (editable) html += '<div class="pie-sec"><button class="p" data-guardar-diseno="' + P.h(g) + '">Guardar diseño de ' + P.h(nombre) + '</button><span class="msg" id="md-' + P.h(g) + '"></span></div>';
+      if (editable) html += '<div class="pie-sec"><button class="p" data-guardar-diseno="' + P.h(g) + '">Guardar diseño de ' + P.h(nombre) + '</button><button class="s" data-deshacer-diseno="' + P.h(g) + '">Deshacer</button><span class="msg" id="md-' + P.h(g) + '"></span></div>';
       html += P.pedir('g-' + g, sec, 'Ej.: en estos correos usa el logo a color y más espacio entre secciones') + P.solicitudes(c.solicitudes, sec) + '</div>';
     });
     return html;
   };
+  P.ejemplo = function (c, t) { return (t.ejemplos && t.ejemplos[c.tenant]) || t.ejemplo; };
   P.llenarVistaPrevia = function (c, actuales) {
     var porTipo = {}; (P.catalogo || []).forEach(function (t) { porTipo[t.id] = t; });
-    var render = function (id, e) { var t = porTipo[id]; return window.CorreoEstilos.vestir(c.datos, { etiqueta: t.etiqueta, html: t.ejemplo.html, asunto: t.ejemplo.asunto }, e).html; };
+    var render = function (id, e) { var t = porTipo[id], x = P.ejemplo(c, t); return window.CorreoEstilos.vestir(c.datos, { etiqueta: t.etiqueta, html: x.html, asunto: x.asunto }, e).html; };
     Array.prototype.forEach.call(document.querySelectorAll('iframe[data-op]'), function (f) { var x = f.getAttribute('data-op').split(':'); f.srcdoc = render(x[0], x[1]); });
     Array.prototype.forEach.call(document.querySelectorAll('iframe[data-actual]'), function (f) { var a = actuales[f.getAttribute('data-actual')]; if (a) f.srcdoc = a.html; });
     Array.prototype.forEach.call(document.querySelectorAll('[data-ver-op]'), function (b) { b.onclick = function (ev) { ev.preventDefault(); var x = b.getAttribute('data-ver-op').split(':'); P.abrirHtml(render(x[0], x[1])); }; });
-    Array.prototype.forEach.call(document.querySelectorAll('[data-ver-actual]'), function (b) { b.onclick = function () { var a = actuales[b.getAttribute('data-ver-actual')]; if (a) P.abrirHtml(a.html); }; });
-    Array.prototype.forEach.call(document.querySelectorAll('.opcion input[type=radio]'), function (r) { r.onchange = function () { var caja = r.closest('.muestras'); Array.prototype.forEach.call(caja.querySelectorAll('.opcion'), function (o) { o.classList.toggle('elegida', o.contains(r)); }); }; });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-ver-actual]'), function (b) { b.onclick = function (ev) { ev.preventDefault(); var a = actuales[b.getAttribute('data-ver-actual')]; if (a) P.abrirHtml(a.html); }; });
+    Array.prototype.forEach.call(document.querySelectorAll('.opcion input[type=radio]'), function (r) { r.onchange = function () { P.marcarOpcion(r); }; });
   };
-  // Elecciones de un grupo, mezcladas con las que ya estaban guardadas.
+  P.marcarOpcion = function (r) { var caja = r.closest('.muestras'); Array.prototype.forEach.call(caja.querySelectorAll('.opcion'), function (o) { o.classList.toggle('elegida', o.contains(r)); }); };
+  // Elecciones de un grupo, mezcladas con las que ya estaban guardadas. «Actual» no se guarda: es no cambiar.
   P.disenoDeGrupo = function (c, g) {
-    var e = {}; try { e = JSON.parse(c.datos.marca_estilos || '{}'); } catch (x) { e = {}; }
-    Array.prototype.forEach.call(document.querySelectorAll('[data-grupo="' + g + '"] input[type=radio]:checked'), function (r) { e[r.name.replace(/^op-/, '')] = r.value; });
+    var e = P.elegidos(c.datos);
+    Array.prototype.forEach.call(document.querySelectorAll('[data-grupo="' + g + '"] input[type=radio]:checked'), function (r) { var id = r.name.replace(/^op-/, ''); if (r.value === 'actual') delete e[id]; else e[id] = r.value; });
     return JSON.stringify(e);
   };
-  P.abrirHtml = function (html) { window.open(URL.createObjectURL(new Blob([html], { type: 'text/html' })), '_blank'); };
+  // Deshacer un grupo: vuelve a marcar lo que esta guardado.
+  P.deshacerGrupo = function (c, g) {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-grupo="' + g + '"] .tipo'), function (div) {
+      var t = (P.catalogo || []).filter(function (x) { return x.id === div.getAttribute('data-tipo'); })[0]; if (!t) return;
+      var r = div.querySelector('input[value="' + P.estadoTipo(c, t).sel + '"]'); if (r) { r.checked = true; P.marcarOpcion(r); }
+    });
+  };
+  P.abrirHtml = function (html) { if (!/<meta[^>]+charset/i.test(html.slice(0, 2000))) html = '<meta charset="utf-8">' + html; window.open(URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' })), '_blank'); };
   // Aviso de ejemplo con la marca (cambia en vivo cuando se edita la marca).
   P.aviso = function (d) {
     var Y = P.color(d.marca_color_primario, '#cccccc'), K = P.color(d.marca_color_oscuro, '#111111');
@@ -117,6 +142,46 @@
       + '<div class="kpi" style="background:' + Y + '"><b>16</b>Abiertas</div><div class="kpi" style="background:' + mezcla(Y, .45) + '"><b>628,000</b>Valor</div><div class="kpi" style="background:' + mezcla(Y, .18) + '"><b>2</b>Sin atender</div></div>'
       + '<div style="font-size:12px;color:#666">Asunto: ' + P.h(d.marca_prefijo_asunto) + ' Pipeline · Remitente: ' + P.h(d.marca_remitente_interno) + '</div></div>'
       + '<div class="pie" style="background:' + K + '">' + P.h(d.marca_pie) + '</div></div>';
+  };
+  // Para que sirve cada campo: se muestra al pasar el cursor o al tocar el signo «?».
+  P.AYUDA = {
+    crm: 'El sistema donde viven las oportunidades y contactos de la compañía (HubSpot, Zoho...).',
+    motor: 'Motor común: sus correos salen de este motor con el diseño que se elige aquí. Motor propio: la compañía tiene su motor y sus correos salen con su formato hasta que pasen al común.',
+    motor_propio: 'Dónde corren hoy sus avisos y con qué herramientas. Es una descripción para el equipo.',
+    marca_diferencias_manual: 'Lo que hoy usan sus correos contra lo que pide su manual de identidad, y lo que ya se decidió.',
+    operacion_actual: 'Quiénes participan y cómo trabaja hoy el equipo comercial.',
+    sitio_web: 'Sitio público de la compañía. Sirve de referencia para la marca.',
+    marca_manual_url: 'Liga al manual de identidad en Drive. De ahí salen colores, tipografía y reglas.',
+    marca_logos_carpeta: 'Carpeta de Drive con los logos y archivos de marca.',
+    marca_vitrina_url: 'Documento que compara su manual contra los correos reales. Es de consulta.',
+    marca_nombre: 'Nombre que aparece en los correos y en el portal.',
+    marca_logo_url: 'Dirección pública (https) de la imagen del logo. Va en el encabezado de cada correo.',
+    marca_color_primario: 'Color principal: franjas, encabezados y botones de los correos.',
+    marca_color_oscuro: 'Color del texto y del pie de los correos.',
+    marca_colores_secundarios: 'Colores de apoyo: cifras, áreas y barras de los diseños B y C. El orden importa: el primero se usa más.',
+    marca_fuente_interna: 'Tipografía de los avisos internos. Si el correo no la tiene, usa la siguiente de la lista.',
+    marca_pie: 'Texto al final de cada aviso.',
+    marca_remitente_interno: 'Nombre con el que llegan los avisos a la bandeja.',
+    marca_prefijo_asunto: 'Texto que va al inicio del asunto para reconocer los avisos, por ejemplo [IT Institute].',
+    aviso_fallas_correos: 'Quién recibe el aviso cuando un proceso del motor falla y hay que revisarlo.',
+    llaves_avisar_a: 'Quién recibe el aviso cuando alguien de la compañía conecta una cuenta nueva al motor (su correo, CRM o Amplemarket) desde su liga de conexiones.',
+    portal_nombre: 'Nombre que ve la compañía arriba de su portal.',
+    portal_admins: 'Quien administra el portal de la compañía. Recibe la invitación y entra con su cuenta de Google.',
+    usuarios_max: 'Cuántas personas pueden usar el portal, contando a la administradora. Lo puedes subir cuando lo necesiten.',
+    modo: 'Prueba: lo que crea el motor se marca como prueba. Real: opera en firme.',
+    portal_usuarios: 'Correos de Google de quienes pueden entrar al portal de la compañía.'
+  };
+  P.ayuda = function (k) { var t = P.AYUDA[k]; return t ? ' <span class="ayuda" tabindex="0" role="note" aria-label="' + P.h(t) + '" data-ayuda="' + P.h(t) + '">?</span>' : ''; };
+  // Mejoras contra el manual (clave marca_mejoras): cada una con sus cambios de configuracion y un boton para aplicarla o revertirla.
+  P.mejoras = function (d) { try { var m = JSON.parse(d.marca_mejoras || '[]'); return Array.isArray(m) ? m : []; } catch (x) { return []; } };
+  P.listaMejoras = function (c, editable) {
+    var ms = P.mejoras(c.datos);
+    if (!ms.length) return '<p class="vacio">Sin mejoras pendientes contra el manual.</p>';
+    return '<div class="mejoras">' + ms.map(function (m, i) {
+      var tiene = m.cambios && Object.keys(m.cambios).length;
+      var accion = !editable ? '' : (!tiene ? '<small>Se resuelve al elegir diseño en la vista previa.</small>' : '<button class="' + (m.aplicada ? 's' : 'p') + '" data-mejora="' + i + '">' + (m.aplicada ? 'Revertir' : 'Aplicar') + '</button>');
+      return '<div class="mejora"><span class="chip ' + (m.aplicada ? 'aplicado' : 'pendiente') + '">' + (m.aplicada ? 'Aplicada' : 'Posible') + '</span><span>' + P.h(m.texto) + '</span>' + accion + '</div>';
+    }).join('') + '</div>';
   };
   P.correos = function (v) { return String(v || '').split(/[,;\s]+/).filter(Boolean); };
   window.GRP = P;
