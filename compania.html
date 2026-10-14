@@ -205,6 +205,8 @@
     Promise.all([P.cargarCatalogo(), pedirActuales]).then(function (r) { estado.muestras[c.tenant] = r[1]; poner(r[1]); }, function () { if ($('grupos')) $('grupos').innerHTML = '<p class="vacio">No se pudieron cargar los tipos de correo.</p>'; });
   }
 
+  // Antes de entrar ya se ve con la marca de la compania de la liga.
+  if (!ses()) P.marcaPublica('Portal de {nombre}', 'Entra con tu cuenta de Google para ver tu equipo, tus conexiones y tus correos.');
   if (ses()) cargar();
 })();
 </script>
