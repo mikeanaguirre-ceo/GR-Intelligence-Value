@@ -171,7 +171,7 @@
     modo: 'Prueba: lo que crea el motor se marca como prueba. Real: opera en firme.',
     portal_usuarios: 'Correos de Google de quienes pueden entrar al portal de la compañía.',
     tablero_url: 'Liga del tablero del pipeline de la compañía. Si usa su propio tablero, pega aquí su liga; si no, se usa el tablero del motor común.',
-    invitacion: 'Correo con la liga para entrar al portal. Cada persona entra con la cuenta de Google de ese correo.',
+    invitacion: 'Correo para que la persona dé de alta su Google (correo, calendario y Drive) con un clic, sin entrar al portal. Si ya lo dio de alta, el correo se lo dice. También se la puede enviar quien administra a sí mismo.',
     google: 'Correo, calendario y Drive de la persona. Con eso el motor envía las minutas y seguimientos desde su correo y lee sus reuniones y notas. Cada quien conecta el suyo al entrar al portal.'
   };
   P.ayuda = function (k) { var t = P.AYUDA[k]; return t ? ' <span class="ayuda" tabindex="0" role="note" aria-label="' + P.h(t) + '" data-ayuda="' + P.h(t) + '">?</span>' : ''; };
