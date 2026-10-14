@@ -97,6 +97,8 @@ body{margin:0;background:var(--fondo);color:var(--texto);font-family:'Source San
 .btn.cta{border:0;color:#fff;background:linear-gradient(90deg,var(--cta-a),var(--cta-b))}
 .btn.cta:hover{background:linear-gradient(90deg,var(--cta-b),var(--cta-a))}
 .btn[disabled]{opacity:.45;cursor:default}
+.aviso-sistema{align-self:center;max-width:92%;background:#FFF4E5;color:#7A4A00;border-radius:10px;padding:9px 12px;font-size:13.5px;text-align:center;box-shadow:0 1px .5px rgba(11,20,26,.13)}
+.aviso-sistema button{margin-top:6px;border:0;border-radius:8px;padding:6px 12px;font:600 13.5px 'Source Sans 3',sans-serif;background:var(--azul);color:#fff;cursor:pointer}
 .pie{max-width:1280px;margin:0 auto;padding:0 20px 28px;font-size:13px;color:var(--tenue)}
 </style>
 </head>
@@ -269,6 +271,28 @@ function pintarFicha(f, resultado){
   btnRec.disabled = resultado !== 'citado';
 }
 
+// n8n Cloud a veces no responde unos segundos ("no available server").
+// Se reintenta solo, hasta 3 veces; si sigue sin responder, se muestra
+// un aviso del sistema con un botón para reenviar el mismo mensaje.
+function pedir(cuerpo, intento){
+  return fetch(URL_CHAT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) })
+    .then(function(r){ if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+    .catch(function(e){
+      if (intento >= 3) throw e;
+      document.getElementById('estadoLinea').textContent = 'reconectando…';
+      return new Promise(function(ok){ setTimeout(ok, 1500 * (intento + 1)); }).then(function(){ return pedir(cuerpo, intento + 1); });
+    });
+}
+
+function avisoReintentar(cuerpo){
+  var a = el('div', 'aviso-sistema');
+  a.appendChild(el('div', '', 'Se perdió la conexión con el servidor por un momento.'));
+  var b = el('button', '', 'Reintentar');
+  b.onclick = function(){ a.remove(); mandar(cuerpo); };
+  a.appendChild(b);
+  hilo.appendChild(a); bajar();
+}
+
 function mandar(cuerpo, eco){
   if (ocupado || !SESION) return;
   ocupado = true; enviar.disabled = true;
@@ -277,14 +301,13 @@ function mandar(cuerpo, eco){
   setTimeout(function(){ if (ocupado) { hilo.appendChild(esc); bajar(); document.getElementById('estadoLinea').textContent = 'escribiendo…'; } }, 500);
   cuerpo.sesion = SESION;
   if (perfilActual) cuerpo.perfil = perfilActual;
-  fetch(URL_CHAT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) })
-    .then(function(r){ return r.json(); })
+  pedir(cuerpo, 0)
     .then(function(r){
       esc.remove();
       if (r.mensaje) burbuja(r.mensaje, 'bot');
       pintarFicha(r.ficha, r.resultado);
     })
-    .catch(function(){ esc.remove(); burbuja('No pude conectar. Intenta de nuevo en un momento.', 'bot'); })
+    .catch(function(){ esc.remove(); avisoReintentar(cuerpo); })
     .then(function(){ ocupado = false; enviar.disabled = false; document.getElementById('estadoLinea').textContent = 'en línea'; entrada.focus(); });
 }
 
