@@ -20,6 +20,7 @@
     var s = q.get('s') || 'google';
     $('bajada').textContent = s === 'google' ? 'Alta de tu correo, calendario y Drive' : 'Alta de ' + (s === 'zoho' ? 'Zoho CRM' : 'Amplemarket');
     tarjeta('<p data-titular>Te llevamos a la página oficial de ' + (s === 'google' ? 'Google' : s === 'zoho' ? 'Zoho' : 'Amplemarket') + '...</p><p class="vacio">Ahí inicias sesión y das el permiso. Great Revenue nunca ve tu contraseña.</p>');
+    P.marcaPublica('{nombre}', $('bajada').textContent);
     var params = new URLSearchParams({ c: clave, s: s, p: q.get('p') || '' });
     pedir('motor-conectar-ir', params).then(function (d) {
       marca(d.marca);
