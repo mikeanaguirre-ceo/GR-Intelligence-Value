@@ -7,10 +7,10 @@
 <title>Portal de alta | Great Revenue Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="portal_comun.css">
+<link rel="stylesheet" href="/portal_comun.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="correo_estilos.js"></script>
-<script src="portal_comun.js"></script>
+<script src="/correo_estilos.js"></script>
+<script src="/portal_comun.js"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Great Revenue Intelligence</b></span><span class="quien" id="quien">Portal de alta</span></div>
@@ -26,7 +26,7 @@
     </div>
   </section>
 </main>
-<footer>Great Revenue Intelligence · <a href="privacidad.html">Aviso de privacidad</a></footer>
+<footer>Great Revenue Intelligence · <a href="/privacidad.html">Aviso de privacidad</a></footer>
 
 <script>
 (function () {
@@ -41,7 +41,7 @@
     $('m-entrar').textContent = 'Revisando tu acceso...';
     P.api({ accion: 'entrar', id_token: resp.credential }).then(function (d) {
       if (!d.sesion) { $('m-entrar').textContent = d.error || 'No se pudo entrar.'; return; }
-      if (d.usuario.rol !== 'gr') { $('m-entrar').innerHTML = 'Este es el portal de Great Revenue. Tu portal está en <a href="compania.html">compania.html</a>.'; return; }
+      if (d.usuario.rol !== 'gr') { $('m-entrar').innerHTML = 'Este es el portal de Great Revenue. Entra a tu portal desde la liga de tu invitación.'; return; }
       P.sesion(LLAVE, d.sesion); $('m-entrar').textContent = ''; cargar();
     });
   }, 'filled_black');
@@ -130,7 +130,7 @@
       if (s.id === 'ligas') cuerpo += liga('Tablero del pipeline', c.ligas.tablero, true) + (c.datos.tablero_url ? '' : (c.datos.motor === 'propio' ? '<p class="vacio">Pega arriba la liga del tablero que ya usa ' + h(c.datos.marca_nombre) + '.</p>' : '<p class="vacio">Sin liga propia se usa el tablero del motor común. Lleva una clave privada: compártelo solo con la compañía.</p>'))
         + liga('Entrada al portal de ' + c.datos.marca_nombre + ' (va en la invitación)', c.ligas.portal_compania, true) + liga('Documento completo de marca', c.ligas.vitrina, true);
       if (s.id === 'portal') cuerpo += '<div class="nota">Usuarios en uso: <span class="uso" id="uso"></span>. ' + (inf.alta_invitacion_fecha ? 'Última invitación: ' + h(inf.alta_invitacion_fecha) + ' a ' + h(inf.alta_invitacion_para) + '.' : 'Aún no se envía la invitación.') + '</div>'
-        + '<div class="acciones"><button class="s" id="invitar">' + (inf.alta_invitacion_fecha ? 'Volver a enviar invitación' : 'Enviar invitación') + '</button><a class="s" href="compania.html?c=' + h(c.tenant) + '" target="_blank" rel="noopener">Ver como quien administra</a><span class="msg" id="m-invitar"></span></div>';
+        + '<div class="acciones"><button class="s" id="invitar">' + (inf.alta_invitacion_fecha ? 'Volver a enviar invitación' : 'Enviar invitación') + '</button><a class="s" href="/' + h(c.clave) + '/portal" target="_blank" rel="noopener">Ver como quien administra</a><span class="msg" id="m-invitar"></span></div>';
       html += tarjeta(s.n, s.titulo, cuerpo + pieGuardar(s.id), '', s.id);
     });
     $('panel').innerHTML = html;
