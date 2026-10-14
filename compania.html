@@ -79,6 +79,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function (b) { b.onclick = function () { pestana = b.getAttribute('data-tab'); try { history.replaceState(null, '', '#' + pestana); } catch (e) {} elegir(t); }; });
     P.activarPedir(ses, t, cargar);
     if (pestana === 'equipo') activarEquipo(c);
+    if (pestana === 'conexiones') activarConexiones(c);
     if (pestana === 'marca') {
       if ($('doc-completo')) $('doc-completo').onclick = function () { P.api({ accion: 'vitrina', sesion: ses(), tenant: t }).then(function (x) { if (x.html) P.abrirHtml(x.html); }); };
       cargarMuestras(c);
@@ -147,21 +148,37 @@
     });
   }
   // Liga para conectar un servicio: va a la pagina oficial del servicio y regresa a esta pestana.
-  function conectar(c, servicio) { var cx = c.conexiones || {}; return cx.ir + (cx.ir.indexOf('?') < 0 ? '?' : '&') + 'k=' + encodeURIComponent(cx.k) + '&s=' + servicio + '&p=' + encodeURIComponent(ses() || ''); }
-  function quitarLiga(c, servicio, quien) { var cx = c.conexiones || {}; return cx.quitar + (cx.quitar.indexOf('?') < 0 ? '?' : '&') + 'k=' + encodeURIComponent(cx.k) + '&s=' + servicio + '&c=' + encodeURIComponent(quien) + '&p=' + encodeURIComponent(ses() || ''); }
+  // Liga para dar de alta un servicio: pagina del sitio con la ruta de la compania (nunca la direccion del motor).
+  function conectar(c, servicio) { var cx = c.conexiones || {}; return cx.pagina + '?s=' + servicio + '&p=' + encodeURIComponent(ses() || ''); }
+  function activarConexiones(c) {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-quitar-servicio]'), function (b) {
+      b.onclick = function () {
+        var sv = b.getAttribute('data-quitar-servicio'), nom = sv === 'zoho' ? 'Zoho CRM' : 'Amplemarket';
+        if (!b.getAttribute('data-confirmar')) { b.setAttribute('data-confirmar', '1'); b.className = 'p'; b.textContent = 'Confirmar'; P.msg('m-conexiones', '', 'El motor deja de usar ' + nom + ' hasta que lo vuelvas a conectar.'); return; }
+        b.disabled = true; P.msg('m-conexiones', '', 'Quitando...');
+        P.api({ accion: 'conexion_quitar', sesion: ses(), tenant: c.tenant, servicio: sv }).then(function (d) {
+          b.disabled = false;
+          if (d._codigo === 401) { salir(d.error); return; }
+          if (!d.ok) { P.msg('m-conexiones', 'bad', d.error || 'No se pudo.'); return; }
+          cargar(); setTimeout(function () { P.msg('m-conexiones', 'ok', 'Listo: se quitó ' + nom + '.'); }, 900);
+        });
+      };
+    });
+  }
   function conexiones(c) {
     var cx = c.conexiones || {}, adm = !!(c.info || {}).administra;
     var tarjetaServicio = function (s, titulo, texto, lista) {
       var hay = (lista || []).length, disp = cx.disponible && cx.disponible[s];
       return '<div class="servicio"><div class="servicio-h"><b>' + titulo + '</b>' + (hay ? '<span class="chip aplicado">Conectado</span>' : '<span class="chip pendiente">Sin conectar</span>') + '</div><p class="vacio" style="margin:0">' + texto + '</p>'
-        + (lista || []).map(function (x) { return '<div class="liga">' + h(x.quien) + ' <span class="vacio">desde ' + h(x.fecha) + '</span>' + (adm ? ' <a href="' + h(quitarLiga(c, s, x.quien)) + '">Quitar</a>' : '') + '</div>'; }).join('')
+        + (lista || []).map(function (x) { return '<div class="liga">' + h(x.quien) + ' <span class="vacio">desde ' + h(x.fecha) + '</span></div>'; }).join('')
+        + (adm && hay ? '<div class="acciones"><button class="s" data-quitar-servicio="' + s + '">Quitar la conexión</button></div>' : '')
         + (adm ? (disp ? '<div class="acciones"><a class="' + (hay ? 's' : 'p') + '" href="' + h(conectar(c, s)) + '">' + (hay ? 'Volver a conectar' : 'Conectar') + '</a></div>' : '<p class="vacio">Aún no disponible: Great Revenue lo habilita.</p>') : '<p class="vacio">Lo conecta quien administra el portal.</p>') + '</div>';
     };
     var g = (cx.google || []).length;
     var cuerpo = '<p style="margin:0">Las cuentas con las que trabaja el motor. Cada conexión se hace en la página oficial del servicio: Great Revenue nunca ve contraseñas y el permiso se puede retirar cuando quieras.</p>'
       + tarjetaServicio('zoho', 'Zoho CRM', 'Donde viven las oportunidades y contactos. Lo conecta una vez quien administra Zoho en la compañía; el motor crea y actualiza oportunidades, tareas y notas.', cx.zoho)
       + tarjetaServicio('amplemarket', 'Amplemarket', 'Donde corren las secuencias de prospección. Lo conecta una vez quien administra Amplemarket; el motor lee respuestas y aperturas para avisar al vendedor.', cx.amplemarket)
-      + '<div class="servicio"><div class="servicio-h"><b>Google de cada persona</b><span class="chip ' + (g ? 'aplicado' : 'pendiente') + '">' + g + ' de ' + h(cx.max_google || '') + ' conectados</span></div><p class="vacio" style="margin:0">Correo, calendario y Drive de cada persona. Se conecta en la pestaña Equipo, cada quien el suyo.</p></div>';
+      + '<span class="msg" id="m-conexiones"></span><div class="servicio"><div class="servicio-h"><b>Google de cada persona</b><span class="chip ' + (g ? 'aplicado' : 'pendiente') + '">' + g + ' de ' + h(cx.max_google || '') + ' conectados</span></div><p class="vacio" style="margin:0">Correo, calendario y Drive de cada persona. Se conecta en la pestaña Equipo, cada quien el suyo.</p></div>';
     return tarjeta(2, 'Conexiones', cuerpo + P.pedir('conexiones', 'Conexiones', 'Ej.: no puedo conectar mi calendario') + P.solicitudes(c.solicitudes, 'Conexiones'));
   }
   function marca(c) {
