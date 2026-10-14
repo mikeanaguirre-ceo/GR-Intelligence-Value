@@ -154,6 +154,16 @@
     var d = datosVivos();
     if ($('prev')) $('prev').innerHTML = P.aviso(d);
     if ($('uso')) { var n = P.correos(d.portal_usuarios).length, m = Number(d.usuarios_max || 0); $('uso').textContent = n + ' de ' + m; $('uso').className = 'uso' + (n > m ? ' lleno' : ''); }
+    botonInvitar();
+  }
+  // El boton de invitacion siempre dice a quien va: a la administradora GUARDADA. Si el campo tiene otro correo sin guardar, no deja enviar.
+  function botonInvitar() {
+    var b = $('invitar'), c = estado.companias.filter(function (x) { return x.tenant === estado.sel; })[0]; if (!b || !c) return;
+    var guardado = String(c.datos.portal_admins || '').trim().toLowerCase(), campo = String(($('f-portal_admins') || {}).value || '').trim().toLowerCase();
+    b.removeAttribute('data-confirmar'); b.className = 's';
+    if (campo !== guardado) { b.textContent = 'Guarda la sección para invitar a ' + (campo || 'la nueva administradora'); b.setAttribute('data-sin-guardar', '1'); return; }
+    b.removeAttribute('data-sin-guardar');
+    b.textContent = guardado ? ((c.info || {}).alta_invitacion_para === guardado ? 'Volver a enviar invitación a ' : 'Enviar invitación a ') + guardado : 'Enviar invitación';
   }
   function cargarMuestras(c) {
     var poner = function (actuales) {
@@ -192,7 +202,7 @@
       if (!d.ok) { P.msg('mg-' + id, 'bad', d.error || 'No se pudo guardar.'); return; }
       Object.keys(cambios).forEach(function (k) { c.datos[k] = cambios[k]; });
       P.msg('mg-' + id, 'ok', 'Guardado.' + (cambiaAdmin ? ' Cambió la administradora: envíale la invitación.' : ''));
-      if (cambiaAdmin) { $('invitar').textContent = 'Enviar invitación a ' + cambios.portal_admins; $('invitar').className = 'p'; }
+      if ('portal_admins' in cambios) botonInvitar();
       pintarLista();
     });
   }
@@ -217,6 +227,7 @@
   }
   function invitar(c) {
     var b = $('invitar'), admin = c.datos.portal_admins;
+    if (b.getAttribute('data-sin-guardar')) { P.msg('m-invitar', 'bad', 'Primero dale Guardar a esta sección: la invitación va a la administradora guardada.'); return; }
     if (!admin) { P.msg('m-invitar', 'bad', 'Primero guarda el correo de la administradora.'); return; }
     if (!b.getAttribute('data-confirmar')) { b.setAttribute('data-confirmar', '1'); b.textContent = 'Confirmar envío a ' + admin; b.className = 'p'; P.msg('m-invitar', '', 'Sale ahora desde mike.aguirre@greatrevenue.com.'); return; }
     b.disabled = true; P.msg('m-invitar', '', 'Enviando invitación...');
