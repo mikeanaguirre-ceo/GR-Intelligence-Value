@@ -81,3 +81,6 @@ table.equipo{border-collapse:collapse;width:100%;font-size:14px}table.equipo th{
 .lista-c{margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px}
 .servicio{border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:8px}.servicio-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 button.mini{padding:4px 8px;font-size:12px;margin-left:6px}
+/* Paginas de alta de cuentas (conectar y regreso) */
+.card.conectar{max-width:620px;margin:0 auto}.card.conectar [data-titular]{font-family:var(--disp);font-size:20px;font-weight:700;margin:0}
+.card.conectar .ok{color:var(--ok)}.card.conectar .mal{color:var(--bad)}.altas{margin:0;padding-left:18px;display:grid;gap:4px}
