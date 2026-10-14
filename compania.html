@@ -134,8 +134,8 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-quitar]'), function (b) {
       b.onclick = function () {
         var e = b.getAttribute('data-quitar');
-        if (!b.getAttribute('data-confirmar')) { b.setAttribute('data-confirmar', '1'); b.className = 'p'; b.textContent = 'Confirmar quitar'; P.msg('m-equipo', '', e + ' ya no podrá entrar al portal.'); return; }
-        llamar({ accion: 'equipo_quitar', email: e }, e + ' salió del equipo y liberó una licencia.', b);
+        if (!b.getAttribute('data-confirmar')) { b.setAttribute('data-confirmar', '1'); b.className = 'p'; b.textContent = 'Confirmar quitar'; P.msg('m-equipo', '', e + ' ya no podrá entrar al portal y se borran del motor su correo, calendario y Drive.'); return; }
+        llamar({ accion: 'equipo_quitar', email: e }, e + ' salió del equipo: se borraron sus conexiones de Google y se liberó una licencia.', b);
       };
     });
   }
