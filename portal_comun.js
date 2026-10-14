@@ -169,7 +169,10 @@
     portal_admins: 'Quien administra el portal de la compañía. Recibe la invitación y entra con su cuenta de Google.',
     usuarios_max: 'Cuántas personas pueden usar el portal, contando a la administradora. Lo puedes subir cuando lo necesiten.',
     modo: 'Prueba: lo que crea el motor se marca como prueba. Real: opera en firme.',
-    portal_usuarios: 'Correos de Google de quienes pueden entrar al portal de la compañía.'
+    portal_usuarios: 'Correos de Google de quienes pueden entrar al portal de la compañía.',
+    tablero_url: 'Liga del tablero del pipeline de la compañía. Si usa su propio tablero, pega aquí su liga; si no, se usa el tablero del motor común.',
+    invitacion: 'Correo con la liga para entrar al portal. Cada persona entra con la cuenta de Google de ese correo.',
+    google: 'Correo, calendario y Drive de la persona. Con eso el motor envía las minutas y seguimientos desde su correo y lee sus reuniones y notas. Cada quien conecta el suyo al entrar al portal.'
   };
   P.ayuda = function (k) { var t = P.AYUDA[k]; return t ? ' <span class="ayuda" tabindex="0" role="note" aria-label="' + P.h(t) + '" data-ayuda="' + P.h(t) + '">?</span>' : ''; };
   // Mejoras contra el manual (clave marca_mejoras): cada una con sus cambios de configuracion y un boton para aplicarla o revertirla.
