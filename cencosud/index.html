@@ -227,6 +227,7 @@ function empezar(i, boton){
   boton.classList.add('activo');
   SESION = 'demo-' + Math.random().toString(36).slice(2, 8);
   perfilActual = PERFILES[i].libre ? null : PERFILES[i];
+  guardarEnLiga(i);
   hilo.innerHTML = '';
   hilo.appendChild(el('div', 'fecha-sep', 'Hoy'));
   reiniciarFicha();
@@ -271,22 +272,49 @@ function pintarFicha(f, resultado){
   btnRec.disabled = resultado !== 'citado';
 }
 
-// n8n Cloud a veces no responde unos segundos ("no available server").
-// Se reintenta solo, hasta 3 veces; si sigue sin responder, se muestra
-// un aviso del sistema con un botón para reenviar el mismo mensaje.
-function pedir(cuerpo, intento){
+// n8n Cloud a veces no responde un rato ("no available server").
+// Primero se reintenta rápido sin que se note. Si sigue sin responder,
+// Sofía avisa como una persona ("dame un momentito, ya regreso") y la
+// página sigue reintentando por detrás hasta 3 minutos; al volver,
+// Sofía retoma y contesta lo que el candidato escribió. Solo si pasan
+// los 3 minutos aparece el aviso con el botón Reintentar.
+// Para verlo en la demo: abrir la página con ?caida=1 (el siguiente
+// mensaje simula una caída de 15 segundos).
+var ESPERA = [
+  'Dame un momentito, estoy revisando algo y ya regreso contigo 🙏',
+  'Espérame tantito, ya vuelvo contigo 🙏',
+  'Un momento, por favor, ya te escribo 🙏'
+];
+var REGRESO = ['¡Listo, ya estoy contigo! Gracias por esperarme 😊', '¡Ya regresé! Gracias por la paciencia 😊'];
+var caidaHasta = 0;
+var simularCaida = /[?&]caida=1/.test(location.search);
+
+function intentar(cuerpo){
+  if (Date.now() < caidaHasta) return Promise.reject(new Error('caída simulada'));
   return fetch(URL_CHAT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) })
-    .then(function(r){ if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
-    .catch(function(e){
-      if (intento >= 3) throw e;
-      document.getElementById('estadoLinea').textContent = 'reconectando…';
-      return new Promise(function(ok){ setTimeout(ok, 1500 * (intento + 1)); }).then(function(){ return pedir(cuerpo, intento + 1); });
+    .then(function(r){ if (!r.ok) throw new Error('http ' + r.status); return r.json(); });
+}
+function pausa(ms){ return new Promise(function(ok){ setTimeout(ok, ms); }); }
+function azar(lista){ return lista[Math.floor(Math.random() * lista.length)]; }
+
+// Devuelve la respuesta del servidor y si hubo que esperar "como persona".
+function pedir(cuerpo, alEsperar){
+  var inicio = Date.now(), intento = 0, espero = false;
+  function ciclo(){
+    return intentar(cuerpo).then(function(r){ return { r: r, espero: espero }; }).catch(function(e){
+      intento++;
+      var transcurrido = Date.now() - inicio;
+      if (transcurrido > 180000) throw e;
+      if (!espero && intento >= 2) { espero = true; alEsperar(); }
+      return pausa(intento < 2 ? 1500 : 5000).then(ciclo);
     });
+  }
+  return ciclo();
 }
 
 function avisoReintentar(cuerpo){
   var a = el('div', 'aviso-sistema');
-  a.appendChild(el('div', '', 'Se perdió la conexión con el servidor por un momento.'));
+  a.appendChild(el('div', '', 'Se perdió la conexión con el servidor.'));
   var b = el('button', '', 'Reintentar');
   b.onclick = function(){ a.remove(); mandar(cuerpo); };
   a.appendChild(b);
@@ -295,20 +323,39 @@ function avisoReintentar(cuerpo){
 
 function mandar(cuerpo, eco){
   if (ocupado || !SESION) return;
-  ocupado = true; enviar.disabled = true;
+  ocupado = true; enviar.disabled = true; entrada.disabled = true;
   if (eco) burbuja(eco, 'yo');
+  if (simularCaida && eco) { simularCaida = false; caidaHasta = Date.now() + 15000; }
   var esc = el('div', 'escribiendo'); esc.appendChild(el('span')); esc.appendChild(el('span')); esc.appendChild(el('span'));
-  setTimeout(function(){ if (ocupado) { hilo.appendChild(esc); bajar(); document.getElementById('estadoLinea').textContent = 'escribiendo…'; } }, 500);
+  var linea = document.getElementById('estadoLinea');
+  setTimeout(function(){ if (ocupado && !esc.dataset.pausa) { hilo.appendChild(esc); bajar(); linea.textContent = 'escribiendo…'; } }, 500);
   cuerpo.sesion = SESION;
   if (perfilActual) cuerpo.perfil = perfilActual;
-  pedir(cuerpo, 0)
-    .then(function(r){
+  pedir(cuerpo, function(){
+    // Sofía "se ocupa": avisa y deja de escribir mientras espera.
+    esc.dataset.pausa = '1'; esc.remove();
+    burbuja(azar(ESPERA), 'bot');
+    linea.textContent = 'en línea';
+    entrada.placeholder = 'Sofía regresa en un momento…';
+  })
+    .then(function(x){
       esc.remove();
+      if (x.espero) {
+        linea.textContent = 'escribiendo…';
+        return pausa(900).then(function(){ burbuja(azar(REGRESO), 'bot'); return pausa(1200); }).then(function(){ return x.r; });
+      }
+      return x.r;
+    })
+    .then(function(r){
       if (r.mensaje) burbuja(r.mensaje, 'bot');
       pintarFicha(r.ficha, r.resultado);
     })
     .catch(function(){ esc.remove(); avisoReintentar(cuerpo); })
-    .then(function(){ ocupado = false; enviar.disabled = false; document.getElementById('estadoLinea').textContent = 'en línea'; entrada.focus(); });
+    .then(function(){
+      ocupado = false; enviar.disabled = false; entrada.disabled = false;
+      entrada.placeholder = 'Escribe como el candidato…';
+      linea.textContent = 'en línea'; entrada.focus();
+    });
 }
 
 function escribir(){
@@ -321,7 +368,52 @@ enviar.onclick = escribir;
 entrada.onkeydown = function(e){ if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); escribir(); } };
 entrada.oninput = function(){ entrada.style.height = 'auto'; entrada.style.height = Math.min(entrada.scrollHeight, 110) + 'px'; };
 btnRec.onclick = function(){ hilo.appendChild(el('div', 'fecha-sep', 'Un día antes de la entrevista')); mandar({ evento: 'recordatorio' }); };
+// La liga guarda la conversación (?sesion=...&p=...). Al recargar o al
+// abrir esa liga, se retoma: se pinta lo conversado y la ficha, y se
+// sigue escribiendo en la misma conversación.
+var URL_BASE = 'https://mikea.app.n8n.cloud/webhook';
+function guardarEnLiga(i){
+  try { var u = new URL(location.href); u.searchParams.set('sesion', SESION); u.searchParams.set('p', String(i)); u.searchParams.delete('caida'); history.replaceState(null, '', u.toString()); } catch (e) {}
+}
+function retomar(){
+  var q = new URLSearchParams(location.search);
+  var ses = q.get('sesion');
+  if (!ses) return;
+  var i = Number(q.get('p'));
+  SESION = ses;
+  perfilActual = PERFILES[i] && !PERFILES[i].libre ? PERFILES[i] : null;
+  var tarjetas = document.querySelectorAll('.postulante');
+  if (tarjetas[i]) tarjetas[i].classList.add('activo');
+  hilo.innerHTML = '';
+  hilo.appendChild(el('div', 'fecha-sep', 'Conversación anterior'));
+  entrada.disabled = false; enviar.disabled = false;
+  fetch(URL_BASE + '/cenco-panel-conversacion?sesion=' + encodeURIComponent(ses))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      (d.mensajes || []).forEach(function(m){
+        if (m.cliente) burbuja(m.cliente, 'yo');
+        if (m.bot) burbuja(m.bot, 'bot');
+      });
+      hilo.appendChild(el('div', 'fecha-sep', 'Hoy'));
+      bajar();
+    })
+    .catch(function(){});
+  fetch(URL_BASE + '/cenco-panel-datos?pruebas=1')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var c = (d.candidatos || []).find(function(x){ return x.sesion === ses; });
+      if (!c) return;
+      pintarFicha({
+        motivacion: c.motivacion, mayor_edad: c.mayor_edad, disponibilidad: c.disponibilidad, nota_horario: '',
+        distrito: c.distrito, actitud: c.actitud ? [{ puntaje: c.actitud, nota: c.actitud_notas }] : [],
+        cita: c.fecha_cita ? { sede: c.sede, fecha: c.fecha_cita, hora: c.hora_cita } : null,
+        confirmo: c.confirmo, nota: c.nota
+      }, c.resultado);
+    })
+    .catch(function(){});
+}
 pintarPostulantes();
+retomar();
 </script>
 </body>
 </html>
