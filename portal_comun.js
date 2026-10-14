@@ -186,6 +186,17 @@
       return '<div class="mejora"><span class="chip ' + (m.aplicada ? 'aplicado' : 'pendiente') + '">' + (m.aplicada ? 'Aplicada' : 'Posible') + '</span><span>' + P.h(m.texto) + '</span>' + accion + '</div>';
     }).join('') + '</div>';
   };
+  // Marca de la compania de la ruta (/<clave>/...) antes de iniciar sesion: nombre, logo y colores publicos.
+  P.claveDeRuta = function () { return ((/^\/([a-z0-9]+)\//.exec(location.pathname) || [])[1] || (/[?&]c=([A-Za-z0-9]+)/.exec(location.search) || [])[1] || '').toUpperCase(); };
+  P.marcaPublica = function (titulo, bajada) {
+    var t = P.claveDeRuta(); if (!t) return Promise.resolve(null);
+    return P.api({ accion: 'marca', tenant: t }).then(function (d) {
+      var m = d && d.marca; if (!m) return null;
+      P.aplicarMarca({ marca_nombre: m.nombre, portal_nombre: m.portal, marca_logo_url: m.logo, marca_color_primario: m.primario, marca_color_oscuro: m.oscuro, marca_fuente_interna: m.fuente }, (titulo || '').replace('{nombre}', m.nombre), bajada);
+      document.title = (titulo || m.nombre).replace('{nombre}', m.nombre);
+      return m;
+    }).catch(function () { return null; });
+  };
   P.correos = function (v) { return String(v || '').split(/[,;\s]+/).filter(Boolean); };
   window.GRP = P;
 })();
