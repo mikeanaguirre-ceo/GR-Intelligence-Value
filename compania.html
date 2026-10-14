@@ -56,7 +56,7 @@
   }
   function pintarSelector() {
     var gr = estado.rol === 'gr';
-    var vista = '<div class="aviso vista" style="margin-bottom:16px"><b>Estás viendo el portal como lo ve la administradora.</b> Aquí solo se consulta y se piden cambios; para editar, regresa al <a href="alta.html" style="color:#fff">portal de alta</a>.</div>';
+    var vista = '<div class="aviso vista" style="margin-bottom:16px"><b>Estás viendo el portal como lo ve quien administra la compañía.</b> Para editar la configuración, regresa al <a href="alta.html" style="color:#fff">portal de alta</a>.</div>';
     if (estado.companias.length < 2) { $('selector').innerHTML = gr ? vista : ''; return; }
     $('selector').innerHTML = (gr ? vista : '') + '<div class="nota" style="margin-bottom:16px"><label style="display:flex;gap:8px;align-items:center">' + (gr ? 'Compañía que estás viendo' : 'Compañía') + '<select id="sel-cia">' + estado.companias.map(function (c) { return '<option value="' + h(c.tenant) + '">' + h(c.datos.marca_nombre || c.tenant) + '</option>'; }).join('') + '</select></label></div>';
     $('sel-cia').onchange = function () { elegir(this.value); };
@@ -65,35 +65,103 @@
   function abrir(u) { return /^https:\/\//.test(u || '') ? '<a href="' + h(u.split(/\s+/)[0]) + '" target="_blank" rel="noopener">Abrir</a>' : '—'; }
   function tarjeta(n, titulo, cuerpo, extra) { return '<div class="card"><div class="card-h"><h2><span class="num">' + n + '</span>' + h(titulo) + '</h2>' + (extra || '') + '</div>' + cuerpo + '</div>'; }
   function seccion(n, id, titulo, cuerpo, c, ejemplo) { return tarjeta(n, titulo, cuerpo + P.pedir(id, titulo, ejemplo) + P.solicitudes(c.solicitudes, titulo)); }
+  var PESTANAS = [['equipo', 'Equipo'], ['conexiones', 'Conexiones'], ['marca', 'Tu marca y tus correos'], ['proceso', 'Objetivos y proceso']];
+  var pestana = 'equipo';
   function elegir(t) {
     var c = estado.companias.filter(function (x) { return x.tenant === t; })[0]; if (!c) return;
     estado.sel = t; if ($('sel-cia')) $('sel-cia').value = t;
-    var d = c.datos, inf = c.info || {}, html = '';
-    P.aplicarMarca(d, 'Portal de ' + (d.portal_nombre || d.marca_nombre || t), 'Tu marca, cómo operas, quién recibe los avisos y tu equipo. En cada sección puedes pedir cambios.');
+    var d = c.datos;
+    P.aplicarMarca(d, 'Portal de ' + (d.portal_nombre || d.marca_nombre || t), 'Tu equipo, tus conexiones y cómo salen tus correos.');
     document.title = 'Portal de ' + (d.marca_nombre || t);
-    var usados = P.correos(d.portal_usuarios).length;
-    html += tarjeta(1, 'Vista previa de tus correos', '<p class="nota" style="margin:0">Todos los tipos de correo que salen con tu marca, por objetivo. La opción marcada es la que se usa hoy; si prefieres otra, pídelo en el recuadro del grupo.</p><div id="grupos"><p class="vacio">Cargando tipos de correo...</p></div>',
-      inf.tiene_vitrina ? '<button class="s" id="doc-completo">Documento completo de marca</button>' : '');
-    html += seccion(2, 'opera', 'Cómo opera hoy', dl([['CRM', d.crm, false, 'crm'], ['Motor de tus correos', d.motor === 'propio' ? 'Motor propio' : 'Motor común', false, 'motor'], ['Dónde corren los avisos', d.motor_propio, false, 'motor_propio'], ['Marca y decisiones', d.marca_diferencias_manual, false, 'marca_diferencias_manual'], ['Equipo y operación', d.operacion_actual, false, 'operacion_actual']]) + '<div><b style="font-size:13px;color:var(--g)">Mejoras contra el manual</b><div style="margin-top:8px">' + P.listaMejoras(c, false) + '</div></div>', c);
-    html += seccion(3, 'origen', 'Origen de tu marca', dl([['Sitio web', abrir(d.sitio_web), true, 'sitio_web'], ['Manual de identidad', abrir(d.marca_manual_url), true, 'marca_manual_url'], ['Carpeta de logos', abrir(d.marca_logos_carpeta), true, 'marca_logos_carpeta']]), c);
-    html += seccion(4, 'marca', 'Tu marca', dl([['Nombre', d.marca_nombre, false, 'marca_nombre'], ['Colores', '<span class="sw"><i style="background:' + h(P.color(d.marca_color_primario, '#ccc')) + '"></i>' + h(d.marca_color_primario) + '</span><span class="sw"><i style="background:' + h(P.color(d.marca_color_oscuro, '#111')) + '"></i>' + h(d.marca_color_oscuro) + '</span>', true, 'marca_color_primario'], ['Colores secundarios', (d.marca_colores_secundarios || '').split(',').filter(Boolean).map(function (x) { return '<span class="sw"><i style="background:' + h(P.color(x, '#ccc')) + '"></i></span>'; }).join(''), true, 'marca_colores_secundarios'], ['Tipografía de los avisos', d.marca_fuente_interna, false, 'marca_fuente_interna'], ['Remitente', d.marca_remitente_interno, false, 'marca_remitente_interno'], ['Prefijo del asunto', d.marca_prefijo_asunto, false, 'marca_prefijo_asunto'], ['Pie', d.marca_pie, false, 'marca_pie']]) + '<div>' + P.aviso(d) + '</div>', c, 'Ej.: usa el logo by Itera en los avisos');
-    html += seccion(5, 'operacion', 'Quién recibe la operación', dl([['Fallas del motor', d.aviso_fallas_correos, false, 'aviso_fallas_correos'], ['Conexiones nuevas', d.llaves_avisar_a, false, 'llaves_avisar_a']]), c, 'Ej.: las fallas también deben llegarle a Sara');
-    html += seccion(6, 'equipo', 'Tu equipo', dl([['Administradora', d.portal_admins, false, 'portal_admins'], ['Usuarios', usados + ' de ' + d.usuarios_max + ' (contándote)', false, 'usuarios_max'], ['Quiénes', P.correos(d.portal_usuarios).join('\n'), false, 'portal_usuarios'], ['Modo', d.modo === 'real' ? 'Real' : 'Prueba', false, 'modo']]) + '<div class="nota">Siguiente paso: desde aquí invitarás a tu equipo y conectarás tus cuentas.</div>', c, 'Ej.: agrega a una persona nueva al equipo');
-    if (c.ligas.tablero && d.motor !== 'propio') html += tarjeta(7, 'Ligas', '<div class="liga"><b>Tablero del pipeline:</b> <a href="' + h(c.ligas.tablero) + '" target="_blank" rel="noopener">Abrir</a></div>');
+    var html = '<nav class="tabs" role="tablist">' + PESTANAS.map(function (p) { return '<button role="tab" class="tab' + (p[0] === pestana ? ' on' : '') + '" data-tab="' + p[0] + '" aria-selected="' + (p[0] === pestana) + '">' + p[1] + '</button>'; }).join('') + '</nav>';
+    html += '<div id="contenido">' + ({ equipo: equipo, conexiones: conexiones, marca: marca, proceso: proceso }[pestana])(c) + '</div>';
     $('panel').innerHTML = html;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function (b) { b.onclick = function () { pestana = b.getAttribute('data-tab'); elegir(t); }; });
     P.activarPedir(ses, t, cargar);
-    if ($('doc-completo')) $('doc-completo').onclick = function () { P.api({ accion: 'vitrina', sesion: ses(), tenant: t }).then(function (x) { if (x.html) P.abrirHtml(x.html); }); };
-    cargarMuestras(c);
+    if (pestana === 'equipo') activarEquipo(c);
+    if (pestana === 'marca') {
+      if ($('doc-completo')) $('doc-completo').onclick = function () { P.api({ accion: 'vitrina', sesion: ses(), tenant: t }).then(function (x) { if (x.html) P.abrirHtml(x.html); }); };
+      cargarMuestras(c);
+    }
+  }
+  // Equipo: quien administra agrega, quita e invita dentro de sus licencias; el resto lo consulta.
+  function equipo(c) {
+    var d = c.datos, inf = c.info || {}, adm = !!inf.administra, inv = Object.assign({}, inf.invitaciones || {});
+    // La invitacion de alta (antes del registro por persona) tambien cuenta.
+    P.correos(inf.alta_invitacion_para).forEach(function (e) { e = e.toLowerCase(); if (!inv[e]) inv[e] = inf.alta_invitacion_fecha || ''; });
+    var admins = P.correos(d.portal_admins).map(function (x) { return x.toLowerCase(); });
+    var todos = admins.concat(P.correos(d.portal_usuarios).map(function (x) { return x.toLowerCase(); }).filter(function (x) { return admins.indexOf(x) < 0; }));
+    var max = Number(d.usuarios_max || 5), lleno = todos.length >= max;
+    var filas = todos.map(function (e) {
+      var esAdm = admins.indexOf(e) >= 0;
+      return '<tr><td>' + h(e) + '</td><td>' + (esAdm ? 'Administra' : 'Equipo') + '</td><td>' + (inv[e] ? 'Invitación enviada el ' + h(inv[e]) : '<span class="vacio">Sin invitar</span>') + '</td>'
+        + (adm ? '<td class="acc"><button class="s" data-invitar="' + h(e) + '">' + (inv[e] ? 'Reenviar' : 'Invitar') + '</button>' + (esAdm ? '' : ' <button class="s" data-quitar="' + h(e) + '">Quitar</button>') + '</td>' : '') + '</tr>';
+    }).join('');
+    var cuerpo = '<p class="nota" style="margin:0">Licencias en uso: <span class="uso' + (todos.length > max ? ' lleno' : '') + '">' + todos.length + ' de ' + max + '</span>, contando a quien administra. ' + (adm ? 'Agrega a una persona y envíale su invitación; entra con su cuenta de Google.' : 'Quien administra el portal agrega o quita personas.') + '</p>'
+      + '<div style="overflow-x:auto"><table class="equipo"><tr><th>Correo</th><th>Rol</th><th>Invitación</th>' + (adm ? '<th></th>' : '') + '</tr>' + filas + '</table></div>'
+      + (adm ? '<div class="acciones"><label style="flex:1;min-width:220px">Agregar a una persona (correo de Google)<input id="nuevo-usuario" type="email" placeholder="nombre@compania.com"' + (lleno ? ' disabled' : '') + '></label><button class="p" id="agregar"' + (lleno ? ' disabled' : '') + '>Agregar</button></div>'
+        + (lleno ? '<p class="vacio">Ya usan todas las licencias. Quita a alguien o pide más licencias en el recuadro de abajo.</p>' : '') : '')
+      + '<span class="msg" id="m-equipo"></span>';
+    return tarjeta(1, 'Equipo', cuerpo + P.pedir('equipo', 'Equipo', 'Ej.: necesitamos dos licencias más') + P.solicitudes(c.solicitudes, 'Equipo'));
+  }
+  function activarEquipo(c) {
+    var t = c.tenant;
+    var llamar = function (cuerpo, ok, b) {
+      if (b) b.disabled = true; P.msg('m-equipo', '', 'Procesando...');
+      P.api(Object.assign({ sesion: ses(), tenant: t }, cuerpo)).then(function (d) {
+        if (b) b.disabled = false;
+        if (d._codigo === 401) { salir(d.error); return; }
+        if (!d.ok) { P.msg('m-equipo', 'bad', d.error || 'No se pudo.'); return; }
+        cargar(); setTimeout(function () { P.msg('m-equipo', 'ok', ok); }, 900);
+      });
+    };
+    if ($('agregar')) $('agregar').onclick = function () {
+      var e = $('nuevo-usuario').value.trim().toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) { P.msg('m-equipo', 'bad', 'Escribe un correo válido.'); return; }
+      llamar({ accion: 'equipo_agregar', email: e }, e + ' quedó en el equipo. Ahora envíale su invitación.', $('agregar'));
+    };
+    Array.prototype.forEach.call(document.querySelectorAll('[data-invitar]'), function (b) {
+      b.onclick = function () {
+        var e = b.getAttribute('data-invitar');
+        if (!b.getAttribute('data-confirmar')) { b.setAttribute('data-confirmar', '1'); b.className = 'p'; b.textContent = 'Confirmar envío'; P.msg('m-equipo', '', 'La invitación sale ahora a ' + e + '.'); return; }
+        llamar({ accion: 'equipo_invitar', email: e }, 'Invitación enviada a ' + e + '.', b);
+      };
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-quitar]'), function (b) {
+      b.onclick = function () {
+        var e = b.getAttribute('data-quitar');
+        if (!b.getAttribute('data-confirmar')) { b.setAttribute('data-confirmar', '1'); b.className = 'p'; b.textContent = 'Confirmar quitar'; P.msg('m-equipo', '', e + ' ya no podrá entrar al portal.'); return; }
+        llamar({ accion: 'equipo_quitar', email: e }, e + ' salió del equipo y liberó una licencia.', b);
+      };
+    });
+  }
+  function conexiones(c) {
+    var u = c.ligas && c.ligas.conexiones;
+    var cuerpo = '<p style="margin:0">Aquí se conectan las cuentas con las que trabaja el motor:</p><ul class="lista-c"><li><b>Google</b> (correo, calendario y Drive): cada persona del equipo conecta la suya.</li><li><b>Zoho CRM</b> y <b>Amplemarket</b>: los conecta quien administra, una sola vez para toda la compañía.</li></ul>'
+      + (u ? '<div class="acciones"><a class="p" href="' + h(u) + '" target="_blank" rel="noopener">Abrir conexiones</a></div><p class="vacio">Se abre en otra pestaña. Ahí entras con tu cuenta de Google y ves qué está conectado.</p>' : '<p class="vacio">Las conexiones de tu compañía aún no están listas. Great Revenue te avisa cuando lo estén.</p>');
+    return tarjeta(2, 'Conexiones', cuerpo + P.pedir('conexiones', 'Conexiones', 'Ej.: no puedo conectar mi calendario') + P.solicitudes(c.solicitudes, 'Conexiones'));
+  }
+  function marca(c) {
+    var d = c.datos, inf = c.info || {}, html = '';
+    html += tarjeta(3, 'Vista previa de tus correos', '<p class="nota" style="margin:0">Todos los tipos de correo que salen con tu marca, por objetivo. La opción marcada es la que se usa hoy; si prefieres otra, pídelo en el recuadro del grupo.</p><div id="grupos"><p class="vacio">Cargando tipos de correo...</p></div>',
+      inf.tiene_vitrina ? '<button class="s" id="doc-completo">Documento completo de marca</button>' : '');
+    html += seccion(4, 'origen', 'Origen de tu marca', dl([['Sitio web', abrir(d.sitio_web), true, 'sitio_web'], ['Manual de identidad', abrir(d.marca_manual_url), true, 'marca_manual_url'], ['Carpeta de logos', abrir(d.marca_logos_carpeta), true, 'marca_logos_carpeta']]), c);
+    html += seccion(5, 'marca', 'Tu marca', dl([['Nombre', d.marca_nombre, false, 'marca_nombre'], ['Colores', '<span class="sw"><i style="background:' + h(P.color(d.marca_color_primario, '#ccc')) + '"></i>' + h(d.marca_color_primario) + '</span><span class="sw"><i style="background:' + h(P.color(d.marca_color_oscuro, '#111')) + '"></i>' + h(d.marca_color_oscuro) + '</span>', true, 'marca_color_primario'], ['Colores secundarios', (d.marca_colores_secundarios || '').split(',').filter(Boolean).map(function (x) { return '<span class="sw"><i style="background:' + h(P.color(x, '#ccc')) + '"></i></span>'; }).join(''), true, 'marca_colores_secundarios'], ['Tipografía de los avisos', d.marca_fuente_interna, false, 'marca_fuente_interna'], ['Remitente', d.marca_remitente_interno, false, 'marca_remitente_interno'], ['Prefijo del asunto', d.marca_prefijo_asunto, false, 'marca_prefijo_asunto'], ['Pie', d.marca_pie, false, 'marca_pie']]) + '<div>' + P.aviso(d) + '</div>', c, 'Ej.: usa el logo a color en los avisos');
+    if (c.ligas.tablero && d.motor !== 'propio') html += tarjeta(6, 'Tablero', '<div class="liga"><b>Tablero del pipeline:</b> <a href="' + h(c.ligas.tablero) + '" target="_blank" rel="noopener">Abrir</a></div>');
+    return html;
+  }
+  function proceso(c) {
+    return tarjeta(7, 'Objetivos y proceso comercial', '<p class="vacio">Próximamente: aquí verás y ajustarás los objetivos que opera el motor y las etapas de tu proceso comercial.</p>' + P.pedir('proceso', 'Objetivos y proceso', 'Ej.: agrega una etapa de propuesta') + P.solicitudes(c.solicitudes, 'Objetivos y proceso'));
   }
   function cargarMuestras(c) {
     var poner = function (actuales) {
-      if (estado.sel !== c.tenant) return;
+      if (estado.sel !== c.tenant || !$('grupos')) return;
       $('grupos').innerHTML = P.vistaPrevia(c, actuales, EDITABLE); P.llenarVistaPrevia(c, actuales); P.activarPedir(ses, c.tenant, cargar);
       Array.prototype.forEach.call(document.querySelectorAll('[data-guardar-diseno]'), function (b) { b.onclick = function () { guardarDiseno(c, b.getAttribute('data-guardar-diseno')); }; });
     };
     var actuales = estado.muestras[c.tenant];
     var pedirActuales = actuales ? Promise.resolve(actuales) : (c.info.tiene_muestras ? P.api({ accion: 'muestras', sesion: ses(), tenant: c.tenant }).then(function (d) { if (d._codigo === 401) { salir(d.error); return {}; } return (d.muestras && d.muestras.actuales) || {}; }) : Promise.resolve({}));
-    Promise.all([P.cargarCatalogo(), pedirActuales]).then(function (r) { estado.muestras[c.tenant] = r[1]; poner(r[1]); }, function () { $('grupos').innerHTML = '<p class="vacio">No se pudieron cargar los tipos de correo.</p>'; });
+    Promise.all([P.cargarCatalogo(), pedirActuales]).then(function (r) { estado.muestras[c.tenant] = r[1]; poner(r[1]); }, function () { if ($('grupos')) $('grupos').innerHTML = '<p class="vacio">No se pudieron cargar los tipos de correo.</p>'; });
   }
 
   if (ses()) cargar();
