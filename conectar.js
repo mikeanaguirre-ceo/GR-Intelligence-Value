@@ -21,7 +21,21 @@
     $('bajada').textContent = s === 'google' ? 'Alta de tu correo, calendario y Drive' : 'Alta de ' + (s === 'zoho' ? 'Zoho CRM' : 'Amplemarket');
     tarjeta('<p data-titular>Te llevamos a la página oficial de ' + (s === 'google' ? 'Google' : s === 'zoho' ? 'Zoho' : 'Amplemarket') + '...</p><p class="vacio">Ahí inicias sesión y das el permiso. Great Revenue nunca ve tu contraseña.</p>');
     P.marcaPublica('{nombre}', $('bajada').textContent);
+    var otra = q.get('otra') === '1';
+    // Otra cuenta de Zoho o Amplemarket: el servicio entra solo con la sesion que ya esta abierta en este navegador,
+    // asi que primero se cierra esa sesion y despues se continua.
+    var SALIR = { zoho: ['Zoho', 'https://accounts.zoho.com/logout'], amplemarket: ['Amplemarket', 'https://app.amplemarket.com'] };
+    if (otra && SALIR[s] && q.get('listo') !== '1') {
+      var x = SALIR[s], sigue = new URLSearchParams(location.search); sigue.set('listo', '1');
+      tarjeta('<p data-titular>Conectar otra cuenta de ' + x[0] + '</p>'
+        + '<p>' + x[0] + ' entra con la cuenta que ya está abierta en este navegador. Para usar otra:</p>'
+        + '<ol class="altas"><li>' + (s === 'zoho' ? 'Cierra la sesión de Zoho con el botón de abajo (se abre en otra pestaña).' : 'Abre Amplemarket con el botón de abajo y cierra sesión desde tu perfil.') + '</li><li>Regresa a esta pestaña y dale «Continuar».</li><li>Inicia sesión con la otra cuenta y da el permiso.</li></ol>'
+        + '<div class="acciones"><a class="s" href="' + h(x[1]) + '" target="_blank" rel="noopener">' + (s === 'zoho' ? 'Cerrar sesión de Zoho' : 'Abrir Amplemarket') + '</a><a class="p" href="?' + h(sigue.toString()) + '">Continuar</a></div>'
+        + '<p class="vacio">Tip: también puedes abrir esta liga en una ventana de incógnito.</p>');
+      return;
+    }
     var params = new URLSearchParams({ c: clave, s: s, p: q.get('p') || '' });
+    if (otra) params.set('otra', '1');
     pedir('motor-conectar-ir', params).then(function (d) {
       marca(d.marca);
       if (d.ok && d.ir) { location.replace(d.ir); return; }
