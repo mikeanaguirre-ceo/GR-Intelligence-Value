@@ -65,7 +65,7 @@
   P.catalogo = null;
   P.cargarCatalogo = function () {
     if (P.catalogo) return Promise.resolve(P.catalogo);
-    return fetch('tipos_correo.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (c) { P.catalogo = c; return c; });
+    return fetch('/tipos_correo.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (c) { P.catalogo = c; return c; });
   };
   var ESTADO = { opera: ['Opera hoy', 'aplicado'], construir: ['Por construir', 'pendiente'], distinto: ['Opera distinto', 'descartado'] };
   // Como esta hoy cada tipo en esta compania: nativo = sale con el formato propio de su motor (motor=propio);
