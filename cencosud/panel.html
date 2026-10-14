@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Selección Cencosud · Panel del reclutador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#0069B4; --azul-oscuro:#11427C; --celeste:#0AC3FF; --turquesa:#12CCC4; --verde:#2DC850;
+  --naranja:#F39200; --cta-a:#F8AA25; --cta-b:#EB5D0B; --rojo:#EC1C24;
+  --texto:#73706E; --fuerte:#222222; --tenue:#8E8E8E; --fondo:#FCFAFA; --input:#EBEBEB; --borde:#E6E6E6;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--texto);font-family:'Source Sans 3',system-ui,sans-serif;font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.encabezado{background:linear-gradient(90deg,var(--azul) 0%,var(--celeste) 100%);color:#fff}
+.encabezado .dentro{max-width:1320px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.marca{display:flex;align-items:center;gap:16px}
+.marca img{height:38px;width:auto;display:block}
+.marca .sep{width:1px;height:30px;background:rgba(255,255,255,.45)}
+.marca h1{margin:0;font-size:19px;font-weight:700;line-height:1.2}
+.marca p{margin:0;font-size:14px;opacity:.9}
+.franja{display:grid;grid-template-columns:1fr 1fr 1fr;height:8px}
+.franja i:nth-child(1){background:var(--azul)} .franja i:nth-child(2){background:var(--celeste)} .franja i:nth-child(3){background:var(--naranja)}
+.herr{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.check{display:flex;gap:6px;align-items:center;font-size:14px;color:#fff}
+.btn{font:600 14.5px 'Source Sans 3',sans-serif;border-radius:10px;padding:9px 14px;cursor:pointer;border:1px solid rgba(255,255,255,.6);background:rgba(255,255,255,.12);color:#fff}
+.btn:hover{background:rgba(255,255,255,.22)}
+.btn.cta{border:0;background:linear-gradient(90deg,var(--cta-a),var(--cta-b))}
+.btn.cta:hover{background:linear-gradient(90deg,var(--cta-b),var(--cta-a))}
+.btn:focus-visible,select:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid var(--naranja);outline-offset:1px}
+
+.marco{max-width:1320px;margin:0 auto;padding:22px 20px 40px;display:flex;flex-direction:column;gap:18px}
+.tarjeta{background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);padding:18px}
+.tarjeta h2{margin:0 0 12px;color:var(--azul);font-size:18px;font-weight:700}
+.actualizado{font-size:13.5px;color:var(--tenue)}
+
+.embudo{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+@media (max-width:900px){.embudo{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.etapa{border-radius:14px;padding:14px;color:#fff;background:linear-gradient(135deg,var(--azul),var(--turquesa));position:relative}
+.etapa:nth-child(n+4){background:linear-gradient(135deg,var(--azul-oscuro),var(--azul))}
+.etapa b{display:block;font-size:30px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.etapa span{font-size:14.5px;font-weight:600}
+.etapa small{display:block;font-size:12.5px;opacity:.85;margin-top:2px}
+.descartes{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;font-size:14px}
+.descartes b{color:var(--fuerte)}
+
+.rejilla{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:18px;align-items:start}
+@media (max-width:1050px){.rejilla{grid-template-columns:1fr}}
+.filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.filtros select,.filtros input{border:0;background:var(--input);border-radius:8px;padding:8px 10px;font:14.5px 'Source Sans 3',sans-serif;color:var(--fuerte)}
+.tabla-caja{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:820px}
+th{text-align:left;font-size:13px;font-weight:600;color:var(--tenue);padding:8px;border-bottom:1px solid var(--borde);white-space:nowrap}
+td{padding:10px 8px;border-bottom:1px solid var(--borde);vertical-align:top;font-size:14.5px}
+td .fuerte{color:var(--fuerte);font-weight:600}
+td small{display:block;color:var(--tenue);font-size:13px}
+tr.fila{cursor:pointer}
+tr.fila:hover td{background:#F7FAFD}
+tr.fila.elegida td{background:#EEF6FC}
+.chip{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12.5px;font-weight:700;white-space:nowrap}
+.chip.citado{background:#E3F8E8;color:#16843A}
+.chip.califica{background:#E6F1FA;color:var(--azul)}
+.chip.en_proceso{background:#F1F1F1;color:var(--texto)}
+.chip.guardado{background:#FEF1DE;color:#B26A00}
+.chip.descartado{background:#FDE8E9;color:#B4141A}
+.chip.persona{background:#FEF1DE;color:#B26A00;margin-top:4px}
+.estrellas{color:var(--naranja);letter-spacing:1px;white-space:nowrap}
+.asis{display:flex;gap:4px}
+.asis button{border:1px solid var(--borde);background:#fff;border-radius:8px;padding:5px 9px;font:600 13px 'Source Sans 3',sans-serif;cursor:pointer;color:var(--texto);white-space:nowrap}
+.asis button.si.activo{background:var(--verde);border-color:var(--verde);color:#fff}
+.asis button.no.activo{background:var(--rojo);border-color:var(--rojo);color:#fff}
+.vacio{text-align:center;padding:28px 0;color:var(--tenue)}
+
+.ficha dl{display:grid;grid-template-columns:120px 1fr;gap:5px 10px;margin:0 0 12px;font-size:14px}
+.ficha dt{color:var(--tenue)}
+.ficha dd{margin:0;color:var(--fuerte)}
+.nota-sofia{background:linear-gradient(135deg,rgba(0,105,180,.07),rgba(18,204,196,.09));border-radius:12px;padding:10px 12px;font-size:14px;color:var(--azul-oscuro);margin-bottom:12px}
+.nota-sofia b{display:block;font-size:12.5px;color:var(--azul)}
+.conversacion{display:flex;flex-direction:column;gap:6px;max-height:520px;overflow-y:auto;background:#EFEAE2;border-radius:12px;padding:12px}
+.burbuja{max-width:90%;padding:6px 9px;border-radius:8px;font-size:14px;white-space:pre-wrap;color:#111B21;box-shadow:0 1px .5px rgba(11,20,26,.13)}
+.burbuja.bot{background:#fff;align-self:flex-start}
+.burbuja.yo{background:#D9FDD3;align-self:flex-end}
+.burbuja small{display:block;text-align:right;color:#667781;font-size:11px}
+.pie{font-size:13px;color:var(--tenue)}
+</style>
+</head>
+<body>
+<header class="encabezado">
+  <div class="dentro">
+    <div class="marca">
+      <img src="https://www.cencosud.com/cencosud/site/artic/20220106/imag/foto_0000000620220106151638/logo.svg" alt="Cencosud" onerror="this.replaceWith(Object.assign(document.createElement('b'),{textContent:'Cencosud'}))">
+      <div class="sep"></div>
+      <div><h1>Panel del reclutador</h1><p>Entrevistas de Sofía · tiendas Metro y Wong</p></div>
+    </div>
+    <div class="herr">
+      <label class="check"><input type="checkbox" id="pruebas"> Incluir pruebas automáticas</label>
+      <button class="btn" id="csv">Descargar CSV</button>
+      <button class="btn cta" id="actualizar">Actualizar</button>
+    </div>
+  </div>
+  <div class="franja"><i></i><i></i><i></i></div>
+</header>
+
+<main class="marco">
+  <section class="tarjeta">
+    <h2>Embudo de hoy</h2>
+    <div class="embudo" id="embudo"></div>
+    <div class="descartes" id="descartes"></div>
+    <p class="actualizado" id="actualizado">Cargando…</p>
+  </section>
+
+  <div class="rejilla">
+    <section class="tarjeta">
+      <h2>Candidatos</h2>
+      <div class="filtros">
+        <select id="fResultado" aria-label="Filtrar por resultado">
+          <option value="">Todos</option>
+          <option value="citado">Citados</option>
+          <option value="califica">Califican, sin cita</option>
+          <option value="en_proceso">Conversando</option>
+          <option value="guardado">Guardados para otra vacante</option>
+          <option value="descartado">No continúan</option>
+          <option value="persona">Piden una persona</option>
+        </select>
+        <input id="fBuscar" type="search" placeholder="Buscar nombre, distrito o tienda" aria-label="Buscar">
+      </div>
+      <div class="tabla-caja">
+        <table>
+          <thead><tr><th>Candidato</th><th>Resultado</th><th>Lo que busca · nota de Sofía</th><th>Actitud</th><th>Entrevista</th><th>Asistencia</th></tr></thead>
+          <tbody id="cuerpo"></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="tarjeta ficha" id="ficha">
+      <h2>Conversación</h2>
+      <p class="pie">Elige un candidato para ver su ficha y la conversación completa con Sofía.</p>
+    </section>
+  </div>
+  <p class="pie">Sin consultas automáticas: el panel se actualiza con el botón. En el piloto cada persona del equipo entra con su propio usuario.</p>
+</main>
+
+<script>
+var BASE = 'https://mikea.app.n8n.cloud/webhook';
+var datos = null, elegida = '';
+var PUESTO = { cajero: 'Cajero(a)', reponedor: 'Reponedor(a)' };
+var RESULTADO = {
+  citado: ['Citado', 'citado'], califica: ['Califica', 'califica'], en_proceso: ['Conversando', 'en_proceso'],
+  sin_turno: ['Guardado: horario', 'guardado'], fuera_de_lima: ['Guardado: fuera de Lima', 'guardado'],
+  menor_de_edad: ['Menor de edad', 'descartado'], no_le_interesa: ['Ya no le interesa', 'descartado']
+};
+var DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'], MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+function el(t, c, x){ var e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; }
+function fecha(iso){ if (!iso) return ''; var d = new Date(iso + 'T12:00:00Z'); return DIAS[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + MESES[d.getUTCMonth()]; }
+function horaLocal(iso){ if (!iso) return ''; return new Date(iso).toLocaleString('es-PE', { timeZone: 'America/Lima', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); }
+function grupo(c){ return (RESULTADO[c.resultado] || ['', 'en_proceso'])[1]; }
+function estrellas(n){ if (!n) return '—'; var k = Math.round(n); return '★★★'.slice(0, k) + '☆☆☆'.slice(0, 3 - k); }
+
+function cargar(){
+  document.getElementById('actualizado').textContent = 'Actualizando…';
+  var pr = document.getElementById('pruebas').checked ? '?pruebas=1' : '';
+  return fetch(BASE + '/cenco-panel-datos' + pr).then(function(r){ return r.json(); }).then(function(d){
+    datos = d; pintarEmbudo(); pintarTabla();
+    document.getElementById('actualizado').textContent = 'Actualizado ' + horaLocal(d.generado) + ' (hora de Lima)';
+    if (elegida) verFicha(elegida);
+  }).catch(function(){ document.getElementById('actualizado').textContent = 'No pude leer los datos. Intenta con Actualizar.'; });
+}
+
+function pintarEmbudo(){
+  var caja = document.getElementById('embudo'); caja.innerHTML = '';
+  datos.embudo.forEach(function(e, i){
+    var d = el('div', 'etapa'); d.appendChild(el('b', '', e.n)); d.appendChild(el('span', '', e.titulo));
+    var prev = i ? datos.embudo[i - 1].n : 0;
+    d.appendChild(el('small', '', i ? (prev ? Math.round(100 * e.n / prev) + ' % de la etapa anterior' : '—') : 'Sofía escribió primero'));
+    caja.appendChild(d);
+  });
+  var x = datos.descartes, t = document.getElementById('descartes'); t.innerHTML = '';
+  [['Menores de edad', x.menor_de_edad], ['Sin turno de cierre', x.sin_turno], ['Fuera de Lima', x.fuera_de_lima], ['Ya no les interesa', x.no_le_interesa], ['Piden una persona', datos.piden_persona]]
+    .forEach(function(p){ var s = el('span'); s.appendChild(document.createTextNode(p[0] + ': ')); s.appendChild(el('b', '', p[1])); t.appendChild(s); });
+}
+
+function filtrados(){
+  var r = document.getElementById('fResultado').value, q = document.getElementById('fBuscar').value.trim().toLowerCase();
+  return datos.candidatos.filter(function(c){
+    if (r === 'persona' && c.persona !== 'si') return false;
+    if (['citado', 'califica', 'en_proceso'].indexOf(r) > -1 && c.resultado !== r) return false;
+    if ((r === 'guardado' || r === 'descartado') && grupo(c) !== r) return false;
+    if (q && (c.nombre + ' ' + c.distrito + ' ' + c.sede).toLowerCase().indexOf(q) === -1) return false;
+    return true;
+  });
+}
+
+function pintarTabla(){
+  var cuerpo = document.getElementById('cuerpo'); cuerpo.innerHTML = '';
+  var lista = filtrados();
+  if (!lista.length) { var tr0 = el('tr'), td0 = el('td', 'vacio', 'Todavía no hay candidatos con este filtro.'); td0.colSpan = 6; tr0.appendChild(td0); cuerpo.appendChild(tr0); return; }
+  lista.forEach(function(c){
+    var tr = el('tr', 'fila' + (c.sesion === elegida ? ' elegida' : ''));
+    tr.onclick = function(){ elegida = c.sesion; pintarTabla(); verFicha(c.sesion); };
+    var td = el('td'); td.appendChild(el('div', 'fuerte', c.nombre || '(sin datos)'));
+    td.appendChild(el('small', '', [PUESTO[c.puesto], c.marca, c.distrito].filter(Boolean).join(' · ')));
+    td.appendChild(el('small', '', (c.bolsa ? c.bolsa + ' · ' : '') + horaLocal(c.inicio))); tr.appendChild(td);
+    td = el('td'); var r = RESULTADO[c.resultado] || ['Conversando', 'en_proceso'];
+    td.appendChild(el('span', 'chip ' + r[1], r[0]));
+    if (c.persona === 'si') { td.appendChild(el('br')); td.appendChild(el('span', 'chip persona', 'Pide una persona')); }
+    tr.appendChild(td);
+    td = el('td'); if (c.motivacion) td.appendChild(el('div', 'fuerte', c.motivacion));
+    td.appendChild(el('small', '', c.nota || c.motivo || '—')); tr.appendChild(td);
+    td = el('td'); td.appendChild(el('div', 'estrellas', estrellas(c.actitud))); if (c.actitud_notas) td.appendChild(el('small', '', c.actitud_notas)); tr.appendChild(td);
+    td = el('td');
+    if (c.fecha_cita) { td.appendChild(el('div', 'fuerte', c.sede)); td.appendChild(el('small', '', fecha(c.fecha_cita) + ', ' + c.hora_cita + (c.confirmo === 'si' ? ' · confirmó' : ''))); }
+    else td.appendChild(el('span', '', '—'));
+    tr.appendChild(td);
+    td = el('td');
+    if (c.resultado === 'citado') {
+      var caja = el('div', 'asis');
+      var si = el('button', 'si' + (c.asistencia === 'asistio' ? ' activo' : ''), 'Asistió');
+      var no = el('button', 'no' + (c.asistencia === 'no_asistio' ? ' activo' : ''), 'No asistió');
+      si.onclick = function(e){ e.stopPropagation(); marcar(c, c.asistencia === 'asistio' ? '' : 'asistio'); };
+      no.onclick = function(e){ e.stopPropagation(); marcar(c, c.asistencia === 'no_asistio' ? '' : 'no_asistio'); };
+      caja.appendChild(si); caja.appendChild(no); td.appendChild(caja);
+    } else td.appendChild(el('span', '', '—'));
+    tr.appendChild(td);
+    cuerpo.appendChild(tr);
+  });
+}
+
+function marcar(c, valor){
+  var antes = c.asistencia; c.asistencia = valor; pintarTabla();
+  fetch(BASE + '/cenco-asistencia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sesion: c.sesion, asistencia: valor }) })
+    .then(function(r){ if (!r.ok) throw new Error(); return cargar(); })
+    .catch(function(){ c.asistencia = antes; pintarTabla(); alert('No se pudo guardar la asistencia.'); });
+}
+
+function verFicha(sesion){
+  var c = datos.candidatos.find(function(x){ return x.sesion === sesion; });
+  var f = document.getElementById('ficha'); f.innerHTML = '';
+  f.appendChild(el('h2', '', c && c.nombre ? c.nombre : 'Conversación'));
+  if (!c) { f.appendChild(el('p', 'pie', 'Ese candidato ya no está en la vista.')); return; }
+  if (c.nota) { var n = el('div', 'nota-sofia'); n.appendChild(el('b', '', 'Nota de Sofía')); n.appendChild(document.createTextNode(c.nota)); f.appendChild(n); }
+  var dl = el('dl');
+  [['Postuló a', [PUESTO[c.puesto], c.marca].filter(Boolean).join(' · ') || '—'], ['Lo que busca', c.motivacion || '—'], ['Mayor de 18', c.mayor_edad === 'si' ? 'Sí' : c.mayor_edad === 'no' ? 'No' : '—'],
+   ['Turno de cierre', { si: 'Puede', parcial: 'Con condiciones', no: 'No puede' }[c.disponibilidad] || '—'], ['Distrito', c.distrito || '—'],
+   ['Actitud', c.actitud ? estrellas(c.actitud) + ' ' + c.actitud_notas : '—'], ['Entrevista', c.fecha_cita ? c.sede + ', ' + fecha(c.fecha_cita) + ', ' + c.hora_cita : '—'],
+   ['Dirección', c.direccion || '—'], ['Preguntas que hizo', c.preguntas]]
+    .forEach(function(p){ dl.appendChild(el('dt', '', p[0])); dl.appendChild(el('dd', '', p[1])); });
+  f.appendChild(dl);
+  var conv = el('div', 'conversacion'); conv.appendChild(el('div', 'pie', 'Cargando…')); f.appendChild(conv);
+  fetch(BASE + '/cenco-panel-conversacion?sesion=' + encodeURIComponent(sesion)).then(function(r){ return r.json(); }).then(function(d){
+    conv.innerHTML = '';
+    (d.mensajes || []).forEach(function(m){
+      if (m.cliente) { var a = el('div', 'burbuja yo', m.cliente); a.appendChild(el('small', '', horaLocal(m.momento))); conv.appendChild(a); }
+      if (m.bot) { var b = el('div', 'burbuja bot', m.bot); b.appendChild(el('small', '', horaLocal(m.momento))); conv.appendChild(b); }
+    });
+    if (!conv.childNodes.length) conv.appendChild(el('div', 'pie', 'Sin mensajes guardados.'));
+    conv.scrollTop = conv.scrollHeight;
+  }).catch(function(){ conv.innerHTML = ''; conv.appendChild(el('div', 'pie', 'No pude leer la conversación.')); });
+}
+
+function csv(){
+  if (!datos) return;
+  var cols = ['nombre', 'puesto', 'marca', 'bolsa', 'distrito', 'resultado', 'motivo', 'motivacion', 'mayor_edad', 'disponibilidad', 'actitud', 'actitud_notas', 'nota', 'sede', 'direccion', 'fecha_cita', 'hora_cita', 'confirmo', 'asistencia', 'persona', 'preguntas', 'inicio', 'sesion'];
+  var lineas = [cols.join(',')].concat(filtrados().map(function(c){
+    return cols.map(function(k){ var v = String(c[k] == null ? '' : c[k]); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(',');
+  }));
+  var blob = new Blob(['﻿' + lineas.join('\n')], { type: 'text/csv;charset=utf-8' });
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'candidatos-cencosud-' + new Date().toISOString().slice(0, 10) + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+document.getElementById('actualizar').onclick = cargar;
+document.getElementById('pruebas').onchange = cargar;
+document.getElementById('csv').onclick = csv;
+document.getElementById('fResultado').onchange = pintarTabla;
+document.getElementById('fBuscar').oninput = pintarTabla;
+cargar();
+</script>
+</body>
+</html>
