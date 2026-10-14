@@ -7,10 +7,10 @@
 <title>Portal de la compañía | Great Revenue Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="/portal_comun.css?v=20261014a">
+<link rel="stylesheet" href="/portal_comun.css?v=20261014b">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="/correo_estilos.js?v=20261014a"></script>
-<script src="/portal_comun.js?v=20261014a"></script>
+<script src="/correo_estilos.js?v=20261014b"></script>
+<script src="/portal_comun.js?v=20261014b"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Portal de tu compañía</b></span><span class="quien" id="quien">Entra con tu cuenta de Google</span></div>
@@ -150,7 +150,7 @@
   }
   // Liga para conectar un servicio: va a la pagina oficial del servicio y regresa a esta pestana.
   // Liga para dar de alta un servicio: pagina del sitio con la ruta de la compania (nunca la direccion del motor).
-  function conectar(c, servicio) { var cx = c.conexiones || {}; return cx.pagina + '?s=' + servicio + '&p=' + encodeURIComponent(ses() || ''); }
+  function conectar(c, servicio, otra) { var cx = c.conexiones || {}; return cx.pagina + '?s=' + servicio + (otra ? '&otra=1' : '') + '&p=' + encodeURIComponent(ses() || ''); }
   function activarConexiones(c) {
     Array.prototype.forEach.call(document.querySelectorAll('[data-quitar-servicio]'), function (b) {
       b.onclick = function () {
@@ -173,7 +173,7 @@
       return '<div class="servicio"><div class="servicio-h"><b>' + titulo + '</b>' + (hay ? '<span class="chip aplicado">Conectado</span>' : '<span class="chip pendiente">Sin conectar</span>') + '</div><p class="vacio" style="margin:0">' + texto + '</p>'
         + (lista || []).map(function (x) { return '<div class="liga">' + h(x.quien) + ' <span class="vacio">desde ' + h(x.fecha) + '</span></div>'; }).join('')
         + (adm && hay ? '<div class="acciones"><button class="s" data-quitar-servicio="' + s + '">Quitar la conexión</button></div>' : '')
-        + (adm ? (disp ? '<div class="acciones"><a class="' + (hay ? 's' : 'p') + '" href="' + h(conectar(c, s)) + '">' + (hay ? 'Volver a conectar' : 'Conectar') + '</a></div>' : '<p class="vacio">Aún no disponible: Great Revenue lo habilita.</p>') : '<p class="vacio">Lo conecta quien administra el portal.</p>') + '</div>';
+        + (adm ? (disp ? '<div class="acciones"><a class="' + (hay ? 's' : 'p') + '" href="' + h(conectar(c, s)) + '">' + (hay ? 'Volver a conectar la misma cuenta' : 'Conectar') + '</a><a class="s" href="' + h(conectar(c, s, true)) + '">' + (hay ? 'Cambiar a otra cuenta' : 'Conectar con otra cuenta') + '</a></div>' + (hay ? '<p class="vacio">Si cambias a otra cuenta, la nueva reemplaza a la actual y la actual se borra del motor.</p>' : '') : '<p class="vacio">Aún no disponible: Great Revenue lo habilita.</p>') : '<p class="vacio">Lo conecta quien administra el portal.</p>') + '</div>';
     };
     var g = (cx.google || []).length;
     var cuerpo = '<p style="margin:0">Las cuentas con las que trabaja el motor. Cada conexión se hace en la página oficial del servicio: Great Revenue nunca ve contraseñas y el permiso se puede retirar cuando quieras.</p>'
