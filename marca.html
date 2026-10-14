@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Documento de marca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
+<link rel="stylesheet" href="/portal_comun.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="/portal_comun.js"></script>
+</head>
+<body>
+<div class="top"><span class="marca" id="logo"><b>GR Intelligence</b></span><span class="quien" id="quien">Entra con tu cuenta de Google</span></div>
+<div class="banda oscura" id="banda"><div class="in"><h1 id="titulo">Documento de marca</h1><p id="bajada">Tu manual de identidad contra los correos que salen hoy.</p></div></div>
+<main>
+  <div class="entrar" id="v-entrar"><b>Entra con tu cuenta de Google</b><div id="gbtn"></div><p class="msg bad" id="m-entrar"></p></div>
+</main>
+<footer>Operado por Great Revenue Intelligence · <a href="/privacidad.html">Aviso de privacidad</a></footer>
+<script>
+// Documento completo de marca de una compania: /<clave>/marca. Solo con sesion del portal (GR o quien es parte de la compania).
+(function () {
+  var P = window.GRP, $ = P.$, clave = ((/^\/([a-z0-9]+)\/marca/.exec(location.pathname) || [])[1] || '').toUpperCase();
+  var LLAVE = 'gr_sesion_marca';
+  function abrir() {
+    $('m-entrar').className = 'msg'; $('m-entrar').textContent = 'Abriendo el documento...';
+    P.api({ accion: 'vitrina', sesion: P.sesion(LLAVE), tenant: clave }).then(function (d) {
+      if (d._codigo === 401) { P.sesion(LLAVE, null); $('m-entrar').className = 'msg bad'; $('m-entrar').textContent = d.error || 'Vuelve a entrar.'; return; }
+      if (!d.html) { $('m-entrar').className = 'msg bad'; $('m-entrar').textContent = d.error || 'El documento aún no está listo.'; return; }
+      var html = /<meta[^>]+charset/i.test(d.html.slice(0, 2000)) ? d.html : '<meta charset="utf-8">' + d.html;
+      document.open(); document.write(html); document.close();
+    });
+  }
+  P.google('gbtn', function (resp) {
+    $('m-entrar').className = 'msg'; $('m-entrar').textContent = 'Revisando tu acceso...';
+    P.api({ accion: 'entrar', id_token: resp.credential }).then(function (d) {
+      if (!d.sesion) { $('m-entrar').className = 'msg bad'; $('m-entrar').textContent = d.error || 'No se pudo entrar.'; return; }
+      P.sesion(LLAVE, d.sesion); abrir();
+    });
+  });
+  if (P.sesion(LLAVE)) abrir();
+})();
+</script>
+</body>
+</html>
