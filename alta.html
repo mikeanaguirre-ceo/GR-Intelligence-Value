@@ -99,7 +99,8 @@
     { n: 3, id: 'origen', titulo: 'Origen de la marca', campos: [['sitio_web', 'Sitio web', 'liga'], ['marca_manual_url', 'Manual de identidad (liga)', 'liga'], ['marca_logos_carpeta', 'Carpeta de Drive con logos', 'liga'], ['marca_vitrina_url', 'Documento completo de marca (liga)', 'liga']] },
     { n: 4, id: 'marca', titulo: 'Marca', campos: [['marca_nombre', 'Nombre de la marca'], ['marca_logo_url', 'Logo (dirección https de una imagen PNG)'], ['marca_color_primario', 'Color principal', 'color'], ['marca_color_oscuro', 'Color oscuro', 'color'], ['marca_colores_secundarios', 'Colores secundarios (separados por coma)'], ['marca_fuente_interna', 'Tipografía de los avisos'], ['marca_pie', 'Pie de los avisos'], ['marca_remitente_interno', 'Remitente de los avisos'], ['marca_prefijo_asunto', 'Prefijo del asunto']] },
     { n: 5, id: 'operacion', titulo: 'Operación: quién recibe', campos: [['aviso_fallas_correos', 'Fallas del motor'], ['llaves_avisar_a', 'Conexiones nuevas']] },
-    { n: 6, id: 'portal', titulo: 'Portal de la compañía', campos: [['portal_nombre', 'Nombre del portal'], ['portal_admins', 'Administradora (correo de Google)'], ['usuarios_max', 'Usuarios máximos (incluye a la administradora)'], ['modo', 'Modo', 'modo'], ['portal_usuarios', 'Usuarios (correos de Google, uno por línea o separados por coma)', 'largo']] }
+    { n: 6, id: 'portal', titulo: 'Portal de la compañía', campos: [['portal_nombre', 'Nombre del portal'], ['portal_admins', 'Administradora (correo de Google)'], ['usuarios_max', 'Usuarios máximos (incluye a la administradora)'], ['modo', 'Modo', 'modo'], ['portal_usuarios', 'Usuarios (correos de Google, uno por línea o separados por coma)', 'largo']] },
+    { n: 7, id: 'ligas', titulo: 'Ligas', campos: [['tablero_url', 'Tablero del pipeline (liga propia, si la compañía ya tiene uno)', 'liga']] }
   ];
   function campo(k, etiqueta, tipo, v) {
     var et = '<span>' + h(etiqueta) + P.ayuda(k) + '</span>';
@@ -126,14 +127,12 @@
       if (s.id === 'opera') cuerpo += '<div><b style="font-size:13px;color:var(--g)">Mejoras contra el manual</b>' + P.ayuda('marca_diferencias_manual') + '<div id="mejoras" style="margin-top:8px">' + P.listaMejoras(c, true) + '</div><span class="msg" id="m-mejora"></span></div>';
       if (s.id === 'origen') cuerpo += '<div class="acciones"><label style="display:flex;gap:8px;align-items:center">Subir el manual en PDF<input type="file" id="m-pdf" accept="application/pdf"></label><button class="s" id="subir-manual">Subir manual</button><span class="msg" id="m-manual"></span></div>';
       if (s.id === 'marca') cuerpo += '<div><b style="font-size:13px;color:var(--g)">Así se ve un aviso con esta marca (cambia mientras editas)</b><div id="prev" style="margin-top:8px"></div></div>';
+      if (s.id === 'ligas') cuerpo += liga('Tablero del pipeline', c.ligas.tablero, true) + (c.datos.tablero_url ? '' : (c.datos.motor === 'propio' ? '<p class="vacio">Pega arriba la liga del tablero que ya usa ' + h(c.datos.marca_nombre) + '.</p>' : '<p class="vacio">Sin liga propia se usa el tablero del motor común. Lleva una clave privada: compártelo solo con la compañía.</p>'))
+        + liga('Entrada al portal de ' + c.datos.marca_nombre + ' (va en la invitación)', c.ligas.portal_compania, true) + liga('Documento completo de marca', c.ligas.vitrina, true);
       if (s.id === 'portal') cuerpo += '<div class="nota">Usuarios en uso: <span class="uso" id="uso"></span>. ' + (inf.alta_invitacion_fecha ? 'Última invitación: ' + h(inf.alta_invitacion_fecha) + ' a ' + h(inf.alta_invitacion_para) + '.' : 'Aún no se envía la invitación.') + '</div>'
-        + '<div class="acciones"><button class="s" id="invitar">' + (inf.alta_invitacion_fecha ? 'Volver a enviar invitación' : 'Enviar invitación') + '</button><a class="s" href="compania.html?c=' + h(c.tenant) + '" target="_blank" rel="noopener">Ver como la administradora</a><span class="msg" id="m-invitar"></span></div>';
+        + '<div class="acciones"><button class="s" id="invitar">' + (inf.alta_invitacion_fecha ? 'Volver a enviar invitación' : 'Enviar invitación') + '</button><a class="s" href="compania.html?c=' + h(c.tenant) + '" target="_blank" rel="noopener">Ver como quien administra</a><span class="msg" id="m-invitar"></span></div>';
       html += tarjeta(s.n, s.titulo, cuerpo + pieGuardar(s.id), '', s.id);
     });
-    var propio = c.datos.motor === 'propio';
-    html += tarjeta(7, 'Ligas', (propio ? '<div class="liga"><b>Tablero del pipeline:</b> no aplica: ' + h(c.datos.marca_nombre) + ' usa el tablero de su propio motor.</div>' : liga('Tablero del pipeline', c.ligas.tablero, true))
-      + liga('Entrada al portal de la compañía (va en la invitación)', c.ligas.portal_compania) + liga('Documento completo de marca', c.ligas.vitrina, true)
-      + (propio ? '' : '<p class="vacio">El tablero lleva una clave privada: compártelo solo con la compañía.</p>'));
     $('panel').innerHTML = html;
     // Eventos
     Array.prototype.forEach.call(document.querySelectorAll('[data-par]'), function (p) { p.oninput = function () { $('f-' + p.getAttribute('data-par')).value = p.value; vivo(); }; });
