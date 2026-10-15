@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portal de crédito · Scania Finance Perú</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="img/scania-symbol.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="motor.js"></script>
+<style>
+:root{
+  --navy:#041E42; --navy2:#0B2A57; --azul:#2B70D3; --azul2:#1D5BB8; --celeste:#E8F0FB;
+  --fondo:#F4F6F9; --blanco:#fff; --linea:#E1E6EE; --texto:#0D1B2E; --suave:#5B6B80;
+  --ok:#1C8C4E; --okf:#E6F5EC; --alerta:#B26A00; --alertaf:#FFF4E0; --bloq:#C8102E; --bloqf:#FDECEE;
+  --radio:10px; --sombra:0 1px 2px rgba(4,30,66,.06),0 6px 24px rgba(4,30,66,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--fondo);color:var(--texto);font-family:Inter,"Segoe UI",Arial,sans-serif;font-size:15px;line-height:1.45}
+a{color:var(--azul)}
+button,input,select{font:inherit}
+/* Cabecera */
+.cab{background:var(--navy);color:#fff;position:sticky;top:0;z-index:20}
+.cab-in{max-width:1240px;margin:auto;display:flex;align-items:center;gap:18px;padding:12px 24px}
+.cab img.wm{height:20px}
+.cab .sep{width:1px;height:26px;background:rgba(255,255,255,.25)}
+.cab .prod{font-weight:600;letter-spacing:.2px}
+.cab .prod small{display:block;font-weight:400;opacity:.7;font-size:12px}
+.cab .der{margin-left:auto;display:flex;align-items:center;gap:14px}
+.cab img.sym{height:30px}
+.chip-demo{font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;border:1px solid rgba(255,255,255,.35);border-radius:20px;padding:4px 10px;opacity:.9}
+/* Portada */
+.portada{background:linear-gradient(120deg,var(--navy) 0%,var(--navy2) 55%,#123B73 100%);color:#fff;overflow:hidden;position:relative}
+.portada-in{max-width:1240px;margin:auto;padding:38px 24px 0;display:grid;grid-template-columns:1.05fr 1fr;gap:24px;align-items:end}
+.portada h1{font-size:34px;line-height:1.15;margin:0 0 12px;font-weight:800;letter-spacing:-.4px}
+.portada p{margin:0 0 22px;opacity:.85;max-width:520px}
+.kpis{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:34px}
+.kpi{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:10px 14px;min-width:150px}
+.kpi b{display:block;font-size:20px}
+.kpi span{font-size:12px;opacity:.8}
+.camion{width:100%;max-width:600px;justify-self:end;display:block}
+/* Pasos */
+.pasos{background:#fff;border-bottom:1px solid var(--linea)}
+.pasos-in{max-width:1240px;margin:auto;display:flex;padding:0 24px;overflow-x:auto}
+.paso{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:3px solid transparent;color:var(--suave);cursor:pointer;white-space:nowrap;background:none;border-top:0;border-left:0;border-right:0}
+.paso .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--fondo);font-weight:700;font-size:13px}
+.paso.activo{color:var(--navy);border-bottom-color:var(--azul);font-weight:600}
+.paso.activo .n{background:var(--azul);color:#fff}
+.paso.hecho .n{background:var(--ok);color:#fff}
+.paso:disabled{cursor:not-allowed;opacity:.5}
+/* Contenido */
+main{max-width:1240px;margin:auto;padding:26px 24px 60px}
+.vista{display:none}.vista.activa{display:block}
+.tarjeta{background:#fff;border:1px solid var(--linea);border-radius:var(--radio);box-shadow:var(--sombra);padding:22px;margin-bottom:18px}
+.tarjeta h2{font-size:18px;margin:0 0 4px}
+.tarjeta h3{font-size:15px;margin:0 0 10px}
+.sub{color:var(--suave);margin:0 0 16px;font-size:14px}
+.rejilla{display:grid;gap:18px}.rejilla>*{min-width:0}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g32{grid-template-columns:1.25fr 1fr}
+.btn{border:0;border-radius:8px;padding:11px 18px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.btn-p{background:var(--azul);color:#fff}.btn-p:hover{background:var(--azul2)}
+.btn-s{background:#fff;color:var(--navy);border:1px solid var(--linea)}.btn-s:hover{border-color:var(--azul)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.acciones{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+/* Carga */
+.zona{display:block;border:2px dashed #B9C6D8;border-radius:12px;background:#FAFCFF;padding:34px;text-align:center;cursor:pointer;transition:.15s}
+.zona.sobre{border-color:var(--azul);background:var(--celeste)}
+.zona svg{width:44px;height:44px;color:var(--azul)}
+.zona b{display:block;font-size:16px;margin:8px 0 4px}
+.zona span{color:var(--suave);font-size:13px}
+.docs{list-style:none;padding:0;margin:16px 0 0}
+.docs li{display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--linea);border-radius:8px;margin-bottom:8px;background:#fff}
+.docs .ico{width:34px;height:40px;border-radius:5px;background:var(--bloqf);color:var(--bloq);display:grid;place-items:center;font-size:10px;font-weight:800}
+.docs .nom{font-weight:600;font-size:14px}.docs .det{font-size:12px;color:var(--suave)}
+.docs .est{margin-left:auto;font-size:12px;font-weight:600}
+.docs .quitar{background:none;border:0;color:var(--suave);cursor:pointer;font-size:18px}
+.lista-req{margin:0;padding-left:18px;color:var(--suave);font-size:14px}
+.lista-req li{margin-bottom:6px}
+.campo{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.campo label{font-size:12px;font-weight:600;color:var(--suave);text-transform:uppercase;letter-spacing:.3px}
+.campo input,.campo select,.campo textarea{border:1px solid var(--linea);border-radius:8px;padding:9px 11px;background:#fff;color:var(--texto);width:100%}
+.campo input:focus,.campo select:focus{outline:2px solid var(--celeste);border-color:var(--azul)}
+.fila2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.spin{width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;display:inline-block;animation:g .8s linear infinite;vertical-align:-2px}
+@keyframes g{to{transform:rotate(360deg)}}
+/* Cliente y controles */
+.cliente{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.cliente .av{width:54px;height:54px;border-radius:12px;background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:800;font-size:18px}
+.cliente h2{margin:0}
+.datos-cli{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}
+.dato{background:var(--fondo);border-radius:8px;padding:10px 12px}
+.dato span{display:block;font-size:11px;color:var(--suave);text-transform:uppercase;letter-spacing:.3px}
+.dato b{font-size:14px}
+.resumen-ctl{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.pill{border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700}
+.p-ok{background:var(--okf);color:var(--ok)}.p-alerta{background:var(--alertaf);color:var(--alerta)}.p-bloquea{background:var(--bloqf);color:var(--bloq)}
+.ctl{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--linea);font-size:14px}
+.ctl .marca{flex:0 0 auto}
+.ctl .t b{display:block}.ctl .t span{color:var(--suave);font-size:13px}
+.ctl-ok{display:none}.mostrar-ok .ctl-ok{display:flex}
+/* Tablas */
+.tabla-wrap{overflow-x:auto}
+table.t{border-collapse:collapse;width:100%;font-size:13.5px}
+table.t th{background:var(--navy);color:#fff;font-weight:600;padding:8px 10px;text-align:right;white-space:nowrap}
+table.t th:first-child,table.t td:first-child{text-align:left}
+table.t td{padding:7px 10px;border-bottom:1px solid var(--linea);text-align:right;white-space:nowrap}
+table.t tr.total td{font-weight:700;background:#F7F9FC}
+table.t td small{color:var(--suave);font-weight:400;margin-left:6px}
+table.t tr.cuadre td{font-weight:700}
+.neg{color:var(--bloq)}
+.ind{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.ind .dato b{font-size:18px}
+.criterios{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--suave);margin-top:10px}
+.criterios select{border:1px solid var(--linea);border-radius:6px;padding:4px 6px}
+/* Cotización */
+.resumen-cot{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.cuota-grande{background:var(--navy);color:#fff;border-radius:10px;padding:16px 18px;margin-bottom:12px}
+.cuota-grande span{font-size:12px;opacity:.8;text-transform:uppercase;letter-spacing:.4px}
+.cuota-grande b{display:block;font-size:30px;font-weight:800}
+.crono{max-height:420px;overflow:auto;border:1px solid var(--linea);border-radius:8px}
+.crono table.t th{position:sticky;top:0}
+/* Envío */
+.vista-correo{border:1px solid var(--linea);border-radius:8px;padding:16px;max-height:460px;overflow:auto;background:#fff}
+.cabecera-correo{font-size:13px;color:var(--suave);border-bottom:1px solid var(--linea);padding-bottom:10px;margin-bottom:10px}
+.opcion{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--linea);border-radius:10px;padding:14px;margin-bottom:10px}
+.opcion input[type=checkbox]{width:18px;height:18px;margin-top:2px;accent-color:var(--azul)}
+.opcion .t b{display:block}.opcion .t span{font-size:13px;color:var(--suave)}
+.resultado{display:none;margin-top:14px}
+.resultado a{display:block;padding:10px 12px;border-radius:8px;background:var(--okf);color:var(--ok);font-weight:600;text-decoration:none;margin-bottom:8px}
+.aviso{font-size:13px;border-radius:8px;padding:10px 12px;background:var(--celeste);color:var(--navy2);margin-top:10px}
+.aviso.error{background:var(--bloqf);color:var(--bloq)}
+footer{text-align:center;color:var(--suave);font-size:12px;padding:24px}
+@media (max-width:900px){
+  .portada-in{grid-template-columns:1fr;padding-top:26px}.camion{justify-self:center}
+  .g2,.g3,.g32,.datos-cli,.ind{grid-template-columns:1fr}
+  .portada h1{font-size:26px}.cab .prod small,.cab .sep{display:none}
+  main{padding:18px 16px 40px}.cab-in,.pasos-in,.portada-in{padding-left:16px;padding-right:16px}
+}
+</style>
+</head>
+<body>
+<header class="cab"><div class="cab-in">
+  <img class="wm" src="img/scania-wordmark-white.svg" alt="Scania">
+  <span class="sep"></span>
+  <div class="prod">Finance Perú<small>Portal de crédito</small></div>
+  <div class="der"><span class="chip-demo">Demo · Great Revenue</span><img class="sym" src="img/scania-symbol.svg" alt=""></div>
+</div></header>
+
+<section class="portada"><div class="portada-in">
+  <div>
+    <h1>Del PDF a la cotización,<br>en minutos.</h1>
+    <p>Sube las declaraciones anuales y el Reporte Tributario de SUNAT. La IA los lee, arma el metodizado en la plantilla PCA, revisa que todo cuadre y prepara la cotización con su cronograma, lista para enviar.</p>
+    <div class="kpis">
+      <div class="kpi"><b>~2 h 20 min → 15 min</b><span>por expediente</span></div>
+      <div class="kpi"><b>196 / 196</b><span>cifras iguales al Excel</span></div>
+      <div class="kpi"><b>PCA intacta</b><span>macros y fórmulas de Suecia</span></div>
+    </div>
+  </div>
+  <svg class="camion" viewBox="0 0 640 230" role="img" aria-label="Camión">
+    <defs>
+      <linearGradient id="cab" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#F4F7FB"/><stop offset="1" stop-color="#C9D5E6"/></linearGradient>
+      <linearGradient id="rem" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2B70D3"/><stop offset="1" stop-color="#1A4F9E"/></linearGradient>
+    </defs>
+    <rect x="0" y="205" width="640" height="3" fill="rgba(255,255,255,.18)"/>
+    <g fill="rgba(255,255,255,.35)"><rect x="20" y="214" width="60" height="3"/><rect x="140" y="214" width="60" height="3"/><rect x="260" y="214" width="60" height="3"/><rect x="380" y="214" width="60" height="3"/><rect x="500" y="214" width="60" height="3"/></g>
+    <!-- remolque -->
+    <rect x="40" y="58" width="370" height="118" rx="6" fill="url(#rem)"/>
+    <rect x="40" y="58" width="370" height="10" rx="4" fill="rgba(255,255,255,.18)"/>
+    <text x="70" y="128" fill="#fff" font-family="Inter,Arial" font-weight="800" font-size="34" letter-spacing="3">SCANIA</text>
+    <text x="72" y="152" fill="rgba(255,255,255,.75)" font-family="Inter,Arial" font-weight="500" font-size="13" letter-spacing="2">FINANCE PERÚ</text>
+    <rect x="44" y="176" width="362" height="10" fill="#0B1F3D"/>
+    <!-- tracto -->
+    <path d="M430 186 V92 Q430 44 478 40 H540 Q566 40 574 64 L590 118 Q596 132 596 150 V186 Z" fill="url(#cab)"/>
+    <path d="M520 54 H548 Q560 54 565 68 L578 112 H520 Z" fill="#0B2A57" opacity=".9"/>
+    <rect x="452" y="54" width="56" height="40" rx="5" fill="#0B2A57" opacity=".85"/>
+    <rect x="582" y="124" width="14" height="40" rx="3" fill="#8FA3BF"/>
+    <g fill="#5F7491"><rect x="583" y="128" width="12" height="3"/><rect x="583" y="136" width="12" height="3"/><rect x="583" y="144" width="12" height="3"/><rect x="583" y="152" width="12" height="3"/></g>
+    <rect x="410" y="168" width="190" height="18" rx="3" fill="#0B1F3D"/>
+    <rect x="588" y="166" width="14" height="8" rx="2" fill="#FFD27A"/>
+    <!-- ruedas -->
+    <g><circle cx="100" cy="190" r="22" fill="#0B1F3D"/><circle cx="100" cy="190" r="9" fill="#8FA3BF"/>
+       <circle cx="152" cy="190" r="22" fill="#0B1F3D"/><circle cx="152" cy="190" r="9" fill="#8FA3BF"/>
+       <circle cx="350" cy="190" r="22" fill="#0B1F3D"/><circle cx="350" cy="190" r="9" fill="#8FA3BF"/>
+       <circle cx="460" cy="190" r="22" fill="#0B1F3D"/><circle cx="460" cy="190" r="9" fill="#8FA3BF"/>
+       <circle cx="555" cy="190" r="22" fill="#0B1F3D"/><circle cx="555" cy="190" r="9" fill="#8FA3BF"/></g>
+  </svg>
+</div></section>
+
+<nav class="pasos"><div class="pasos-in">
+  <button class="paso activo" data-paso="1"><span class="n">1</span>Documentos</button>
+  <button class="paso" data-paso="2" disabled><span class="n">2</span>Lectura y metodizado</button>
+  <button class="paso" data-paso="3" disabled><span class="n">3</span>Cotización</button>
+  <button class="paso" data-paso="4" disabled><span class="n">4</span>Envío</button>
+</div></nav>
+
+<main>
+<!-- PASO 1 -->
+<section class="vista activa" id="v1">
+  <div class="rejilla g32">
+    <div class="tarjeta">
+      <h2>Nuevo expediente</h2>
+      <p class="sub">Arrastra los PDF tal como los manda el cliente. La IA reconoce cada documento.</p>
+      <label class="zona" id="zona">
+        <input type="file" id="archivo" accept="application/pdf" multiple hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+        <b>Suelta aquí los PDF o haz clic para elegirlos</b>
+        <span>Formulario 710 de los últimos años · Reporte Tributario de SUNAT · hasta 14 MB por archivo</span>
+      </label>
+      <ul class="docs" id="docs"></ul>
+      <div class="acciones">
+        <button class="btn btn-p" id="btnLeer" disabled>Leer con IA</button>
+        <button class="btn btn-s" id="btnEjemplo">Usar caso de ejemplo</button>
+      </div>
+      <div class="aviso" id="avisoLectura" style="display:none"></div>
+    </div>
+    <div class="tarjeta">
+      <h3>Qué subir</h3>
+      <ul class="lista-req">
+        <li><b>Formulario 710</b> (renta anual) de los <b>4 últimos ejercicios cerrados</b>. El cuarto sirve para calcular la depreciación del más antiguo.</li>
+        <li><b>Reporte Tributario</b> de SUNAT, descargado por el cliente con su clave SOL: identificación, ventas mensuales y comportamiento tributario.</li>
+        <li>Si hay <b>declaración rectificatoria</b>, súbela: el portal compara cada año contra SUNAT.</li>
+      </ul>
+      <div class="campo" style="margin-top:16px">
+        <label for="codigo">Código de acceso a la demo</label>
+        <input id="codigo" type="password" autocomplete="off" placeholder="Te lo da Great Revenue">
+      </div>
+      <p class="sub" style="margin:0">El caso de ejemplo no necesita código: usa un expediente real con nombre y RUC ficticios.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PASO 2 -->
+<section class="vista" id="v2">
+  <div class="tarjeta" id="tarjetaCliente"></div>
+  <div class="rejilla g32">
+    <div class="tarjeta">
+      <h2>Metodizado</h2>
+      <p class="sub">En miles de soles, con las reglas de la plantilla PCA. Así queda en la hoja METODIZADO.</p>
+      <div class="tabla-wrap"><table class="t" id="tablaMet"></table></div>
+      <div class="criterios">
+        <label>Deuda financiera (casilla 409):
+          <select id="critDeuda"><option value="tercio">1/3 corto plazo · 2/3 largo</option><option value="todo_corto">Todo a corto plazo</option></select></label>
+        <label>Otros activos no corrientes (389):
+          <select id="crit389"><option value="largo_plazo">Largo plazo</option><option value="corriente">Activo corriente</option></select></label>
+      </div>
+    </div>
+    <div>
+      <div class="tarjeta">
+        <h2>Controles</h2>
+        <div class="resumen-ctl" id="resumenCtl"></div>
+        <div id="listaCtl"></div>
+        <button class="btn btn-s" id="btnVerOk" style="margin-top:10px;padding:6px 12px;font-size:13px">Ver también los controles que pasaron</button>
+      </div>
+      <div class="tarjeta">
+        <h2>Indicadores</h2>
+        <div class="ind" id="indicadores"></div>
+      </div>
+    </div>
+  </div>
+  <div class="acciones">
+    <button class="btn btn-s" id="btnPca">Descargar PCA llena (.xlsm)</button>
+    <button class="btn btn-p" id="btnA3">Continuar a la cotización →</button>
+  </div>
+  <div class="aviso" id="avisoPca" style="display:none"></div>
+</section>
+
+<!-- PASO 3 -->
+<section class="vista" id="v3">
+  <div class="rejilla g2">
+    <div class="tarjeta">
+      <h2>Operación</h2>
+      <p class="sub">Los mismos datos que hoy se escriben en la hoja DATOS. El cálculo replica la PCA.</p>
+      <div class="fila2">
+        <div class="campo"><label>Modelo</label><input id="modelo" value="R550 A6X4"></div>
+        <div class="campo"><label>Precio unitario (inc. IGV)</label><input id="precio" type="number" value="189500" step="100"></div>
+      </div>
+      <div class="fila2">
+        <div class="campo"><label>Unidades</label><input id="unidades" type="number" value="1" min="1"></div>
+        <div class="campo"><label>Moneda</label><select id="moneda"><option>US$</option><option>S/</option></select></div>
+      </div>
+      <div class="fila2">
+        <div class="campo"><label>Cuota inicial (%)</label><input id="pctInicial" type="number" value="40" step="1"></div>
+        <div class="campo"><label>TEA (%)</label><input id="tea" type="number" value="12.16" step="0.01"></div>
+      </div>
+      <div class="fila2">
+        <div class="campo"><label>Cuotas de pago</label><input id="pagos" type="number" value="35" min="1"></div>
+        <div class="campo"><label>Meses de gracia</label><input id="gracia" type="number" value="1" min="0"></div>
+      </div>
+      <div class="fila2">
+        <div class="campo"><label>Fecha de activación</label><input id="activacion" type="date"></div>
+        <div class="campo"><label>Seguro</label><select id="seguro"><option>Financiado</option><option>Contratado</option><option>Endosado</option></select></div>
+      </div>
+      <div class="fila2">
+        <div class="campo"><label>Tasa del seguro (%)</label><input id="tasaSeguro" type="number" value="2" step="0.1"></div>
+        <div class="campo"><label>Notaría</label><select id="notaria"></select></div>
+      </div>
+      <div class="fila2">
+        <div class="campo"><label>Contacto del cliente</label><input id="contacto"></div>
+        <div class="campo"><label>Correo del cliente</label><input id="correoCli" type="email"></div>
+      </div>
+      <div class="fila2">
+        <div class="campo"><label>Vendedor</label><input id="vendedor" value="Vendedor Demo"></div>
+        <div class="campo"><label>Garantías adicionales</label><input id="garantias" value="NA"></div>
+      </div>
+    </div>
+    <div>
+      <div class="tarjeta">
+        <div class="cuota-grande"><span>Cuota mensual (inc. IGV del interés y seguro)</span><b id="cuotaGrande">—</b></div>
+        <div class="resumen-cot" id="resumenCot"></div>
+      </div>
+      <div class="tarjeta">
+        <h3>Cronograma</h3>
+        <div class="crono"><table class="t" id="tablaCrono"></table></div>
+      </div>
+    </div>
+  </div>
+  <div class="acciones">
+    <button class="btn btn-s" id="btnPdf">Descargar cotización (PDF)</button>
+    <button class="btn btn-p" id="btnA4">Continuar al envío →</button>
+  </div>
+</section>
+
+<!-- PASO 4 -->
+<section class="vista" id="v4">
+  <div class="rejilla g32">
+    <div class="tarjeta">
+      <h2>Correo al cliente</h2>
+      <p class="sub">El mismo texto que arma hoy el botón de la PCA, con la cotización en PDF adjunta.</p>
+      <div class="fila2">
+        <div class="campo"><label>Para</label><input id="para" type="email"></div>
+        <div class="campo"><label>CC</label><input id="cc" placeholder="vendedor@…"></div>
+      </div>
+      <div class="vista-correo"><div class="cabecera-correo" id="cabCorreo"></div><div id="cuerpoCorreo"></div></div>
+    </div>
+    <div class="tarjeta">
+      <h2>Enviar y registrar</h2>
+      <p class="sub">Todo desde aquí, sin abrir Outlook ni Excel.</p>
+      <label class="opcion"><input type="checkbox" id="optCorreo" checked><div class="t"><b>Enviar el correo con la cotización</b><span>Gmail, con el PDF adjunto. En la demo solo a correos de Great Revenue o de Scania.</span></div></label>
+      <label class="opcion"><input type="checkbox" id="optDrive" checked><div class="t"><b>Guardar el expediente en Drive</b><span>Una carpeta con la PCA llena, la cotización y los PDF del cliente.</span></div></label>
+      <label class="opcion"><input type="checkbox" id="optCal" checked><div class="t"><b>Agendar el seguimiento en Calendar</b><span>Para revalidar condiciones antes de la firma.</span>
+        <div class="fila2" style="margin-top:10px"><input id="calFecha" type="date" class="campo-in" style="border:1px solid var(--linea);border-radius:8px;padding:7px 9px"><input id="calHora" type="time" value="10:00" style="border:1px solid var(--linea);border-radius:8px;padding:7px 9px"></div></div></label>
+      <button class="btn btn-p" id="btnEnviar" style="width:100%;justify-content:center;margin-top:6px">Enviar y registrar</button>
+      <div class="aviso" id="avisoEnvio" style="display:none"></div>
+      <div class="resultado" id="resultado"></div>
+    </div>
+  </div>
+</section>
+</main>
+<footer>Demo de Great Revenue para Scania Finance Perú · Los cálculos replican la plantilla PCA 2026 V2 · No es un documento oficial de Scania.</footer>
+
+<script>
+(function(){
+'use strict';
+var API = 'https://mikea.app.n8n.cloud/webhook/scania-portal-api';
+var M = window.MotorScania;
+var NOTARIAS = [["Lima","Notaria Paino Scarpati",1337.32],["Lima","Notaria Dannon Brender",1350],["Lima","Notaria Fernandini Barreda",1650],["Lima","Notaria Banda Gonzalez",1593.34],["Chiclayo","Notaria Medina Ticse",2650],["Chiclayo","Notaria Vera Mendez",1100],["Trujillo","Notaria Guerra Salas",900],["Trujillo","Notaria Polo Muñoz",1400],["Cajamarca","Notaria Lozano Gutierrez",2766.66],["Cajamarca","Notaria Vigo Rojas",1100],["Cajamarca","Notaria Linares Sanchez",1933.34],["Piura","Notaría Quinde Rázuri",1800],["Arequipa","Notaria Escarza Benitez",860],["Arequipa","Notaría Linares Riveros",1100],["Arequipa","Notaría Rodriguez Velarde",950],["Huancayo","Notaria Canchaya Sanchez",1000],["Juliaca","Notaria Gutierrez Diaz",1550]];
+var E = { archivos: [], f710: {}, rt: null, ejemplo: false, crit: { deuda409: 'tercio', casilla389: 'largo_plazo' }, cot: null, exp: null, pcaB64: null };
+var $ = function (id) { return document.getElementById(id); };
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function n1(x){return x==null?'—':Number(x).toLocaleString('es-PE',{minimumFractionDigits:1,maximumFractionDigits:1});}
+function n2(x){return Number(x).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function guardar(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+function leerLS(k){try{return localStorage.getItem(k)||'';}catch(e){return '';}}
+function aviso(id, txt, error){var a=$(id);a.style.display=txt?'block':'none';a.className='aviso'+(error?' error':'');a.innerHTML=txt||'';}
+
+/* ---------- navegación ---------- */
+function ir(n){
+  document.querySelectorAll('.vista').forEach(function(v){v.classList.remove('activa');});
+  $('v'+n).classList.add('activa');
+  document.querySelectorAll('.paso').forEach(function(p){var k=+p.dataset.paso;p.classList.toggle('activo',k===n);p.classList.toggle('hecho',k<n);});
+  window.scrollTo({top:document.querySelector('.pasos').offsetTop-60,behavior:'smooth'});
+}
+function habilitar(n){document.querySelector('.paso[data-paso="'+n+'"]').disabled=false;}
+document.querySelectorAll('.paso').forEach(function(p){p.addEventListener('click',function(){if(!p.disabled)ir(+p.dataset.paso);});});
+
+/* ---------- paso 1: archivos ---------- */
+$('codigo').value = leerLS('scania_codigo');
+$('codigo').addEventListener('change', function(){guardar('scania_codigo',this.value.trim());});
+var zona=$('zona');
+['dragenter','dragover'].forEach(function(ev){zona.addEventListener(ev,function(e){e.preventDefault();zona.classList.add('sobre');});});
+['dragleave','drop'].forEach(function(ev){zona.addEventListener(ev,function(e){e.preventDefault();zona.classList.remove('sobre');});});
+zona.addEventListener('drop',function(e){agregar(e.dataTransfer.files);});
+$('archivo').addEventListener('change',function(){agregar(this.files);this.value='';});
+
+function agregar(lista){
+  E.ejemplo=false;
+  Array.prototype.forEach.call(lista,function(f){
+    if(f.type!=='application/pdf'&&!/\.pdf$/i.test(f.name))return;
+    if(f.size>14e6){aviso('avisoLectura','“'+esc(f.name)+'” pesa más de 14 MB.',true);return;}
+    var item={nombre:f.name,tam:f.size,estado:'pendiente',detalle:'Listo para leer',base64:null};
+    E.archivos.push(item);
+    var r=new FileReader();
+    r.onload=function(){item.base64=String(r.result).split(',')[1];pintarDocs();};
+    r.readAsDataURL(f);
+  });
+  pintarDocs();
+}
+function pintarDocs(){
+  $('docs').innerHTML=E.archivos.map(function(a,i){
+    var col={pendiente:'var(--suave)',leyendo:'var(--azul)',leido:'var(--ok)',error:'var(--bloq)'}[a.estado];
+    var est={pendiente:'Pendiente',leyendo:'<span class="spin"></span> Leyendo',leido:'✓ Leído',error:'Error'}[a.estado];
+    return '<li><div class="ico">PDF</div><div><div class="nom">'+esc(a.nombre)+'</div><div class="det">'+esc(a.detalle)+'</div></div>'+
+      '<div class="est" style="color:'+col+'">'+est+'</div>'+(a.estado==='leyendo'?'':'<button class="quitar" data-i="'+i+'" title="Quitar">×</button>')+'</li>';
+  }).join('');
+  $('docs').querySelectorAll('.quitar').forEach(function(b){b.onclick=function(){E.archivos.splice(+b.dataset.i,1);pintarDocs();};});
+  $('btnLeer').disabled=!E.archivos.some(function(a){return a.estado!=='leido'&&a.base64;});
+}
+
+function llamar(cuerpo, segundos){
+  var ctrl=new AbortController(); var t=setTimeout(function(){ctrl.abort();},(segundos||110)*1000);
+  return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cuerpo),signal:ctrl.signal})
+    .then(function(r){return r.json().catch(function(){return {ok:false,error:'Respuesta no válida ('+r.status+')'};});})
+    .finally(function(){clearTimeout(t);});
+}
+
+$('btnLeer').onclick=function(){
+  var codigo=$('codigo').value.trim();
+  if(!codigo){aviso('avisoLectura','Escribe el código de acceso a la demo (o usa el caso de ejemplo).',true);return;}
+  guardar('scania_codigo',codigo); aviso('avisoLectura','');
+  var pend=E.archivos.filter(function(a){return a.estado!=='leido'&&a.base64;});
+  pend.forEach(function(a){a.estado='leyendo';a.detalle='La IA está leyendo el documento…';});
+  pintarDocs(); $('btnLeer').disabled=true;
+  Promise.all(pend.map(function(a){
+    return llamar({accion:'leer',codigo:codigo,archivo:{nombre:a.nombre,base64:a.base64}}).then(function(r){
+      if(!r.ok) throw new Error(r.error||'No se pudo leer');
+      incorporar(r.tipo,r.datos,a);
+    }).catch(function(e){a.estado='error';a.detalle=e.name==='AbortError'?'Tardó demasiado; vuelve a intentar':e.message;})
+      .finally(pintarDocs);
+  })).then(function(){
+    if(Object.keys(E.f710).length) {analizar(); habilitar(2); ir(2);}
+    else aviso('avisoLectura','No se reconoció ningún Formulario 710. Revisa los archivos.',true);
+  });
+};
+
+function incorporar(tipo,d,a){
+  if(tipo==='F710'){
+    E.f710[d.ejercicio]=d; a.estado='leido';
+    a.detalle='Formulario 710 · ejercicio '+d.ejercicio+' · '+Object.keys(d.casillas||{}).length+' casillas'+(d.tipo_declaracion==='RECTIFICATORIA'?' · rectificatoria':'');
+  } else if(tipo==='REPORTE_TRIBUTARIO'){
+    E.rt=d; a.estado='leido'; a.detalle='Reporte Tributario · '+(d.nombre||'')+' · RUC '+(d.ruc||'');
+  } else { a.estado='leido'; a.detalle='Documento no usado en el metodizado'+(d&&d.resumen?': '+d.resumen:''); }
+}
+
+$('btnEjemplo').onclick=function(){
+  var b=this; b.disabled=true; b.innerHTML='<span class="spin"></span> Cargando';
+  fetch('ejemplo.json').then(function(r){return r.json();}).then(function(ej){
+    E.ejemplo=true; E.f710={}; E.rt=null; E.archivos=[];
+    var docs=ej.f710.map(function(d){return {nombre:d.archivo,tipo:'F710',datos:d};}).concat([{nombre:ej.rt.archivo,tipo:'REPORTE_TRIBUTARIO',datos:ej.rt}]);
+    docs.forEach(function(d){E.archivos.push({nombre:d.nombre,estado:'leyendo',detalle:'La IA está leyendo el documento…'});});
+    pintarDocs();
+    docs.forEach(function(d,i){setTimeout(function(){incorporar(d.tipo,d.datos,E.archivos[i]);pintarDocs();
+      if(i===docs.length-1){ $('contacto').value=ej.cliente.contacto; analizar(); habilitar(2); setTimeout(function(){ir(2);},400); b.disabled=false; b.textContent='Usar caso de ejemplo'; }
+    },500+i*450);});
+  });
+};
+
+/* ---------- paso 2: metodizado y controles ---------- */
+function analizar(){
+  var anios=Object.keys(E.f710).map(Number).sort();
+  var visibles=anios.slice(-3);
+  var metod={};
+  visibles.forEach(function(y){metod[y]=M.metodizar(E.f710[y].casillas,E.f710[y-1]?E.f710[y-1].casillas:null,E.crit);});
+  var corte=null;
+  if(E.rt&&E.rt.ventas_mensuales){
+    var ac=String(visibles[visibles.length-1]+1), v=E.rt.ventas_mensuales[ac];
+    if(v&&v.length) corte={anio:+ac,mes:v.length,ventas:v.reduce(function(s,x){return s+Number(x||0);},0)};
+  }
+  E.exp={f710:visibles.map(function(y){return E.f710[y];}),metod:metod,rt:E.rt,corte:corte,anios:visibles};
+  E.exp.avisos=M.controles(E.exp.f710,E.rt,metod,corte&&corte.mes,E.crit);
+  pintarCliente(); pintarMet(); pintarCtl(); pintarInd();
+}
+function pintarCliente(){
+  var rt=E.rt||{}, nombre=rt.nombre||'Cliente sin Reporte Tributario';
+  var ini=nombre.split(' ').slice(0,2).map(function(w){return w[0];}).join('');
+  var sector=M.sectorPorCiiu(rt.ciiu_principal,rt.actividad_principal);
+  $('tarjetaCliente').innerHTML='<div class="cliente"><div class="av">'+esc(ini)+'</div><div><h2>'+esc(nombre)+'</h2><div class="sub" style="margin:2px 0 0">RUC '+esc(rt.ruc||'—')+' · '+esc(rt.tipo_contribuyente||'')+(E.ejemplo?' · <b>caso de ejemplo anonimizado</b>':'')+'</div></div></div>'+
+    '<div class="datos-cli">'+
+    [['Actividad',(rt.ciiu_principal?rt.ciiu_principal+' · ':'')+(rt.actividad_principal||'—')],['Sector PCA',sector||'Por asignar'],
+     ['Departamento',rt.domicilio_distrito?rt.domicilio_distrito.split(' - ').pop():'—'],['Inicio de actividades',rt.fecha_inicio_actividades||'—'],
+     ['Estado SUNAT',(rt.estado||'—')+(rt.condicion?' / '+rt.condicion:'')],['Trabajadores',rt.trabajadores_agosto_2026?(rt.trabajadores_agosto_2026.dependientes+' dep. · '+rt.trabajadores_agosto_2026.independientes+' indep.'):'—'],
+     ['Ejercicios leídos',Object.keys(E.f710).sort().join(', ')],['Corte año en curso',E.exp.corte?M.MESES[E.exp.corte.mes]+' '+E.exp.corte.anio:'—']]
+    .map(function(d){return '<div class="dato"><span>'+d[0]+'</span><b>'+esc(d[1])+'</b></div>';}).join('')+'</div>';
+}
+function pintarMet(){
+  var a=E.exp.anios, m=E.exp.metod, cor=E.exp.corte;
+  var h='<tr><th>Concepto</th>'+a.map(function(y){return '<th>'+y+'</th>';}).join('')+'<th>Corte '+(cor?M.MESES[cor.mes].slice(0,3)+' '+cor.anio:'')+'</th></tr>';
+  M.FILAS.forEach(function(f){
+    var vals=a.map(function(y){return m[y][f[0]];});
+    var corte=f[0]===61&&cor?cor.ventas/1000:null;
+    if(!f[3]&&vals.every(function(v){return !v;})&&corte==null)return;
+    h+='<tr class="'+(f[3]?'total':'')+'"><td>'+f[1]+'<small>'+f[2]+'</small></td>'+vals.map(function(v){return '<td class="'+(v<0?'neg':'')+'">'+(v===null||v===undefined?'—':n1(v))+'</td>';}).join('')+'<td>'+(corte==null?'—':n1(corte))+'</td></tr>';
+  });
+  h+='<tr class="cuadre"><td>Cuadre del balance</td>'+a.map(function(y){var c=m[y].cuadre;return '<td style="color:'+(Math.abs(c)<0.002?'var(--ok)':'var(--bloq)')+'">'+(Math.abs(c)<0.002?'OK':'ERROR ('+n1(c)+')')+'</td>';}).join('')+'<td>—</td></tr>';
+  $('tablaMet').innerHTML=h;
+}
+function pintarCtl(){
+  var av=E.exp.avisos, c={ok:0,alerta:0,bloquea:0};
+  av.forEach(function(x){c[x.estado]++;});
+  $('resumenCtl').innerHTML='<span class="pill p-bloquea">'+c.bloquea+' bloquean</span><span class="pill p-alerta">'+c.alerta+' alertas</span><span class="pill p-ok">'+c.ok+' correctos</span>';
+  $('listaCtl').innerHTML=av.map(function(x){
+    var ico={ok:'<span class="pill p-ok">OK</span>',alerta:'<span class="pill p-alerta">Alerta</span>',bloquea:'<span class="pill p-bloquea">Bloquea</span>'}[x.estado];
+    return '<div class="ctl '+(x.estado==='ok'?'ctl-ok':'')+'"><div class="marca">'+ico+'</div><div class="t"><b>'+esc(x.nombre)+'</b><span>'+esc(x.detalle)+'</span></div></div>';
+  }).join('');
+}
+$('btnVerOk').onclick=function(){var l=$('listaCtl');l.classList.toggle('mostrar-ok');this.textContent=l.classList.contains('mostrar-ok')?'Ocultar los controles que pasaron':'Ver también los controles que pasaron';};
+function pintarInd(){
+  var a=E.exp.anios, m=E.exp.metod;
+  var filas=[['EBITDA (miles S/)',function(i){return n1(i.ebitda);}],['Deuda / EBITDA',function(i){return i.deudaEbitda==null?'—':i.deudaEbitda.toFixed(2)+'×';}],['Pasivo / Patrimonio',function(i){return i.pasivoPatrimonio==null?'—':i.pasivoPatrimonio.toFixed(2)+'×';}]];
+  $('indicadores').innerHTML=filas.map(function(f){
+    return '<div class="dato"><span>'+f[0]+'</span>'+a.map(function(y){return '<div style="display:flex;justify-content:space-between;font-size:13px;margin-top:4px"><span style="text-transform:none;font-size:13px">'+y+'</span><b style="font-size:14px">'+f[1](M.indicadores(m[y]))+'</b></div>';}).join('')+'</div>';
+  }).join('');
+}
+$('critDeuda').onchange=function(){E.crit.deuda409=this.value;analizar();};
+$('crit389').onchange=function(){E.crit.casilla389=this.value;analizar();};
+
+function cambiosPca(){ return M.celdasPca({f710:E.exp.f710,metod:E.exp.metod,rt:E.rt,corte:E.exp.corte,op:operacion(),cliente:cliente()}); }
+function descargarB64(b64,nombre,tipo){
+  var bin=atob(b64),buf=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([buf],{type:tipo}));a.download=nombre;document.body.appendChild(a);a.click();a.remove();
+}
+$('btnPca').onclick=function(){
+  var codigo=$('codigo').value.trim(), b=this;
+  if(!codigo){aviso('avisoPca','Para llenar la PCA hace falta el código de acceso (paso 1).',true);return;}
+  b.disabled=true;b.innerHTML='<span class="spin"></span> Llenando la PCA';
+  llamar({accion:'pca',codigo:codigo,cambios:cambiosPca(),nombre:(E.rt&&E.rt.nombre)||'Cliente'},90).then(function(r){
+    if(!r.ok)throw new Error(r.error||'No se pudo generar');
+    descargarB64(r.base64,r.nombre,'application/vnd.ms-excel.sheet.macroEnabled.12');
+    aviso('avisoPca','PCA llena descargada. Al abrirla, Excel recalcula todas las hojas.');
+  }).catch(function(e){aviso('avisoPca',esc(e.message),true);}).finally(function(){b.disabled=false;b.textContent='Descargar PCA llena (.xlsm)';});
+};
+$('btnA3').onclick=function(){habilitar(3);recalcular();ir(3);};
+
+/* ---------- paso 3: cotización ---------- */
+$('notaria').innerHTML=NOTARIAS.map(function(n,i){return '<option value="'+i+'">'+esc(n[0]+' · '+n[1])+' (S/ '+n2(n[2])+')</option>';}).join('');
+(function(){var h=new Date();h.setDate(h.getDate()+14);$('activacion').value=h.toISOString().slice(0,10);})();
+function operacion(){
+  var p=$('activacion').value.split('-'), nt=NOTARIAS[+$('notaria').value];
+  return {modelo:$('modelo').value.trim(),precio:+$('precio').value,unidades:+$('unidades').value||1,moneda:$('moneda').value,
+    pctInicial:(+$('pctInicial').value)/100,tea:(+$('tea').value)/100,pagos:+$('pagos').value,gracia:+$('gracia').value||0,
+    activacion:M.fechaUTC(+p[0],+p[1]-1,+p[2]),seguro:$('seguro').value,tasaSeguro:(+$('tasaSeguro').value)/100,
+    notaria:nt[1],gastosNotariales:nt[2],garantias:$('garantias').value.trim()||'NA'};
+}
+function cliente(){return {contacto:$('contacto').value.trim(),correo:$('correoCli').value.trim(),vendedor:$('vendedor').value.trim()};}
+function recalcular(){
+  var op=operacion(); if(!op.precio||!op.pagos||!$('activacion').value)return;
+  var c=M.cotizar(op); E.cot=c; var mon=op.moneda+' ';
+  $('cuotaGrande').textContent=mon+n2(c.cuotaConIgv);
+  $('resumenCot').innerHTML=[['Importe total',mon+n2(c.total)],['Cuota inicial',mon+n2(c.inicial)+' ('+(c.pctInicial*100).toFixed(0)+'%)'],
+    ['Seguro financiado',mon+n2(c.seguro)],['Monto financiado',mon+n2(c.financiado)],['TEA / TEM',(op.tea*100).toFixed(2)+'% / '+(c.tem*100).toFixed(4)+'%'],
+    ['Plazo',c.periodos+' meses (inc. '+op.gracia+' de gracia)'],['Gastos de estructuración',mon+n2(c.estructuracion)],['Total de intereses',mon+n2(c.totalIntereses)]]
+    .map(function(d){return '<div class="dato"><span>'+d[0]+'</span><b>'+d[1]+'</b></div>';}).join('');
+  $('tablaCrono').innerHTML='<tr><th>N°</th><th>Fecha</th><th>Saldo inicial</th><th>Interés</th><th>Amortización</th><th>Saldo final</th><th>Int. + IGV</th><th>Cuota total</th></tr>'+
+    c.cronograma.map(function(f){return '<tr><td>'+f.n+'</td><td>'+f.fecha.toISOString().slice(0,10).split('-').reverse().join('/')+'</td><td>'+n2(f.saldoIni)+'</td><td>'+n2(f.interes)+'</td><td>'+n2(f.amort)+'</td><td>'+n2(f.saldoFin)+'</td><td>'+n2(f.intIgv)+'</td><td><b>'+n2(f.total)+'</b></td></tr>';}).join('');
+}
+document.querySelectorAll('#v3 input,#v3 select').forEach(function(el){el.addEventListener('input',recalcular);});
+
+function pdfCotizacion(){
+  var jsPDF=window.jspdf.jsPDF, doc=new jsPDF({unit:'pt',format:'a4'}), op=operacion(), c=E.cot, rt=E.rt||{}, mon=op.moneda+' ';
+  doc.setFillColor(4,30,66);doc.rect(0,0,595,70,'F');
+  doc.setTextColor(255);doc.setFont('helvetica','bold');doc.setFontSize(22);doc.text('SCANIA',40,42);
+  doc.setFont('helvetica','normal');doc.setFontSize(10);doc.text('Finance Perú · Cotización de crédito (sujeta a evaluación)',140,42);
+  doc.setTextColor(13,27,46);doc.setFont('helvetica','bold');doc.setFontSize(14);doc.text(String(rt.nombre||'Cliente'),40,100);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('RUC '+(rt.ruc||'—')+'   ·   Emitida el '+new Date().toLocaleDateString('es-PE'),40,114);
+  doc.autoTable({startY:128,theme:'grid',styles:{fontSize:9,cellPadding:4},headStyles:{fillColor:[4,30,66]},
+    body:[['Unidad',op.unidades+' x '+op.modelo],['Importe total (inc. IGV)',mon+n2(c.total)],['Cuota inicial',mon+n2(c.inicial)+' ('+(c.pctInicial*100).toFixed(0)+'%)'],
+      ['Plazo',c.periodos+' meses (inc. '+op.gracia+' de gracia)'],['TEA / TEM',(op.tea*100).toFixed(2)+'% / '+(c.tem*100).toFixed(4)+'%'],
+      ['Seguro',op.seguro+' '+(op.tasaSeguro*100).toFixed(2)+'%'],['Monto financiado',mon+n2(c.financiado)],['Cuota mensual (inc. IGV del interés)',mon+n2(c.cuotaConIgv)]],
+    columnStyles:{0:{fontStyle:'bold',cellWidth:200}}});
+  doc.autoTable({startY:doc.lastAutoTable.finalY+16,theme:'striped',styles:{fontSize:7.5,cellPadding:2.5,halign:'right'},headStyles:{fillColor:[4,30,66],halign:'right'},
+    head:[['N°','Fecha','Saldo inicial','Interés','Amortización','Saldo final','Int. + IGV','Cuota total']],
+    body:c.cronograma.map(function(f){return [f.n,f.fecha.toISOString().slice(0,10).split('-').reverse().join('/'),n2(f.saldoIni),n2(f.interes),n2(f.amort),n2(f.saldoFin),n2(f.intIgv),n2(f.total)];})});
+  doc.setFontSize(7);doc.setTextColor(91,107,128);
+  doc.text('Las condiciones deben revalidarse 15 días antes de la firma. Las cuotas no están afectas al IGV; la parte de intereses sí lo está. Demo de Great Revenue.',40,820);
+  return doc;
+}
+$('btnPdf').onclick=function(){recalcular();pdfCotizacion().save(M.correo({op:operacion(),cliente:cliente(),rt:E.rt},E.cot).adjunto);};
+$('btnA4').onclick=function(){recalcular();habilitar(4);prepararEnvio();ir(4);};
+
+/* ---------- paso 4: envío ---------- */
+function prepararEnvio(){
+  var cor=M.correo({op:operacion(),cliente:cliente(),rt:E.rt},E.cot);
+  if(!$('para').value) $('para').value=cliente().correo;
+  $('cabCorreo').innerHTML='<b>Asunto:</b> '+esc(cor.asunto)+'<br><b>Adjunto:</b> 📎 '+esc(cor.adjunto);
+  $('cuerpoCorreo').innerHTML=cor.html;
+  if(!$('calFecha').value){var p=$('activacion').value.split('-');var d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2]-15));$('calFecha').value=d.toISOString().slice(0,10);}
+}
+$('btnEnviar').onclick=function(){
+  var codigo=$('codigo').value.trim(), b=this;
+  if(!codigo){aviso('avisoEnvio','Hace falta el código de acceso (paso 1).',true);return;}
+  if($('optCorreo').checked&&!$('para').value.trim()){aviso('avisoEnvio','Escribe el correo del destinatario.',true);return;}
+  var cor=M.correo({op:operacion(),cliente:cliente(),rt:E.rt},E.cot);
+  var pdf=pdfCotizacion().output('datauristring').split(',')[1];
+  var ini=$('calFecha').value+'T'+($('calHora').value||'10:00')+':00-05:00';
+  var finD=new Date(new Date(ini).getTime()+30*60000).toISOString();
+  var nombre=(E.rt&&E.rt.nombre)||'Cliente';
+  var cuerpo={accion:'enviar',codigo:codigo,cliente:nombre,ejemplo:E.ejemplo,cambios:cambiosPca(),
+    correo:$('optCorreo').checked?{para:$('para').value.trim(),cc:$('cc').value.trim(),asunto:cor.asunto,html:cor.html,adjunto:cor.adjunto}:null,
+    cotizacionPdf:pdf,
+    documentos:E.ejemplo?[]:E.archivos.filter(function(a){return a.base64;}).map(function(a){return {nombre:a.nombre,base64:a.base64};}),
+    drive:$('optDrive').checked,
+    calendario:$('optCal').checked?{inicio:new Date(ini).toISOString(),fin:finD,titulo:'Revalidar cotización · '+nombre,
+      descripcion:'Cotización de '+operacion().unidades+' x '+operacion().modelo+' · cuota '+operacion().moneda+' '+n2(E.cot.cuotaConIgv)+'. Revalidar condiciones 15 días antes de la firma.'}:null};
+  b.disabled=true;b.innerHTML='<span class="spin"></span> Enviando y registrando';aviso('avisoEnvio','');$('resultado').style.display='none';
+  llamar(cuerpo,110).then(function(r){
+    if(!r.ok)throw new Error(r.error||'No se pudo completar');
+    var h='';
+    if(r.correo) h+='<a>✓ Correo enviado a '+esc(r.correo)+'</a>';
+    if(r.drive) h+='<a href="'+esc(r.drive)+'" target="_blank" rel="noopener">✓ Expediente guardado en Drive · abrir carpeta</a>';
+    if(r.evento) h+='<a href="'+esc(r.evento)+'" target="_blank" rel="noopener">✓ Seguimiento agendado en Calendar · abrir evento</a>';
+    $('resultado').innerHTML=h||'<a>✓ Listo</a>';$('resultado').style.display='block';
+  }).catch(function(e){aviso('avisoEnvio',esc(e.name==='AbortError'?'Tardó demasiado; revisa Drive y el correo antes de reintentar.':e.message),true);})
+    .finally(function(){b.disabled=false;b.textContent='Enviar y registrar';});
+};
+})();
+</script>
+</body>
+</html>
