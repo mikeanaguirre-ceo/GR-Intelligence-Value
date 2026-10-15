@@ -190,12 +190,15 @@
           var generica = /^(organizacion de zoho|cuenta de amplemarket)/i.test(String(x.quien));
           return '<div class="liga">Conectado con: <b>' + (generica ? 'cuenta sin identificar' : h(x.quien)) + '</b> <span class="vacio">desde ' + h(x.fecha) + (generica ? ' · vuelve a conectar la misma cuenta para ver cuál es' : '') + '</span></div>';
         }).join('')
-        + (adm && hay ? '<div class="acciones"><button class="s" data-quitar-servicio="' + s + '">Quitar la conexión</button></div>' : '')
-        + (adm ? (disp ? '<div class="acciones"><a class="' + (hay ? 's' : 'p') + '" href="' + h(conectar(c, s)) + '">' + (hay ? 'Volver a conectar la misma cuenta' : 'Conectar') + '</a><a class="s" href="' + h(conectar(c, s, true)) + '">' + (hay ? 'Cambiar a otra cuenta' : 'Conectar con otra cuenta') + '</a></div>' + (hay ? '<p class="vacio">Si cambias a otra cuenta, la nueva reemplaza a la actual y la actual se borra del motor.</p>' : '') : '<p class="vacio">Aún no disponible: Great Revenue lo habilita.</p>') : '<p class="vacio">Lo conecta quien administra el portal.</p>') + '</div>';
+        + (adm && hay && disp ? '<div class="acciones"><button class="s" data-quitar-servicio="' + s + '">Quitar la conexión</button></div>' : '')
+        + (adm ? (disp ? '<div class="acciones"><a class="' + (hay ? 's' : 'p') + '" href="' + h(conectar(c, s)) + '">' + (hay ? 'Volver a conectar la misma cuenta' : 'Conectar') + '</a><a class="s" href="' + h(conectar(c, s, true)) + '">' + (hay ? 'Cambiar a otra cuenta' : 'Conectar con otra cuenta') + '</a></div>' + (hay ? '<p class="vacio">Si cambias a otra cuenta, la nueva reemplaza a la actual y la actual se borra del motor.</p>' : '') : '<p class="vacio">' + (hay ? 'Esta conexión la administra Great Revenue.' : 'Aún no disponible: Great Revenue lo habilita.') + '</p>') : '<p class="vacio">Lo conecta quien administra el portal.</p>') + '</div>';
     };
     var g = (cx.google || []).length;
     var cuerpo = '<p style="margin:0">Las cuentas con las que trabaja el motor. Cada conexión se hace en la página oficial del servicio: Great Revenue nunca ve contraseñas y el permiso se puede retirar cuando quieras.</p>'
-      + tarjetaServicio('zoho', 'Zoho CRM', 'Donde viven las oportunidades y contactos. Lo conecta una vez quien administra Zoho en la compañía; el motor crea y actualiza oportunidades, tareas y notas.', cx.zoho)
+      // Tarjeta del CRM que usa la compania (dato crm de su configuracion): HubSpot o Zoho.
+      + (/hubspot/i.test(String((c.datos || {}).crm || ''))
+        ? tarjetaServicio('hubspot', 'HubSpot', 'Donde viven las oportunidades y contactos. El motor crea y actualiza oportunidades, tareas y notas.', cx.hubspot)
+        : tarjetaServicio('zoho', 'Zoho CRM', 'Donde viven las oportunidades y contactos. Lo conecta una vez quien administra Zoho en la compañía; el motor crea y actualiza oportunidades, tareas y notas.', cx.zoho))
       + tarjetaServicio('amplemarket', 'Amplemarket', 'Donde corren las secuencias de prospección. Lo conecta una vez quien administra Amplemarket; el motor lee respuestas y aperturas para avisar al vendedor.', cx.amplemarket)
       + '<span class="msg" id="m-conexiones"></span><div class="servicio"><div class="servicio-h"><b>Google de cada persona</b><span class="chip ' + (g ? 'aplicado' : 'pendiente') + '">' + g + ' de ' + h(cx.max_google || '') + ' conectados</span></div><p class="vacio" style="margin:0">Correo, calendario y Drive de cada persona. Se conecta en la pestaña Equipo, cada quien el suyo.</p></div>';
     return tarjeta(2, 'Conexiones', cuerpo + P.pedir('conexiones', 'Conexiones', 'Ej.: no puedo conectar mi calendario') + P.solicitudes(c.solicitudes, 'Conexiones'));
