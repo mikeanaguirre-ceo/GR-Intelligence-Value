@@ -304,7 +304,83 @@
         C17: op.garantias || 'NA', C18: op.avales || 'NA'
       });
     }
-    return { 'xl/worksheets/sheet1.xml': datos, 'xl/worksheets/sheet12.xml': met };
+    var salida = { 'xl/worksheets/sheet1.xml': datos, 'xl/worksheets/sheet12.xml': met };
+    var ap = textosAprobacion(exp, anios);
+    salida['xl/worksheets/sheet3.xml'] = ap.apform;       // APFORM
+    salida['xl/worksheets/sheet10.xml'] = ap.exposure;    // EXPOSURE
+    salida['xl/worksheets/sheet17.xml'] = ap.suecia;      // APFORM - Suecia (oculta)
+    return salida;
+  }
+
+  /* ---------- Textos de la hoja de aprobación (APFORM) ----------
+     Lo que el analista escribe a mano y se puede armar con lo leído: empresa, gerencia, accionistas, unidades, motivo,
+     auditoría y comentarios a los estados financieros. Lo que solo sabe Scania (cliente desde, experiencia, flota) viene
+     del formulario del portal o queda como "por confirmar". Las celdas que ya son fórmulas sobre DATOS no se tocan. */
+  function textosAprobacion(exp, anios) {
+    var rt = exp.rt || {}, op = exp.op || {}, cl = exp.cliente || {};
+    var mil = function (v) { return 'S/ ' + Math.round(v || 0).toLocaleString('es-PE') + ' mil'; };
+    var pct = function (v) { return (v >= 0 ? '+' : '') + (v * 100).toFixed(1).replace('.', ',') + ' %'; };
+    var x2 = function (v) { return v == null ? 'n. d.' : v.toFixed(2).replace('.', ','); };
+    var y = anios[anios.length - 1], ult = exp.metod[y] || {}, prev = exp.metod[anios[anios.length - 2]];
+    var natural = /^10/.test(String(rt.ruc || '')) || /NATURAL/i.test(rt.tipo_contribuyente || '');
+    var auditado = (exp.f710 || []).some(function (d) { return d.tipo_declaracion === 'AUDITADO'; });
+    var fuenteEeff = (exp.f710 || []).some(function (d) { return d.fuente === 'EEFF'; });
+    var lineas = lineasDe(op), unidades = lineas.reduce(function (s, l) { return s + (l.unidades || 0); }, 0);
+    var mon = op.moneda === 'S/' ? 'S/ ' : 'US$ ';
+    var nUnid = unidades ? ('0' + unidades).slice(-2) + ' new ' + (lineas.every(function (l) { return /BUS/i.test(l.tipo || ''); }) ? 'bus' : 'truck') + (unidades > 1 ? (lineas.every(function (l) { return /BUS/i.test(l.tipo || ''); }) ? 'es' : 's') : '') : null;
+    var inicio = rt.fecha_inicio_actividades || '', anioIni = +(inicio.split('/')[2] || 0), antig = anioIni ? (new Date().getUTCFullYear() - anioIni) : null;
+    var trab = rt.trabajadores_agosto_2026 || {};
+    var reps = (rt.representantes || []).slice(0, 4);
+
+    var empresa = [rt.nombre + (rt.tipo_contribuyente ? ' (' + rt.tipo_contribuyente.toLowerCase() + ')' : '') + ', RUC ' + (rt.ruc || '') + '.',
+      inicio ? 'Inicio de actividades: ' + inicio + (antig ? ' (' + antig + ' años de operación).' : '.') : '',
+      rt.actividad_principal ? 'Actividad principal: ' + (rt.ciiu_principal ? rt.ciiu_principal + ' - ' : '') + rt.actividad_principal.toLowerCase() + '.' : '',
+      rt.domicilio_distrito ? 'Domicilio fiscal en ' + rt.domicilio_distrito + '.' : '',
+      'SUNAT: ' + (rt.estado || 'n. d.') + ' / ' + (rt.condicion || 'n. d.') + '.',
+      (trab.dependientes || trab.independientes) ? 'Trabajadores: ' + (trab.dependientes || 0) + ' dependientes y ' + (trab.independientes || 0) + ' independientes.' : '',
+      ult[61] ? 'Ventas ' + y + ': ' + mil(ult[61]) + (prev && prev[61] ? ' (' + pct(ult[61] / prev[61] - 1) + ' frente a ' + (y - 1) + ').' : '.') : '',
+      exp.corte ? 'Año en curso, enero a ' + MESES[exp.corte.mes] + ' ' + exp.corte.anio + ': ventas ' + mil(exp.corte.ventas / 1000) + ' (' + exp.corte.fuente + ').' : ''
+    ].filter(Boolean).join(' ');
+
+    var gerencia = natural ? 'Negocio de persona natural conducido por su titular, ' + rt.nombre + '.' + (antig ? ' ' + antig + ' años en el rubro.' : '')
+      : reps.length ? 'Representantes según SUNAT: ' + reps.map(function (r) { return r.nombre + ' (' + String(r.cargo || '').toLowerCase() + ')'; }).join('; ') + '.' +
+        (antig ? ' La empresa opera desde hace ' + antig + ' años.' : '') : 'Por confirmar: el Reporte Tributario no trae representantes.';
+
+    var compra = lineas.map(function (l) { return l.unidades + ' ' + l.modelo + (l.tipo ? ' (' + l.tipo.toLowerCase() + ')' : ''); }).join(', ');
+    var total = lineas.reduce(function (s, l) { return s + l.precio * l.unidades; }, 0);
+
+    // comentarios a los estados financieros con el dictamen referencial
+    var avisos = controles(exp.f710 || [], rt, exp.metod, exp.corte && exp.corte.mes, CRITERIOS, exp.corte);
+    var cot = lineas.length && op.pagos ? cotizar(op) : null;
+    var dic = dictamen({ anios: anios, metod: exp.metod, avisos: avisos }, rt, op, cot);
+    var ind = indicadores(ult), deuda = (ult[25] || 0) + (ult[26] || 0) + (ult[34] || 0);
+    var comentarios = [
+      'Rentabilidad: ventas ' + y + ' ' + mil(ult[61]) + (dic.varVentas != null ? ' (' + pct(dic.varVentas) + ')' : '') + ', margen EBITDA ' +
+        (ind.margenEbitda != null ? (ind.margenEbitda * 100).toFixed(1).replace('.', ',') + ' %' : 'n. d.') + ', utilidad neta ' + mil(ult[82]) + '.',
+      'Endeudamiento: deuda financiera ' + mil(deuda) + ', deuda/EBITDA ' + x2(ind.deudaEbitda) + ' veces (la PCA pide menos de 3,5), pasivo/patrimonio ' + x2(ind.pasivoPatrimonio) + ' veces.',
+      dic.dscr != null ? 'Capacidad de pago: DSCR ' + x2(dic.dscr) + ' con la cuota nueva de ' + mon + Math.round(cot.cuota).toLocaleString('en-US') + ' al mes.' : '',
+      exp.corte && exp.corte.metod ? 'Corte a ' + MESES[exp.corte.mes] + ' ' + exp.corte.anio + ': ventas ' + mil(exp.corte.metod[61]) + ', utilidad ' + mil(exp.corte.metod[82]) + '.' : '',
+      'Dictamen referencial del portal: ' + dic.titulo + '.' + dic.motivos.filter(function (mm) { return mm.nivel !== 'verde'; }).map(function (mm) { return ' ' + mm.texto + '.'; }).join(''),
+      'Fuente: ' + (fuenteEeff ? 'estados financieros' + (auditado ? ' auditados' : '') : 'Formulario 710 de SUNAT') + ' ' + anios.join(', ') + '. Criterios del dictamen por confirmar con Scania.'
+    ].filter(Boolean).join('\n');
+
+    var apform = {
+      I11: nUnid, I17: nUnid,
+      C83: cl.clienteDesde || 'New customer.',
+      C85: cl.experiencia || 'Cliente nuevo: sin historial de pagos con Scania Finance.',
+      C106: gerencia, C107: empresa,
+      C119: cl.flota || 'Por confirmar: el cliente no informó su flota actual.',
+      C127: cl.motivo || (compra ? 'Adquisición de ' + compra + ' por ' + mon + Math.round(total).toLocaleString('en-US') + '. Motivo por confirmar con el cliente (renovación o ampliación de flota).' : null),
+      C131: auditado ? 'Estados financieros auditados (firma auditora por confirmar).' : 'Not audited. Fuente: Formulario 710 (DJ anual) de SUNAT.',
+      C132: comentarios
+    };
+    // accionistas: SUNAT da representantes, no participaciones; el % queda vacío salvo la persona natural (100 %)
+    for (var i = 0; i < 4; i++) {
+      apform['C' + (100 + i)] = natural && i === 0 ? 1 : null;
+      apform['E' + (100 + i)] = natural ? (i === 0 ? rt.nombre : null) : (reps[i] ? reps[i].nombre + ' (' + String(reps[i].cargo || '').toLowerCase() + ')' : null);
+    }
+    var suecia = { I5: 'N/A', I9: nUnid, C77: apform.C83, C79: apform.C85, C109: empresa, C128: apform.C119, C140: apform.C131 };
+    return { apform: apform, exposure: { A3: rt.nombre || null }, suecia: suecia, dictamen: dic };
   }
 
   /* ---------- Correo (texto de la macro completo_2) ---------- */
@@ -358,8 +434,55 @@
     };
   }
 
+
+  /* ---------- Dictamen referencial (semáforo) ----------
+     No es la política de Scania: usa las dos referencias que trae la PCA (hoja "Cálculo": apalancamiento < 3.5 veces el EBITDA,
+     DSCR = EBITDA / (deuda / 4 + 10 % de esa porción + cuota nueva al tipo de cambio 3.8)) y umbrales de mercado. Los criterios se confirman con Scania. */
+  var UMBRALES = { deudaEbitda: [3.5, 5], dscr: [1.25, 1], caidaVentas: [-0.10, -0.20], pasivoPatrimonio: 3, tipoCambio: 3.8 };
+  function dictamen(exp, rt, op, cot) {
+    var U = UMBRALES, motivos = [];
+    function add(nivel, texto) { motivos.push({ nivel: nivel, texto: texto }); }
+    var anios = exp.anios || [], ult = exp.metod[anios[anios.length - 1]] || {}, prev = exp.metod[anios[anios.length - 2]];
+    var y = anios[anios.length - 1], x2 = function (n) { return n.toFixed(2).replace('.', ','); };
+    var docs = (exp.avisos || []).filter(function (a) { return a.estado === 'bloquea' && a.nombre !== 'Estado en SUNAT'; });
+    var estadoSunat = (exp.avisos || []).filter(function (a) { return a.estado === 'bloquea' && a.nombre === 'Estado en SUNAT'; })[0];
+    if (estadoSunat) add('rojo', 'SUNAT: ' + estadoSunat.detalle + '. Con esa condición no se puede financiar.');
+    var mesesDeuda = rt && rt.comportamiento_12_meses ? rt.comportamiento_12_meses.meses_con_deuda || 0 : 0;
+    if (mesesDeuda >= 3) add('rojo', mesesDeuda + ' meses con deuda tributaria en el último año');
+    else if (mesesDeuda > 0) add('ambar', mesesDeuda + ' mes(es) con deuda tributaria en el último año');
+    var ind = indicadores(ult), ebitda = ult[68] || 0, deuda = (ult[25] || 0) + (ult[26] || 0) + (ult[34] || 0);
+    if (ebitda <= 0) add('rojo', 'EBITDA ' + y + ' negativo: el negocio no genera caja para pagar la deuda');
+    else if (ind.deudaEbitda > U.deudaEbitda[1]) add('rojo', 'Deuda / EBITDA ' + x2(ind.deudaEbitda) + ' veces (la PCA pide menos de 3,5)');
+    else if (ind.deudaEbitda > U.deudaEbitda[0]) add('ambar', 'Deuda / EBITDA ' + x2(ind.deudaEbitda) + ' veces (la PCA pide menos de 3,5)');
+    else add('verde', 'Deuda / EBITDA ' + x2(ind.deudaEbitda || 0) + ' veces (la PCA pide menos de 3,5)');
+    if ((ult[51] || 0) <= 0) add('rojo', 'Patrimonio ' + y + ' negativo');
+    else if (ind.pasivoPatrimonio > U.pasivoPatrimonio) add('ambar', 'Pasivo / patrimonio ' + x2(ind.pasivoPatrimonio) + ' veces');
+    var perdidas = anios.filter(function (a) { return (exp.metod[a][82] || 0) < 0; }).length;
+    if ((ult[82] || 0) < 0) add(perdidas >= 2 ? 'rojo' : 'ambar', 'Pérdida en ' + y + (perdidas >= 2 ? ' (' + perdidas + ' de ' + anios.length + ' años en pérdida)' : ''));
+    else add('verde', 'Utilidad neta ' + y + ': ' + Math.round(ult[82] || 0).toLocaleString('es-PE') + ' mil');
+    var varVentas = prev && prev[61] ? ult[61] / prev[61] - 1 : null;
+    if (varVentas !== null) {
+      var tv = 'Ventas ' + y + ' ' + (varVentas >= 0 ? '+' : '') + (varVentas * 100).toFixed(1).replace('.', ',') + ' % frente al año anterior';
+      add(varVentas < U.caidaVentas[1] ? 'rojo' : varVentas < U.caidaVentas[0] ? 'ambar' : 'verde', tv);
+    }
+    var dscr = null;
+    if (cot && op && ebitda > 0) {
+      var cuotaAnual = cot.cuota * 12 * (op.moneda === 'US$' ? U.tipoCambio : 1) / 1000;      // en miles de soles, como el METODIZADO
+      // como la hoja "Cálculo" de la PCA: porción corriente = deuda / 4, gasto financiero = 10 % de esa porción, más la cuota nueva
+      var servicio = deuda / 4 * 1.10 + cuotaAnual;
+      dscr = servicio ? ebitda / servicio : null;
+      if (dscr !== null) add(dscr < U.dscr[1] ? 'rojo' : dscr < U.dscr[0] ? 'ambar' : 'verde',
+        'Cobertura del servicio de deuda (DSCR) ' + x2(dscr) + ' con la cuota nueva' + (op.moneda === 'US$' ? ' (tipo de cambio 3,8)' : ''));
+    }
+    docs.forEach(function (a) { add('docs', a.nombre + ': ' + a.detalle); });
+    var hay = function (n) { return motivos.some(function (mm) { return mm.nivel === n; }); };
+    var estado = hay('rojo') ? 'no_viable' : docs.length ? 'documentos' : hay('ambar') ? 'revisar' : 'viable';
+    var TIT = { viable: 'Viable', revisar: 'Viable con condiciones: revisar', no_viable: 'No viable con la información actual', documentos: 'Corregir documentos antes de evaluar' };
+    return { estado: estado, titulo: TIT[estado], motivos: motivos, dscr: dscr, deudaEbitda: ind.deudaEbitda, varVentas: varVentas, margenEbitda: ind.margenEbitda };
+  }
+
   var api = { lineasDe: lineasDe, CRITERIOS: CRITERIOS, FILAS: FILAS, FILAS_ENTRADA: FILAS_ENTRADA, MESES: MESES, metodizar: metodizar,
     completar: completar, indicadores: indicadores, controles: controles, sectorPorCiiu: sectorPorCiiu, cotizar: cotizar,
-    celdasPca: celdasPca, correo: correo, fechaUTC: fechaUTC, serialExcel: serialExcel };
+    celdasPca: celdasPca, correo: correo, fechaUTC: fechaUTC, serialExcel: serialExcel, dictamen: dictamen, UMBRALES: UMBRALES, textosAprobacion: textosAprobacion };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else raiz.MotorScania = api;
 })(this);
