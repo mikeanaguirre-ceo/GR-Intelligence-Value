@@ -103,9 +103,13 @@
     f710.forEach(function (d) {
       var y = d.ejercicio, c = d.casillas, g = function (k) { return Number(c[String(k)] || 0); }, m = metod[y];
       if (rt && rt.ruc && d.ruc && String(d.ruc) !== String(rt.ruc)) add('bloquea', y + ' · RUC', 'El 710 es del RUC ' + d.ruc + ' y el Reporte Tributario de ' + rt.ruc);
-      add(Math.abs(m[22] * 1000 - g(390)) < 2 ? 'ok' : 'bloquea', y + ' · Activo = casilla 390', fmt(m[22] * 1000) + ' vs ' + fmt(g(390)));
-      add(Math.abs(m[40] * 1000 - g(412)) < 2 ? 'ok' : 'bloquea', y + ' · Pasivo = casilla 412', fmt(m[40] * 1000) + ' vs ' + fmt(g(412)));
-      if (Math.abs(g(423) + g(424) - g(492) - g(493)) >= 1) {
+      // unos estados financieros pueden no traer el total: entonces no hay contra qué comparar y vale la suma de las cuentas
+      var hay = function (k) { return c[String(k)] !== undefined && c[String(k)] !== null; };
+      [[22, 390, 'Activo'], [40, 412, 'Pasivo']].forEach(function (x) {
+        if (hay(x[1])) add(Math.abs(m[x[0]] * 1000 - g(x[1])) < 2 ? 'ok' : 'bloquea', y + ' · ' + x[2] + ' = casilla ' + x[1], fmt(m[x[0]] * 1000) + ' vs ' + fmt(g(x[1])));
+        else add('ok', y + ' · ' + x[2] + ' sumando las cuentas', fmt(m[x[0]] * 1000) + ' (el documento no trae el total)');
+      });
+      if ((hay(423) || hay(424)) && Math.abs(g(423) + g(424) - g(492) - g(493)) >= 1) {
         add('bloquea', y + ' · Utilidad', 'El balance dice ' + fmt(g(423)) + ' (casilla 423) y el estado de resultados ' + fmt(g(492)) +
           ' (casilla 492). Se usa la 492; el balance no cuadra por ' + (m.cuadre).toFixed(1) + ' mil. Pedir la declaración rectificatoria.');
       } else add('ok', y + ' · Utilidad balance = resultados', fmt(g(492)));
@@ -114,12 +118,14 @@
       var r = rt && rt.resumen_710 && rt.resumen_710[String(y)];
       if (r) {
         var dif = false;
-        [['ingresos_netos', 463, 'Ingresos'], ['total_activos', 390, 'Activo'], ['total_pasivo', 412, 'Pasivo'], ['total_patrimonio', 425, 'Patrimonio']].forEach(function (x) {
-          if (!r[x[0]]) return;
-          if (Math.abs(r[x[0]][0] - g(x[1])) >= 1) {
+        // sin la casilla del total (estados financieros que no lo traen) se compara la suma de las cuentas del METODIZADO
+        [['ingresos_netos', 463, 'Ingresos', 61], ['total_activos', 390, 'Activo', 22], ['total_pasivo', 412, 'Pasivo', 40], ['total_patrimonio', 425, 'Patrimonio', 51]].forEach(function (x) {
+          if (!r[x[0]] || !r[x[0]][0]) return;   // SUNAT sin dato: no hay contra qué comparar
+          var subido = hay(x[1]) ? g(x[1]) : Math.round((m[x[3]] || 0) * 1000);
+          if (Math.abs(r[x[0]][0] - subido) >= (hay(x[1]) ? 1 : 1000)) {
             dif = true;
             add(r[x[0]][1] === 'R' ? 'bloquea' : 'alerta', y + ' · ' + x[2] + ' vs SUNAT',
-              '710 subido ' + fmt(g(x[1])) + ', SUNAT ' + fmt(r[x[0]][0]) + (r[x[0]][1] === 'R' ? ' (rectificado)' : ''));
+              (d.fuente === 'EEFF' ? 'Estados financieros ' : '710 subido ') + fmt(subido) + ', SUNAT ' + fmt(r[x[0]][0]) + (r[x[0]][1] === 'R' ? ' (rectificado)' : ''));
           }
         });
         if (!dif) add('ok', y + ' · 710 = Reporte Tributario');
@@ -241,6 +247,19 @@
   /* ---------- Celdas de la PCA que escribe n8n ---------- */
   function serialExcel(f) { return dias(fechaUTC(1899, 11, 30), f); }
 
+  // SUNAT escribe el domicilio como "DEPARTAMENTO - PROVINCIA - DISTRITO": el departamento es el primer tramo.
+  // Se escribe como en la lista de la PCA (DATOS!AW7:AW30), que lleva tildes y dice CUZCO. Callao no está en la lista: va como LIMA (supuesto).
+  var DEPARTAMENTOS = ['AMAZONAS', 'ÁNCASH', 'APURÍMAC', 'AREQUIPA', 'AYACUCHO', 'CAJAMARCA', 'CUZCO', 'HUANCAVELICA', 'HUÁNUCO', 'ICA', 'JUNÍN',
+    'LA LIBERTAD', 'LAMBAYEQUE', 'LIMA', 'LORETO', 'MADRE DE DIOS', 'MOQUEGUA', 'PASCO', 'PIURA', 'PUNO', 'SAN MARTÍN', 'TACNA', 'TUMBES', 'UCAYALI'];
+  function departamento(d) {
+    if (!d) return null;
+    var sinTilde = function (s) { return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim(); };
+    var t = sinTilde(String(d).split(' - ')[0]);
+    if (t === 'CUSCO') t = 'CUZCO';
+    if (t === 'CALLAO' || t === 'PROV. CONST. DEL CALLAO') t = 'LIMA';
+    return DEPARTAMENTOS.filter(function (x) { return sinTilde(x) === t; })[0] || String(d).split(' - ')[0].trim();
+  }
+
   function celdasPca(exp) {
     var datos = {}, met = {}, cols = ['B', 'C', 'D'];
     var anios = exp.f710.map(function (d) { return d.ejercicio; });
@@ -263,7 +282,7 @@
     }
     var rt = exp.rt || {}, op = exp.op || {}, cl = exp.cliente || {};
     var ident = { C4: rt.nombre, C5: [rt.domicilio_fiscal, rt.domicilio_distrito].filter(Boolean).join(' '),
-      I5: rt.domicilio_distrito ? rt.domicilio_distrito.split(' - ').pop().trim() : null,
+      I5: departamento(rt.domicilio_distrito),
       C7: rt.ruc ? Number(rt.ruc) : null, I8: sectorPorCiiu(rt.ciiu_principal, rt.actividad_principal) };
     if (rt.fecha_inicio_actividades) {
       var p = rt.fecha_inicio_actividades.split('/');
