@@ -133,6 +133,18 @@ table.t tr.cuadre td{font-weight:700}
 .criterios{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--suave);margin-top:10px}
 .criterios select{border:1px solid var(--linea);border-radius:6px;padding:4px 6px}
 /* Cotización */
+.dictamen{border-radius:var(--radio);padding:14px 16px;margin-bottom:16px;border:1px solid var(--linea);background:#fff}
+.dictamen .cab{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.dictamen .luz{width:22px;height:22px;border-radius:50%;flex:0 0 22px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.15)}
+.dictamen .cab b{font-size:17px}.dictamen .cab span{font-size:12px;color:var(--suave);display:block}
+.dictamen ul{margin:6px 0 0;padding:0;list-style:none}.dictamen li{font-size:13px;padding:3px 0 3px 18px;position:relative}
+.dictamen li:before{content:'';position:absolute;left:2px;top:9px;width:8px;height:8px;border-radius:50%;background:var(--c)}
+.d-viable{border-color:var(--ok);background:var(--okf)}.d-viable .luz{background:var(--ok)}
+.d-revisar{border-color:var(--alerta);background:var(--alertaf)}.d-revisar .luz{background:#E59400}
+.d-no_viable{border-color:var(--bloq);background:var(--bloqf)}.d-no_viable .luz{background:var(--bloq)}
+.d-documentos{border-color:#6B7A90;background:#EEF1F5}.d-documentos .luz{background:#6B7A90}
+.dictamen .nota{font-size:11px;color:var(--suave);margin-top:6px}
+details.extra{margin:4px 0 10px}details.extra summary{cursor:pointer;font-size:13px;color:var(--azul);font-weight:600;padding:6px 0}
 .resumen-cot{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .cuota-grande{background:var(--navy);color:#fff;border-radius:10px;padding:16px 18px;margin-bottom:12px}
 .cuota-grande span{font-size:12px;opacity:.8;text-transform:uppercase;letter-spacing:.4px}
@@ -274,6 +286,7 @@ footer{text-align:center;color:var(--suave);font-size:12px;padding:24px}
       </div>
     </div>
     <div>
+      <div id="dictamenMet"></div>
       <div class="tarjeta">
         <h2>Controles</h2>
         <div class="resumen-ctl" id="resumenCtl"></div>
@@ -331,9 +344,23 @@ footer{text-align:center;color:var(--suave);font-size:12px;padding:24px}
         <div class="campo"><label>Vendedor</label><input id="vendedor" value="Vendedor Demo"></div>
         <div class="campo"><label>Garantías adicionales</label><input id="garantias" value="NA"></div>
       </div>
+      <details class="extra"><summary>Datos para la hoja de aprobación (APFORM) · opcional</summary>
+        <p class="sub" style="margin:4px 0 10px">Lo demás de la APFORM (empresa, gerencia, accionistas, unidades, comentarios a los estados financieros) se arma solo con lo leído.</p>
+        <div class="fila2">
+          <div class="campo"><label>Analista a cargo</label><input id="analista" value="Analista de crédito (demo)"></div>
+          <div class="campo"><label>Teléfono del cliente</label><input id="telefono"></div>
+        </div>
+        <div class="fila2">
+          <div class="campo"><label>Cliente de Scania desde</label><input id="clienteDesde" placeholder="New customer."></div>
+          <div class="campo"><label>Flota actual</label><input id="flota" placeholder="Ej.: 12 camiones, 5 Scania, edad promedio 6 años"></div>
+        </div>
+        <div class="campo"><label>Experiencia con el cliente</label><input id="experiencia" placeholder="Cliente nuevo: sin historial de pagos con Scania Finance."></div>
+        <div class="campo"><label>Motivo de la inversión</label><input id="motivo" placeholder="Renovación o ampliación de flota, nuevo contrato…"></div>
+      </details>
     </div>
     <div>
       <div class="tarjeta">
+        <div id="dictamenCot"></div>
         <div class="sello-hoja" id="selloCot">Calculando en la hoja PCA de Scania (Google Sheets)…</div>
         <div class="cuota-grande"><span>Cuota mensual (inc. IGV del interés y seguro)</span><b id="cuotaGrande">—</b></div>
         <div class="resumen-cot" id="resumenCot"></div>
@@ -365,7 +392,7 @@ footer{text-align:center;color:var(--suave);font-size:12px;padding:24px}
     <div class="tarjeta">
       <h2>Enviar y registrar</h2>
       <p class="sub">Todo desde aquí, sin abrir Outlook ni Excel.</p>
-      <label class="opcion"><input type="checkbox" id="optCorreo" checked><div class="t"><b>Enviar el correo con la cotización</b><span>Gmail, con el PDF adjunto. En la demo solo a correos de Great Revenue o de Scania.</span></div></label>
+      <label class="opcion"><input type="checkbox" id="optCorreo" checked><div class="t"><b>Enviar el correo con la cotización</b><span>Gmail, con el PDF adjunto.</span></div></label>
       <label class="opcion"><input type="checkbox" id="optDrive" checked><div class="t"><b>Guardar el expediente en Drive</b><span>Una carpeta con la PCA llena, la cotización y los PDF del cliente.</span></div></label>
       <label class="opcion"><input type="checkbox" id="optCal" checked><div class="t"><b>Agendar el seguimiento en Calendar</b><span>Para revalidar condiciones antes de la firma.</span>
         <div class="fila2" style="margin-top:10px"><input id="calFecha" type="date" class="campo-in" style="border:1px solid var(--linea);border-radius:8px;padding:7px 9px"><input id="calHora" type="time" value="10:00" style="border:1px solid var(--linea);border-radius:8px;padding:7px 9px"></div></div></label>
@@ -563,7 +590,16 @@ function pintarMet(){
   h+='<tr class="cuadre"><td>Cuadre del balance</td>'+a.map(function(y){return celdaCuadre(m[y].cuadre);}).join('')+(cor&&cor.metod?celdaCuadre(cor.metod.cuadre):'<td>—</td>')+'</tr>';
   $('tablaMet').innerHTML=h;
 }
+function pintarDictamen(id,conCot){
+  if(!E.exp)return;
+  var op=conCot?operacion():null, c=conCot?cotizacionVigente():null;
+  var d=M.dictamen(E.exp,E.rt,op,c), col={rojo:'var(--bloq)',ambar:'#E59400',verde:'var(--ok)',docs:'#6B7A90'};
+  $(id).innerHTML='<div class="dictamen d-'+d.estado+'"><div class="cab"><div class="luz"></div><div><span>Dictamen referencial'+(conCot?' con la cuota nueva':' de los estados financieros')+'</span><b>'+esc(d.titulo)+'</b></div></div>'+
+    '<ul>'+d.motivos.map(function(m){return '<li style="--c:'+col[m.nivel]+'">'+esc(m.texto)+'</li>';}).join('')+'</ul>'+
+    '<div class="nota">Referencias de la PCA (apalancamiento &lt; 3,5 veces el EBITDA, DSCR con tipo de cambio 3,8) y umbrales de mercado. Criterios por confirmar con Scania.</div></div>';
+}
 function pintarCtl(){
+  pintarDictamen('dictamenMet',false);
   var av=E.exp.avisos, c={ok:0,alerta:0,bloquea:0};
   av.forEach(function(x){c[x.estado]++;});
   $('resumenCtl').innerHTML='<span class="pill p-bloquea">'+c.bloquea+' bloquean</span><span class="pill p-alerta">'+c.alerta+' alertas</span><span class="pill p-ok">'+c.ok+' correctos</span>';
@@ -674,7 +710,8 @@ function operacion(){
     activacion:M.fechaUTC(+p[0],+p[1]-1,+p[2]),seguro:$('seguro').value,tasaSeguro:l0.tasaSeguro||0,comisionEstructura:(+$('estructura').value)/100,
     notaria:nt[1],gastosNotariales:nt[2],garantias:$('garantias').value.trim()||'NA',avales:$('avales').value.trim()||'NA'};
 }
-function cliente(){return {contacto:$('contacto').value.trim(),correo:$('correoCli').value.trim(),vendedor:$('vendedor').value.trim()};}
+function cliente(){var v=function(id){return $(id).value.trim();};return {contacto:v('contacto'),correo:v('correoCli'),vendedor:v('vendedor'),analista:v('analista'),telefono:v('telefono'),
+  clienteDesde:v('clienteDesde'),experiencia:v('experiencia'),flota:v('flota'),motivo:v('motivo')};}
 function recalcular(){
   var op=operacion(); if(!M.lineasDe(op).length||!op.pagos||!$('activacion').value)return;
   E.cot=M.cotizar(op); E.hojaFresca=false;
@@ -684,6 +721,7 @@ function recalcular(){
 function pintarCotizacion(){
   var op=operacion(); if(!E.cot)return;
   var c=cotizacionVigente(); var mon=op.moneda+' ';
+  pintarDictamen('dictamenCot',true);
   $('cuotaGrande').textContent=mon+n2(c.cuotaConIgv);
   $('resumenCot').innerHTML=[['Importe total',mon+n2(c.total)],['Cuota inicial',mon+n2(c.inicial)+' ('+(c.pctInicial*100).toFixed(0)+'%)'],
     ['Seguro financiado',mon+n2(c.seguro)],['Monto financiado',mon+n2(c.financiado)],['TEA / TEM',(op.tea*100).toFixed(2)+'% / '+(c.tem*100).toFixed(4)+'%'],
