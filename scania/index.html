@@ -77,6 +77,20 @@ main{max-width:1240px;margin:auto;padding:26px 24px 60px}
 .docs .nom{font-weight:600;font-size:14px}.docs .det{font-size:12px;color:var(--suave)}
 .docs .est{margin-left:auto;font-size:12px;font-weight:600}
 .docs .quitar{background:none;border:0;color:var(--suave);cursor:pointer;font-size:18px}
+/* Fuentes de archivos y líneas */
+.fuentes{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.panel-drive{border:1px solid var(--linea);border-radius:10px;padding:14px;margin-top:12px;background:#FAFCFF}
+.panel-drive .fila-liga{display:flex;gap:8px}
+.panel-drive input{flex:1;border:1px solid var(--linea);border-radius:8px;padding:9px 11px}
+.lista-drive{list-style:none;margin:10px 0 0;padding:0;max-height:220px;overflow:auto}
+.lista-drive li{display:flex;align-items:center;gap:10px;padding:7px 4px;border-top:1px solid var(--linea);font-size:14px}
+.lista-drive li button{margin-left:auto;padding:5px 10px;font-size:12px}
+table.lineas{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px}
+table.lineas th{font-size:11px;text-transform:uppercase;color:var(--suave);text-align:left;padding:4px}
+table.lineas td{padding:3px 4px}
+table.lineas input,table.lineas select{width:100%;border:1px solid var(--linea);border-radius:6px;padding:7px 8px;font:inherit}
+table.lineas .quitar{background:none;border:0;color:var(--suave);cursor:pointer;font-size:18px}
+.aviso-proforma{font-size:13px;background:var(--okf);color:var(--ok);border-radius:8px;padding:8px 10px;margin-bottom:10px}
 .lista-req{margin:0;padding-left:18px;color:var(--suave);font-size:14px}
 .lista-req li{margin-bottom:6px}
 .campo{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
@@ -206,9 +220,19 @@ footer{text-align:center;color:var(--suave);font-size:12px;padding:24px}
       <label class="zona" id="zona">
         <input type="file" id="archivo" accept="application/pdf" multiple hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
-        <b>Suelta aquí los PDF o haz clic para elegirlos</b>
-        <span>Formulario 710 de los últimos años · Reporte Tributario de SUNAT · hasta 14 MB por archivo</span>
+        <b>Suelta aquí los PDF</b>
+        <span>710 de los últimos años · Reporte Tributario · estados financieros de corte o auditados · proforma del vehículo · hasta 14 MB</span>
       </label>
+      <div class="fuentes">
+        <button class="btn btn-s" id="btnPc" type="button">Elegir de mi computadora</button>
+        <button class="btn btn-s" id="btnDrive" type="button">Traer de Google Drive</button>
+      </div>
+      <div class="panel-drive" id="panelDrive" hidden>
+        <div class="fila-liga"><input id="ligaDrive" placeholder="Pega la liga del PDF en Drive (compartido con la cuenta del portal)"><button class="btn btn-p" id="btnLiga" type="button">Traer</button></div>
+        <button class="btn btn-s" id="btnListarDrive" type="button" style="margin-top:10px;padding:7px 12px;font-size:13px">Ver los PDF de la carpeta del portal</button>
+        <ul class="lista-drive" id="listaDrive"></ul>
+        <p class="sub" style="margin:8px 0 0;font-size:12px">Carpeta en Drive: “Scania — Portal de crédito (demo)”. Lo que dejes ahí aparece en esta lista.</p>
+      </div>
       <ul class="docs" id="docs"></ul>
       <div class="acciones">
         <button class="btn btn-p" id="btnLeer" disabled>Leer con IA</button>
@@ -222,6 +246,8 @@ footer{text-align:center;color:var(--suave);font-size:12px;padding:24px}
         <li><b>Formulario 710</b> (renta anual) de los <b>4 últimos ejercicios cerrados</b>. El cuarto sirve para calcular la depreciación del más antiguo.</li>
         <li><b>Reporte Tributario</b> de SUNAT, descargado por el cliente con su clave SOL: identificación, ventas mensuales y comportamiento tributario.</li>
         <li>Si hay <b>declaración rectificatoria</b>, súbela: el portal compara cada año contra SUNAT.</li>
+        <li><b>Estados financieros de corte</b> del año en curso (balance y resultados a la fecha): llenan la columna del corte. Si la empresa trae <b>auditados</b> en vez del 710, también sirven.</li>
+        <li><b>Proforma del vehículo</b> (opcional): prellena modelo, cantidad y precio de la cotización.</li>
       </ul>
       <div class="campo" style="margin-top:16px">
         <label for="codigo">Código de acceso a la demo</label>
@@ -273,13 +299,13 @@ footer{text-align:center;color:var(--suave);font-size:12px;padding:24px}
     <div class="tarjeta">
       <h2>Operación</h2>
       <p class="sub">Los mismos datos que hoy se escriben en la hoja DATOS. El cálculo replica la PCA.</p>
+      <div id="avisoProforma"></div>
+      <div class="campo"><label>Unidades a financiar (hasta 5 líneas)</label></div>
+      <table class="lineas" id="tablaLineas"></table>
+      <button class="btn btn-s" id="btnAgregarLinea" type="button" style="padding:6px 12px;font-size:13px;margin-bottom:12px">+ Agregar línea</button>
       <div class="fila2">
-        <div class="campo"><label>Modelo</label><input id="modelo" value="R550 A6X4"></div>
-        <div class="campo"><label>Precio unitario (inc. IGV)</label><input id="precio" type="number" value="189500" step="100"></div>
-      </div>
-      <div class="fila2">
-        <div class="campo"><label>Unidades</label><input id="unidades" type="number" value="1" min="1"></div>
         <div class="campo"><label>Moneda</label><select id="moneda"><option>US$</option><option>S/</option></select></div>
+        <div class="campo"><label>Gastos de estructuración (%)</label><input id="estructura" type="number" value="1" step="0.05"></div>
       </div>
       <div class="fila2">
         <div class="campo"><label>Cuota inicial (%)</label><input id="pctInicial" type="number" value="40" step="1"></div>
@@ -294,8 +320,8 @@ footer{text-align:center;color:var(--suave);font-size:12px;padding:24px}
         <div class="campo"><label>Seguro</label><select id="seguro"><option>Financiado</option><option>Contratado</option><option>Endosado</option></select></div>
       </div>
       <div class="fila2">
-        <div class="campo"><label>Tasa del seguro (%)</label><input id="tasaSeguro" type="number" value="2" step="0.1"></div>
         <div class="campo"><label>Notaría</label><select id="notaria"></select></div>
+        <div class="campo"><label>Avales</label><input id="avales" value="NA"></div>
       </div>
       <div class="fila2">
         <div class="campo"><label>Contacto del cliente</label><input id="contacto"></div>
@@ -357,7 +383,7 @@ footer{text-align:center;color:var(--suave);font-size:12px;padding:24px}
 var API = 'https://mikea.app.n8n.cloud/webhook/scania-portal-api';
 var M = window.MotorScania;
 var NOTARIAS = [["Lima","Notaria Paino Scarpati",1337.32],["Lima","Notaria Dannon Brender",1350],["Lima","Notaria Fernandini Barreda",1650],["Lima","Notaria Banda Gonzalez",1593.34],["Chiclayo","Notaria Medina Ticse",2650],["Chiclayo","Notaria Vera Mendez",1100],["Trujillo","Notaria Guerra Salas",900],["Trujillo","Notaria Polo Muñoz",1400],["Cajamarca","Notaria Lozano Gutierrez",2766.66],["Cajamarca","Notaria Vigo Rojas",1100],["Cajamarca","Notaria Linares Sanchez",1933.34],["Piura","Notaría Quinde Rázuri",1800],["Arequipa","Notaria Escarza Benitez",860],["Arequipa","Notaría Linares Riveros",1100],["Arequipa","Notaría Rodriguez Velarde",950],["Huancayo","Notaria Canchaya Sanchez",1000],["Juliaca","Notaria Gutierrez Diaz",1550]];
-var E = { archivos: [], f710: {}, rt: null, ejemplo: false, crit: { deuda409: 'tercio', casilla389: 'largo_plazo' }, cot: null, exp: null, pcaB64: null };
+var E = { archivos: [], f710: {}, rt: null, eeffCorte: null, proforma: null, proformaAplicada: false, lineas: [{modelo:'R550 A6X4',tipo:'REMOLCADOR',precio:189500,unidades:1,tasa:2}], ejemplo: false, crit: { deuda409: 'tercio', casilla389: 'largo_plazo' }, cot: null, exp: null, pcaB64: null };
 var $ = function (id) { return document.getElementById(id); };
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function n1(x){return x==null?'—':Number(x).toLocaleString('es-PE',{minimumFractionDigits:1,maximumFractionDigits:1});}
@@ -409,6 +435,30 @@ function pintarDocs(){
   $('btnLeer').disabled=!E.archivos.some(function(a){return a.estado!=='leido'&&a.base64;});
 }
 
+$('btnPc').onclick=function(){$('archivo').click();};
+$('btnDrive').onclick=function(){$('panelDrive').hidden=!$('panelDrive').hidden;};
+function codigoOk(){var c=$('codigo').value.trim();if(!c){aviso('avisoLectura','Escribe el código de acceso a la demo para usar Drive.',true);return null;}guardar('scania_codigo',c);return c;}
+function traerDeDrive(liga,nombre){
+  var codigo=codigoOk(); if(!codigo)return;
+  E.ejemplo=false; aviso('avisoLectura','');
+  var item={nombre:nombre||'Archivo de Drive',estado:'leyendo',detalle:'Bajando de Google Drive…',base64:null};
+  E.archivos.push(item); pintarDocs();
+  llamar({accion:'drive_bajar',codigo:codigo,liga:liga},60).then(function(r){
+    if(!r.ok)throw new Error(r.error||'No se pudo bajar');
+    item.base64=r.base64; item.nombre=r.nombre||item.nombre; item.estado='pendiente'; item.detalle='Traído de Drive · listo para leer';
+  }).catch(function(e){item.estado='error';item.detalle=e.message;}).finally(pintarDocs);
+}
+$('btnLiga').onclick=function(){var l=$('ligaDrive').value.trim();if(l){traerDeDrive(l);$('ligaDrive').value='';}};
+$('btnListarDrive').onclick=function(){
+  var codigo=codigoOk(), b=this; if(!codigo)return;
+  b.disabled=true; b.innerHTML='<span class="spin"></span> Buscando en Drive';
+  llamar({accion:'drive_listar',codigo:codigo},60).then(function(r){
+    if(!r.ok)throw new Error(r.error||'No se pudo listar');
+    $('listaDrive').innerHTML=r.archivos.length?r.archivos.map(function(f){return '<li>📄 '+esc(f.nombre)+'<button class="btn btn-s" data-id="'+esc(f.id)+'" data-n="'+esc(f.nombre)+'">Agregar</button></li>';}).join(''):'<li>No hay PDF en la carpeta todavía.</li>';
+    $('listaDrive').querySelectorAll('button').forEach(function(x){x.onclick=function(){traerDeDrive(x.dataset.id,x.dataset.n);x.disabled=true;x.textContent='Agregado';};});
+  }).catch(function(e){$('listaDrive').innerHTML='<li>'+esc(e.message)+'</li>';}).finally(function(){b.disabled=false;b.textContent='Ver los PDF de la carpeta del portal';});
+};
+
 function llamar(cuerpo, segundos){
   var ctrl=new AbortController(); var t=setTimeout(function(){ctrl.abort();},(segundos||110)*1000);
   return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cuerpo),signal:ctrl.signal})
@@ -441,13 +491,22 @@ function incorporar(tipo,d,a){
     a.detalle='Formulario 710 · ejercicio '+d.ejercicio+' · '+Object.keys(d.casillas||{}).length+' casillas'+(d.tipo_declaracion==='RECTIFICATORIA'?' · rectificatoria':'');
   } else if(tipo==='REPORTE_TRIBUTARIO'){
     E.rt=d; a.estado='leido'; a.detalle='Reporte Tributario · '+(d.nombre||'')+' · RUC '+(d.ruc||'');
+  } else if(tipo==='ESTADOS_FINANCIEROS'){
+    a.estado='leido';
+    if(d.mes===12&&!E.f710[d.anio]){
+      E.f710[d.anio]={ejercicio:d.anio,ruc:d.ruc,casillas:d.casillas,tipo_declaracion:d.auditado?'AUDITADO':'EEFF',fuente:'EEFF',archivo:d.archivo};
+      a.detalle='Estados financieros al 31/12/'+d.anio+(d.auditado?' (auditados)':'')+' · se usan como ejercicio cerrado';
+    } else { E.eeffCorte=d; a.detalle='Estados financieros de corte al '+d.fecha_corte+' · '+Object.keys(d.casillas||{}).length+' cuentas'; }
+  } else if(tipo==='COTIZACION_VEHICULO'){
+    E.proforma=d; E.proformaAplicada=false; a.estado='leido';
+    a.detalle='Proforma del vehículo · '+d.lineas.length+' modelo(s) · se usa en la cotización';
   } else { a.estado='leido'; a.detalle='Documento no usado en el metodizado'+(d&&d.resumen?': '+d.resumen:''); }
 }
 
 $('btnEjemplo').onclick=function(){
   var b=this; b.disabled=true; b.innerHTML='<span class="spin"></span> Cargando';
   fetch('ejemplo.json').then(function(r){return r.json();}).then(function(ej){
-    E.ejemplo=true; E.f710={}; E.rt=null; E.archivos=[];
+    E.ejemplo=true; E.f710={}; E.rt=null; E.eeffCorte=null; E.proforma=null; E.archivos=[];
     var docs=ej.f710.map(function(d){return {nombre:d.archivo,tipo:'F710',datos:d};}).concat([{nombre:ej.rt.archivo,tipo:'REPORTE_TRIBUTARIO',datos:ej.rt}]);
     docs.forEach(function(d){E.archivos.push({nombre:d.nombre,estado:'leyendo',detalle:'La IA está leyendo el documento…'});});
     pintarDocs();
@@ -463,13 +522,16 @@ function analizar(){
   var visibles=anios.slice(-3);
   var metod={};
   visibles.forEach(function(y){metod[y]=M.metodizar(E.f710[y].casillas,E.f710[y-1]?E.f710[y-1].casillas:null,E.crit);});
-  var corte=null;
-  if(E.rt&&E.rt.ventas_mensuales){
+  var corte=null, ult=visibles[visibles.length-1];
+  if(E.eeffCorte&&E.eeffCorte.anio>ult){
+    var mc=M.metodizar(E.eeffCorte.casillas,E.f710[E.eeffCorte.anio-1]?E.f710[E.eeffCorte.anio-1].casillas:null,E.crit);
+    corte={anio:E.eeffCorte.anio,mes:E.eeffCorte.mes,ventas:(mc[61]||0)*1000,metod:mc,fuente:'estados financieros'};
+  } else if(E.rt&&E.rt.ventas_mensuales){
     var ac=String(visibles[visibles.length-1]+1), v=E.rt.ventas_mensuales[ac];
-    if(v&&v.length) corte={anio:+ac,mes:v.length,ventas:v.reduce(function(s,x){return s+Number(x||0);},0)};
+    if(v&&v.length) corte={anio:+ac,mes:v.length,ventas:v.reduce(function(s,x){return s+Number(x||0);},0),fuente:'ventas de SUNAT'};
   }
   E.exp={f710:visibles.map(function(y){return E.f710[y];}),metod:metod,rt:E.rt,corte:corte,anios:visibles};
-  E.exp.avisos=M.controles(E.exp.f710,E.rt,metod,corte&&corte.mes,E.crit);
+  E.exp.avisos=M.controles(E.exp.f710,E.rt,metod,corte&&corte.mes,E.crit,corte);
   pintarCliente(); pintarMet(); pintarCtl(); pintarInd();
 }
 function pintarCliente(){
@@ -481,7 +543,8 @@ function pintarCliente(){
     [['Actividad',(rt.ciiu_principal?rt.ciiu_principal+' · ':'')+(rt.actividad_principal||'—')],['Sector PCA',sector||'Por asignar'],
      ['Departamento',rt.domicilio_distrito?rt.domicilio_distrito.split(' - ').pop():'—'],['Inicio de actividades',rt.fecha_inicio_actividades||'—'],
      ['Estado SUNAT',(rt.estado||'—')+(rt.condicion?' / '+rt.condicion:'')],['Trabajadores',rt.trabajadores_agosto_2026?(rt.trabajadores_agosto_2026.dependientes+' dep. · '+rt.trabajadores_agosto_2026.independientes+' indep.'):'—'],
-     ['Ejercicios leídos',Object.keys(E.f710).sort().join(', ')],['Corte año en curso',E.exp.corte?M.MESES[E.exp.corte.mes]+' '+E.exp.corte.anio:'—']]
+     ['Ejercicios leídos',Object.keys(E.f710).sort().map(function(y){return y+(E.f710[y].fuente==='EEFF'?' (EEFF)':'');}).join(', ')],['Corte año en curso',E.exp.corte?M.MESES[E.exp.corte.mes]+' '+E.exp.corte.anio+' · '+E.exp.corte.fuente:'—']]
+    .concat(rt.representantes&&rt.representantes.length?[['Representantes / accionistas',rt.representantes.map(function(x){return x.nombre+(x.cargo?' ('+x.cargo+')':'');}).join(' · ')]]:[])
     .map(function(d){return '<div class="dato"><span>'+d[0]+'</span><b>'+esc(d[1])+'</b></div>';}).join('')+'</div>';
 }
 function pintarMet(){
@@ -489,11 +552,12 @@ function pintarMet(){
   var h='<tr><th>Concepto</th>'+a.map(function(y){return '<th>'+y+'</th>';}).join('')+'<th>Corte '+(cor?M.MESES[cor.mes].slice(0,3)+' '+cor.anio:'')+'</th></tr>';
   M.FILAS.forEach(function(f){
     var vals=a.map(function(y){return m[y][f[0]];});
-    var corte=f[0]===61&&cor?cor.ventas/1000:null;
-    if(!f[3]&&vals.every(function(v){return !v;})&&corte==null)return;
+    var corte=cor&&cor.metod?(cor.metod[f[0]]===undefined?null:cor.metod[f[0]]):(f[0]===61&&cor?cor.ventas/1000:null);
+    if(!f[3]&&vals.every(function(v){return !v;})&&!corte)return;
     h+='<tr class="'+(f[3]?'total':'')+'"><td>'+f[1]+'<small>'+f[2]+'</small></td>'+vals.map(function(v){return '<td class="'+(v<0?'neg':'')+'">'+(v===null||v===undefined?'—':n1(v))+'</td>';}).join('')+'<td>'+(corte==null?'—':n1(corte))+'</td></tr>';
   });
-  h+='<tr class="cuadre"><td>Cuadre del balance</td>'+a.map(function(y){var c=m[y].cuadre;return '<td style="color:'+(Math.abs(c)<0.002?'var(--ok)':'var(--bloq)')+'">'+(Math.abs(c)<0.002?'OK':'ERROR ('+n1(c)+')')+'</td>';}).join('')+'<td>—</td></tr>';
+  var celdaCuadre=function(c){return '<td style="color:'+(Math.abs(c)<0.002?'var(--ok)':'var(--bloq)')+'">'+(Math.abs(c)<0.002?'OK':'ERROR ('+n1(c)+')')+'</td>';};
+  h+='<tr class="cuadre"><td>Cuadre del balance</td>'+a.map(function(y){return celdaCuadre(m[y].cuadre);}).join('')+(cor&&cor.metod?celdaCuadre(cor.metod.cuadre):'<td>—</td>')+'</tr>';
   $('tablaMet').innerHTML=h;
 }
 function pintarCtl(){
@@ -510,7 +574,9 @@ function pintarInd(){
   var a=E.exp.anios, m=E.exp.metod;
   var filas=[['EBITDA (miles S/)',function(i){return n1(i.ebitda);}],['Deuda / EBITDA',function(i){return i.deudaEbitda==null?'—':i.deudaEbitda.toFixed(2)+'×';}],['Pasivo / Patrimonio',function(i){return i.pasivoPatrimonio==null?'—':i.pasivoPatrimonio.toFixed(2)+'×';}]];
   $('indicadores').innerHTML=filas.map(function(f){
-    return '<div class="dato"><span>'+f[0]+'</span>'+a.map(function(y){return '<div style="display:flex;justify-content:space-between;font-size:13px;margin-top:4px"><span style="text-transform:none;font-size:13px">'+y+'</span><b style="font-size:14px">'+f[1](M.indicadores(m[y]))+'</b></div>';}).join('')+'</div>';
+    var fila=function(et,i){return '<div style="display:flex;justify-content:space-between;font-size:13px;margin-top:4px"><span style="text-transform:none;font-size:13px">'+et+'</span><b style="font-size:14px">'+f[1](i)+'</b></div>';};
+    var cor=E.exp.corte;
+    return '<div class="dato"><span>'+f[0]+'</span>'+a.map(function(y){return fila(y,M.indicadores(m[y]));}).join('')+(cor&&cor.metod?fila('Corte '+M.MESES[cor.mes].slice(0,3)+' '+cor.anio,M.indicadores(cor.metod,cor.mes)):'')+'</div>';
   }).join('');
 }
 $('critDeuda').onchange=function(){E.crit.deuda409=this.value;analizar();};
@@ -531,21 +597,42 @@ $('btnPca').onclick=function(){
     aviso('avisoPca','PCA llena descargada. Al abrirla, Excel recalcula todas las hojas.');
   }).catch(function(e){aviso('avisoPca',esc(e.message),true);}).finally(function(){b.disabled=false;b.textContent='Descargar PCA llena (.xlsm)';});
 };
-$('btnA3').onclick=function(){habilitar(3);recalcular();ir(3);};
+$('btnA3').onclick=function(){habilitar(3);aplicarProforma();pintarLineas();recalcular();ir(3);};
 
 /* ---------- paso 3: cotización ---------- */
 $('notaria').innerHTML=NOTARIAS.map(function(n,i){return '<option value="'+i+'">'+esc(n[0]+' · '+n[1])+' (S/ '+n2(n[2])+')</option>';}).join('');
 (function(){var h=new Date();h.setDate(h.getDate()+14);$('activacion').value=h.toISOString().slice(0,10);})();
+var TIPOS=['REMOLCADOR','CAMION','VOLQUETE','CHASIS CABINA','BUS','CARROCERIA','MAQUINARIA Y EQUIPOS'];
+function aplicarProforma(){
+  if(!E.proforma||E.proformaAplicada)return;
+  E.lineas=E.proforma.lineas.map(function(x){var tipo=String(x.tipo||'').toUpperCase();return {modelo:x.modelo,tipo:TIPOS.indexOf(tipo)>=0?tipo:'CAMION',precio:x.precio,unidades:x.unidades,tasa:2};});
+  if(E.proforma.moneda)$('moneda').value=E.proforma.moneda;
+  E.proformaAplicada=true;
+  $('avisoProforma').innerHTML='<div class="aviso-proforma">✓ Prellenado con la proforma'+(E.proforma.empresa?' de '+esc(E.proforma.empresa):'')+(E.proforma.fecha?' del '+esc(E.proforma.fecha):'')+'. Revisa y ajusta si hace falta.</div>';
+}
+function pintarLineas(){
+  $('tablaLineas').innerHTML='<tr><th style="width:24%">Modelo</th><th style="width:27%">Tipo</th><th style="width:20%">Precio unit. (inc. IGV)</th><th style="width:10%">Unid.</th><th style="width:12%">Seguro %</th><th></th></tr>'+
+    E.lineas.map(function(l,i){return '<tr data-i="'+i+'"><td><input data-k="modelo" value="'+esc(l.modelo)+'"></td><td><select data-k="tipo">'+TIPOS.map(function(x){return '<option'+(x===l.tipo?' selected':'')+'>'+x+'</option>';}).join('')+'</select></td>'+
+      '<td><input data-k="precio" type="number" step="100" value="'+l.precio+'"></td><td><input data-k="unidades" type="number" min="1" value="'+l.unidades+'"></td>'+
+      '<td><input data-k="tasa" type="number" step="0.1" value="'+l.tasa+'"></td><td>'+(E.lineas.length>1?'<button class="quitar" title="Quitar">×</button>':'')+'</td></tr>';}).join('');
+  $('tablaLineas').querySelectorAll('input,select').forEach(function(el){el.addEventListener('input',function(){
+    var l=E.lineas[+el.closest('tr').dataset.i], k=el.dataset.k; l[k]=(k==='modelo'||k==='tipo')?el.value:+el.value; recalcular();});});
+  $('tablaLineas').querySelectorAll('.quitar').forEach(function(b){b.onclick=function(){E.lineas.splice(+b.closest('tr').dataset.i,1);pintarLineas();recalcular();};});
+  $('btnAgregarLinea').disabled=E.lineas.length>=5;
+}
+$('btnAgregarLinea').onclick=function(){if(E.lineas.length<5){var u=E.lineas[E.lineas.length-1]||{};E.lineas.push({modelo:'',tipo:u.tipo||'CAMION',precio:0,unidades:1,tasa:u.tasa||2});pintarLineas();}};
 function operacion(){
   var p=$('activacion').value.split('-'), nt=NOTARIAS[+$('notaria').value];
-  return {modelo:$('modelo').value.trim(),precio:+$('precio').value,unidades:+$('unidades').value||1,moneda:$('moneda').value,
+  var lineas=E.lineas.map(function(l){return {modelo:l.modelo,tipo:l.tipo,precio:+l.precio,unidades:+l.unidades,tasaSeguro:(+l.tasa)/100};});
+  var l0=lineas[0]||{};
+  return {lineas:lineas,modelo:l0.modelo,precio:l0.precio,unidades:lineas.reduce(function(s,l){return s+(l.precio>0?l.unidades:0);},0),moneda:$('moneda').value,
     pctInicial:(+$('pctInicial').value)/100,tea:(+$('tea').value)/100,pagos:+$('pagos').value,gracia:+$('gracia').value||0,
-    activacion:M.fechaUTC(+p[0],+p[1]-1,+p[2]),seguro:$('seguro').value,tasaSeguro:(+$('tasaSeguro').value)/100,
-    notaria:nt[1],gastosNotariales:nt[2],garantias:$('garantias').value.trim()||'NA'};
+    activacion:M.fechaUTC(+p[0],+p[1]-1,+p[2]),seguro:$('seguro').value,tasaSeguro:l0.tasaSeguro||0,comisionEstructura:(+$('estructura').value)/100,
+    notaria:nt[1],gastosNotariales:nt[2],garantias:$('garantias').value.trim()||'NA',avales:$('avales').value.trim()||'NA'};
 }
 function cliente(){return {contacto:$('contacto').value.trim(),correo:$('correoCli').value.trim(),vendedor:$('vendedor').value.trim()};}
 function recalcular(){
-  var op=operacion(); if(!op.precio||!op.pagos||!$('activacion').value)return;
+  var op=operacion(); if(!M.lineasDe(op).length||!op.pagos||!$('activacion').value)return;
   var c=M.cotizar(op); E.cot=c; var mon=op.moneda+' ';
   $('cuotaGrande').textContent=mon+n2(c.cuotaConIgv);
   $('resumenCot').innerHTML=[['Importe total',mon+n2(c.total)],['Cuota inicial',mon+n2(c.inicial)+' ('+(c.pctInicial*100).toFixed(0)+'%)'],
@@ -565,9 +652,9 @@ function pdfCotizacion(){
   doc.setTextColor(13,27,46);doc.setFont('helvetica','bold');doc.setFontSize(14);doc.text(String(rt.nombre||'Cliente'),40,100);
   doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('RUC '+(rt.ruc||'—')+'   ·   Emitida el '+new Date().toLocaleDateString('es-PE'),40,114);
   doc.autoTable({startY:128,theme:'grid',styles:{fontSize:9,cellPadding:4},headStyles:{fillColor:[4,30,66]},
-    body:[['Unidad',op.unidades+' x '+op.modelo],['Importe total (inc. IGV)',mon+n2(c.total)],['Cuota inicial',mon+n2(c.inicial)+' ('+(c.pctInicial*100).toFixed(0)+'%)'],
+    body:[['Unidades',c.lineas.map(function(l){return l.unidades+' x '+l.modelo+' ('+mon+n2(l.precio)+')';}).join('\n')],['Importe total (inc. IGV)',mon+n2(c.total)],['Cuota inicial',mon+n2(c.inicial)+' ('+(c.pctInicial*100).toFixed(0)+'%)'],
       ['Plazo',c.periodos+' meses (inc. '+op.gracia+' de gracia)'],['TEA / TEM',(op.tea*100).toFixed(2)+'% / '+(c.tem*100).toFixed(4)+'%'],
-      ['Seguro',op.seguro+' '+(op.tasaSeguro*100).toFixed(2)+'%'],['Monto financiado',mon+n2(c.financiado)],['Cuota mensual (inc. IGV del interés)',mon+n2(c.cuotaConIgv)]],
+      ['Seguro',op.seguro],['Gastos de estructuración',mon+n2(c.estructuracion)],['Monto financiado',mon+n2(c.financiado)],['Cuota mensual (inc. IGV del interés)',mon+n2(c.cuotaConIgv)]],
     columnStyles:{0:{fontStyle:'bold',cellWidth:200}}});
   doc.autoTable({startY:doc.lastAutoTable.finalY+16,theme:'striped',styles:{fontSize:7.5,cellPadding:2.5,halign:'right'},headStyles:{fillColor:[4,30,66],halign:'right'},
     head:[['N°','Fecha','Saldo inicial','Interés','Amortización','Saldo final','Int. + IGV','Cuota total']],
@@ -602,7 +689,7 @@ $('btnEnviar').onclick=function(){
     documentos:E.ejemplo?[]:E.archivos.filter(function(a){return a.base64;}).map(function(a){return {nombre:a.nombre,base64:a.base64};}),
     drive:$('optDrive').checked,
     calendario:$('optCal').checked?{inicio:new Date(ini).toISOString(),fin:finD,titulo:'Revalidar cotización · '+nombre,
-      descripcion:'Cotización de '+operacion().unidades+' x '+operacion().modelo+' · cuota '+operacion().moneda+' '+n2(E.cot.cuotaConIgv)+'. Revalidar condiciones 15 días antes de la firma.'}:null};
+      descripcion:'Cotización de '+E.cot.lineas.map(function(l){return l.unidades+' x '+l.modelo;}).join(', ')+' · cuota '+operacion().moneda+' '+n2(E.cot.cuotaConIgv)+'. Revalidar condiciones 15 días antes de la firma.'}:null};
   b.disabled=true;b.innerHTML='<span class="spin"></span> Enviando y registrando';aviso('avisoEnvio','');$('resultado').style.display='none';
   llamar(cuerpo,110).then(function(r){
     if(!r.ok)throw new Error(r.error||'No se pudo completar');
