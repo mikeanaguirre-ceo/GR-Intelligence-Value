@@ -56,7 +56,8 @@
       76: g(476), 78: g(477, 478), 81: g(490, 351)
     };
     if (crit.casilla389 === 'largo_plazo') f[18] += g(389); else f[12] += g(389);
-    if (crit.deuda409 === 'tercio') { f[26] = g(409) / 3; f[34] = g(409) * 2 / 3; } else { f[25] += g(409); f[26] = 0; f[34] = 0; }
+    if (c.deuda_cp != null || c.deuda_lp != null) { f[26] = Number(c.deuda_cp || 0); f[34] = Number(c.deuda_lp || 0); }  // estados financieros con la deuda separada
+    else if (crit.deuda409 === 'tercio') { f[26] = g(409) / 3; f[34] = g(409) * 2 / 3; } else { f[25] += g(409); f[26] = 0; f[34] = 0; }
     f[63] = cPrev ? g(383) - Number(cPrev['383'] || 0) : null;
     var m = {};
     Object.keys(f).forEach(function (k) { m[k] = f[k] === null ? null : f[k] / 1000; });
@@ -94,7 +95,7 @@
   }
 
   /* ---------- Controles ---------- */
-  function controles(f710, rt, metod, mesCorte, crit) {
+  function controles(f710, rt, metod, mesCorte, crit, corte) {
     crit = crit || CRITERIOS;
     var a = [];
     function add(estado, nombre, detalle) { a.push({ estado: estado, nombre: nombre, detalle: detalle || '' }); }
@@ -130,8 +131,17 @@
       if (rt.estado && (rt.estado !== 'ACTIVO' || rt.condicion !== 'HABIDO')) add('bloquea', 'Estado en SUNAT', rt.estado + ' / ' + rt.condicion);
       else if (rt.estado) add('ok', 'Estado en SUNAT', 'ACTIVO / HABIDO');
       if (rt.comportamiento_12_meses && rt.comportamiento_12_meses.meses_con_deuda > 0) add('alerta', 'Deuda tributaria', rt.comportamiento_12_meses.meses_con_deuda + ' meses con deuda declarada');
-      if (mesCorte) add('alerta', 'Corte del año en curso', 'Solo hay ventas de enero a ' + MESES[mesCorte] + ' (Reporte Tributario); el balance al corte requiere el documento de corte del cliente');
+      if (mesCorte && !(corte && corte.metod)) add('alerta', 'Corte del año en curso', 'Solo hay ventas de enero a ' + MESES[mesCorte] + ' (Reporte Tributario); para el balance al corte sube los estados financieros de corte del cliente');
     } else add('alerta', 'Reporte Tributario', 'No se subió: faltan los datos de identificación y las ventas del año en curso');
+    if (corte && corte.metod) {
+      add(Math.abs(corte.metod.cuadre) < 0.002 ? 'ok' : 'bloquea', 'Corte ' + MESES[corte.mes] + ' ' + corte.anio + ' · Cuadre del balance', 'Activo − pasivo − patrimonio = ' + corte.metod.cuadre.toFixed(1) + ' mil');
+      var vRt = rt && rt.ventas_mensuales && rt.ventas_mensuales[String(corte.anio)];
+      if (vRt && vRt.length >= corte.mes) {
+        var sRt = vRt.slice(0, corte.mes).reduce(function (s, x) { return s + Number(x || 0); }, 0), sEf = corte.metod[61] * 1000;
+        add(Math.abs(sRt - sEf) <= 0.05 * Math.max(sRt, 1) ? 'ok' : 'alerta', 'Corte · Ventas vs SUNAT',
+          'Estados financieros ' + fmt(sEf) + ', SUNAT enero a ' + MESES[corte.mes] + ' ' + fmt(sRt));
+      }
+    }
     var orden = { bloquea: 0, alerta: 1, ok: 2 };
     return a.sort(function (x, y) { return orden[x.estado] - orden[y.estado]; });
   }
@@ -162,9 +172,18 @@
     return (va * f - (vf || 0)) * tasa / (f - 1);
   }
 
+  // Hasta 5 líneas de unidades (filas 20 a 24 de DATOS). Si no vienen, se arma una con modelo, precio y unidades.
+  function lineasDe(op) {
+    var l = (op.lineas && op.lineas.length ? op.lineas : [{ modelo: op.modelo, tipo: op.tipo, precio: op.precio, unidades: op.unidades, tasaSeguro: op.tasaSeguro }])
+      .filter(function (x) { return x && Number(x.precio) > 0 && Number(x.unidades) > 0; }).slice(0, 5);
+    return l.map(function (x) { return { modelo: String(x.modelo || ''), tipo: x.tipo || '', precio: Number(x.precio), unidades: Number(x.unidades),
+      tasaSeguro: x.tasaSeguro == null || x.tasaSeguro === '' ? Number(op.tasaSeguro || 0) : Number(x.tasaSeguro) }; });
+  }
+
   function cotizar(op) {
     var IGV = 0.18;
-    var total = op.precio * op.unidades;
+    var lineas = lineasDe(op);
+    var total = lineas.reduce(function (s, x) { return s + x.precio * x.unidades; }, 0);
     var inicial = op.montoInicial != null && op.montoInicial !== '' ? Number(op.montoInicial) : op.pctInicial * total;
     var tem = Math.pow(1 + op.tea, 1 / 12) - 1;
     var periodos = op.pagos + op.gracia;
@@ -174,21 +193,23 @@
     for (var i = 0; i < periodos; i++) fechas.push(sumarMeses(primera, i));
     var balloon = (op.balloonPct || 0) * total;
 
-    // Seguro (hoja SEGUROS): por año, sobre el valor depreciado; + 3 % de derecho de emisión + IGV.
+    // Seguro (hoja SEGUROS, un bloque por línea): por año, sobre el valor depreciado; + 3 % de derecho de emisión + IGV.
     var seguro = 0, detalleSeguro = [];
     if (op.seguro === 'Financiado') {
       var fin = new Date(fechas[fechas.length - 1].getTime() + 30 * 86400000);
       var d = dias(activ, fin), anios = Math.floor(d / 365), extra = d % 365;
-      var base = total, acumulado = 0, e = 1;
-      while (true) {
-        var prima = anios >= e ? op.tasaSeguro * base : op.tasaSeguro * base * extra / 365;
-        acumulado += prima;
-        detalleSeguro.push({ anio: e, base: base, prima: prima });
-        if (!(anios >= e && extra > 0) || e >= 6) break;
-        e += 1;
-        base = base * (1 - (e <= 4 ? 0.10 : 0.05));
-      }
-      seguro = acumulado * 1.03 * (1 + IGV);
+      lineas.forEach(function (ln, k) {
+        var base = ln.precio * ln.unidades, acumulado = 0, e = 1;
+        while (true) {
+          var prima = anios >= e ? ln.tasaSeguro * base : ln.tasaSeguro * base * extra / 365;
+          acumulado += prima;
+          detalleSeguro.push({ linea: k + 1, anio: e, base: base, prima: prima });
+          if (!(anios >= e && extra > 0) || e >= 6) break;
+          e += 1;
+          base = base * (1 - (e <= 4 ? 0.10 : 0.05));
+        }
+        seguro += acumulado * 1.03 * (1 + IGV);
+      });
     }
     var gps = 0;
     var financiado = total + seguro + gps - inicial;
@@ -210,7 +231,7 @@
     }
     var estructuracion = (op.comisionEstructura == null ? 0.01 : op.comisionEstructura) * (1 + IGV) * total;
     return {
-      total: total, inicial: inicial, pctInicial: total ? inicial / total : 0, tem: tem, periodos: periodos,
+      lineas: lineas, total: total, inicial: inicial, pctInicial: total ? inicial / total : 0, tem: tem, periodos: periodos,
       seguro: seguro, detalleSeguro: detalleSeguro, financiado: financiado, cuota: cuota, cuotaConIgv: cuotaTotalTipica,
       estructuracion: estructuracion, garantiaMobiliaria: 120 * (1 + IGV), lecturaPoderes: 37.39 * (1 + IGV),
       cronograma: filas, totalIntereses: filas.reduce(function (s, f) { return s + f.interes; }, 0)
@@ -232,7 +253,12 @@
     });
     FILAS_ENTRADA.forEach(function (fila) { met['E' + fila] = null; });
     if (exp.corte) {
-      met.E61 = exp.corte.ventas / 1000;
+      // Con estados financieros de corte se llena toda la columna E; si no, solo las ventas del Reporte Tributario.
+      if (exp.corte.metod) FILAS_ENTRADA.forEach(function (fila) {
+        var v = exp.corte.metod[fila];
+        met['E' + fila] = v === undefined || v === null ? null : Math.round(v * 1e6) / 1e6;
+      });
+      else met.E61 = exp.corte.ventas / 1000;
       datos.E51 = serialExcel(fechaUTC(exp.corte.anio, exp.corte.mes, 0));
     }
     var rt = exp.rt || {}, op = exp.op || {}, cl = exp.cliente || {};
@@ -244,9 +270,15 @@
       ident.I7 = serialExcel(fechaUTC(+p[2], +p[1] - 1, +p[0]));
     }
     Object.keys(ident).forEach(function (k) { if (ident[k] !== null && ident[k] !== undefined && ident[k] !== '') datos[k] = ident[k]; });
-    if (op.precio) {
+    var lineas = lineasDe(op);
+    if (lineas.length) {
+      for (var k = 0; k < 5; k++) {
+        var ln = lineas[k], fila = 20 + k;
+        datos['B' + fila] = ln ? ln.modelo : null; datos['C' + fila] = ln ? (ln.tipo || null) : null;
+        datos['E' + fila] = ln ? ln.precio : null; datos['F' + fila] = ln ? ln.unidades : null; datos['K' + fila] = ln ? ln.tasaSeguro : null;
+      }
       Object.assign(datos, {
-        B20: op.modelo, E20: op.precio, F20: op.unidades, K20: op.tasaSeguro, F26: op.pctInicial, F27: op.tea,
+        F26: op.pctInicial, F27: op.tea, F39: op.comisionEstructura == null ? 0.01 : op.comisionEstructura,
         I29: serialExcel(op.activacion), I30: op.pagos, I31: op.gracia, A82: op.moneda === 'S/' ? 2 : 1,
         A34: op.seguro === 'Financiado' ? 1 : 2, F45: op.seguro, F44: 'CREDITO DIRECTO', F49: op.notaria || null,
         C6: cl.contacto || null, I6: cl.correo || null, C8: cl.telefono || null, C10: cl.analista || null, C11: cl.vendedor || null,
@@ -266,7 +298,9 @@
     var pref = op.moneda === 'S/' ? 'S/ ' : 'US$ ', mon = op.moneda === 'S/' ? 'MN' : 'ME';
     var monedaTxt = op.moneda === 'S/' ? 'Soles' : 'Dólares americanos';
     var plazo = op.pagos + op.gracia;
-    var unidades = '• (' + op.unidades + ' unidad' + (op.unidades > 1 ? 'es' : '') + ') - ' + esc(op.modelo) + ' x ' + n0(op.precio) + ' = ' + n0(cot.total) + '<br>';
+    var unidades = cot.lineas.map(function (ln) {
+      return '• (' + ln.unidades + ' unidad' + (ln.unidades > 1 ? 'es' : '') + ') ' + esc(ln.tipo || '') + ' - ' + esc(ln.modelo) + ' x ' + n0(ln.precio) + ' = ' + n0(ln.precio * ln.unidades) + '<br>';
+    }).join('');
     var html = '<font face="calibri" style="font-size:10pt;"><b><i>Estimado ' + esc(cl.contacto || rt.nombre) + ',</i></b><br><br>' +
       'Sirva la presente para remitirles las condiciones de crédito (sujeto a evaluación), bajo las siguientes condiciones:<br><br>' +
       '<b>Descripción de la(s) unidad(es):</b><br><br>' + unidades + '<br>' +
@@ -305,7 +339,7 @@
     };
   }
 
-  var api = { CRITERIOS: CRITERIOS, FILAS: FILAS, FILAS_ENTRADA: FILAS_ENTRADA, MESES: MESES, metodizar: metodizar,
+  var api = { lineasDe: lineasDe, CRITERIOS: CRITERIOS, FILAS: FILAS, FILAS_ENTRADA: FILAS_ENTRADA, MESES: MESES, metodizar: metodizar,
     completar: completar, indicadores: indicadores, controles: controles, sectorPorCiiu: sectorPorCiiu, cotizar: cotizar,
     celdasPca: celdasPca, correo: correo, fechaUTC: fechaUTC, serialExcel: serialExcel };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else raiz.MotorScania = api;
