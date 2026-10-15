@@ -10,7 +10,7 @@
     document.title = m.nombre;
   }
   function tarjeta(html) { $('panel').innerHTML = '<div class="card conectar">' + html + '</div>'; }
-  function error(t, m, volver) { tarjeta('<p data-titular class="mal">' + h(t || 'No se pudo conectar') + '</p><p>' + h(m || 'Intenta de nuevo en unos minutos.') + '</p>' + (volver ? '<div class="acciones"><a class="p" href="' + h(volver) + '">Volver al portal</a></div>' : '')); }
+  function error(t, m, volver) { P.revelar(); tarjeta('<p data-titular class="mal">' + h(t || 'No se pudo conectar') + '</p><p>' + h(m || 'Intenta de nuevo en unos minutos.') + '</p>' + (volver ? '<div class="acciones"><a class="p" href="' + h(volver) + '">Volver al portal</a></div>' : '')); }
   function pedir(ruta, params) {
     params.set('modo', 'json');
     return fetch(MOTOR + ruta + '?' + params.toString(), { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) { return JSON.parse(t); });
