@@ -77,6 +77,21 @@ main{max-width:1240px;margin:auto;padding:26px 24px 60px}
 .docs .nom{font-weight:600;font-size:14px}.docs .det{font-size:12px;color:var(--suave)}
 .docs .est{margin-left:auto;font-size:12px;font-weight:600}
 .docs .quitar{background:none;border:0;color:var(--suave);cursor:pointer;font-size:18px}
+.docs li.ver{cursor:pointer}.docs li.ver:hover{border-color:var(--azul);background:var(--celeste)}
+.docs .lupa{font-size:12px;color:var(--azul);font-weight:600}
+.visor{position:fixed;inset:0;background:rgba(4,30,66,.55);z-index:50;display:flex;align-items:center;justify-content:center;padding:20px}
+.visor[hidden]{display:none}
+.visor-caja{background:#fff;border-radius:12px;width:min(1280px,100%);height:min(88vh,900px);display:flex;flex-direction:column;overflow:hidden}
+.visor-cab{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--linea)}
+.visor-cab b{font-size:15px}.visor-cab button{margin-left:auto}
+.visor-cuerpo{flex:1;display:grid;grid-template-columns:1.3fr 1fr;min-height:0}
+.visor-cuerpo iframe{width:100%;height:100%;border:0;background:#525659}
+.visor-datos{overflow:auto;padding:14px 18px;border-left:1px solid var(--linea);font-size:13px}
+.visor-datos h4{margin:14px 0 6px;color:var(--navy);font-size:13px;text-transform:uppercase;letter-spacing:.03em}
+.visor-datos table{width:100%;border-collapse:collapse}.visor-datos td{padding:4px 6px;border-bottom:1px solid var(--linea)}
+.visor-datos td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.visor-datos .cas{color:var(--suave);font-size:11px}
+@media(max-width:860px){.visor-cuerpo{grid-template-columns:1fr;grid-template-rows:55% 45%}.visor-datos{border-left:0;border-top:1px solid var(--linea)}}
 /* Fuentes de archivos y líneas */
 .fuentes{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
 .panel-drive{border:1px solid var(--linea);border-radius:10px;padding:14px;margin-top:12px;background:#FAFCFF}
@@ -153,7 +168,9 @@ details.extra{margin:4px 0 10px}details.extra summary{cursor:pointer;font-size:1
 .cuota-grande{background:var(--navy);color:#fff;border-radius:10px;padding:16px 18px;margin-bottom:12px}
 .cuota-grande span{font-size:12px;opacity:.8;text-transform:uppercase;letter-spacing:.4px}
 .cuota-grande b{display:block;font-size:30px;font-weight:800}
-.crono{max-height:420px;overflow:auto;border:1px solid var(--linea);border-radius:8px}
+.crono{overflow-x:auto;border:1px solid var(--linea);border-radius:8px}
+.crono table.t td,.crono table.t th{padding:5px 10px}
+.col-fija{position:sticky;top:16px;align-self:start}
 .crono table.t th{position:sticky;top:0}
 /* Envío */
 .vista-correo{border:1px solid var(--linea);border-radius:8px;padding:16px;max-height:460px;overflow:auto;background:#fff}
@@ -256,7 +273,6 @@ footer{text-align:center;color:var(--suave);font-size:12px;padding:24px}
       <ul class="docs" id="docs"></ul>
       <div class="acciones">
         <button class="btn btn-p" id="btnLeer" disabled>Leer con IA</button>
-        <button class="btn btn-s" id="btnEjemplo">Usar caso de ejemplo</button>
       </div>
       <div class="aviso" id="avisoLectura" style="display:none"></div>
     </div>
@@ -363,7 +379,7 @@ footer{text-align:center;color:var(--suave);font-size:12px;padding:24px}
         <div class="campo"><label>Motivo de la inversión</label><input id="motivo" placeholder="Renovación o ampliación de flota, nuevo contrato…"></div>
       </details>
     </div>
-    <div>
+    <div class="col-fija">
       <div class="tarjeta">
         <div id="dictamenCot"></div>
         <div class="sello-hoja" id="selloCot">Calculando en la hoja PCA de Scania (Google Sheets)…</div>
@@ -371,11 +387,11 @@ footer{text-align:center;color:var(--suave);font-size:12px;padding:24px}
         <div class="cronometro" id="cronometro"></div>
         <div class="resumen-cot" id="resumenCot"></div>
       </div>
-      <div class="tarjeta">
-        <h3>Cronograma</h3>
-        <div class="crono"><table class="t" id="tablaCrono"></table></div>
-      </div>
     </div>
+  </div>
+  <div class="tarjeta" style="margin-top:20px">
+    <h3>Cronograma de pagos</h3>
+    <div class="crono"><table class="t" id="tablaCrono"></table></div>
   </div>
   <div class="acciones">
     <button class="btn btn-s" id="btnPdf">Descargar cotización (PDF)</button>
@@ -456,14 +472,77 @@ function agregar(lista){
   });
   pintarDocs();
 }
+/* ---------- visor: el PDF a la izquierda y lo que leyó la IA a la derecha ---------- */
+var CASILLAS={359:'Efectivo y equivalentes',360:'Inversiones financieras',361:'CxC comerciales terceros',362:'CxC comerciales relacionadas',363:'CxC al personal y accionistas',
+  364:'CxC diversas terceros',365:'CxC diversas relacionadas',366:'Gastos pagados por anticipado',367:'Cobranza dudosa',368:'Mercaderías',369:'Productos terminados',
+  371:'Productos en proceso',372:'Materias primas',373:'Suministros y repuestos',376:'Desvalorización de inventarios',377:'Activos para la venta',378:'Otros activos corrientes',
+  379:'Inversiones mobiliarias',380:'Propiedades de inversión',381:'Activos por derecho de uso',382:'Propiedades, planta y equipo',383:'Depreciación acumulada',384:'Intangibles',
+  388:'Activo diferido',389:'Otros activos no corrientes',390:'TOTAL ACTIVO',401:'Sobregiros',402:'Tributos por pagar',403:'Remuneraciones por pagar',404:'CxP comerciales terceros',
+  405:'CxP comerciales relacionadas',406:'CxP a accionistas',407:'CxP diversas terceros',408:'CxP diversas relacionadas',409:'Obligaciones financieras',410:'Provisiones',
+  411:'Pasivo diferido',412:'TOTAL PASIVO',414:'Capital',416:'Capital adicional',418:'Resultados no realizados',419:'Excedente de revaluación',420:'Reservas',
+  421:'Resultados acumulados',422:'Resultados acumulados (negativos)',423:'Utilidad del ejercicio',424:'Pérdida del ejercicio',425:'TOTAL PATRIMONIO',426:'TOTAL PASIVO Y PATRIMONIO',
+  461:'Ventas netas o ingresos',462:'Descuentos y rebajas',463:'Ventas netas',464:'Costo de ventas',466:'Resultado bruto (utilidad)',467:'Resultado bruto (pérdida)',
+  468:'Gastos de ventas',469:'Gastos de administración',470:'Resultado de operación (utilidad)',471:'Resultado de operación (pérdida)',472:'Gastos financieros',
+  473:'Ingresos financieros',475:'Otros ingresos',476:'Otros ingresos no gravados',480:'Gastos diversos',484:'Resultado antes de participaciones',487:'Resultado antes de impuesto',
+  489:'Resultado antes de impuesto (pérdida)',490:'Impuesto a la renta',351:'Impuesto a la renta (ingreso)',492:'Resultado del ejercicio',493:'Pérdida del ejercicio',
+  deuda_cp:'Deuda financiera de corto plazo',deuda_lp:'Deuda financiera de largo plazo'};
+function nf(v){return Number(v).toLocaleString('es-PE',{maximumFractionDigits:2});}
+function filasDatos(pares){return '<table>'+pares.filter(function(p){return p[1]!==undefined&&p[1]!==null&&p[1]!=='';}).map(function(p){return '<tr><td>'+p[0]+'</td><td class="n">'+p[1]+'</td></tr>';}).join('')+'</table>';}
+function datosLeidos(a){
+  if(!a.datos)return '<p class="sub">Todavía no se lee. Da clic en “Leer con IA” y vuelve a abrirlo.</p>';
+  var d=a.datos, h='';
+  var TIPO={F710:'Formulario 710 de SUNAT',REPORTE_TRIBUTARIO:'Reporte Tributario de SUNAT',ESTADOS_FINANCIEROS:'Estados financieros',COTIZACION_VEHICULO:'Proforma del vehículo'};
+  h+='<h4>Qué es</h4>'+filasDatos([['Documento',TIPO[a.tipo]||a.tipo],['Contribuyente',esc(d.razon_social||d.nombre||d.cliente||'')],['RUC',esc(d.ruc||'')],
+    ['Ejercicio',d.ejercicio||(d.anio&&a.tipo==='ESTADOS_FINANCIEROS'?d.anio:'')],['Fecha',esc(d.fecha_corte||d.fecha||d.fecha_presentacion||'')],
+    ['Tipo de declaración',esc(d.tipo_declaracion||'')],['Auditado',a.tipo==='ESTADOS_FINANCIEROS'?(d.auditado?'Sí':'No'):''],['Unidad',esc(d.unidad||'')]]);
+  if(d.casillas){
+    var ks=Object.keys(d.casillas).sort(function(x,y){return (isNaN(x)?999:+x)-(isNaN(y)?999:+y);});
+    var bloque=function(tit,f){var fil=ks.filter(f);if(!fil.length)return '';
+      return '<h4>'+tit+'</h4><table>'+fil.map(function(k){var neg=d.casillas[k]<0;
+        return '<tr><td>'+esc(CASILLAS[k]||('Casilla '+k))+(isNaN(k)?'':' <span class="cas">'+k+'</span>')+'</td><td class="n"'+(neg?' style="color:var(--bloq)"':'')+'>'+nf(d.casillas[k])+'</td></tr>';}).join('')+'</table>';};
+    h+=bloque('Activo',function(k){return +k>=359&&+k<=390;})+bloque('Pasivo y patrimonio',function(k){return +k>=401&&+k<=426;})+
+       bloque('Resultados',function(k){return (+k>=461&&+k<=493)||+k===351;})+bloque('Deuda separada',function(k){return isNaN(k);});
+    h+='<p class="sub" style="margin-top:8px">Montos en soles. Los negativos van en rojo.</p>';
+  }
+  if(a.tipo==='REPORTE_TRIBUTARIO'){
+    var t=d.trabajadores_agosto_2026||{};
+    h+='<h4>Datos del RUC</h4>'+filasDatos([['Tipo',esc(d.tipo_contribuyente||'')],['Inicio de actividades',esc(d.fecha_inicio_actividades||'')],['Estado / condición',esc((d.estado||'')+' / '+(d.condicion||''))],
+      ['Domicilio',esc([d.domicilio_fiscal,d.domicilio_distrito].filter(Boolean).join(' '))],['Actividad',esc((d.ciiu_principal?d.ciiu_principal+' · ':'')+(d.actividad_principal||''))],
+      ['Trabajadores',(t.dependientes||t.independientes)?(t.dependientes||0)+' dep. · '+(t.independientes||0)+' indep.':''],
+      ['Meses con deuda (12 m)',d.comportamiento_12_meses?d.comportamiento_12_meses.meses_con_deuda:'']]);
+    if(d.representantes&&d.representantes.length)h+='<h4>Representantes</h4>'+filasDatos(d.representantes.map(function(r){return [esc(r.nombre),esc(r.cargo||'')];}));
+    if(d.resumen_710){h+='<h4>Declaraciones anuales (SUNAT)</h4><table>';Object.keys(d.resumen_710).sort().forEach(function(y){var r=d.resumen_710[y];
+      Object.keys(r).forEach(function(c){h+='<tr><td>'+y+' · '+esc(c.replace(/_/g,' '))+'</td><td class="n">'+nf(r[c][0])+' <span class="cas">'+r[c][1]+'</span></td></tr>';});});h+='</table>';}
+    if(d.ventas_mensuales){h+='<h4>Ventas mensuales</h4><table>';Object.keys(d.ventas_mensuales).sort().forEach(function(y){var v=d.ventas_mensuales[y]||[];
+      h+='<tr><td>'+y+' ('+v.length+' meses)</td><td class="n">'+nf(v.reduce(function(s,x){return s+Number(x||0);},0))+'</td></tr>';});h+='</table>';}
+  }
+  if(a.tipo==='COTIZACION_VEHICULO'&&d.lineas){
+    h+='<h4>Unidades</h4><table>'+d.lineas.map(function(l){return '<tr><td>'+l.unidades+' x '+esc(l.modelo)+' <span class="cas">'+esc(l.tipo||'')+'</span></td><td class="n">'+esc(d.moneda||'')+' '+nf(l.precio)+'</td></tr>';}).join('')+'</table>';
+    h+=filasDatos([['Emite',esc(d.empresa||'')]]);
+  }
+  return h;
+}
+function abrirVisor(a){
+  if(!a||!a.base64)return;
+  var bin=atob(a.base64),buf=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
+  if(E.urlVisor)URL.revokeObjectURL(E.urlVisor);
+  E.urlVisor=URL.createObjectURL(new Blob([buf],{type:'application/pdf'}));
+  $('visorNombre').textContent=a.nombre; $('visorPdf').src=E.urlVisor; $('visorDatos').innerHTML=datosLeidos(a); $('visor').hidden=false;
+}
+function cerrarVisor(){$('visor').hidden=true;$('visorPdf').src='about:blank';}
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('visor').hidden)cerrarVisor();});
+document.addEventListener('click',function(e){if(e.target.id==='visor'||e.target.id==='btnCerrarVisor')cerrarVisor();});
+
 function pintarDocs(){
   $('docs').innerHTML=E.archivos.map(function(a,i){
     var col={pendiente:'var(--suave)',leyendo:'var(--azul)',leido:'var(--ok)',error:'var(--bloq)'}[a.estado];
     var est={pendiente:'Pendiente',leyendo:'<span class="spin"></span> Leyendo',leido:'✓ Leído',error:'Error'}[a.estado];
-    return '<li><div class="ico">PDF</div><div><div class="nom">'+esc(a.nombre)+'</div><div class="det">'+esc(a.detalle)+'</div></div>'+
+    return '<li class="'+(a.base64?'ver':'')+'" data-i="'+i+'"><div class="ico">PDF</div><div><div class="nom">'+esc(a.nombre)+'</div><div class="det">'+esc(a.detalle)+'</div>'+
+      (a.base64?'<div class="lupa">🔍 Ver el PDF y lo que leyó la IA</div>':'')+'</div>'+
       '<div class="est" style="color:'+col+'">'+est+'</div>'+(a.estado==='leyendo'?'':'<button class="quitar" data-i="'+i+'" title="Quitar">×</button>')+'</li>';
   }).join('');
-  $('docs').querySelectorAll('.quitar').forEach(function(b){b.onclick=function(){E.archivos.splice(+b.dataset.i,1);pintarDocs();};});
+  $('docs').querySelectorAll('li.ver').forEach(function(li){li.onclick=function(ev){if(ev.target.classList.contains('quitar'))return;abrirVisor(E.archivos[+li.dataset.i]);};});
+  $('docs').querySelectorAll('.quitar').forEach(function(b){b.onclick=function(ev){ev.stopPropagation();E.archivos.splice(+b.dataset.i,1);pintarDocs();};});
   $('btnLeer').disabled=!E.archivos.some(function(a){return a.estado!=='leido'&&a.base64;});
 }
 
@@ -538,6 +617,7 @@ $('btnLeer').onclick=function(){
 };
 
 function incorporar(tipo,d,a){
+  a.tipo=tipo; a.datos=d;   // para el visor
   if(tipo==='F710'){
     E.f710[d.ejercicio]=d; a.estado='leido';
     a.detalle='Formulario 710 · ejercicio '+d.ejercicio+' · '+Object.keys(d.casillas||{}).length+' casillas'+(d.tipo_declaracion==='RECTIFICATORIA'?' · rectificatoria':'');
@@ -555,18 +635,6 @@ function incorporar(tipo,d,a){
   } else { a.estado='leido'; a.detalle='Documento no usado en el metodizado'+(d&&d.resumen?': '+d.resumen:''); }
 }
 
-$('btnEjemplo').onclick=function(){
-  var b=this; b.disabled=true; b.innerHTML='<span class="spin"></span> Cargando';
-  fetch('ejemplo.json').then(function(r){return r.json();}).then(function(ej){
-    E.ejemplo=true; E.f710={}; E.rt=null; E.eeffCorte=null; E.proforma=null; E.archivos=[];
-    var docs=ej.f710.map(function(d){return {nombre:d.archivo,tipo:'F710',datos:d};}).concat([{nombre:ej.rt.archivo,tipo:'REPORTE_TRIBUTARIO',datos:ej.rt}]);
-    docs.forEach(function(d){E.archivos.push({nombre:d.nombre,estado:'leyendo',detalle:'La IA está leyendo el documento…'});});
-    pintarDocs();
-    docs.forEach(function(d,i){setTimeout(function(){incorporar(d.tipo,d.datos,E.archivos[i]);pintarDocs();
-      if(i===docs.length-1){ $('contacto').value=ej.cliente.contacto; analizar(); habilitar(2); setTimeout(function(){ir(2);},400); b.disabled=false; b.textContent='Usar caso de ejemplo'; }
-    },500+i*450);});
-  });
-};
 
 /* ---------- paso 2: metodizado y controles ---------- */
 function analizar(){
@@ -699,7 +767,7 @@ function descargarB64(b64,nombre,tipo){
 $('btnPca').onclick=function(){
   var codigo=codigoOk(), b=this;
   b.disabled=true;b.innerHTML='<span class="spin"></span> Llenando la PCA';
-  llamar({accion:'pca',codigo:codigo,cambios:cambiosPca(),nombre:(E.rt&&E.rt.nombre)||'Cliente'},90).then(function(r){
+  llamar({accion:'pca',codigo:codigo,cambios:cambiosPca(),cliente:(E.rt&&E.rt.nombre)||'Cliente'},90).then(function(r){
     if(!r.ok)throw new Error(r.error||'No se pudo generar');
     descargarB64(r.base64,r.nombre,'application/vnd.ms-excel.sheet.macroEnabled.12');
     aviso('avisoPca','PCA llena descargada. Al abrirla, Excel recalcula todas las hojas.');
@@ -820,5 +888,11 @@ $('btnEnviar').onclick=function(){
 };
 })();
 </script>
+<div class="visor" id="visor" hidden>
+  <div class="visor-caja">
+    <div class="visor-cab"><b id="visorNombre"></b><span class="sub" style="margin:0">El PDF a la izquierda · lo que leyó la IA a la derecha</span><button class="btn btn-s" id="btnCerrarVisor" type="button">Cerrar ✕</button></div>
+    <div class="visor-cuerpo"><iframe id="visorPdf" title="PDF"></iframe><div class="visor-datos" id="visorDatos"></div></div>
+  </div>
+</div>
 </body>
 </html>
