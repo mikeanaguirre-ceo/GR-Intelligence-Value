@@ -539,7 +539,7 @@ function pintarCliente(){
   $('tarjetaCliente').innerHTML='<div class="cliente"><div class="av">'+esc(ini)+'</div><div><h2>'+esc(nombre)+'</h2><div class="sub" style="margin:2px 0 0">RUC '+esc(rt.ruc||'—')+' · '+esc(rt.tipo_contribuyente||'')+(E.ejemplo?' · <b>caso de ejemplo anonimizado</b>':'')+'</div></div></div>'+
     '<div class="datos-cli">'+
     [['Actividad',(rt.ciiu_principal?rt.ciiu_principal+' · ':'')+(rt.actividad_principal||'—')],['Sector PCA',sector||'Por asignar'],
-     ['Departamento',rt.domicilio_distrito?rt.domicilio_distrito.split(' - ').pop():'—'],['Inicio de actividades',rt.fecha_inicio_actividades||'—'],
+     ['Departamento',rt.domicilio_distrito?rt.domicilio_distrito.split(' - ')[0]:'—'],['Inicio de actividades',rt.fecha_inicio_actividades||'—'],
      ['Estado SUNAT',(rt.estado||'—')+(rt.condicion?' / '+rt.condicion:'')],['Trabajadores',rt.trabajadores_agosto_2026?(rt.trabajadores_agosto_2026.dependientes+' dep. · '+rt.trabajadores_agosto_2026.independientes+' indep.'):'—'],
      ['Ejercicios leídos',Object.keys(E.f710).sort().map(function(y){return y+(E.f710[y].fuente==='EEFF'?' (EEFF)':'');}).join(', ')],['Corte año en curso',E.exp.corte?M.MESES[E.exp.corte.mes]+' '+E.exp.corte.anio+' · '+E.exp.corte.fuente:'—']]
     .concat(rt.representantes&&rt.representantes.length?[['Representantes / accionistas',rt.representantes.map(function(x){return x.nombre+(x.cargo?' ('+x.cargo+')':'');}).join(' · ')]]:[])
