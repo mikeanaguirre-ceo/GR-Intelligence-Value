@@ -95,10 +95,15 @@
     var todos = admins.concat(P.correos(d.portal_usuarios).map(function (x) { return x.toLowerCase(); }).filter(function (x) { return admins.indexOf(x) < 0; }));
     var max = Number(d.usuarios_max || 5), lleno = todos.length >= max;
     var cx = c.conexiones || {}, yo = String((estado.usuario || {}).email || '').toLowerCase();
-    var google = {}; (cx.google || []).forEach(function (g) { google[String(g.quien).toLowerCase()] = g.fecha; });
+    var google = {}; (cx.google || []).forEach(function (g) { google[String(g.quien).toLowerCase()] = g.servicios || {}; });
+    // Su Google por servicio: correo, calendario y Drive, cada uno con su estado real en el motor.
+    var SERV = [['correo', 'Correo'], ['calendario', 'Calendario'], ['drive', 'Drive']];
+    function chips(sv) { return SERV.map(function (x) { return '<span class="chip ' + (sv[x[0]] ? 'aplicado' : 'pendiente') + '">' + x[1] + (sv[x[0]] ? '' : ': falta') + '</span>'; }).join(''); }
     var filas = todos.map(function (e) {
       var esAdm = admins.indexOf(e) >= 0;
-      var g = google[e] !== undefined ? '<span class="chip aplicado">Dado de alta</span>' + ((adm || e === yo) ? ' <button class="s mini" data-quitar-google="' + h(e) + '">Quitar su Google</button>' : '') : (e === yo && cx.disponible && cx.disponible.google ? '<a class="s" href="' + h(conectar(c, 'google')) + '">Dar de alta mi Google</a>' : '<span class="vacio">Sin conectar</span>');
+      var sv = google[e], completo = !!(sv && sv.correo && sv.calendario && sv.drive);
+      var alta = e === yo && cx.disponible && cx.disponible.google ? ' <a class="s mini" href="' + h(conectar(c, 'google')) + '">' + (sv ? 'Completar mi Google' : 'Dar de alta mi Google') + '</a>' : '';
+      var g = sv ? chips(sv) + (completo ? '' : alta) + ((adm || e === yo) ? ' <button class="s mini" data-quitar-google="' + h(e) + '">Quitar su Google</button>' : '') : (alta || '<span class="vacio">Sin conectar</span>');
       return '<tr><td>' + h(e) + '</td><td>' + (esAdm ? 'Administra' : 'Equipo') + '</td><td>' + g + '</td><td>' + (inv[e] ? 'Enviada el ' + h(inv[e]) : '<span class="vacio">Sin enviar</span>') + '</td>'
         + (adm ? '<td class="acc"><button class="s" data-invitar="' + h(e) + '">' + (inv[e] ? 'Reenviar invitación' : 'Enviar invitación') + '</button>' + (esAdm ? '' : ' <button class="s" data-quitar="' + h(e) + '">Quitar del equipo</button>') + '</td>' : '') + '</tr>';
     }).join('');
