@@ -44,7 +44,8 @@ button,input,select{font:inherit}
 .camion{width:100%;max-width:600px;justify-self:end;display:block}
 /* Pasos */
 .pasos{background:#fff;border-bottom:1px solid var(--linea)}
-.pasos-in{max-width:1240px;margin:auto;display:flex;padding:0 24px;overflow-x:auto}
+.pasos-in{max-width:1240px;margin:auto;display:flex;align-items:center;padding:0 24px;overflow-x:auto}
+.nuevo-exp{margin-left:auto;padding:7px 14px;font-size:13px;white-space:nowrap}
 .paso{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:3px solid transparent;color:var(--suave);cursor:pointer;white-space:nowrap;background:none;border-top:0;border-left:0;border-right:0}
 .paso .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--fondo);font-weight:700;font-size:13px}
 .paso.activo{color:var(--navy);border-bottom-color:var(--azul);font-weight:600}
@@ -79,12 +80,12 @@ main{max-width:1240px;margin:auto;padding:26px 24px 60px}
 .docs .quitar{background:none;border:0;color:var(--suave);cursor:pointer;font-size:18px}
 .docs li.ver{cursor:pointer}.docs li.ver:hover{border-color:var(--azul);background:var(--celeste)}
 .docs .lupa{font-size:12px;color:var(--azul);font-weight:600}
-.visor{position:fixed;inset:0;background:rgba(4,30,66,.55);z-index:50;display:flex;align-items:center;justify-content:center;padding:20px}
+.visor{position:fixed;inset:0;background:rgba(4,30,66,.55);z-index:50;display:flex;padding:10px}
 .visor[hidden]{display:none}
-.visor-caja{background:#fff;border-radius:12px;width:min(1280px,100%);height:min(88vh,900px);display:flex;flex-direction:column;overflow:hidden}
+.visor-caja{background:#fff;border-radius:12px;width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden}
 .visor-cab{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--linea)}
 .visor-cab b{font-size:15px}.visor-cab button{margin-left:auto}
-.visor-cuerpo{flex:1;display:grid;grid-template-columns:1.3fr 1fr;min-height:0}
+.visor-cuerpo{flex:1;display:grid;grid-template-columns:1.7fr 1fr;min-height:0}
 .visor-cuerpo iframe{width:100%;height:100%;border:0;background:#525659}
 .visor-datos{overflow:auto;padding:14px 18px;border-left:1px solid var(--linea);font-size:13px}
 .visor-datos h4{margin:14px 0 6px;color:var(--navy);font-size:13px;text-transform:uppercase;letter-spacing:.03em}
@@ -163,6 +164,7 @@ table.t tr.cuadre td{font-weight:700}
 .d-no_viable{border-color:var(--bloq);background:var(--bloqf)}.d-no_viable .luz{background:var(--bloq)}
 .d-documentos{border-color:#6B7A90;background:#EEF1F5}.d-documentos .luz{background:#6B7A90}
 .dictamen .nota{font-size:11px;color:var(--suave);margin-top:6px}
+.dictamen .grupo{margin-top:8px}.dictamen .grupo>b{font-size:12px;text-transform:uppercase;letter-spacing:.03em}
 details.extra{margin:4px 0 10px}details.extra summary{cursor:pointer;font-size:13px;color:var(--azul);font-weight:600;padding:6px 0}
 .resumen-cot{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .cuota-grande{background:var(--navy);color:#fff;border-radius:10px;padding:16px 18px;margin-bottom:12px}
@@ -244,6 +246,7 @@ footer{text-align:center;color:var(--suave);font-size:12px;padding:24px}
   <button class="paso" data-paso="2" disabled><span class="n">2</span>Lectura y metodizado</button>
   <button class="paso" data-paso="3" disabled><span class="n">3</span>Cotización</button>
   <button class="paso" data-paso="4" disabled><span class="n">4</span>Envío</button>
+  <button class="btn btn-s nuevo-exp" id="btnNuevo" type="button" title="Empezar con otro cliente">＋ Nuevo expediente</button>
 </div></nav>
 
 <main>
@@ -285,7 +288,7 @@ footer{text-align:center;color:var(--suave);font-size:12px;padding:24px}
         <li><b>Estados financieros de corte</b> del año en curso (balance y resultados a la fecha): llenan la columna del corte. Si la empresa trae <b>auditados</b> en vez del 710, también sirven.</li>
         <li><b>Proforma del vehículo</b> (opcional): prellena modelo, cantidad y precio de la cotización.</li>
       </ul>
-      <p class="sub" style="margin:16px 0 0">El <b>caso de ejemplo</b> usa un expediente real con nombre y RUC ficticios.</p>
+      <p class="sub" style="margin:16px 0 0">Para probar: en Google Drive, carpeta <b>“PDF para probar”</b>, hay 10 empresas ficticias listas.</p>
     </div>
   </div>
 </section>
@@ -309,7 +312,8 @@ footer{text-align:center;color:var(--suave);font-size:12px;padding:24px}
     <div>
       <div id="dictamenMet"></div>
       <div class="tarjeta">
-        <h2>Controles</h2>
+        <h2>Revisión de los documentos</h2>
+        <p class="sub" style="margin:-4px 0 10px">Revisa que los PDF estén completos, cuadren y coincidan con SUNAT. <b>No decide el crédito:</b> eso lo dice el dictamen de arriba.</p>
         <div class="resumen-ctl" id="resumenCtl"></div>
         <div id="listaCtl"></div>
         <button class="btn btn-s" id="btnVerOk" style="margin-top:10px;padding:6px 12px;font-size:13px">Ver también los controles que pasaron</button>
@@ -527,11 +531,19 @@ function abrirVisor(a){
   var bin=atob(a.base64),buf=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
   if(E.urlVisor)URL.revokeObjectURL(E.urlVisor);
   E.urlVisor=URL.createObjectURL(new Blob([buf],{type:'application/pdf'}));
-  $('visorNombre').textContent=a.nombre; $('visorPdf').src=E.urlVisor; $('visorDatos').innerHTML=datosLeidos(a); $('visor').hidden=false;
+  $('visorNombre').textContent=a.nombre; $('visorPdf').src=E.urlVisor+'#navpanes=0&view=FitH'; $('visorDatos').innerHTML=datosLeidos(a); $('visor').hidden=false;   // el PDF sin miniaturas y ajustado al ancho
 }
 function cerrarVisor(){$('visor').hidden=true;$('visorPdf').src='about:blank';}
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('visor').hidden)cerrarVisor();});
 document.addEventListener('click',function(e){if(e.target.id==='visor'||e.target.id==='btnCerrarVisor')cerrarVisor();});
+
+// Nuevo expediente: todo vive en esta pestaña del navegador, así que basta con empezar de cero.
+function nuevoExpediente(){
+  var hayAlgo=E.archivos.length||E.exp;
+  if(hayAlgo&&!E.tFin&&!confirm('¿Empezar un expediente nuevo? Se borra lo que tienes en pantalla (lo ya enviado queda en Drive).'))return;
+  location.reload();
+}
+document.addEventListener('click',function(e){if(e.target.id==='btnNuevo'||e.target.id==='lnkNuevo')nuevoExpediente();});
 
 function pintarDocs(){
   $('docs').innerHTML=E.archivos.map(function(a,i){
@@ -691,14 +703,17 @@ function pintarDictamen(id,conCot){
   var op=conCot?operacion():null, c=conCot?cotizacionVigente():null;
   var d=M.dictamen(E.exp,E.rt,op,c), col={rojo:'var(--bloq)',ambar:'#E59400',verde:'var(--ok)',docs:'#6B7A90'};
   $(id).innerHTML='<div class="dictamen d-'+d.estado+'"><div class="cab"><div class="luz"></div><div><span>Dictamen referencial'+(conCot?' con la cuota nueva':' de los estados financieros')+'</span><b>'+esc(d.titulo)+'</b></div></div>'+
-    '<ul>'+d.motivos.map(function(m){return '<li style="--c:'+col[m.nivel]+'">'+esc(m.texto)+'</li>';}).join('')+'</ul>'+
+    [['rojo',d.estado==='no_viable'?'Por qué no es viable':'Impide el crédito'],['docs','Corregir en los documentos'],['ambar','A revisar'],['verde','Lo que está bien']].map(function(g){
+      var ms=d.motivos.filter(function(m){return m.nivel===g[0];}); if(!ms.length)return '';
+      return '<div class="grupo"><b style="color:'+col[g[0]]+'">'+g[1]+'</b><ul>'+ms.map(function(m){return '<li style="--c:'+col[m.nivel]+'">'+esc(m.texto)+'</li>';}).join('')+'</ul></div>';
+    }).join('')+
     '<div class="nota">Referencias de la PCA (apalancamiento &lt; 3,5 veces el EBITDA, DSCR con tipo de cambio 3,8) y umbrales de mercado. Criterios por confirmar con Scania.</div></div>';
 }
 function pintarCtl(){
   pintarDictamen('dictamenMet',false);
   var av=E.exp.avisos, c={ok:0,alerta:0,bloquea:0};
   av.forEach(function(x){c[x.estado]++;});
-  $('resumenCtl').innerHTML='<span class="pill p-bloquea">'+c.bloquea+' bloquean</span><span class="pill p-alerta">'+c.alerta+' alertas</span><span class="pill p-ok">'+c.ok+' correctos</span>';
+  $('resumenCtl').innerHTML='<span class="pill p-bloquea">'+c.bloquea+' por corregir</span><span class="pill p-alerta">'+c.alerta+' avisos</span><span class="pill p-ok">'+c.ok+' correctos</span>';
   $('listaCtl').innerHTML=av.map(function(x){
     var ico={ok:'<span class="pill p-ok">OK</span>',alerta:'<span class="pill p-alerta">Alerta</span>',bloquea:'<span class="pill p-bloquea">Bloquea</span>'}[x.estado];
     return '<div class="ctl '+(x.estado==='ok'?'ctl-ok':'')+'"><div class="marca">'+ico+'</div><div class="t"><b>'+esc(x.nombre)+'</b><span>'+esc(x.detalle)+'</span></div></div>';
@@ -880,6 +895,7 @@ $('btnEnviar').onclick=function(){
     var h='';
     if(r.correo) h+='<a>✓ Correo enviado a '+esc(r.correo)+'</a>';
     if(r.drive) h+='<a href="'+esc(r.drive)+'" target="_blank" rel="noopener">✓ Expediente guardado en Drive · abrir carpeta</a>';
+    h+='<a id="lnkNuevo" style="cursor:pointer">＋ Empezar un expediente nuevo</a>';
     if(E.t0) h+='<a>⏱ Expediente completo en '+Math.floor((E.tFin-E.t0)/60000)+' min '+('0'+Math.round((E.tFin-E.t0)/1000)%60).slice(-2)+' s</a>';
     if(r.evento) h+='<a href="'+esc(r.evento)+'" target="_blank" rel="noopener">✓ Seguimiento agendado en Calendar · abrir evento</a>';
     $('resultado').innerHTML=h||'<a>✓ Listo</a>';$('resultado').style.display='block';
