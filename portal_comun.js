@@ -4,6 +4,10 @@
   var API = 'https://mikea.app.n8n.cloud/webhook/motor-portal-api';
   var CLIENT_ID = '984882033131-fc761rdsqc65vks90b4mt0sfhbkj1gbl.apps.googleusercontent.com';
   var P = {};
+  // Paginas de una compania (<html class="esperando-marca">): el encabezado se muestra hasta tener su marca,
+  // para que nadie vea un instante otra marca. Si la marca no llega, se muestra igual a los 12 s.
+  P.revelar = function () { document.documentElement.classList.remove('esperando-marca'); };
+  setTimeout(function () { P.revelar(); }, 12000);
   P.$ = function (id) { return document.getElementById(id); };
   P.h = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   P.msg = function (id, clase, texto) { var m = P.$(id); if (m) { m.className = 'msg ' + (clase || ''); m.textContent = texto; } };
@@ -35,6 +39,7 @@
     P.$('logo').innerHTML = d.marca_logo_url ? '<img src="' + P.h(d.marca_logo_url) + '" alt="' + P.h(d.marca_nombre) + '"><b>' + P.h(d.portal_nombre || d.marca_nombre) + '</b>' : '<b>' + P.h(d.marca_nombre) + '</b>';
     if (titulo) P.$('titulo').textContent = titulo;
     if (bajada) P.$('bajada').textContent = bajada;
+    P.revelar();
   };
   P.solicitudes = function (sol, filtro) {
     var xs = (sol || []).filter(function (s) { return !filtro || String(s.seccion).indexOf(filtro) === 0; });
@@ -191,11 +196,11 @@
   P.marcaPublica = function (titulo, bajada) {
     var t = P.claveDeRuta(); if (!t) return Promise.resolve(null);
     return P.api({ accion: 'marca', tenant: t }).then(function (d) {
-      var m = d && d.marca; if (!m) return null;
+      var m = d && d.marca; if (!m) { P.revelar(); return null; }
       P.aplicarMarca({ marca_nombre: m.nombre, portal_nombre: m.portal, marca_logo_url: m.logo, marca_color_primario: m.primario, marca_color_oscuro: m.oscuro, marca_fuente_interna: m.fuente }, (titulo || '').replace('{nombre}', m.nombre), bajada);
       document.title = (titulo || m.nombre).replace('{nombre}', m.nombre);
       return m;
-    }).catch(function () { return null; });
+    }).catch(function () { P.revelar(); return null; });
   };
   P.correos = function (v) { return String(v || '').split(/[,;\s]+/).filter(Boolean); };
   window.GRP = P;
