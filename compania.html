@@ -99,6 +99,7 @@
     // Su Google por servicio: correo, calendario y Drive, cada uno con su estado real en el motor.
     var SERV = [['correo', 'Correo'], ['calendario', 'Calendario'], ['drive', 'Drive']];
     function chips(sv) { return SERV.map(function (x) { return '<span class="chip ' + (sv[x[0]] ? 'aplicado' : 'pendiente') + '">' + x[1] + (sv[x[0]] ? '' : ': falta') + '</span>'; }).join(''); }
+    var sol = {}; try { sol = JSON.parse((c.info || {}).licencias_solicitud || '{}') || {}; } catch (x) { sol = {}; }
     var filas = todos.map(function (e) {
       var esAdm = admins.indexOf(e) >= 0;
       var sv = google[e], completo = !!(sv && sv.correo && sv.calendario && sv.drive);
@@ -111,9 +112,11 @@
       + '<p class="nota" style="margin:0">Licencias en uso: <span class="uso' + (todos.length > max ? ' lleno' : '') + '">' + todos.length + ' de ' + max + '</span>, contando a quien administra.' + P.ayuda('usuarios_max') + ' ' + (adm ? 'Para sumar a alguien: agrégalo y envíale la invitación para dar de alta su Google. También te la puedes enviar a ti.' : 'Quien administra el portal agrega o quita personas.') + '</p>'
       + '<div style="overflow-x:auto"><table class="equipo"><tr><th>Correo</th><th>Rol</th><th>Su Google' + P.ayuda('google') + '</th><th>Invitación para dar de alta' + P.ayuda('invitacion') + '</th>' + (adm ? '<th></th>' : '') + '</tr>' + filas + '</table></div>'
       + (adm ? '<div class="acciones"><label style="flex:1;min-width:220px">Agregar a una persona (correo de Google)<input id="nuevo-usuario" type="email" placeholder="nombre@compania.com"' + (lleno ? ' disabled' : '') + '></label><button class="p" id="agregar"' + (lleno ? ' disabled' : '') + '>Agregar</button></div>'
-        + (lleno ? '<p class="vacio">Ya usan todas las licencias. Quita a alguien o pide más licencias en el recuadro de abajo.</p>' : '') : '')
+        + (lleno ? '<p class="vacio">Ya usan todas las licencias. Quita a alguien o pide más licencias.</p>' : '')
+        + '<div class="acciones"><label style="min-width:160px">Licencias adicionales<input id="lic-cuantas" type="number" min="1" max="50" value="1"></label><button class="s" id="lic-pedir">Pedir más licencias</button></div>'
+        + (sol.fecha ? '<p class="vacio">Pediste ' + h(sol.cuantas) + ' licencia(s) más el ' + h(sol.fecha) + '. Great Revenue ya recibió el aviso.</p>' : '') : '')
       + '<span class="msg" id="m-equipo"></span>';
-    return tarjeta(1, 'Equipo', cuerpo + P.pedir('equipo', 'Equipo', 'Ej.: necesitamos dos licencias más') + P.solicitudes(c.solicitudes, 'Equipo'));
+    return tarjeta(1, 'Equipo', cuerpo + P.pedir('equipo', 'Equipo', 'Ej.: explicar a mi equipo cómo dar de alta su Google') + P.solicitudes(c.solicitudes, 'Equipo'));
   }
   function activarEquipo(c) {
     var t = c.tenant;
@@ -130,6 +133,12 @@
       var e = $('nuevo-usuario').value.trim().toLowerCase();
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) { P.msg('m-equipo', 'bad', 'Escribe un correo válido.'); return; }
       llamar({ accion: 'equipo_agregar', email: e }, e + ' quedó en el equipo. Ahora envíale su invitación.', $('agregar'));
+    };
+    if ($('lic-pedir')) $('lic-pedir').onclick = function () {
+      var b = $('lic-pedir'), n = Math.round(Number($('lic-cuantas').value || 0));
+      if (!(n >= 1 && n <= 50)) { P.msg('m-equipo', 'bad', 'Indica cuántas licencias más necesitas (1 a 50).'); return; }
+      if (!b.getAttribute('data-confirmar')) { b.setAttribute('data-confirmar', '1'); b.className = 'p'; b.textContent = 'Confirmar solicitud'; P.msg('m-equipo', '', 'Se avisa a Great Revenue que necesitan ' + n + ' licencia(s) más.'); return; }
+      llamar({ accion: 'licencias_pedir', cuantas: n }, 'Listo: Great Revenue recibió tu solicitud de ' + n + ' licencia(s) más.', b);
     };
     Array.prototype.forEach.call(document.querySelectorAll('[data-invitar]'), function (b) {
       b.onclick = function () {
