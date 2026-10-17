@@ -212,7 +212,7 @@ function enlazarPeriodo() {
 }
 function avisoCobertura(r) {
   if (r[0] >= D.primerDia) return '';
-  return '<div class="aviso">El gasto de Claude se mide desde el <b>' + fechaCorta(D.primerDia) + '</b> (lo más viejo que n8n todavía guarda). Lo anterior a esa fecha no aparece; la cifra completa solo está en la consola de Anthropic.</div>';
+  return '<div class="aviso">El gasto de Claude se mide desde el <b>' + fechaCorta(D.primerDia) + '</b>: n8n solo guarda unos días el contenido de cada ejecución, que es de donde sale el consumo de tokens. Las ejecuciones de n8n sí se cuentan desde el <b>' + fechaCorta(D.primerDiaEj) + '</b>. Lo anterior solo está en la consola de Anthropic.</div>';
 }
 
 function pResumen() {
