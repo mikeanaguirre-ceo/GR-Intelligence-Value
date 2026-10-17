@@ -29,11 +29,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .tab:hover { background: var(--bg-3); color: var(--text); }
 .tab.active { background: linear-gradient(135deg, var(--purple), var(--pink)); color: white; }
 .badge { background: var(--red); color: white; padding: 1px 7px; border-radius: 10px; font-size: 11px; margin-left: 6px; }
-.panel { display: none; } .panel.active { display: block; }
 .filtros { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
 .chip { background: var(--bg-2); border: 1px solid var(--border); color: var(--text-dim); padding: 7px 14px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: 600; }
 .chip.active { background: var(--bg-3); color: var(--text); border-color: var(--purple); }
-input[type=date], input[type=search], select { background: var(--bg-2); border: 1px solid var(--border); color: var(--text); padding: 7px 10px; border-radius: 8px; font: inherit; font-size: 13px; color-scheme: dark; }
+input[type=date], input[type=search], input[type=number], input[type=text], input[type=month], select { background: var(--bg-2); border: 1px solid var(--border); color: var(--text); padding: 7px 10px; border-radius: 8px; font: inherit; font-size: 13px; color-scheme: dark; }
+select.cliente-sel { border-color: var(--purple); font-weight: 700; }
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
 .kpi { background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
 .kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 8px; }
@@ -42,6 +42,7 @@ input[type=date], input[type=search], select { background: var(--bg-2); border: 
 .sube { color: var(--red); } .baja { color: var(--mint); }
 .card { background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
 .card h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 12px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.card h3 .dim { text-transform: none; letter-spacing: 0; }
 .clientes { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
 .cli { background: var(--bg-3); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; cursor: pointer; }
 .cli.sel { border-color: var(--pink); box-shadow: 0 0 0 1px var(--pink); }
@@ -49,17 +50,24 @@ input[type=date], input[type=search], select { background: var(--bg-2); border: 
 .cli .monto { font-size: 22px; font-weight: 800; margin: 6px 0 2px; font-variant-numeric: tabular-nums; }
 .cli .det { color: var(--text-mute); font-size: 12px; }
 .cli.cero .monto { color: var(--text-mute); }
-.sem { width: 11px; height: 11px; border-radius: 50%; flex: 0 0 11px; }
+.sem { width: 11px; height: 11px; border-radius: 50%; flex: 0 0 11px; display: inline-block; }
 .verde { background: var(--mint); } .amarillo { background: var(--yellow); } .rojo { background: var(--red); } .gris { background: var(--text-mute); }
 .medidor { height: 5px; background: var(--border); border-radius: 3px; margin-top: 8px; overflow: hidden; } .medidor div { height: 100%; }
-.barras { display: flex; align-items: flex-end; gap: 2px; height: 160px; }
+.grafica { position: relative; height: 180px; margin-left: 46px; }
+.grafica .zona { position: absolute; left: 0; right: 0; }
+.grafica .linea { position: absolute; left: 0; right: 0; border-top: 1px dashed; }
+.grafica .linea span { position: absolute; left: -46px; top: -8px; font-size: 10px; width: 42px; text-align: right; }
+.barras { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 2px; }
 .barras .b { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; min-width: 0; height: 100%; }
-.barras .col { width: 100%; background: linear-gradient(180deg, var(--pink), var(--purple)); border-radius: 3px 3px 0 0; min-height: 1px; }
-.barras .col.lim { background: var(--red); } .barras .col.vacio { background: var(--border); }
-.barras .et { font-size: 10px; color: var(--text-mute); margin-top: 4px; height: 14px; }
+.barras .col { width: 100%; border-radius: 3px 3px 0 0; min-height: 1px; background: linear-gradient(180deg, var(--pink), var(--purple)); }
+.barras .col.c-verde { background: var(--mint); } .barras .col.c-amarillo { background: var(--yellow); } .barras .col.c-rojo { background: var(--red); } .barras .col.c-n8n { background: var(--cyan); }
+.ejes { display: flex; gap: 2px; margin-left: 46px; }
+.ejes .et { flex: 1; font-size: 10px; color: var(--text-mute); text-align: center; min-width: 0; height: 14px; overflow: visible; white-space: nowrap; }
+.leyenda { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-dim); margin-top: 10px; }
+.leyenda span { display: inline-flex; align-items: center; gap: 6px; }
 .tbl-wrap { overflow-x: auto; }
 table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
-.tbl th { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; white-space: nowrap; cursor: pointer; }
+.tbl th { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; white-space: nowrap; }
 .tbl td { padding: 9px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
 .tbl tr:hover td { background: var(--bg-3); }
 .tbl tr.total td { font-weight: 800; background: var(--bg-3); }
@@ -67,16 +75,22 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; background: var(--bg-3); color: var(--text-dim); border: 1px solid var(--border); white-space: nowrap; }
 .tag.on { color: var(--mint); border-color: rgba(16,185,129,.4); } .tag.ia { color: var(--cyan); border-color: rgba(6,182,212,.4); }
 .tag.manual { color: var(--yellow); border-color: rgba(245,158,11,.4); } .tag.noid { color: var(--red); border-color: rgba(239,68,68,.4); }
+.i { display: inline-flex; width: 15px; height: 15px; border-radius: 50%; border: 1px solid var(--text-mute); color: var(--text-mute); font-size: 10px; font-weight: 700; align-items: center; justify-content: center; cursor: help; margin-left: 5px; text-transform: none; letter-spacing: 0; vertical-align: middle; }
+[title] { cursor: help; }
+button[title], .chip[title], .tab[title], select[title], input[title] { cursor: pointer; }
 .dim { color: var(--text-mute); font-size: 12px; }
-.nota { color: var(--text-dim); font-size: 12px; margin-top: 10px; }
+.nota { color: var(--text-dim); font-size: 12px; margin-top: 10px; line-height: 1.6; }
 .aviso { background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.35); color: #FCD34D; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; font-size: 13px; }
 .error { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.35); color: #FCA5A5; }
 .clave { max-width: 420px; margin: 80px auto; text-align: center; }
 .clave input { width: 100%; margin: 14px 0; padding: 10px; }
-.clave button, .btn { background: linear-gradient(135deg, var(--purple), var(--pink)); color: white; border: none; padding: 9px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; font: inherit; }
-.ok { color: var(--mint); } .ahorro { color: var(--mint); font-weight: 700; }
-a { color: var(--cyan); }
-@media (max-width: 640px) { .kpi-value { font-size: 22px; } .hdr { padding: 14px; } }
+.btn { background: linear-gradient(135deg, var(--purple), var(--pink)); color: white; border: none; padding: 7px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; font: inherit; font-size: 13px; }
+.btn.sec { background: var(--bg-3); border: 1px solid var(--border); color: var(--text); }
+.ahorro { color: var(--mint); font-weight: 700; }
+.form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; align-items: end; margin-top: 12px; }
+.form label { font-size: 11px; color: var(--text-dim); display: flex; flex-direction: column; gap: 4px; }
+input.lim { width: 90px; }
+@media (max-width: 640px) { .kpi-value { font-size: 22px; } .hdr { padding: 14px; } .grafica { margin-left: 38px; } .ejes { margin-left: 38px; } }
 </style>
 </head>
 <body>
@@ -84,37 +98,39 @@ a { color: var(--cyan); }
   <header class="hdr">
     <div class="hdr-left">
       <div class="logo">G</div>
-      <div><div class="hdr-main">GREAT REVENUE</div><div class="hdr-sub">Consumo de IA y n8n por cliente</div></div>
+      <div><div class="hdr-main">GREAT REVENUE</div><div class="hdr-sub">Consumo de IA, n8n y plataformas por cliente</div></div>
     </div>
     <div class="hdr-right">
-      <span class="live-badge" id="carga"><span class="dot"></span> Cargando…</span>
-      <button class="btn-refresh" id="btnRefrescar">↻ Actualizar</button>
+      <span class="live-badge" id="carga" title="Hora de la última medición automática. Se mide cada hora a los :05 (CDMX). Verde: al día; amarillo: más de 75 min; rojo: más de 2 h sin medir."><span class="dot"></span> Cargando…</span>
+      <button class="btn-refresh" id="btnRefrescar" title="Vuelve a pedir los datos al servidor. No dispara una medición nueva: trae lo último que se midió.">↻ Actualizar</button>
     </div>
   </header>
   <div id="contenido"></div>
 </div>
 <script>
-// ===== Consumo de IA y n8n · Great Revenue (16 oct 2026) =====
+// ===== Consumo de IA, n8n y plataformas · Great Revenue (v2, 16 oct 2026) =====
 // Pagina estatica de intelligence.greatrevenue.com/consumo/. No trae datos: los pide con la clave a n8n
-// (webhook gr-consumo-api). La clave llega una vez en la liga (#k=...), se guarda en este navegador y se
-// quita de la barra de direcciones.
+// (webhook gr-consumo-api). La clave llega una vez en la liga (#k=...), se guarda en este navegador y se quita de la barra.
 var API = 'https://mikea.app.n8n.cloud/webhook/gr-consumo-api';
 var PRECIOS = [ // USD por millon de tokens: entrada, salida, cache leido. Escritura de cache = 1.25x la entrada.
   [/fable-5|mythos-5/, 10, 50, 1], [/opus-5-5/, 4, 20, 0.20], [/opus-5|opus-4-[5-8]/, 5, 25, 0.5], [/opus-4|opus-3/, 15, 75, 1.5],
   [/sonnet-5/, 2, 10, 0.20], [/sonnet/, 3, 15, 0.30], [/haiku-5/, 0.10, 0.50, 0.01], [/haiku-4/, 1, 5, 0.10], [/haiku/, 0.25, 1.25, 0.03]];
+var REPARTIR = '(repartir por ejecuciones)';
 var D = null, clave = '';
 var est = { tab: 'resumen', periodo: 'mes', desde: '', hasta: '', cliente: '', flujo: '', buscar: '', soloIA: false, soloNoId: false, orden: 'u' };
-try { var e0 = JSON.parse(localStorage.getItem('gr_consumo_estado') || '{}'); ['tab', 'periodo', 'desde', 'hasta'].forEach(function (k) { if (e0[k]) est[k] = e0[k]; }); } catch (e) {}
-function guardarEstado() { try { localStorage.setItem('gr_consumo_estado', JSON.stringify({ tab: est.tab, periodo: est.periodo, desde: est.desde, hasta: est.hasta })); } catch (e) {} }
+try { var e0 = JSON.parse(localStorage.getItem('gr_consumo_estado') || '{}'); ['tab', 'periodo', 'desde', 'hasta', 'cliente'].forEach(function (k) { if (e0[k]) est[k] = e0[k]; }); } catch (e) {}
+function guardarEstado() { try { localStorage.setItem('gr_consumo_estado', JSON.stringify({ tab: est.tab, periodo: est.periodo, desde: est.desde, hasta: est.hasta, cliente: est.cliente })); } catch (e) {} }
 
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-function usd(x) { x = x || 0; return '$' + (x >= 100 ? x.toFixed(0) : x.toFixed(2)); }
+function ay(t) { return '<span class="i" title="' + esc(t) + '">i</span>'; }
+function usd(x) { x = x || 0; return '$' + (Math.abs(x) >= 100 ? x.toFixed(0) : x.toFixed(2)); }
 function usd4(x) { return '$' + (x || 0).toFixed(4); }
 function num(x) { return Math.round(x || 0).toLocaleString('es-MX'); }
 function tok(x) { x = x || 0; return x >= 1e6 ? (x / 1e6).toFixed(2) + ' M' : x >= 1e3 ? (x / 1e3).toFixed(1) + ' mil' : String(Math.round(x)); }
 function dia(d, n) { var t = new Date(d + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); }
 function diasEntre(a, b) { return Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 86400000) + 1; }
+function diasMes(ym) { return new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7), 0)).getUTCDate(); }
 function fechaCorta(d) { var m = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']; return Number(d.slice(8)) + ' ' + m[Number(d.slice(5, 7)) - 1]; }
 function nombreMes(ym) { var m = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']; return m[Number(ym.slice(5, 7)) - 1] + ' ' + ym.slice(0, 4); }
 function precio(m) { for (var i = 0; i < PRECIOS.length; i++) if (PRECIOS[i][0].test(m)) return PRECIOS[i]; return null; }
@@ -129,7 +145,7 @@ function costo(m, f) { var p = precio(m); if (!p) return 0; return (f.i * p[1] +
 function pedirClave(msg) {
   $('carga').innerHTML = '<span class="dot mal"></span> Sin acceso';
   $('contenido').innerHTML = '<div class="card clave"><h3 style="justify-content:center">Acceso</h3><p class="dim">' + esc(msg || 'Escribe la clave del portal.') + '</p>' +
-    '<input type="password" id="inClave" placeholder="Clave"><button id="btnClave">Entrar</button></div>';
+    '<input type="password" id="inClave" placeholder="Clave"><button class="btn" id="btnClave">Entrar</button></div>';
   $('btnClave').onclick = function () { clave = $('inClave').value.trim(); try { localStorage.setItem('gr_consumo_k', clave); } catch (e) {} cargar(); };
 }
 function api(cuerpo) {
@@ -140,22 +156,25 @@ function cargar() {
   if (!clave) return pedirClave();
   $('carga').innerHTML = '<span class="dot"></span> Cargando…';
   api({ accion: 'datos' }).then(function (r) {
-    if (!r || !r.ok) { try { localStorage.removeItem('gr_consumo_k'); } catch (e) {} return pedirClave(r && r.error === 'clave' ? 'La clave no es válida.' : 'No se pudo leer: ' + (r && r.error || 'sin respuesta')); }
+    if (!r || !r.ok) { if (r && r.error === 'clave') try { localStorage.removeItem('gr_consumo_k'); } catch (e) {} return pedirClave(r && r.error === 'clave' ? 'La clave no es válida.' : 'No se pudo leer: ' + (r && r.error || 'sin respuesta')); }
     D = r; preparar(); pintar();
   }).catch(function (e) { $('carga').innerHTML = '<span class="dot mal"></span> Sin conexión'; $('contenido').innerHTML = '<div class="aviso error">No se pudo conectar con el servidor. ' + esc(e.message) + '</div>'; });
 }
 $('btnRefrescar').onclick = cargar;
 
 // ---------- Datos ----------
-var WF = {};
+var WF = {}, EJD = {};
 function preparar() {
   WF = {}; D.wf.forEach(function (w) { WF[w.id] = w; });
   D.uso.forEach(function (f) { var w = WF[f.w]; f.c = w ? w.c : (f.c || 'No identificado'); f.n = w ? w.n : (f.n || f.w); });
   D.ej.forEach(function (f) { var w = WF[f.w]; f.c = w ? w.c : 'No identificado'; });
   var vistos = {}; D.clientes.forEach(function (c) { vistos[c] = 1; });
   D.wf.forEach(function (w) { if (!vistos[w.c]) { vistos[w.c] = 1; D.clientes.push(w.c); } });
+  if (est.cliente && !vistos[est.cliente]) est.cliente = '';
   D.primerDia = D.uso.reduce(function (a, f) { return !a || f.d < a ? f.d : a; }, '') || D.hoy;
   D.primerDiaEj = D.ej.reduce(function (a, f) { return !a || f.d < a ? f.d : a; }, '') || D.hoy;
+  EJD = {}; D.ej.forEach(function (f) { var a = EJD[f.d] = EJD[f.d] || { t: 0, c: {} }; a.t += f.e; a.c[f.c] = (a.c[f.c] || 0) + f.e; });
+  D.plataformas = (D.plataformas || []).filter(function (p) { return p.a; });
 }
 function rango() {
   var h = D.hoy, p = est.periodo;
@@ -168,7 +187,7 @@ function rango() {
   if (p === 'todo') return [D.primerDia < D.primerDiaEj ? D.primerDia : D.primerDiaEj, h];
   var a = est.desde || dia(h, -6), b = est.hasta || h; return a <= b ? [a, b] : [b, a];
 }
-function diasMedidos(r) { var a = r[0] > D.primerDia ? r[0] : D.primerDia; return a > r[1] ? 1 : diasEntre(a, r[1]); }
+function diasMedidos(r) { var a = r[0] > D.primerDia ? r[0] : D.primerDia; var b = r[1] < D.hoy ? r[1] : D.hoy; return a > b ? 1 : diasEntre(a, b); }
 function anterior(r) { var n = diasEntre(r[0], r[1]); return [dia(r[0], -n), dia(r[0], -1)]; }
 function sumar(filas, clave) {
   var g = {};
@@ -176,122 +195,208 @@ function sumar(filas, clave) {
     a.u += f.u; a.e += f.e; a.l += f.l; a.i += f.i; a.o += f.o; a.cr += f.cr; a.cw += f.cw; a.m[f.m] = (a.m[f.m] || 0) + f.u; a.w[f.w] = 1; });
   return g;
 }
-function usoEn(r, fc) { return D.uso.filter(function (f) { return f.d >= r[0] && f.d <= r[1] && (!fc || fc(f)); }); }
-function ejEn(r, fc) { return D.ej.filter(function (f) { return f.d >= r[0] && f.d <= r[1] && (!fc || fc(f)); }); }
+function delCliente(f) { return !est.cliente || f.c === est.cliente; }
+function usoEn(r, todos) { return D.uso.filter(function (f) { return f.d >= r[0] && f.d <= r[1] && (todos || delCliente(f)); }); }
+function ejEn(r, todos) { return D.ej.filter(function (f) { return f.d >= r[0] && f.d <= r[1] && (todos || delCliente(f)); }); }
 function limite(c) { return c ? (D.limites[c] != null ? D.limites[c] : D.limiteDefault) : D.limiteTotal; }
 function nivel(g, l) { return !g ? 'gris' : g >= l ? 'rojo' : g >= 0.7 * l ? 'amarillo' : 'verde'; }
 function total(filas) { return filas.reduce(function (a, f) { return a + f.u; }, 0); }
+function clientesVisibles() { return est.cliente ? [est.cliente] : D.clientes.slice(); }
+
+// Costo de plataformas de cuota fija (n8n, BigCommerce, GitHub...): el costo mensual se prorratea por dia. Las que se
+// "reparten por ejecuciones" se dividen cada dia segun las ejecuciones de n8n de cada cliente ese dia.
+// Devuelve { porCliente: {cliente: {plataforma: usd}}, porDia: {dia: {plataforma: usd}} } ya filtrado por cliente.
+function plataformasEn(r) {
+  var res = { porCliente: {}, porDia: {}, sinReparto: 0 };
+  var fin = r[1] < D.hoy ? r[1] : D.hoy;
+  for (var d = r[0]; d <= fin; d = dia(d, 1)) {
+    var ym = d.slice(0, 7);
+    D.plataformas.forEach(function (p) {
+      if (!(p.d <= ym && (!p.h || ym <= p.h)) || !p.u) return;
+      var diario = p.u / diasMes(ym), partes = {};
+      if (p.c === REPARTIR) {
+        var e = EJD[d];
+        if (!e || !e.t) { res.sinReparto += diario; return; }
+        Object.keys(e.c).forEach(function (c) { partes[c] = diario * e.c[c] / e.t; });
+      } else partes[p.c] = diario;
+      Object.keys(partes).forEach(function (c) {
+        if (est.cliente && c !== est.cliente) return;
+        var pc = res.porCliente[c] = res.porCliente[c] || {}; pc[p.p] = (pc[p.p] || 0) + partes[c];
+        var pd = res.porDia[d] = res.porDia[d] || {}; pd[p.p] = (pd[p.p] || 0) + partes[c];
+      });
+    });
+  }
+  return res;
+}
+
+// Limite sugerido: 1.5 x el promedio diario de los ultimos 14 dias completos con medicion (sin contar hoy), redondeado
+// hacia arriba a medio dolar, con un minimo de $0.50 por cliente y $2 para toda la cuenta.
+function sugerido(c) {
+  var fin = dia(D.hoy, -1), ini = dia(fin, -13); if (ini < D.primerDia) ini = D.primerDia;
+  if (ini > fin) return null;
+  var n = diasEntre(ini, fin), g = 0, max = 0, porD = {};
+  D.uso.forEach(function (f) { if (f.d >= ini && f.d <= fin && (!c || f.c === c)) porD[f.d] = (porD[f.d] || 0) + f.u; });
+  Object.keys(porD).forEach(function (d) { g += porD[d]; if (porD[d] > max) max = porD[d]; });
+  var prom = g / n, s = Math.max(c ? 0.5 : 2, Math.ceil(prom * 1.5 * 2) / 2);
+  return { valor: s, prom: prom, max: max, dias: n, ini: ini, fin: fin };
+}
 
 // ---------- Pintar ----------
+var TABS = [
+  ['resumen', 'Resumen', 'Gasto total por cliente y plataforma, gráficas por día y tabla por mes.'],
+  ['flujos', 'Flujos', 'Gasto de Claude por workflow: modelo, tokens, dólares y costo por llamada.'],
+  ['auditoria', 'Auditoría de workflows', 'Todos los workflows de n8n con su cliente, si usan IA, sus ejecuciones y su gasto. Aquí se corrige a qué cliente pertenece cada uno.'],
+  ['modelos', 'Modelos recomendados', 'Qué modelo de Claude conviene en cada flujo y cuánto se ahorraría con el mismo uso.'],
+  ['limites', 'Límites y costos', 'Semáforo de hoy, límites diarios (sugeridos y editables) y costos mensuales de plataformas.']];
 function pintar() {
   guardarEstado();
   var ult = D.ultimo ? new Date(D.ultimo) : null, min = ult ? Math.round((Date.now() - ult) / 60000) : 9999;
   var hora = ult ? ult.toLocaleString('es-MX', { timeZone: 'America/Mexico_City', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'sin dato';
   $('carga').innerHTML = '<span class="dot' + (min > 130 ? ' mal' : min > 75 ? ' tarde' : '') + '"></span> Última carga: ' + hora + (ult ? ' · hace ' + (min < 60 ? min + ' min' : Math.round(min / 60) + ' h') : '');
   var noId = D.wf.filter(function (w) { return w.c === 'No identificado' && !w.ar; }).length;
-  var TABS = [['resumen', 'Resumen'], ['flujos', 'Flujos'], ['auditoria', 'Auditoría de workflows' + (noId ? '<span class="badge">' + noId + '</span>' : '')], ['modelos', 'Modelos recomendados'], ['limites', 'Límites y alarmas']];
-  var h = '<nav class="tabs">' + TABS.map(function (t) { return '<button class="tab' + (est.tab === t[0] ? ' active' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</nav>';
-  h += filtrosPeriodo();
-  h += '<div id="panel"></div>';
+  var h = '<nav class="tabs">' + TABS.map(function (t) { return '<button class="tab' + (est.tab === t[0] ? ' active' : '') + '" data-tab="' + t[0] + '" title="' + esc(t[2]) + '">' + t[1] + (t[0] === 'auditoria' && noId ? '<span class="badge" title="Workflows sin cliente identificado">' + noId + '</span>' : '') + '</button>'; }).join('') + '</nav>';
+  h += filtros() + '<div id="panel"></div>';
   $('contenido').innerHTML = h;
-  Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) { b.onclick = function () { est.tab = b.getAttribute('data-tab'); pintar(); }; });
-  enlazarPeriodo();
+  Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) { b.onclick = function () { est.tab = b.getAttribute('data-tab'); est.flujo = ''; pintar(); }; });
+  enlazarFiltros();
   ({ resumen: pResumen, flujos: pFlujos, auditoria: pAuditoria, modelos: pModelos, limites: pLimites })[est.tab]();
 }
-function filtrosPeriodo() {
-  var P = [['hoy', 'Hoy'], ['ayer', 'Ayer'], ['7', '7 días'], ['30', '30 días'], ['mes', 'Este mes'], ['mesant', 'Mes pasado'], ['todo', 'Todo'], ['rango', 'Rango']];
+function filtros() {
+  var P = [['hoy', 'Hoy', 'Solo el día de hoy (CDMX)'], ['ayer', 'Ayer', 'El día de ayer completo'], ['7', '7 días', 'Los últimos 7 días, incluido hoy'], ['30', '30 días', 'Los últimos 30 días, incluido hoy'],
+    ['mes', 'Este mes', 'Del día 1 de este mes a hoy'], ['mesant', 'Mes pasado', 'El mes anterior completo'], ['todo', 'Todo', 'Todo lo que se tiene registrado'], ['rango', 'Rango', 'Elige las fechas de inicio y fin a la derecha']];
   var r = rango();
-  return '<div class="filtros">' + P.map(function (p) { return '<button class="chip' + (est.periodo === p[0] ? ' active' : '') + '" data-p="' + p[0] + '">' + p[1] + '</button>'; }).join('') +
-    '<span class="dim">del</span><input type="date" id="fDesde" value="' + r[0] + '" max="' + D.hoy + '"><span class="dim">al</span><input type="date" id="fHasta" value="' + r[1] + '" max="' + D.hoy + '">' +
-    (est.cliente ? '<button class="chip active" id="quitarCliente">' + esc(est.cliente) + ' ✕</button>' : '') + '</div>';
+  return '<div class="filtros"><select class="cliente-sel" id="fCliente" title="El cliente elegido se aplica a todas las pestañas: resumen, flujos, auditoría, modelos y límites. Se queda guardado en este navegador.">' +
+    '<option value="">Todos los clientes</option>' + D.clientes.slice().sort().map(function (c) { return '<option' + (est.cliente === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select>' +
+    P.map(function (p) { return '<button class="chip' + (est.periodo === p[0] ? ' active' : '') + '" data-p="' + p[0] + '" title="' + p[2] + '">' + p[1] + '</button>'; }).join('') +
+    '<span class="dim">del</span><input type="date" id="fDesde" value="' + r[0] + '" max="' + D.hoy + '" title="Fecha de inicio del rango"><span class="dim">al</span><input type="date" id="fHasta" value="' + r[1] + '" max="' + D.hoy + '" title="Fecha de fin del rango (incluida)"></div>';
 }
-function enlazarPeriodo() {
+function enlazarFiltros() {
+  $('fCliente').onchange = function () { est.cliente = this.value; est.flujo = ''; pintar(); };
   Array.prototype.forEach.call(document.querySelectorAll('[data-p]'), function (b) { b.onclick = function () { est.periodo = b.getAttribute('data-p'); est.flujo = ''; if (est.periodo === 'rango' && !est.desde) { var r = rango(); est.desde = r[0]; est.hasta = r[1]; } pintar(); }; });
   $('fDesde').onchange = $('fHasta').onchange = function () { est.periodo = 'rango'; est.desde = $('fDesde').value; est.hasta = $('fHasta').value; pintar(); };
-  if ($('quitarCliente')) $('quitarCliente').onclick = function () { est.cliente = ''; est.flujo = ''; pintar(); };
 }
 function avisoCobertura(r) {
   if (r[0] >= D.primerDia) return '';
-  return '<div class="aviso">El gasto de Claude se mide desde el <b>' + fechaCorta(D.primerDia) + '</b>: n8n solo guarda unos días el contenido de cada ejecución, que es de donde sale el consumo de tokens. Las ejecuciones de n8n sí se cuentan desde el <b>' + fechaCorta(D.primerDiaEj) + '</b>. Lo anterior solo está en la consola de Anthropic.</div>';
+  return '<div class="aviso">El gasto de Claude se mide desde el <b>' + fechaCorta(D.primerDia) + '</b>: n8n solo guarda unos días el contenido de cada ejecución, que es de donde sale el consumo de tokens. Las ejecuciones de n8n se cuentan desde el <b>' + fechaCorta(D.primerDiaEj) + '</b>. Desde ahora todo queda guardado para siempre en las tablas diarias.</div>';
 }
+function kpi(t, v, s, ayuda) { return '<div class="kpi"><div class="kpi-label">' + t + (ayuda ? ay(ayuda) : '') + '</div><div class="kpi-value">' + v + '</div><div class="kpi-sub">' + s + '</div></div>'; }
+function quien() { return est.cliente ? esc(est.cliente) : 'todos los clientes'; }
 
 function pResumen() {
-  var r = rango(), ra = anterior(r), dias = diasEntre(r[0], r[1]);
-  var fc = est.cliente ? function (f) { return f.c === est.cliente; } : null;
-  var filas = usoEn(r, fc), prev = usoEn(ra, fc), g = total(filas), gp = total(prev);
-  var ej = ejEn(r, fc).reduce(function (a, f) { return a + f.e; }, 0);
-  var mesIni = D.hoy.slice(0, 8) + '01', diasMes = new Date(Date.UTC(+D.hoy.slice(0, 4), +D.hoy.slice(5, 7), 0)).getUTCDate();
-  var gMes = total(usoEn([mesIni, D.hoy], fc)), transcurridos = diasEntre(mesIni > D.primerDia ? mesIni : D.primerDia, D.hoy);
-  var proy = transcurridos ? gMes / transcurridos * diasMes : 0;
-  var hoyG = total(usoEn([D.hoy, D.hoy], fc)), ayerG = total(usoEn([dia(D.hoy, -1), dia(D.hoy, -1)], fc));
+  var r = rango(), ra = anterior(r), dm = diasMedidos(r);
+  var filas = usoEn(r), prev = usoEn(ra), g = total(filas), gp = total(prev);
+  var pl = plataformasEn(r), gPl = 0; Object.keys(pl.porCliente).forEach(function (c) { Object.keys(pl.porCliente[c]).forEach(function (p) { gPl += pl.porCliente[c][p]; }); });
+  var ej = ejEn(r).reduce(function (a, f) { return a + f.e; }, 0);
+  var mesIni = D.hoy.slice(0, 8) + '01', dMes = diasMes(D.hoy.slice(0, 7));
+  var gMes = total(usoEn([mesIni, D.hoy])), trans = diasEntre(mesIni > D.primerDia ? mesIni : D.primerDia, D.hoy);
+  var proy = trans ? gMes / trans * dMes : 0;
+  var hoyG = total(usoEn([D.hoy, D.hoy])), ayerG = total(usoEn([dia(D.hoy, -1), dia(D.hoy, -1)]));
   var cambio = gp ? (g - gp) / gp * 100 : null;
   var tokE = filas.reduce(function (a, f) { return a + f.i + f.cr + f.cw; }, 0), tokS = filas.reduce(function (a, f) { return a + f.o; }, 0);
   var h = avisoCobertura(r) + '<div class="kpi-grid">' +
-    kpi('Gasto Claude del periodo', usd(g), fechaCorta(r[0]) + (dias > 1 ? ' – ' + fechaCorta(r[1]) : '') + (cambio == null ? '' : ' · <span class="' + (cambio > 0 ? 'sube' : 'baja') + '">' + (cambio > 0 ? '▲ ' : '▼ ') + Math.abs(cambio).toFixed(0) + '% vs periodo anterior</span>')) +
-    kpi('Hoy', usd(hoyG), 'ayer ' + usd(ayerG) + ' · límite ' + usd(limite(est.cliente)) + '/día') +
-    kpi('Proyección del mes', usd(proy), 'llevamos ' + usd(gMes) + ' en ' + nombreMes(D.hoy).toLowerCase()) +
-    kpi('Promedio diario', usd(g / diasMedidos(r)), diasMedidos(r) + ' día' + (diasMedidos(r) > 1 ? 's' : '') + ' con medición') +
-    kpi('Llamadas a Claude', num(filas.reduce(function (a, f) { return a + f.l; }, 0)), tok(tokE) + ' de entrada · ' + tok(tokS) + ' de salida') +
-    kpi('Ejecuciones de n8n', num(ej), 'de todos los workflows' + (est.cliente ? ' de ' + esc(est.cliente) : '')) + '</div>';
-  // Clientes: siempre todos
-  var porC = sumar(usoEn(r), function (f) { return f.c; }), ejC = {};
-  ejEn(r).forEach(function (f) { ejC[f.c] = (ejC[f.c] || 0) + f.e; });
-  var cs = D.clientes.slice().sort(function (a, b) { return ((porC[b] || {}).u || 0) - ((porC[a] || {}).u || 0) || a.localeCompare(b); });
-  h += '<div class="card"><h3><span>Clientes (' + cs.length + ')</span><span class="dim" style="text-transform:none;letter-spacing:0">Clic para filtrar · el semáforo compara contra el límite diario × días del periodo</span></h3><div class="clientes">';
+    kpi('Gasto total', usd(g + gPl), 'Claude ' + usd(g) + ' + plataformas ' + usd(gPl), 'Claude medido por tokens más el costo mensual de plataformas (n8n, BigCommerce, GitHub…) prorrateado por día. Las plataformas sin precio capturado cuentan $0: se capturan en Límites y costos.') +
+    kpi('Gasto Claude', usd(g), fechaCorta(r[0]) + (r[0] !== r[1] ? ' – ' + fechaCorta(r[1]) : '') + (cambio == null ? '' : ' · <span class="' + (cambio > 0 ? 'sube' : 'baja') + '">' + (cambio > 0 ? '▲ ' : '▼ ') + Math.abs(cambio).toFixed(0) + '% vs periodo anterior</span>'), 'Suma del costo de cada llamada a la API de Claude de ' + (est.cliente ? est.cliente : 'todos los clientes') + ', con el precio de su modelo. Se compara contra el mismo número de días inmediatamente antes.') +
+    kpi('Hoy', usd(hoyG), 'ayer ' + usd(ayerG) + ' · límite ' + usd(limite(est.cliente)) + '/día', 'Gasto de Claude de hoy (CDMX) contra el límite diario del semáforo.') +
+    kpi('Proyección del mes', usd(proy), 'llevamos ' + usd(gMes) + ' de Claude en ' + nombreMes(D.hoy).toLowerCase(), 'Gasto de Claude del mes ÷ días medidos del mes × días del mes. Si hubo un pico (pruebas de una demo) la proyección sale alta.') +
+    kpi('Promedio diario', usd(g / dm), dm + ' día' + (dm > 1 ? 's' : '') + ' con medición', 'Gasto de Claude del periodo ÷ días que tienen medición.') +
+    kpi('Llamadas a Claude', num(filas.reduce(function (a, f) { return a + f.l; }, 0)), tok(tokE) + ' de entrada · ' + tok(tokS) + ' de salida', 'Respuestas de Claude contadas en el periodo. Entrada incluye el caché leído y escrito.') +
+    kpi('Ejecuciones de n8n', num(ej), 'de ' + quien(), 'Todas las corridas de los workflows de n8n en el periodo, llamen o no a Claude. n8n cobra por ejecución.') + '</div>';
+  // Clientes
+  var porC = sumar(usoEn(r, true), function (f) { return f.c; }), ejC = {}, plAll = est.cliente ? plataformasEn2(r) : pl;
+  ejEn(r, true).forEach(function (f) { ejC[f.c] = (ejC[f.c] || 0) + f.e; });
+  var cs = clientesVisibles().sort(function (a, b) { return ((porC[b] || {}).u || 0) - ((porC[a] || {}).u || 0) || a.localeCompare(b); });
+  var dias = diasEntre(r[0], r[1]);
+  h += '<div class="card"><h3><span>' + (est.cliente ? 'Cliente' : 'Clientes (' + cs.length + ')') + ay('Monto grande: gasto de Claude. Debajo: llamadas, ejecuciones de n8n, workflows y costo de plataformas. El semáforo compara el gasto de Claude contra su límite diario × los días del periodo.') + '</span><span class="dim">' + (est.cliente ? 'Para ver todos, elige "Todos los clientes" arriba' : 'Clic en un cliente para filtrar todo el portal') + '</span></h3><div class="clientes">';
   cs.forEach(function (c) {
     var a = porC[c] || { u: 0, l: 0 }, l = limite(c) * dias, nv = nivel(a.u, l), nwf = D.wf.filter(function (w) { return w.c === c && !w.ar; }).length;
-    h += '<div class="cli' + (a.u ? '' : ' cero') + (est.cliente === c ? ' sel' : '') + '" data-c="' + esc(c) + '"><div class="nom"><span class="sem ' + nv + '"></span>' + esc(c) + '</div>' +
-      '<div class="monto">' + (a.u ? usd(a.u) : 'Sin consumo') + '</div><div class="det">' + num(a.l) + ' llamadas · ' + num(ejC[c] || 0) + ' ejecuciones · ' + nwf + ' workflows</div>' +
+    var plc = (plAll.porCliente[c] || {}), plt = Object.keys(plc).reduce(function (x, k) { return x + plc[k]; }, 0);
+    h += '<div class="cli' + (a.u ? '' : ' cero') + (est.cliente === c ? ' sel' : '') + '" data-c="' + esc(c) + '" title="' + esc(c + ': Claude ' + usd(a.u) + ' de un límite de ' + usd(l) + ' (' + usd(limite(c)) + ' por día × ' + dias + ' días)') + '"><div class="nom"><span class="sem ' + nv + '"></span>' + esc(c) + '</div>' +
+      '<div class="monto">' + (a.u ? usd(a.u) : 'Sin consumo') + '</div><div class="det">' + num(a.l) + ' llamadas · ' + num(ejC[c] || 0) + ' ejecuciones · ' + nwf + ' workflows' + (plt ? ' · plataformas ' + usd(plt) : '') + '</div>' +
       '<div class="medidor"><div class="' + nv + '" style="width:' + Math.min(100, l ? a.u / l * 100 : 0) + '%"></div></div><div class="det">límite ' + usd(l) + '</div></div>';
   });
   h += '</div></div>';
-  h += barrasDias(r, fc);
-  h += tablaMeses(fc);
+  h += tablaPlataformas(r, g, pl);
+  h += graficaClaude(r);
+  h += graficaN8n(r);
+  h += tablaMeses();
   $('panel').innerHTML = h;
   Array.prototype.forEach.call(document.querySelectorAll('.cli'), function (d) { d.onclick = function () { var c = d.getAttribute('data-c'); est.cliente = est.cliente === c ? '' : c; pintar(); }; });
 }
-function kpi(t, v, s) { return '<div class="kpi"><div class="kpi-label">' + t + '</div><div class="kpi-value">' + v + '</div><div class="kpi-sub">' + s + '</div></div>'; }
-function barrasDias(r, fc, titulo) {
-  var a = r[0], b = r[1]; if (diasEntre(a, b) < 14) a = dia(b, -13);
-  var porD = sumar(usoEn([a, b], fc), function (f) { return f.d; }), dias = [];
-  for (var d = a; d <= b; d = dia(d, 1)) dias.push(d);
-  var max = Math.max.apply(null, dias.map(function (d) { return porD[d] ? porD[d].u : 0; }).concat([0.01]));
-  var lim = est.flujo ? 0 : limite(est.cliente), cada = Math.ceil(dias.length / 16);
-  var h = '<div class="card"><h3><span>' + (titulo || 'Gasto de Claude por día') + '</span><span class="dim" style="text-transform:none;letter-spacing:0">' + (lim ? 'en rojo, días arriba del límite de ' + usd(lim) : '') + '</span></h3><div class="barras">';
-  dias.forEach(function (d, i) { var u = porD[d] ? porD[d].u : 0;
-    h += '<div class="b" title="' + d + ': ' + usd(u) + '"><div class="col' + (d < D.primerDia ? ' vacio' : lim && u >= lim ? ' lim' : '') + '" style="height:' + (u / max * 140) + 'px"></div><div class="et">' + (i % cada === 0 ? fechaCorta(d) : '') + '</div></div>'; });
-  return h + '</div></div>';
+function plataformasEn2(r) { var c = est.cliente; est.cliente = ''; var x = plataformasEn(r); est.cliente = c; return x; }
+function tablaPlataformas(r, gClaude, pl) {
+  var filas = [['Claude (API)', gClaude, 'Medido: tokens de cada llamada × precio del modelo.']], porP = {};
+  Object.keys(pl.porCliente).forEach(function (c) { Object.keys(pl.porCliente[c]).forEach(function (p) { porP[p] = (porP[p] || 0) + pl.porCliente[c][p]; }); });
+  D.plataformas.forEach(function (p) { if (porP[p.p] == null) porP[p.p] = 0; });
+  Object.keys(porP).sort().forEach(function (p) { var row = D.plataformas.filter(function (x) { return x.p === p; })[0] || {}; filas.push([p, porP[p], (row.c === REPARTIR ? 'Cuota mensual repartida por ejecuciones. ' : 'Cuota mensual prorrateada por día. ') + (row.nota || '')]); });
+  var t = filas.reduce(function (a, f) { return a + f[1]; }, 0);
+  var h = '<div class="card"><h3><span>Gasto por plataforma · ' + quien() + ay('Claude se mide solo. Las demás plataformas se capturan una vez con su costo mensual en Límites y costos; si cambia el precio se captura una fila nueva con el mes de inicio y el histórico conserva el precio anterior.') + '</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Plataforma</th><th class="num">Gasto del periodo</th><th class="num">% del total</th><th>Cómo se calcula</th></tr>';
+  filas.forEach(function (f) { var pend = /POR CONFIRMAR/.test(f[2]);
+    h += '<tr><td>' + esc(f[0]) + (pend ? ' <span class="tag manual" title="Falta capturar el precio real en Límites y costos">por confirmar</span>' : '') + '</td><td class="num"><b>' + usd(f[1]) + '</b></td><td class="num">' + (t ? (f[1] / t * 100).toFixed(1) + '%' : '—') + '</td><td class="dim">' + esc(f[2].replace(/^POR CONFIRMAR:\s*/, '')) + '</td></tr>'; });
+  h += '<tr class="total"><td>Total</td><td class="num">' + usd(t) + '</td><td class="num">100%</td><td></td></tr></table></div>' + (pl.sinReparto && !est.cliente ? '<div class="nota">' + usd(pl.sinReparto) + ' de cuotas repartibles caen en días sin ejecuciones registradas y no se asignan a ningún cliente.</div>' : '') + '</div>';
+  return h;
 }
-function tablaMeses(fc) {
-  var porM = sumar(D.uso.filter(function (f) { return !fc || fc(f); }), function (f) { return f.d.slice(0, 7); });
-  var ejM = {}; D.ej.forEach(function (f) { if (!fc || fc(f)) ejM[f.d.slice(0, 7)] = (ejM[f.d.slice(0, 7)] || 0) + f.e; });
+function ejesHtml(dias) { var cada = Math.ceil(dias.length / 14); return '<div class="ejes">' + dias.map(function (d, i) { return '<div class="et">' + (i % cada === 0 ? fechaCorta(d) : '') + '</div>'; }).join('') + '</div>'; }
+function rangoGrafica(r) { var a = r[0], b = r[1]; if (diasEntre(a, b) < 14) a = dia(b, -13); var dias = []; for (var d = a; d <= b; d = dia(d, 1)) dias.push(d); return dias; }
+function graficaClaude(r, filtro, titulo) {
+  var dias = rangoGrafica(r), porD = {};
+  D.uso.forEach(function (f) { if (f.d >= dias[0] && f.d <= dias[dias.length - 1] && delCliente(f) && (!filtro || filtro(f))) porD[f.d] = (porD[f.d] || 0) + f.u; });
+  var lim = filtro ? 0 : limite(est.cliente), maxD = Math.max.apply(null, dias.map(function (d) { return porD[d] || 0; }).concat([0.01]));
+  var max = Math.max(maxD, lim ? lim * 1.15 : 0) * 1.05, H = 180, y = function (v) { return H - v / max * H; };
+  var h = '<div class="card"><h3><span>' + (titulo || 'Gasto de Claude por día · ' + quien()) + ay('Cada barra es el gasto de Claude de un día (CDMX). Zona verde: menos del 70% del límite diario; amarilla: del 70% al 100%; roja: arriba del límite. El límite es el de ' + (est.cliente || 'toda la cuenta') + ' y se edita en Límites y costos.') + '</span></h3><div class="grafica">';
+  if (lim) {
+    h += '<div class="zona" style="top:' + y(lim * 0.7) + 'px;height:' + (H - y(lim * 0.7)) + 'px;background:rgba(16,185,129,.07)"></div>' +
+      '<div class="zona" style="top:' + y(lim) + 'px;height:' + (y(lim * 0.7) - y(lim)) + 'px;background:rgba(245,158,11,.08)"></div>' +
+      '<div class="zona" style="top:0;height:' + y(lim) + 'px;background:rgba(239,68,68,.07)"></div>' +
+      '<div class="linea" style="top:' + y(lim * 0.7) + 'px;border-color:var(--yellow)"><span style="color:var(--yellow)">' + usd(lim * 0.7) + '</span></div>' +
+      '<div class="linea" style="top:' + y(lim) + 'px;border-color:var(--red)"><span style="color:var(--red)">' + usd(lim) + '</span></div>';
+  }
+  h += '<div class="barras">' + dias.map(function (d) { var u = porD[d] || 0, nv = lim ? nivel(u, lim) : '';
+    return '<div class="b" title="' + fechaCorta(d) + ': ' + usd(u) + (lim ? ' (' + (u / lim * 100).toFixed(0) + '% del límite)' : '') + (d < D.primerDia ? ' · sin medición ese día' : '') + '"><div class="col' + (nv && nv !== 'gris' ? ' c-' + nv : '') + '" style="height:' + (u / max * H) + 'px;' + (d < D.primerDia ? 'background:var(--border)' : '') + '"></div></div>'; }).join('') + '</div></div>' + ejesHtml(dias);
+  if (lim) h += '<div class="leyenda"><span><i class="sem verde"></i> bien: menos de ' + usd(lim * 0.7) + '</span><span><i class="sem amarillo"></i> cuidado: ' + usd(lim * 0.7) + ' a ' + usd(lim) + '</span><span><i class="sem rojo"></i> arriba del límite de ' + usd(lim) + ' por día</span></div>';
+  return h + '</div>';
+}
+function graficaN8n(r) {
+  var dias = rangoGrafica(r), porD = {};
+  D.ej.forEach(function (f) { if (f.d >= dias[0] && f.d <= dias[dias.length - 1] && delCliente(f)) porD[f.d] = (porD[f.d] || 0) + f.e; });
+  var max = Math.max.apply(null, dias.map(function (d) { return porD[d] || 0; }).concat([1])) * 1.05, H = 180;
+  var prom = dias.filter(function (d) { return d >= D.primerDiaEj && d < D.hoy; }), media = prom.length ? prom.reduce(function (a, d) { return a + (porD[d] || 0); }, 0) / prom.length : 0;
+  var h = '<div class="card"><h3><span>Ejecuciones de n8n por día · ' + quien() + ay('Todas las corridas de los workflows de ' + (est.cliente || 'todos los clientes') + ' cada día. n8n cobra por ejecución, así que esta es la medida de su consumo. La línea punteada es el promedio diario de los días completos.') + '</span></h3><div class="grafica">';
+  if (media) h += '<div class="linea" style="top:' + (H - media / max * H) + 'px;border-color:var(--text-dim)"><span style="color:var(--text-dim)">' + num(media) + '</span></div>';
+  h += '<div class="barras">' + dias.map(function (d) { var e = porD[d] || 0; return '<div class="b" title="' + fechaCorta(d) + ': ' + num(e) + ' ejecuciones' + (d < D.primerDiaEj ? ' · sin registro ese día' : '') + '"><div class="col c-n8n" style="height:' + (e / max * H) + 'px"></div></div>'; }).join('') + '</div></div>' + ejesHtml(dias);
+  return h + '<div class="leyenda"><span><i class="sem" style="background:var(--cyan)"></i> ejecuciones</span><span>promedio: ' + num(media) + ' al día</span></div></div>';
+}
+function tablaMeses() {
+  var porM = sumar(D.uso.filter(delCliente), function (f) { return f.d.slice(0, 7); }), ejM = {};
+  D.ej.forEach(function (f) { if (delCliente(f)) ejM[f.d.slice(0, 7)] = (ejM[f.d.slice(0, 7)] || 0) + f.e; });
   var meses = Object.keys(porM).concat(Object.keys(ejM)).filter(function (m, i, a) { return a.indexOf(m) === i; }).sort().reverse();
-  var h = '<div class="card"><h3><span>Por mes</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Mes</th><th class="num">Gasto Claude</th><th class="num">Llamadas</th><th class="num">Tokens entrada</th><th class="num">Tokens salida</th><th class="num">Ejecuciones n8n</th><th>Medido desde</th></tr>';
+  var h = '<div class="card"><h3><span>Por mes · ' + quien() + ay('Totales de cada mes. "Medido desde" dice desde qué día del mes hay medición de Claude; antes de esa fecha n8n ya no guardaba el contenido de las ejecuciones.') + '</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Mes</th><th class="num">Claude</th><th class="num">Plataformas</th><th class="num">Total</th><th class="num">Llamadas</th><th class="num">Tokens entrada</th><th class="num">Tokens salida</th><th class="num">Ejecuciones n8n</th><th>Claude medido desde</th></tr>';
   meses.forEach(function (m) { var a = porM[m] || { u: 0, l: 0, i: 0, o: 0, cr: 0, cw: 0 }, desde = D.uso.filter(function (f) { return f.d.slice(0, 7) === m; }).reduce(function (x, f) { return !x || f.d < x ? f.d : x; }, '');
-    h += '<tr><td>' + nombreMes(m) + '</td><td class="num"><b>' + usd(a.u) + '</b></td><td class="num">' + num(a.l) + '</td><td class="num">' + tok(a.i + a.cr + a.cw) + '</td><td class="num">' + tok(a.o) + '</td><td class="num">' + num(ejM[m] || 0) + '</td><td class="dim">' + (desde ? fechaCorta(desde) : '—') + '</td></tr>'; });
+    var pl = plataformasEn([m + '-01', m + '-' + String(diasMes(m)).padStart(2, '0')]), plt = 0; Object.keys(pl.porCliente).forEach(function (c) { Object.keys(pl.porCliente[c]).forEach(function (p) { plt += pl.porCliente[c][p]; }); });
+    h += '<tr><td>' + nombreMes(m) + '</td><td class="num">' + usd(a.u) + '</td><td class="num">' + usd(plt) + '</td><td class="num"><b>' + usd(a.u + plt) + '</b></td><td class="num">' + num(a.l) + '</td><td class="num">' + tok(a.i + a.cr + a.cw) + '</td><td class="num">' + tok(a.o) + '</td><td class="num">' + num(ejM[m] || 0) + '</td><td class="dim">' + (desde ? fechaCorta(desde) : 'sin medición') + '</td></tr>'; });
   return h + '</table></div></div>';
 }
 
 function pFlujos() {
-  var r = rango(), fc = est.cliente ? function (f) { return f.c === est.cliente; } : null;
-  var porW = sumar(usoEn(r, fc), function (f) { return f.w; }), ejW = {};
-  ejEn(r, fc).forEach(function (f) { ejW[f.w] = (ejW[f.w] || 0) + f.e; });
+  var r = rango(), porW = sumar(usoEn(r), function (f) { return f.w; }), ejW = {};
+  ejEn(r).forEach(function (f) { ejW[f.w] = (ejW[f.w] || 0) + f.e; });
   var ids = Object.keys(porW).sort(function (a, b) { return porW[b].u - porW[a].u; }), tot = { u: 0, e: 0, l: 0, i: 0, o: 0, cr: 0, cw: 0 };
-  var h = avisoCobertura(r) + '<div class="card"><h3><span>Flujos con gasto de Claude' + (est.cliente ? ' · ' + esc(est.cliente) : '') + '</span><span class="dim" style="text-transform:none;letter-spacing:0">Clic en un flujo para ver su gasto por día</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Flujo</th><th>Cliente</th><th>Modelo</th><th class="num">Ejecuciones n8n</th><th class="num">Llamadas</th><th class="num">Entrada</th><th class="num">Salida</th><th class="num">Caché leído</th><th class="num">Caché escrito</th><th class="num">USD</th><th class="num">USD por llamada</th><th class="num">% del total</th></tr>';
   var g = ids.reduce(function (a, k) { return a + porW[k].u; }, 0);
+  var th = function (t, a, n) { return '<th' + (n ? ' class="num"' : '') + ' title="' + esc(a) + '">' + t + '</th>'; };
+  var h = avisoCobertura(r) + '<div class="card"><h3><span>Flujos con gasto de Claude · ' + quien() + '</span><span class="dim">Clic en un flujo para ver su gasto por día</span></h3><div class="tbl-wrap"><table class="tbl"><tr>' +
+    th('Flujo', 'Nombre del workflow en n8n') + th('Cliente', 'Cliente al que se carga (carpeta, nombre o asignación a mano)') + th('Modelo', 'Modelos de Claude que respondieron en el periodo') + th('Ejecuciones n8n', 'Corridas del workflow en el periodo', 1) + th('Llamadas', 'Respuestas de Claude', 1) + th('Entrada', 'Tokens que se mandaron a Claude', 1) + th('Salida', 'Tokens que escribió Claude (los más caros)', 1) + th('Caché leído', 'Tokens reutilizados del caché: cuestan 10% de la entrada', 1) + th('Caché escrito', 'Tokens guardados en caché: cuestan 125% de la entrada; si nadie los vuelve a leer, es gasto de más', 1) + th('USD', 'Costo del periodo', 1) + th('USD por llamada', 'Costo promedio de cada respuesta', 1) + th('% del total', 'Parte del gasto de Claude del periodo', 1) + '</tr>';
   ids.forEach(function (k) { var a = porW[k], w = WF[k] || {};
     ['u', 'l', 'i', 'o', 'cr', 'cw'].forEach(function (x) { tot[x] += a[x]; }); tot.e += ejW[k] || 0;
     h += '<tr class="fila-flujo" data-w="' + k + '" style="cursor:pointer' + (est.flujo === k ? ';background:var(--bg-3)' : '') + '"><td>' + esc(w.n || k) + '</td><td>' + esc(w.c || '') + '</td><td>' + Object.keys(a.m).map(function (m) { return '<span class="tag ia">' + esc(m.replace('claude-', '').replace(/-2025\d+$/, '')) + '</span>'; }).join(' ') + '</td><td class="num">' + num(ejW[k] || 0) + '</td><td class="num">' + num(a.l) + '</td><td class="num">' + tok(a.i) + '</td><td class="num">' + tok(a.o) + '</td><td class="num">' + tok(a.cr) + '</td><td class="num">' + tok(a.cw) + '</td><td class="num"><b>' + usd(a.u) + '</b></td><td class="num">' + (a.l ? usd4(a.u / a.l) : '—') + '</td><td class="num">' + (g ? (a.u / g * 100).toFixed(1) + '%' : '—') + '</td></tr>'; });
-  h += ids.length ? '<tr class="total"><td>Total</td><td></td><td></td><td class="num">' + num(tot.e) + '</td><td class="num">' + num(tot.l) + '</td><td class="num">' + tok(tot.i) + '</td><td class="num">' + tok(tot.o) + '</td><td class="num">' + tok(tot.cr) + '</td><td class="num">' + tok(tot.cw) + '</td><td class="num">' + usd(tot.u) + '</td><td class="num">' + (tot.l ? usd4(tot.u / tot.l) : '—') + '</td><td class="num">100%</td></tr>' : '<tr><td colspan="12" class="dim">Sin gasto de Claude en este periodo.</td></tr>';
-  h += '</table></div><div class="nota">Precios de Anthropic por millón de tokens; el caché escrito cuesta 1.25× la entrada y el leído 0.1×. Las ejecuciones de n8n cuentan todas las corridas del flujo, llamen o no a Claude.</div></div>';
-  if (est.flujo) h += barrasDias(r, function (f) { return f.w === est.flujo; }, 'Gasto por día · ' + esc((WF[est.flujo] || {}).n || est.flujo));
+  h += ids.length ? '<tr class="total"><td>Total</td><td></td><td></td><td class="num">' + num(tot.e) + '</td><td class="num">' + num(tot.l) + '</td><td class="num">' + tok(tot.i) + '</td><td class="num">' + tok(tot.o) + '</td><td class="num">' + tok(tot.cr) + '</td><td class="num">' + tok(tot.cw) + '</td><td class="num">' + usd(tot.u) + '</td><td class="num">' + (tot.l ? usd4(tot.u / tot.l) : '—') + '</td><td class="num">100%</td></tr>' : '<tr><td colspan="12" class="dim">Sin gasto de Claude en este periodo para ' + quien() + '.</td></tr>';
+  h += '</table></div></div>';
+  if (est.flujo) h += graficaClaude(r, function (f) { return f.w === est.flujo; }, 'Gasto por día · ' + esc((WF[est.flujo] || {}).n || est.flujo));
   $('panel').innerHTML = h;
   Array.prototype.forEach.call(document.querySelectorAll('.fila-flujo'), function (tr) { tr.onclick = function () { var k = tr.getAttribute('data-w'); est.flujo = est.flujo === k ? '' : k; pFlujos(); }; });
 }
 
 function pAuditoria() {
-  var r = rango(), porW = sumar(usoEn(r), function (f) { return f.w; }), ejW = {}, erW = {};
-  ejEn(r).forEach(function (f) { ejW[f.w] = (ejW[f.w] || 0) + f.e; erW[f.w] = (erW[f.w] || 0) + f.x; });
+  var r = rango(), porW = sumar(usoEn(r, true), function (f) { return f.w; }), ejW = {}, erW = {};
+  ejEn(r, true).forEach(function (f) { ejW[f.w] = (ejW[f.w] || 0) + f.e; erW[f.w] = (erW[f.w] || 0) + f.x; });
   var q = est.buscar.toLowerCase();
   var lista = D.wf.filter(function (w) {
     if (w.ar) return false;
@@ -303,27 +408,27 @@ function pAuditoria() {
   var val = function (w) { return est.orden === 'e' ? (ejW[w.id] || 0) : est.orden === 'n' ? 0 : ((porW[w.id] || {}).u || 0); };
   lista.sort(function (a, b) { return est.orden === 'n' ? a.n.localeCompare(b.n) : (val(b) - val(a)) || (ejW[b.id] || 0) - (ejW[a.id] || 0) || a.n.localeCompare(b.n); });
   var porCli = {}; D.wf.forEach(function (w) { if (!w.ar) { var c = porCli[w.c] = porCli[w.c] || { n: 0, a: 0, cl: 0 }; c.n++; if (w.a) c.a++; if (w.cl) c.cl++; } });
-  var h = '<div class="card"><h3><span>Resumen por cliente</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Cliente</th><th class="num">Workflows</th><th class="num">Activos</th><th class="num">Usan Claude</th><th class="num">Ejecuciones n8n</th><th class="num">Gasto Claude</th></tr>';
-  var porCU = sumar(usoEn(r), function (f) { return f.c; }), ejCU = {}; ejEn(r).forEach(function (f) { ejCU[f.c] = (ejCU[f.c] || 0) + f.e; });
-  D.clientes.slice().sort(function (a, b) { return (porCli[b] || { n: 0 }).n - (porCli[a] || { n: 0 }).n; }).forEach(function (c) { var x = porCli[c] || { n: 0, a: 0, cl: 0 };
-    h += '<tr><td>' + (c === 'No identificado' ? '<span class="tag noid">No identificado</span>' : esc(c)) + '</td><td class="num">' + x.n + '</td><td class="num">' + x.a + '</td><td class="num">' + x.cl + '</td><td class="num">' + num(ejCU[c] || 0) + '</td><td class="num">' + usd((porCU[c] || {}).u || 0) + '</td></tr>'; });
+  var porCU = sumar(usoEn(r, true), function (f) { return f.c; }), ejCU = {}, erCU = {}; ejEn(r, true).forEach(function (f) { ejCU[f.c] = (ejCU[f.c] || 0) + f.e; erCU[f.c] = (erCU[f.c] || 0) + f.x; });
+  var h = '<div class="card"><h3><span>Resumen ' + (est.cliente ? 'de ' + esc(est.cliente) : 'por cliente') + ay('Cuántos workflows tiene cada cliente, cuántos están activos, cuántos usan Claude, y sus ejecuciones, errores y gasto en el periodo.') + '</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Cliente</th><th class="num">Workflows</th><th class="num" title="Publicados y corriendo">Activos</th><th class="num" title="Tienen al menos un nodo que llama a Claude">Usan Claude</th><th class="num">Ejecuciones n8n</th><th class="num" title="Ejecuciones que terminaron en error o se cayeron">Con error</th><th class="num">Gasto Claude</th></tr>';
+  clientesVisibles().sort(function (a, b) { return (porCli[b] || { n: 0 }).n - (porCli[a] || { n: 0 }).n; }).forEach(function (c) { var x = porCli[c] || { n: 0, a: 0, cl: 0 };
+    h += '<tr><td>' + (c === 'No identificado' ? '<span class="tag noid">No identificado</span>' : esc(c)) + '</td><td class="num">' + x.n + '</td><td class="num">' + x.a + '</td><td class="num">' + x.cl + '</td><td class="num">' + num(ejCU[c] || 0) + '</td><td class="num">' + (erCU[c] ? '<span class="sube">' + num(erCU[c]) + '</span>' : '0') + '</td><td class="num">' + usd((porCU[c] || {}).u || 0) + '</td></tr>'; });
   h += '</table></div></div>';
-  h += '<div class="card"><h3><span>Todos los workflows (' + lista.length + ' de ' + D.wf.filter(function (w) { return !w.ar; }).length + ')</span></h3>' +
-    '<div class="filtros"><input type="search" id="fBuscar" placeholder="Buscar por nombre, id o carpeta" value="' + esc(est.buscar) + '" style="min-width:240px">' +
-    '<button class="chip' + (est.soloIA ? ' active' : '') + '" id="fIA">Solo con IA</button><button class="chip' + (est.soloNoId ? ' active' : '') + '" id="fNoId">Solo no identificados</button>' +
-    '<select id="fOrden"><option value="u"' + (est.orden === 'u' ? ' selected' : '') + '>Ordenar por gasto</option><option value="e"' + (est.orden === 'e' ? ' selected' : '') + '>Ordenar por ejecuciones</option><option value="n"' + (est.orden === 'n' ? ' selected' : '') + '>Ordenar por nombre</option></select></div>' +
-    '<div class="tbl-wrap"><table class="tbl"><tr><th>Workflow</th><th>Cliente</th><th>De dónde sale</th><th>Carpeta en n8n</th><th>Estado</th><th>IA</th><th class="num">Ejecuciones</th><th class="num">Con error</th><th class="num">Gasto Claude</th></tr>';
+  h += '<div class="card"><h3><span>Workflows de ' + quien() + ' (' + lista.length + ')</span></h3>' +
+    '<div class="filtros"><input type="search" id="fBuscar" placeholder="Buscar por nombre, id o carpeta" value="' + esc(est.buscar) + '" style="min-width:240px" title="Filtra por texto en el nombre, el id o la carpeta">' +
+    '<button class="chip' + (est.soloIA ? ' active' : '') + '" id="fIA" title="Solo los workflows que usan Claude u otra IA">Solo con IA</button><button class="chip' + (est.soloNoId ? ' active' : '') + '" id="fNoId" title="Solo los que no tienen cliente; asígnalos con el selector de su fila">Solo no identificados</button>' +
+    '<select id="fOrden" title="Orden de la tabla"><option value="u"' + (est.orden === 'u' ? ' selected' : '') + '>Ordenar por gasto</option><option value="e"' + (est.orden === 'e' ? ' selected' : '') + '>Ordenar por ejecuciones</option><option value="n"' + (est.orden === 'n' ? ' selected' : '') + '>Ordenar por nombre</option></select></div>' +
+    '<div class="tbl-wrap"><table class="tbl"><tr><th>Workflow</th><th title="Cámbialo con el selector: se guarda a mano y reacomoda también el gasto pasado">Cliente</th><th title="Carpeta: viene de la carpeta del cliente en n8n. Nombre: del prefijo (PINTA, CENCO…). A mano: lo cambió alguien aquí. Sin pista: falta asignarlo.">De dónde sale</th><th>Carpeta en n8n</th><th>Estado</th><th title="Qué IA usa y con qué modelo">IA</th><th class="num">Ejecuciones</th><th class="num">Con error</th><th class="num">Gasto Claude</th></tr>';
   var opciones = D.clientes.slice().sort().map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '<option value="__otro">+ Otro cliente…</option>';
   lista.slice(0, 400).forEach(function (w) { var u = (porW[w.id] || {}).u || 0;
     h += '<tr><td>' + esc(w.n) + '<div class="dim">' + esc(w.id) + '</div></td>' +
-      '<td><select class="asignar" data-id="' + w.id + '">' + opciones.replace('<option>' + esc(w.c) + '</option>', '<option selected>' + esc(w.c) + '</option>') + '</select></td>' +
+      '<td><select class="asignar" data-id="' + w.id + '" title="Cambiar el cliente de este workflow">' + opciones.replace('<option>' + esc(w.c) + '</option>', '<option selected>' + esc(w.c) + '</option>') + '</select></td>' +
       '<td>' + ({ carpeta: '<span class="tag">carpeta</span>', prefijo: '<span class="tag">nombre</span>', manual: '<span class="tag manual">a mano</span>' }[w.o] || '<span class="tag noid">sin pista</span>') + '</td>' +
       '<td class="dim">' + esc(w.f || 'sin carpeta') + (w.s ? ' / ' + esc(w.s) : '') + '</td>' +
       '<td>' + (w.a ? '<span class="tag on">activo</span>' : '<span class="tag">apagado</span>') + '</td>' +
       '<td>' + (w.cl ? '<span class="tag ia">Claude' + (w.m ? ' · ' + esc(w.m.replace(/claude-/g, '')) : '') + '</span>' : '') + (w.ia ? ' <span class="tag">' + esc(w.ia) + '</span>' : '') + '</td>' +
       '<td class="num">' + num(ejW[w.id] || 0) + '</td><td class="num">' + (erW[w.id] ? '<span class="sube">' + num(erW[w.id]) + '</span>' : '0') + '</td><td class="num">' + (u ? '<b>' + usd(u) + '</b>' : '<span class="dim">—</span>') + '</td></tr>'; });
   if (lista.length > 400) h += '<tr><td colspan="9" class="dim">Se muestran 400; usa la búsqueda para ver el resto.</td></tr>';
-  h += '</table></div><div class="nota">El cliente sale de la carpeta del workflow en n8n; si no está en una carpeta de cliente, del prefijo de su nombre; si no hay pista, queda como <b>No identificado</b>. Al cambiarlo aquí se guarda "a mano" y ya no lo cambia la carga automática. El cambio también reacomoda el gasto pasado de ese workflow.</div></div>';
+  h += '</table></div><div class="nota">El cliente sale de la carpeta del workflow en n8n; si no está en una carpeta de cliente, del prefijo de su nombre; si no hay pista, queda como <b>No identificado</b>. Al cambiarlo aquí se guarda "a mano", la carga automática ya no lo toca, y también reacomoda el gasto pasado de ese workflow.</div></div>';
   $('panel').innerHTML = h;
   var t; $('fBuscar').oninput = function () { clearTimeout(t); var v = this.value; t = setTimeout(function () { est.buscar = v; pAuditoria(); var i = $('fBuscar'); i.focus(); i.setSelectionRange(v.length, v.length); }, 250); };
   $('fIA').onclick = function () { est.soloIA = !est.soloIA; pAuditoria(); };
@@ -337,7 +442,7 @@ function pAuditoria() {
       if (!r || !r.ok) { alert('No se guardó: ' + (r && r.error || 'error')); s.value = w.c; s.disabled = false; return; }
       w.c = c; w.o = 'manual'; if (D.clientes.indexOf(c) < 0) D.clientes.push(c);
       D.uso.forEach(function (f) { if (f.w === id) f.c = c; }); D.ej.forEach(function (f) { if (f.w === id) f.c = c; });
-      pintar();
+      preparar(); pintar();
     }).catch(function (e) { alert('No se guardó: ' + e.message); s.value = w.c; s.disabled = false; });
   }; });
 }
@@ -352,36 +457,74 @@ function sugerencia(m, a) {
   return [m, 'Ya está en el modelo adecuado para lo que hace.'];
 }
 function pModelos() {
-  var r = rango(), dias = diasMedidos(r);
+  var r = rango(), dm = diasMedidos(r);
   var g = {}; usoEn(r).forEach(function (f) { var k = f.w + '|' + f.m; var a = g[k] = g[k] || { w: f.w, m: f.m, u: 0, l: 0, i: 0, o: 0, cr: 0, cw: 0 }; ['u', 'l', 'i', 'o', 'cr', 'cw'].forEach(function (x) { a[x] += f[x]; }); });
   var filas = Object.keys(g).map(function (k) { var a = g[k], s = sugerencia(a.m, a), nuevo = s[0] === a.m ? a.u : costo(s[0], a); return { a: a, s: s, nuevo: nuevo, ahorro: a.u - nuevo }; })
     .sort(function (x, y) { return y.ahorro - x.ahorro || y.a.u - x.a.u; });
   var tot = filas.reduce(function (t, f) { t.u += f.a.u; t.n += f.nuevo; return t; }, { u: 0, n: 0 });
-  var h = '<div class="kpi-grid">' + kpi('Gasto del periodo', usd(tot.u), dias + ' días con medición') + kpi('Con los modelos sugeridos', usd(tot.n), 'mismo uso de tokens') +
-    kpi('Ahorro posible', '<span class="ahorro">' + usd(tot.u - tot.n) + '</span>', tot.u ? ((tot.u - tot.n) / tot.u * 100).toFixed(0) + '% menos' : '') + kpi('Ahorro al mes', '<span class="ahorro">' + usd((tot.u - tot.n) / dias * 30) + '</span>', 'si el uso se mantiene') + '</div>';
-  h += '<div class="card"><h3><span>Modelo recomendado por flujo</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Flujo</th><th>Cliente</th><th>Modelo actual</th><th>Recomendado</th><th class="num">Gasto actual</th><th class="num">Con el recomendado</th><th class="num">Ahorro</th><th>Por qué</th></tr>';
+  var h = '<div class="kpi-grid">' + kpi('Gasto del periodo', usd(tot.u), dm + ' días con medición · ' + quien()) + kpi('Con los modelos sugeridos', usd(tot.n), 'mismo uso de tokens', 'Se recalcula el costo con los mismos tokens y el precio del modelo sugerido. Un modelo más chico puede escribir respuestas de otro largo: es un estimado.') +
+    kpi('Ahorro posible', '<span class="ahorro">' + usd(tot.u - tot.n) + '</span>', tot.u ? ((tot.u - tot.n) / tot.u * 100).toFixed(0) + '% menos' : '') + kpi('Ahorro al mes', '<span class="ahorro">' + usd((tot.u - tot.n) / dm * 30) + '</span>', 'si el uso se mantiene', 'Ahorro del periodo ÷ días con medición × 30.') + '</div>';
+  h += '<div class="card"><h3><span>Modelo recomendado por flujo · ' + quien() + '</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Flujo</th><th>Cliente</th><th>Modelo actual</th><th>Recomendado</th><th class="num">Gasto actual</th><th class="num">Con el recomendado</th><th class="num">Ahorro</th><th>Por qué</th></tr>';
   filas.forEach(function (f) { var w = WF[f.a.w] || {}, igual = f.s[0] === f.a.m;
     h += '<tr><td>' + esc(w.n || f.a.w) + '</td><td>' + esc(w.c || '') + '</td><td><span class="tag ia">' + esc(f.a.m.replace('claude-', '')) + '</span></td><td>' + (igual ? '<span class="tag on">se queda</span>' : '<span class="tag manual">' + esc(f.s[0].replace('claude-', '')) + '</span>') + '</td>' +
       '<td class="num">' + usd(f.a.u) + '</td><td class="num">' + usd(f.nuevo) + '</td><td class="num">' + (f.ahorro > 0.005 ? '<span class="ahorro">' + usd(f.ahorro) + '</span>' : '—') + '</td><td class="dim" style="min-width:260px">' + esc(f.s[1]) + '</td></tr>'; });
-  h += filas.length ? '' : '<tr><td colspan="8" class="dim">Sin gasto de Claude en este periodo.</td></tr>';
-  h += '</table></div><div class="nota">El cálculo usa los mismos tokens del periodo con el precio del modelo sugerido. Un modelo más chico puede escribir respuestas de otro largo, así que es un estimado. Ningún cambio se hace solo: cada uno se prueba con los casos del flujo antes de publicarlo.</div></div>';
+  h += filas.length ? '' : '<tr><td colspan="8" class="dim">Sin gasto de Claude en este periodo para ' + quien() + '.</td></tr>';
+  h += '</table></div><div class="nota">Ningún cambio se hace solo desde aquí: cambiar el modelo de un flujo que atiende clientes exige probarlo con sus casos (por ejemplo, el agente de Pintaando pasa por sus pruebas locales y su arnés) y publicarlo con autorización. Pídelo en la sesión de trabajo y se hace con sus pruebas.</div></div>';
   $('panel').innerHTML = h;
 }
 
 function pLimites() {
-  var hoyU = sumar(usoEn([D.hoy, D.hoy]), function (f) { return f.c; });
-  var h = '<div class="card"><h3><span>Semáforo de hoy y límites diarios</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Cliente</th><th class="num">Hoy</th><th class="num">Límite diario</th><th class="num">Uso del límite</th><th>Semáforo</th></tr>';
-  D.clientes.slice().sort().forEach(function (c) { var u = (hoyU[c] || {}).u || 0, l = limite(c), nv = nivel(u, l);
-    h += '<tr><td>' + esc(c) + '</td><td class="num">' + usd(u) + '</td><td class="num">' + usd(l) + (D.limites[c] == null ? ' <span class="dim">(general)</span>' : '') + '</td><td class="num">' + (l ? (u / l * 100).toFixed(0) + '%' : '—') + '</td><td><span class="sem ' + nv + '" style="display:inline-block"></span></td></tr>'; });
-  var tu = total(usoEn([D.hoy, D.hoy]));
-  h += '<tr class="total"><td>Toda la cuenta</td><td class="num">' + usd(tu) + '</td><td class="num">' + usd(D.limiteTotal) + '</td><td class="num">' + (tu / D.limiteTotal * 100).toFixed(0) + '%</td><td><span class="sem ' + nivel(tu, D.limiteTotal) + '" style="display:inline-block"></span></td></tr></table></div>' +
-    '<div class="nota">Verde por debajo del 70% del límite, amarillo del 70 al 100%, rojo al pasarlo. Llega un correo a ' + esc(D.correo || 'GR') + ' la primera vez que un cliente o la cuenta pasa a amarillo y otra vez a rojo, y otro si en una sola hora se gastan más de ' + usd(D.picoHora) + '. La medición corre cada hora a los :05 (CDMX). Los límites se cambian en la tabla <b>gr_claude_config</b> de n8n.</div></div>';
+  var hoyU = sumar(usoEn([D.hoy, D.hoy], true), function (f) { return f.c; });
+  var h = '<div class="card"><h3><span>Semáforo de hoy y límites diarios de Claude · ' + quien() + ay('El límite diario es cuánto puede gastar en Claude un cliente en un día antes de que el semáforo se ponga rojo y llegue un correo. El sugerido sale del histórico; el actual es el que manda.') + '</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Cliente</th><th class="num">Hoy</th><th class="num" title="Límite que usa hoy el semáforo">Límite actual</th><th class="num" title="Uso del límite actual">Uso</th><th>Semáforo</th><th class="num" title="1.5 × el promedio diario de los últimos 14 días completos con medición, redondeado hacia arriba a 50 centavos (mínimo $0.50)">Sugerido</th><th>En qué se basa</th><th title="Escribe un valor y guarda">Cambiar</th></tr>';
+  var filas = clientesVisibles().sort().map(function (c) { return [c, c]; });
+  if (!est.cliente) filas.push(['__TOTAL__', 'Toda la cuenta']);
+  filas.forEach(function (x) {
+    var c = x[0] === '__TOTAL__' ? '' : x[0], u = c ? ((hoyU[c] || {}).u || 0) : total(usoEn([D.hoy, D.hoy], true)), l = limite(c), nv = nivel(u, l), s = sugerido(c);
+    var base = s ? 'Promedio ' + usd(s.prom) + '/día del ' + fechaCorta(s.ini) + ' al ' + fechaCorta(s.fin) + ' (' + s.dias + ' días); día más alto ' + usd(s.max) : 'Sin histórico suficiente';
+    h += '<tr' + (x[0] === '__TOTAL__' ? ' class="total"' : '') + '><td>' + esc(x[1]) + '</td><td class="num">' + usd(u) + '</td><td class="num">' + usd(l) + (c && D.limites[c] == null ? ' <span class="dim" title="No tiene límite propio: usa el general">(general)</span>' : '') + '</td><td class="num">' + (l ? (u / l * 100).toFixed(0) + '%' : '—') + '</td><td><span class="sem ' + nv + '" title="' + { verde: 'Bien: menos del 70% del límite', amarillo: 'Cuidado: entre 70% y 100% del límite', rojo: 'Pasó el límite', gris: 'Sin gasto hoy' }[nv] + '"></span></td>' +
+      '<td class="num">' + (s ? '<b>' + usd(s.valor) + '</b>' : '—') + '</td><td class="dim">' + esc(base) + '</td>' +
+      '<td style="white-space:nowrap"><input type="number" class="lim" min="0.5" step="0.5" value="' + (s ? s.valor : l) + '" data-c="' + esc(x[0]) + '" title="Nuevo límite diario en dólares"> <button class="btn sec guardarLim" data-c="' + esc(x[0]) + '" title="Guarda este límite; el semáforo y el correo lo usan desde la siguiente medición">Guardar</button></td></tr>';
+  });
+  h += '</table></div><div class="nota"><b>De dónde salieron los límites actuales.</b> Los fijé a mano el 16 oct con el gasto observado del 13 al 15 oct: Pintaando $3 (su agente gastaba ~$1.60 al día); Great Revenue $5 (~$1.30 al día con picos del Post-Reunión); Scania y Cencosud $3 cada uno, para frenar a tiempo ráfagas de pruebas como la del 14 oct; BdCh $1; cualquier otro cliente $2 (general); toda la cuenta $12, un poco arriba del peor día ($10.28 el 14 oct); y un pico de $2 en una sola hora (el 14 oct se fueron $6.92 en una hora).<br>' +
+    '<b>Cómo funciona.</b> Verde por debajo del 70% del límite, amarillo del 70 al 100%, rojo al pasarlo. Llega un correo a ' + esc(D.correo || 'GR') + ' la primera vez en el día que un cliente o la cuenta pasa a amarillo y otra vez a rojo, y otro si en una hora se gastan más de ' + usd(D.picoHora) + '. La medición corre cada hora a los :05 (CDMX).</div>' +
+    (est.cliente ? '' : '<div class="form"><label title="Gasto de Claude en una sola hora que dispara un correo">Pico por hora (USD)<input type="number" id="inPico" min="0.5" step="0.5" value="' + D.picoHora + '"></label><div><button class="btn sec" id="guardarPico">Guardar pico por hora</button></div></div>') + '</div>';
+  // Plataformas
+  var plats = D.plataformas.filter(function (p) { return !est.cliente || p.c === est.cliente || p.c === REPARTIR; });
+  h += '<div class="card"><h3><span>Costos mensuales de plataformas' + ay('Las plataformas que no se miden solas (n8n, BigCommerce, GitHub…) se capturan con su costo mensual en dólares. Si el precio cambia, captura una fila nueva con el mes en que empieza: la anterior se queda para el histórico. "Repartir por ejecuciones" divide el costo cada día entre los clientes según sus ejecuciones de n8n.') + '</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Plataforma</th><th>Se carga a</th><th class="num">USD al mes</th><th>Desde</th><th>Hasta</th><th>Nota</th></tr>';
+  plats.forEach(function (p) { h += '<tr><td>' + esc(p.p) + (/POR CONFIRMAR/.test(p.nota) ? ' <span class="tag manual">por confirmar</span>' : '') + '</td><td>' + esc(p.c) + '</td><td class="num">' + usd(p.u) + '</td><td>' + esc(p.d) + '</td><td>' + esc(p.h || 'vigente') + '</td><td class="dim">' + esc(p.nota) + '</td></tr>'; });
+  h += '</table></div><div class="form">' +
+    '<label>Plataforma<input type="text" id="pP" list="lstP" placeholder="n8n, BigCommerce…"><datalist id="lstP">' + D.plataformas.map(function (p) { return '<option>' + esc(p.p) + '</option>'; }).join('') + '</datalist></label>' +
+    '<label>Se carga a<select id="pC"><option>' + REPARTIR + '</option>' + D.clientes.slice().sort().map(function (c) { return '<option' + (est.cliente === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></label>' +
+    '<label>USD al mes<input type="number" id="pU" min="0" step="0.01"></label>' +
+    '<label title="Mes desde el que aplica este precio">Desde (mes)<input type="month" id="pD" value="' + D.hoy.slice(0, 7) + '"></label>' +
+    '<label>Nota<input type="text" id="pN" placeholder="plan, factura, etc."></label>' +
+    '<div><button class="btn" id="guardarPlat" title="Guarda o actualiza esta línea de costo">Guardar costo</button></div></div>' +
+    '<div class="nota">Para corregir una línea, captura la misma plataforma, el mismo cliente y el mismo mes con el valor bueno: se sobrescribe.</div></div>';
   var c = D.control || {};
-  h += '<div class="card"><h3><span>Cómo se mide</span></h3><div class="dim" style="font-size:13px;line-height:1.7">' +
+  h += '<div class="card"><h3><span>Cómo se mide y qué se guarda</span></h3><div class="dim" style="font-size:13px;line-height:1.7">' +
     'Cada hora se leen por la API de n8n las ejecuciones nuevas de los workflows que usan Claude y se suma el <i>usage</i> que Anthropic devuelve en cada respuesta (tokens de entrada, salida y caché), con el precio de cada modelo. Las ejecuciones de n8n se cuentan de todos los workflows. ' +
+    'Todo queda guardado para siempre en tablas diarias de n8n (gasto de Claude por día, flujo y modelo; ejecuciones por día y workflow; costos de plataformas con su vigencia), así que el histórico ya no depende de lo que n8n conserve de cada ejecución. ' +
     'Última carga: ' + num(c.workflows_leidos) + ' workflows leídos, ' + num(c.workflows_con_claude) + ' con Claude, ' + num(c.ejecuciones_leidas) + ' ejecuciones revisadas. ' +
-    'No se ven aquí: el uso de Claude Code y de claude.ai (van por la suscripción, no por la llave de la API) ni las ejecuciones que n8n no guarda.</div></div>';
+    'No se ven aquí: el uso de Claude Code y de claude.ai (van por la suscripción, no por la llave de la API).</div></div>';
   $('panel').innerHTML = h;
+  Array.prototype.forEach.call(document.querySelectorAll('.guardarLim'), function (b) { b.onclick = function () {
+    var c = b.getAttribute('data-c'), v = Number(document.querySelector('input.lim[data-c="' + c.replace(/"/g, '\\"') + '"]').value);
+    if (!(v > 0)) return alert('Escribe un límite mayor a cero.');
+    guardar(b, { accion: 'limite', cliente: c, valor: v });
+  }; });
+  if ($('guardarPico')) $('guardarPico').onclick = function () { var v = Number($('inPico').value); if (!(v > 0)) return alert('Escribe un valor mayor a cero.'); guardar(this, { accion: 'limite', cliente: '__PICO__', valor: v }); };
+  $('guardarPlat').onclick = function () {
+    var cuerpo = { accion: 'plataforma', plataforma: $('pP').value.trim(), cliente: $('pC').value, costo_mensual_usd: Number($('pU').value), desde_mes: $('pD').value, nota: $('pN').value.trim() };
+    if (!cuerpo.plataforma || !(cuerpo.costo_mensual_usd >= 0) || $('pU').value === '' || !/^\d{4}-\d{2}$/.test(cuerpo.desde_mes)) return alert('Llena plataforma, costo y mes.');
+    guardar(this, cuerpo);
+  };
+}
+function guardar(boton, cuerpo) {
+  boton.disabled = true; var t = boton.textContent; boton.textContent = 'Guardando…';
+  api(cuerpo).then(function (r) {
+    if (!r || !r.ok) { alert('No se guardó: ' + (r && r.error || 'error')); boton.disabled = false; boton.textContent = t; return; }
+    cargar();
+  }).catch(function (e) { alert('No se guardó: ' + e.message); boton.disabled = false; boton.textContent = t; });
 }
 
 cargar();
