@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Consumo de IA y n8n · Great Revenue</title>
+<style>
+:root {
+  --purple: #7C3AED; --pink: #EC4899; --cyan: #06B6D4; --mint: #10B981; --yellow: #F59E0B; --red: #EF4444;
+  --bg: #0B0F19; --bg-2: #141827; --bg-3: #1E2433; --border: #2A3142; --text: #F3F4F6; --text-dim: #9CA3AF; --text-mute: #6B7280;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; min-height: 100vh; }
+#app { max-width: 1400px; margin: 0 auto; padding: 20px 16px; }
+.hdr { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 16px 20px; background: linear-gradient(135deg, var(--purple), var(--pink)); border-radius: 12px; margin-bottom: 16px; }
+.hdr-left { display: flex; align-items: center; gap: 14px; }
+.logo { width: 42px; height: 42px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; }
+.hdr-main { font-size: 18px; font-weight: 800; letter-spacing: 0.5px; }
+.hdr-sub { font-size: 11px; opacity: 0.85; letter-spacing: 1px; text-transform: uppercase; }
+.hdr-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.live-badge { background: rgba(0,0,0,0.25); padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; background: var(--mint); border-radius: 50%; }
+.dot.tarde { background: var(--yellow); } .dot.mal { background: var(--red); }
+.btn-refresh { background: rgba(0,0,0,0.25); border: none; color: white; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.btn-refresh:hover { background: rgba(0,0,0,0.4); }
+.tabs { display: flex; gap: 4px; overflow-x: auto; background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 4px; margin-bottom: 16px; }
+.tab { background: transparent; border: none; color: var(--text-dim); padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.tab:hover { background: var(--bg-3); color: var(--text); }
+.tab.active { background: linear-gradient(135deg, var(--purple), var(--pink)); color: white; }
+.badge { background: var(--red); color: white; padding: 1px 7px; border-radius: 10px; font-size: 11px; margin-left: 6px; }
+.panel { display: none; } .panel.active { display: block; }
+.filtros { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.chip { background: var(--bg-2); border: 1px solid var(--border); color: var(--text-dim); padding: 7px 14px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.chip.active { background: var(--bg-3); color: var(--text); border-color: var(--purple); }
+input[type=date], input[type=search], select { background: var(--bg-2); border: 1px solid var(--border); color: var(--text); padding: 7px 10px; border-radius: 8px; font: inherit; font-size: 13px; color-scheme: dark; }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi { background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 8px; }
+.kpi-value { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.kpi-sub { font-size: 12px; color: var(--text-mute); margin-top: 4px; }
+.sube { color: var(--red); } .baja { color: var(--mint); }
+.card { background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.card h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 12px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.clientes { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+.cli { background: var(--bg-3); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; cursor: pointer; }
+.cli.sel { border-color: var(--pink); box-shadow: 0 0 0 1px var(--pink); }
+.cli .nom { font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.cli .monto { font-size: 22px; font-weight: 800; margin: 6px 0 2px; font-variant-numeric: tabular-nums; }
+.cli .det { color: var(--text-mute); font-size: 12px; }
+.cli.cero .monto { color: var(--text-mute); }
+.sem { width: 11px; height: 11px; border-radius: 50%; flex: 0 0 11px; }
+.verde { background: var(--mint); } .amarillo { background: var(--yellow); } .rojo { background: var(--red); } .gris { background: var(--text-mute); }
+.medidor { height: 5px; background: var(--border); border-radius: 3px; margin-top: 8px; overflow: hidden; } .medidor div { height: 100%; }
+.barras { display: flex; align-items: flex-end; gap: 2px; height: 160px; }
+.barras .b { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; min-width: 0; height: 100%; }
+.barras .col { width: 100%; background: linear-gradient(180deg, var(--pink), var(--purple)); border-radius: 3px 3px 0 0; min-height: 1px; }
+.barras .col.lim { background: var(--red); } .barras .col.vacio { background: var(--border); }
+.barras .et { font-size: 10px; color: var(--text-mute); margin-top: 4px; height: 14px; }
+.tbl-wrap { overflow-x: auto; }
+table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tbl th { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; white-space: nowrap; cursor: pointer; }
+.tbl td { padding: 9px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.tbl tr:hover td { background: var(--bg-3); }
+.tbl tr.total td { font-weight: 800; background: var(--bg-3); }
+.num { text-align: right !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; background: var(--bg-3); color: var(--text-dim); border: 1px solid var(--border); white-space: nowrap; }
+.tag.on { color: var(--mint); border-color: rgba(16,185,129,.4); } .tag.ia { color: var(--cyan); border-color: rgba(6,182,212,.4); }
+.tag.manual { color: var(--yellow); border-color: rgba(245,158,11,.4); } .tag.noid { color: var(--red); border-color: rgba(239,68,68,.4); }
+.dim { color: var(--text-mute); font-size: 12px; }
+.nota { color: var(--text-dim); font-size: 12px; margin-top: 10px; }
+.aviso { background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.35); color: #FCD34D; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; font-size: 13px; }
+.error { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.35); color: #FCA5A5; }
+.clave { max-width: 420px; margin: 80px auto; text-align: center; }
+.clave input { width: 100%; margin: 14px 0; padding: 10px; }
+.clave button, .btn { background: linear-gradient(135deg, var(--purple), var(--pink)); color: white; border: none; padding: 9px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; font: inherit; }
+.ok { color: var(--mint); } .ahorro { color: var(--mint); font-weight: 700; }
+a { color: var(--cyan); }
+@media (max-width: 640px) { .kpi-value { font-size: 22px; } .hdr { padding: 14px; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="hdr">
+    <div class="hdr-left">
+      <div class="logo">G</div>
+      <div><div class="hdr-main">GREAT REVENUE</div><div class="hdr-sub">Consumo de IA y n8n por cliente</div></div>
+    </div>
+    <div class="hdr-right">
+      <span class="live-badge" id="carga"><span class="dot"></span> Cargando…</span>
+      <button class="btn-refresh" id="btnRefrescar">↻ Actualizar</button>
+    </div>
+  </header>
+  <div id="contenido"></div>
+</div>
+<script>
+// ===== Consumo de IA y n8n · Great Revenue (16 oct 2026) =====
+// Pagina estatica de intelligence.greatrevenue.com/consumo/. No trae datos: los pide con la clave a n8n
+// (webhook gr-consumo-api). La clave llega una vez en la liga (#k=...), se guarda en este navegador y se
+// quita de la barra de direcciones.
+var API = 'https://mikea.app.n8n.cloud/webhook/gr-consumo-api';
+var PRECIOS = [ // USD por millon de tokens: entrada, salida, cache leido. Escritura de cache = 1.25x la entrada.
+  [/fable-5|mythos-5/, 10, 50, 1], [/opus-5-5/, 4, 20, 0.20], [/opus-5|opus-4-[5-8]/, 5, 25, 0.5], [/opus-4|opus-3/, 15, 75, 1.5],
+  [/sonnet-5/, 2, 10, 0.20], [/sonnet/, 3, 15, 0.30], [/haiku-5/, 0.10, 0.50, 0.01], [/haiku-4/, 1, 5, 0.10], [/haiku/, 0.25, 1.25, 0.03]];
+var D = null, clave = '';
+var est = { tab: 'resumen', periodo: 'mes', desde: '', hasta: '', cliente: '', flujo: '', buscar: '', soloIA: false, soloNoId: false, orden: 'u' };
+try { var e0 = JSON.parse(localStorage.getItem('gr_consumo_estado') || '{}'); ['tab', 'periodo', 'desde', 'hasta'].forEach(function (k) { if (e0[k]) est[k] = e0[k]; }); } catch (e) {}
+function guardarEstado() { try { localStorage.setItem('gr_consumo_estado', JSON.stringify({ tab: est.tab, periodo: est.periodo, desde: est.desde, hasta: est.hasta })); } catch (e) {} }
+
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function usd(x) { x = x || 0; return '$' + (x >= 100 ? x.toFixed(0) : x.toFixed(2)); }
+function usd4(x) { return '$' + (x || 0).toFixed(4); }
+function num(x) { return Math.round(x || 0).toLocaleString('es-MX'); }
+function tok(x) { x = x || 0; return x >= 1e6 ? (x / 1e6).toFixed(2) + ' M' : x >= 1e3 ? (x / 1e3).toFixed(1) + ' mil' : String(Math.round(x)); }
+function dia(d, n) { var t = new Date(d + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); }
+function diasEntre(a, b) { return Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 86400000) + 1; }
+function fechaCorta(d) { var m = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']; return Number(d.slice(8)) + ' ' + m[Number(d.slice(5, 7)) - 1]; }
+function nombreMes(ym) { var m = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']; return m[Number(ym.slice(5, 7)) - 1] + ' ' + ym.slice(0, 4); }
+function precio(m) { for (var i = 0; i < PRECIOS.length; i++) if (PRECIOS[i][0].test(m)) return PRECIOS[i]; return null; }
+function costo(m, f) { var p = precio(m); if (!p) return 0; return (f.i * p[1] + f.o * p[2] + f.cr * p[3] + f.cw * p[1] * 1.25) / 1e6; }
+
+// ---------- Clave y carga ----------
+(function () {
+  var h = location.hash.match(/k=([A-Za-z0-9]+)/);
+  if (h) { clave = h[1]; try { localStorage.setItem('gr_consumo_k', clave); } catch (e) {} history.replaceState(null, '', location.pathname); }
+  if (!clave) try { clave = localStorage.getItem('gr_consumo_k') || ''; } catch (e) {}
+})();
+function pedirClave(msg) {
+  $('carga').innerHTML = '<span class="dot mal"></span> Sin acceso';
+  $('contenido').innerHTML = '<div class="card clave"><h3 style="justify-content:center">Acceso</h3><p class="dim">' + esc(msg || 'Escribe la clave del portal.') + '</p>' +
+    '<input type="password" id="inClave" placeholder="Clave"><button id="btnClave">Entrar</button></div>';
+  $('btnClave').onclick = function () { clave = $('inClave').value.trim(); try { localStorage.setItem('gr_consumo_k', clave); } catch (e) {} cargar(); };
+}
+function api(cuerpo) {
+  cuerpo.k = clave;
+  return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) }).then(function (r) { return r.json(); });
+}
+function cargar() {
+  if (!clave) return pedirClave();
+  $('carga').innerHTML = '<span class="dot"></span> Cargando…';
+  api({ accion: 'datos' }).then(function (r) {
+    if (!r || !r.ok) { try { localStorage.removeItem('gr_consumo_k'); } catch (e) {} return pedirClave(r && r.error === 'clave' ? 'La clave no es válida.' : 'No se pudo leer: ' + (r && r.error || 'sin respuesta')); }
+    D = r; preparar(); pintar();
+  }).catch(function (e) { $('carga').innerHTML = '<span class="dot mal"></span> Sin conexión'; $('contenido').innerHTML = '<div class="aviso error">No se pudo conectar con el servidor. ' + esc(e.message) + '</div>'; });
+}
+$('btnRefrescar').onclick = cargar;
+
+// ---------- Datos ----------
+var WF = {};
+function preparar() {
+  WF = {}; D.wf.forEach(function (w) { WF[w.id] = w; });
+  D.uso.forEach(function (f) { var w = WF[f.w]; f.c = w ? w.c : (f.c || 'No identificado'); f.n = w ? w.n : (f.n || f.w); });
+  D.ej.forEach(function (f) { var w = WF[f.w]; f.c = w ? w.c : 'No identificado'; });
+  var vistos = {}; D.clientes.forEach(function (c) { vistos[c] = 1; });
+  D.wf.forEach(function (w) { if (!vistos[w.c]) { vistos[w.c] = 1; D.clientes.push(w.c); } });
+  D.primerDia = D.uso.reduce(function (a, f) { return !a || f.d < a ? f.d : a; }, '') || D.hoy;
+  D.primerDiaEj = D.ej.reduce(function (a, f) { return !a || f.d < a ? f.d : a; }, '') || D.hoy;
+}
+function rango() {
+  var h = D.hoy, p = est.periodo;
+  if (p === 'hoy') return [h, h];
+  if (p === 'ayer') return [dia(h, -1), dia(h, -1)];
+  if (p === '7') return [dia(h, -6), h];
+  if (p === '30') return [dia(h, -29), h];
+  if (p === 'mes') return [h.slice(0, 8) + '01', h];
+  if (p === 'mesant') { var f = dia(h.slice(0, 8) + '01', -1); return [f.slice(0, 8) + '01', f]; }
+  if (p === 'todo') return [D.primerDia < D.primerDiaEj ? D.primerDia : D.primerDiaEj, h];
+  var a = est.desde || dia(h, -6), b = est.hasta || h; return a <= b ? [a, b] : [b, a];
+}
+function diasMedidos(r) { var a = r[0] > D.primerDia ? r[0] : D.primerDia; return a > r[1] ? 1 : diasEntre(a, r[1]); }
+function anterior(r) { var n = diasEntre(r[0], r[1]); return [dia(r[0], -n), dia(r[0], -1)]; }
+function sumar(filas, clave) {
+  var g = {};
+  filas.forEach(function (f) { var k = clave(f); var a = g[k] = g[k] || { u: 0, e: 0, l: 0, i: 0, o: 0, cr: 0, cw: 0, m: {}, w: {} };
+    a.u += f.u; a.e += f.e; a.l += f.l; a.i += f.i; a.o += f.o; a.cr += f.cr; a.cw += f.cw; a.m[f.m] = (a.m[f.m] || 0) + f.u; a.w[f.w] = 1; });
+  return g;
+}
+function usoEn(r, fc) { return D.uso.filter(function (f) { return f.d >= r[0] && f.d <= r[1] && (!fc || fc(f)); }); }
+function ejEn(r, fc) { return D.ej.filter(function (f) { return f.d >= r[0] && f.d <= r[1] && (!fc || fc(f)); }); }
+function limite(c) { return c ? (D.limites[c] != null ? D.limites[c] : D.limiteDefault) : D.limiteTotal; }
+function nivel(g, l) { return !g ? 'gris' : g >= l ? 'rojo' : g >= 0.7 * l ? 'amarillo' : 'verde'; }
+function total(filas) { return filas.reduce(function (a, f) { return a + f.u; }, 0); }
+
+// ---------- Pintar ----------
+function pintar() {
+  guardarEstado();
+  var ult = D.ultimo ? new Date(D.ultimo) : null, min = ult ? Math.round((Date.now() - ult) / 60000) : 9999;
+  var hora = ult ? ult.toLocaleString('es-MX', { timeZone: 'America/Mexico_City', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'sin dato';
+  $('carga').innerHTML = '<span class="dot' + (min > 130 ? ' mal' : min > 75 ? ' tarde' : '') + '"></span> Última carga: ' + hora + (ult ? ' · hace ' + (min < 60 ? min + ' min' : Math.round(min / 60) + ' h') : '');
+  var noId = D.wf.filter(function (w) { return w.c === 'No identificado' && !w.ar; }).length;
+  var TABS = [['resumen', 'Resumen'], ['flujos', 'Flujos'], ['auditoria', 'Auditoría de workflows' + (noId ? '<span class="badge">' + noId + '</span>' : '')], ['modelos', 'Modelos recomendados'], ['limites', 'Límites y alarmas']];
+  var h = '<nav class="tabs">' + TABS.map(function (t) { return '<button class="tab' + (est.tab === t[0] ? ' active' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</nav>';
+  h += filtrosPeriodo();
+  h += '<div id="panel"></div>';
+  $('contenido').innerHTML = h;
+  Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) { b.onclick = function () { est.tab = b.getAttribute('data-tab'); pintar(); }; });
+  enlazarPeriodo();
+  ({ resumen: pResumen, flujos: pFlujos, auditoria: pAuditoria, modelos: pModelos, limites: pLimites })[est.tab]();
+}
+function filtrosPeriodo() {
+  var P = [['hoy', 'Hoy'], ['ayer', 'Ayer'], ['7', '7 días'], ['30', '30 días'], ['mes', 'Este mes'], ['mesant', 'Mes pasado'], ['todo', 'Todo'], ['rango', 'Rango']];
+  var r = rango();
+  return '<div class="filtros">' + P.map(function (p) { return '<button class="chip' + (est.periodo === p[0] ? ' active' : '') + '" data-p="' + p[0] + '">' + p[1] + '</button>'; }).join('') +
+    '<span class="dim">del</span><input type="date" id="fDesde" value="' + r[0] + '" max="' + D.hoy + '"><span class="dim">al</span><input type="date" id="fHasta" value="' + r[1] + '" max="' + D.hoy + '">' +
+    (est.cliente ? '<button class="chip active" id="quitarCliente">' + esc(est.cliente) + ' ✕</button>' : '') + '</div>';
+}
+function enlazarPeriodo() {
+  Array.prototype.forEach.call(document.querySelectorAll('[data-p]'), function (b) { b.onclick = function () { est.periodo = b.getAttribute('data-p'); est.flujo = ''; if (est.periodo === 'rango' && !est.desde) { var r = rango(); est.desde = r[0]; est.hasta = r[1]; } pintar(); }; });
+  $('fDesde').onchange = $('fHasta').onchange = function () { est.periodo = 'rango'; est.desde = $('fDesde').value; est.hasta = $('fHasta').value; pintar(); };
+  if ($('quitarCliente')) $('quitarCliente').onclick = function () { est.cliente = ''; est.flujo = ''; pintar(); };
+}
+function avisoCobertura(r) {
+  if (r[0] >= D.primerDia) return '';
+  return '<div class="aviso">El gasto de Claude se mide desde el <b>' + fechaCorta(D.primerDia) + '</b> (lo más viejo que n8n todavía guarda). Lo anterior a esa fecha no aparece; la cifra completa solo está en la consola de Anthropic.</div>';
+}
+
+function pResumen() {
+  var r = rango(), ra = anterior(r), dias = diasEntre(r[0], r[1]);
+  var fc = est.cliente ? function (f) { return f.c === est.cliente; } : null;
+  var filas = usoEn(r, fc), prev = usoEn(ra, fc), g = total(filas), gp = total(prev);
+  var ej = ejEn(r, fc).reduce(function (a, f) { return a + f.e; }, 0);
+  var mesIni = D.hoy.slice(0, 8) + '01', diasMes = new Date(Date.UTC(+D.hoy.slice(0, 4), +D.hoy.slice(5, 7), 0)).getUTCDate();
+  var gMes = total(usoEn([mesIni, D.hoy], fc)), transcurridos = diasEntre(mesIni > D.primerDia ? mesIni : D.primerDia, D.hoy);
+  var proy = transcurridos ? gMes / transcurridos * diasMes : 0;
+  var hoyG = total(usoEn([D.hoy, D.hoy], fc)), ayerG = total(usoEn([dia(D.hoy, -1), dia(D.hoy, -1)], fc));
+  var cambio = gp ? (g - gp) / gp * 100 : null;
+  var tokE = filas.reduce(function (a, f) { return a + f.i + f.cr + f.cw; }, 0), tokS = filas.reduce(function (a, f) { return a + f.o; }, 0);
+  var h = avisoCobertura(r) + '<div class="kpi-grid">' +
+    kpi('Gasto Claude del periodo', usd(g), fechaCorta(r[0]) + (dias > 1 ? ' – ' + fechaCorta(r[1]) : '') + (cambio == null ? '' : ' · <span class="' + (cambio > 0 ? 'sube' : 'baja') + '">' + (cambio > 0 ? '▲ ' : '▼ ') + Math.abs(cambio).toFixed(0) + '% vs periodo anterior</span>')) +
+    kpi('Hoy', usd(hoyG), 'ayer ' + usd(ayerG) + ' · límite ' + usd(limite(est.cliente)) + '/día') +
+    kpi('Proyección del mes', usd(proy), 'llevamos ' + usd(gMes) + ' en ' + nombreMes(D.hoy).toLowerCase()) +
+    kpi('Promedio diario', usd(g / diasMedidos(r)), diasMedidos(r) + ' día' + (diasMedidos(r) > 1 ? 's' : '') + ' con medición') +
+    kpi('Llamadas a Claude', num(filas.reduce(function (a, f) { return a + f.l; }, 0)), tok(tokE) + ' de entrada · ' + tok(tokS) + ' de salida') +
+    kpi('Ejecuciones de n8n', num(ej), 'de todos los workflows' + (est.cliente ? ' de ' + esc(est.cliente) : '')) + '</div>';
+  // Clientes: siempre todos
+  var porC = sumar(usoEn(r), function (f) { return f.c; }), ejC = {};
+  ejEn(r).forEach(function (f) { ejC[f.c] = (ejC[f.c] || 0) + f.e; });
+  var cs = D.clientes.slice().sort(function (a, b) { return ((porC[b] || {}).u || 0) - ((porC[a] || {}).u || 0) || a.localeCompare(b); });
+  h += '<div class="card"><h3><span>Clientes (' + cs.length + ')</span><span class="dim" style="text-transform:none;letter-spacing:0">Clic para filtrar · el semáforo compara contra el límite diario × días del periodo</span></h3><div class="clientes">';
+  cs.forEach(function (c) {
+    var a = porC[c] || { u: 0, l: 0 }, l = limite(c) * dias, nv = nivel(a.u, l), nwf = D.wf.filter(function (w) { return w.c === c && !w.ar; }).length;
+    h += '<div class="cli' + (a.u ? '' : ' cero') + (est.cliente === c ? ' sel' : '') + '" data-c="' + esc(c) + '"><div class="nom"><span class="sem ' + nv + '"></span>' + esc(c) + '</div>' +
+      '<div class="monto">' + (a.u ? usd(a.u) : 'Sin consumo') + '</div><div class="det">' + num(a.l) + ' llamadas · ' + num(ejC[c] || 0) + ' ejecuciones · ' + nwf + ' workflows</div>' +
+      '<div class="medidor"><div class="' + nv + '" style="width:' + Math.min(100, l ? a.u / l * 100 : 0) + '%"></div></div><div class="det">límite ' + usd(l) + '</div></div>';
+  });
+  h += '</div></div>';
+  h += barrasDias(r, fc);
+  h += tablaMeses(fc);
+  $('panel').innerHTML = h;
+  Array.prototype.forEach.call(document.querySelectorAll('.cli'), function (d) { d.onclick = function () { var c = d.getAttribute('data-c'); est.cliente = est.cliente === c ? '' : c; pintar(); }; });
+}
+function kpi(t, v, s) { return '<div class="kpi"><div class="kpi-label">' + t + '</div><div class="kpi-value">' + v + '</div><div class="kpi-sub">' + s + '</div></div>'; }
+function barrasDias(r, fc, titulo) {
+  var a = r[0], b = r[1]; if (diasEntre(a, b) < 14) a = dia(b, -13);
+  var porD = sumar(usoEn([a, b], fc), function (f) { return f.d; }), dias = [];
+  for (var d = a; d <= b; d = dia(d, 1)) dias.push(d);
+  var max = Math.max.apply(null, dias.map(function (d) { return porD[d] ? porD[d].u : 0; }).concat([0.01]));
+  var lim = est.flujo ? 0 : limite(est.cliente), cada = Math.ceil(dias.length / 16);
+  var h = '<div class="card"><h3><span>' + (titulo || 'Gasto de Claude por día') + '</span><span class="dim" style="text-transform:none;letter-spacing:0">' + (lim ? 'en rojo, días arriba del límite de ' + usd(lim) : '') + '</span></h3><div class="barras">';
+  dias.forEach(function (d, i) { var u = porD[d] ? porD[d].u : 0;
+    h += '<div class="b" title="' + d + ': ' + usd(u) + '"><div class="col' + (d < D.primerDia ? ' vacio' : lim && u >= lim ? ' lim' : '') + '" style="height:' + (u / max * 140) + 'px"></div><div class="et">' + (i % cada === 0 ? fechaCorta(d) : '') + '</div></div>'; });
+  return h + '</div></div>';
+}
+function tablaMeses(fc) {
+  var porM = sumar(D.uso.filter(function (f) { return !fc || fc(f); }), function (f) { return f.d.slice(0, 7); });
+  var ejM = {}; D.ej.forEach(function (f) { if (!fc || fc(f)) ejM[f.d.slice(0, 7)] = (ejM[f.d.slice(0, 7)] || 0) + f.e; });
+  var meses = Object.keys(porM).concat(Object.keys(ejM)).filter(function (m, i, a) { return a.indexOf(m) === i; }).sort().reverse();
+  var h = '<div class="card"><h3><span>Por mes</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Mes</th><th class="num">Gasto Claude</th><th class="num">Llamadas</th><th class="num">Tokens entrada</th><th class="num">Tokens salida</th><th class="num">Ejecuciones n8n</th><th>Medido desde</th></tr>';
+  meses.forEach(function (m) { var a = porM[m] || { u: 0, l: 0, i: 0, o: 0, cr: 0, cw: 0 }, desde = D.uso.filter(function (f) { return f.d.slice(0, 7) === m; }).reduce(function (x, f) { return !x || f.d < x ? f.d : x; }, '');
+    h += '<tr><td>' + nombreMes(m) + '</td><td class="num"><b>' + usd(a.u) + '</b></td><td class="num">' + num(a.l) + '</td><td class="num">' + tok(a.i + a.cr + a.cw) + '</td><td class="num">' + tok(a.o) + '</td><td class="num">' + num(ejM[m] || 0) + '</td><td class="dim">' + (desde ? fechaCorta(desde) : '—') + '</td></tr>'; });
+  return h + '</table></div></div>';
+}
+
+function pFlujos() {
+  var r = rango(), fc = est.cliente ? function (f) { return f.c === est.cliente; } : null;
+  var porW = sumar(usoEn(r, fc), function (f) { return f.w; }), ejW = {};
+  ejEn(r, fc).forEach(function (f) { ejW[f.w] = (ejW[f.w] || 0) + f.e; });
+  var ids = Object.keys(porW).sort(function (a, b) { return porW[b].u - porW[a].u; }), tot = { u: 0, e: 0, l: 0, i: 0, o: 0, cr: 0, cw: 0 };
+  var h = avisoCobertura(r) + '<div class="card"><h3><span>Flujos con gasto de Claude' + (est.cliente ? ' · ' + esc(est.cliente) : '') + '</span><span class="dim" style="text-transform:none;letter-spacing:0">Clic en un flujo para ver su gasto por día</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Flujo</th><th>Cliente</th><th>Modelo</th><th class="num">Ejecuciones n8n</th><th class="num">Llamadas</th><th class="num">Entrada</th><th class="num">Salida</th><th class="num">Caché leído</th><th class="num">Caché escrito</th><th class="num">USD</th><th class="num">USD por llamada</th><th class="num">% del total</th></tr>';
+  var g = ids.reduce(function (a, k) { return a + porW[k].u; }, 0);
+  ids.forEach(function (k) { var a = porW[k], w = WF[k] || {};
+    ['u', 'l', 'i', 'o', 'cr', 'cw'].forEach(function (x) { tot[x] += a[x]; }); tot.e += ejW[k] || 0;
+    h += '<tr class="fila-flujo" data-w="' + k + '" style="cursor:pointer' + (est.flujo === k ? ';background:var(--bg-3)' : '') + '"><td>' + esc(w.n || k) + '</td><td>' + esc(w.c || '') + '</td><td>' + Object.keys(a.m).map(function (m) { return '<span class="tag ia">' + esc(m.replace('claude-', '').replace(/-2025\d+$/, '')) + '</span>'; }).join(' ') + '</td><td class="num">' + num(ejW[k] || 0) + '</td><td class="num">' + num(a.l) + '</td><td class="num">' + tok(a.i) + '</td><td class="num">' + tok(a.o) + '</td><td class="num">' + tok(a.cr) + '</td><td class="num">' + tok(a.cw) + '</td><td class="num"><b>' + usd(a.u) + '</b></td><td class="num">' + (a.l ? usd4(a.u / a.l) : '—') + '</td><td class="num">' + (g ? (a.u / g * 100).toFixed(1) + '%' : '—') + '</td></tr>'; });
+  h += ids.length ? '<tr class="total"><td>Total</td><td></td><td></td><td class="num">' + num(tot.e) + '</td><td class="num">' + num(tot.l) + '</td><td class="num">' + tok(tot.i) + '</td><td class="num">' + tok(tot.o) + '</td><td class="num">' + tok(tot.cr) + '</td><td class="num">' + tok(tot.cw) + '</td><td class="num">' + usd(tot.u) + '</td><td class="num">' + (tot.l ? usd4(tot.u / tot.l) : '—') + '</td><td class="num">100%</td></tr>' : '<tr><td colspan="12" class="dim">Sin gasto de Claude en este periodo.</td></tr>';
+  h += '</table></div><div class="nota">Precios de Anthropic por millón de tokens; el caché escrito cuesta 1.25× la entrada y el leído 0.1×. Las ejecuciones de n8n cuentan todas las corridas del flujo, llamen o no a Claude.</div></div>';
+  if (est.flujo) h += barrasDias(r, function (f) { return f.w === est.flujo; }, 'Gasto por día · ' + esc((WF[est.flujo] || {}).n || est.flujo));
+  $('panel').innerHTML = h;
+  Array.prototype.forEach.call(document.querySelectorAll('.fila-flujo'), function (tr) { tr.onclick = function () { var k = tr.getAttribute('data-w'); est.flujo = est.flujo === k ? '' : k; pFlujos(); }; });
+}
+
+function pAuditoria() {
+  var r = rango(), porW = sumar(usoEn(r), function (f) { return f.w; }), ejW = {}, erW = {};
+  ejEn(r).forEach(function (f) { ejW[f.w] = (ejW[f.w] || 0) + f.e; erW[f.w] = (erW[f.w] || 0) + f.x; });
+  var q = est.buscar.toLowerCase();
+  var lista = D.wf.filter(function (w) {
+    if (w.ar) return false;
+    if (est.cliente && w.c !== est.cliente) return false;
+    if (est.soloIA && !w.cl && !w.ia) return false;
+    if (est.soloNoId && w.c !== 'No identificado') return false;
+    return !q || (w.n + ' ' + w.id + ' ' + w.f + ' ' + w.s).toLowerCase().indexOf(q) >= 0;
+  });
+  var val = function (w) { return est.orden === 'e' ? (ejW[w.id] || 0) : est.orden === 'n' ? 0 : ((porW[w.id] || {}).u || 0); };
+  lista.sort(function (a, b) { return est.orden === 'n' ? a.n.localeCompare(b.n) : (val(b) - val(a)) || (ejW[b.id] || 0) - (ejW[a.id] || 0) || a.n.localeCompare(b.n); });
+  var porCli = {}; D.wf.forEach(function (w) { if (!w.ar) { var c = porCli[w.c] = porCli[w.c] || { n: 0, a: 0, cl: 0 }; c.n++; if (w.a) c.a++; if (w.cl) c.cl++; } });
+  var h = '<div class="card"><h3><span>Resumen por cliente</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Cliente</th><th class="num">Workflows</th><th class="num">Activos</th><th class="num">Usan Claude</th><th class="num">Ejecuciones n8n</th><th class="num">Gasto Claude</th></tr>';
+  var porCU = sumar(usoEn(r), function (f) { return f.c; }), ejCU = {}; ejEn(r).forEach(function (f) { ejCU[f.c] = (ejCU[f.c] || 0) + f.e; });
+  D.clientes.slice().sort(function (a, b) { return (porCli[b] || { n: 0 }).n - (porCli[a] || { n: 0 }).n; }).forEach(function (c) { var x = porCli[c] || { n: 0, a: 0, cl: 0 };
+    h += '<tr><td>' + (c === 'No identificado' ? '<span class="tag noid">No identificado</span>' : esc(c)) + '</td><td class="num">' + x.n + '</td><td class="num">' + x.a + '</td><td class="num">' + x.cl + '</td><td class="num">' + num(ejCU[c] || 0) + '</td><td class="num">' + usd((porCU[c] || {}).u || 0) + '</td></tr>'; });
+  h += '</table></div></div>';
+  h += '<div class="card"><h3><span>Todos los workflows (' + lista.length + ' de ' + D.wf.filter(function (w) { return !w.ar; }).length + ')</span></h3>' +
+    '<div class="filtros"><input type="search" id="fBuscar" placeholder="Buscar por nombre, id o carpeta" value="' + esc(est.buscar) + '" style="min-width:240px">' +
+    '<button class="chip' + (est.soloIA ? ' active' : '') + '" id="fIA">Solo con IA</button><button class="chip' + (est.soloNoId ? ' active' : '') + '" id="fNoId">Solo no identificados</button>' +
+    '<select id="fOrden"><option value="u"' + (est.orden === 'u' ? ' selected' : '') + '>Ordenar por gasto</option><option value="e"' + (est.orden === 'e' ? ' selected' : '') + '>Ordenar por ejecuciones</option><option value="n"' + (est.orden === 'n' ? ' selected' : '') + '>Ordenar por nombre</option></select></div>' +
+    '<div class="tbl-wrap"><table class="tbl"><tr><th>Workflow</th><th>Cliente</th><th>De dónde sale</th><th>Carpeta en n8n</th><th>Estado</th><th>IA</th><th class="num">Ejecuciones</th><th class="num">Con error</th><th class="num">Gasto Claude</th></tr>';
+  var opciones = D.clientes.slice().sort().map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '<option value="__otro">+ Otro cliente…</option>';
+  lista.slice(0, 400).forEach(function (w) { var u = (porW[w.id] || {}).u || 0;
+    h += '<tr><td>' + esc(w.n) + '<div class="dim">' + esc(w.id) + '</div></td>' +
+      '<td><select class="asignar" data-id="' + w.id + '">' + opciones.replace('<option>' + esc(w.c) + '</option>', '<option selected>' + esc(w.c) + '</option>') + '</select></td>' +
+      '<td>' + ({ carpeta: '<span class="tag">carpeta</span>', prefijo: '<span class="tag">nombre</span>', manual: '<span class="tag manual">a mano</span>' }[w.o] || '<span class="tag noid">sin pista</span>') + '</td>' +
+      '<td class="dim">' + esc(w.f || 'sin carpeta') + (w.s ? ' / ' + esc(w.s) : '') + '</td>' +
+      '<td>' + (w.a ? '<span class="tag on">activo</span>' : '<span class="tag">apagado</span>') + '</td>' +
+      '<td>' + (w.cl ? '<span class="tag ia">Claude' + (w.m ? ' · ' + esc(w.m.replace(/claude-/g, '')) : '') + '</span>' : '') + (w.ia ? ' <span class="tag">' + esc(w.ia) + '</span>' : '') + '</td>' +
+      '<td class="num">' + num(ejW[w.id] || 0) + '</td><td class="num">' + (erW[w.id] ? '<span class="sube">' + num(erW[w.id]) + '</span>' : '0') + '</td><td class="num">' + (u ? '<b>' + usd(u) + '</b>' : '<span class="dim">—</span>') + '</td></tr>'; });
+  if (lista.length > 400) h += '<tr><td colspan="9" class="dim">Se muestran 400; usa la búsqueda para ver el resto.</td></tr>';
+  h += '</table></div><div class="nota">El cliente sale de la carpeta del workflow en n8n; si no está en una carpeta de cliente, del prefijo de su nombre; si no hay pista, queda como <b>No identificado</b>. Al cambiarlo aquí se guarda "a mano" y ya no lo cambia la carga automática. El cambio también reacomoda el gasto pasado de ese workflow.</div></div>';
+  $('panel').innerHTML = h;
+  var t; $('fBuscar').oninput = function () { clearTimeout(t); var v = this.value; t = setTimeout(function () { est.buscar = v; pAuditoria(); var i = $('fBuscar'); i.focus(); i.setSelectionRange(v.length, v.length); }, 250); };
+  $('fIA').onclick = function () { est.soloIA = !est.soloIA; pAuditoria(); };
+  $('fNoId').onclick = function () { est.soloNoId = !est.soloNoId; pAuditoria(); };
+  $('fOrden').onchange = function () { est.orden = this.value; pAuditoria(); };
+  Array.prototype.forEach.call(document.querySelectorAll('.asignar'), function (s) { s.onchange = function () {
+    var id = s.getAttribute('data-id'), c = s.value, w = WF[id];
+    if (c === '__otro') { c = (prompt('Nombre del cliente nuevo') || '').trim(); if (!c) { s.value = w.c; return; } }
+    s.disabled = true;
+    api({ accion: 'asignar', workflow_id: id, cliente: c }).then(function (r) {
+      if (!r || !r.ok) { alert('No se guardó: ' + (r && r.error || 'error')); s.value = w.c; s.disabled = false; return; }
+      w.c = c; w.o = 'manual'; if (D.clientes.indexOf(c) < 0) D.clientes.push(c);
+      D.uso.forEach(function (f) { if (f.w === id) f.c = c; }); D.ej.forEach(function (f) { if (f.w === id) f.c = c; });
+      pintar();
+    }).catch(function (e) { alert('No se guardó: ' + e.message); s.value = w.c; s.disabled = false; });
+  }; });
+}
+
+// Recomendacion de modelo por flujo: mismo uso de tokens, precio del modelo sugerido.
+function sugerencia(m, a) {
+  var porLlamada = a.l ? a.o / a.l : 0, entradaLl = a.l ? (a.i + a.cr + a.cw) / a.l : 0;
+  if (/opus/.test(m)) return ['claude-sonnet-5-5', 'Opus es el más caro. Sonnet 5.5 lee documentos y razona muy bien a la mitad del precio; probarlo con los mismos casos antes de cambiar.'];
+  if (/sonnet-4/.test(m)) return ['claude-sonnet-5-5', 'Sonnet 5.5 es la versión nueva: mejor y un tercio más barato que Sonnet 4.x. Cambio directo, con una prueba rápida.'];
+  if (/haiku-4|haiku-3/.test(m)) return ['claude-haiku-5-5', 'Haiku 5.5 cuesta una décima parte de Haiku 4.5 para tareas cortas (clasificar, extraer, responder breve).'];
+  if (/sonnet-5/.test(m) && porLlamada < 250 && entradaLl < 3000) return ['claude-haiku-5-5', 'Respuestas cortas (≈' + Math.round(porLlamada) + ' tokens): parece clasificación o extracción, que Haiku 5.5 hace a una fracción del costo. Probar antes.'];
+  return [m, 'Ya está en el modelo adecuado para lo que hace.'];
+}
+function pModelos() {
+  var r = rango(), dias = diasMedidos(r);
+  var g = {}; usoEn(r).forEach(function (f) { var k = f.w + '|' + f.m; var a = g[k] = g[k] || { w: f.w, m: f.m, u: 0, l: 0, i: 0, o: 0, cr: 0, cw: 0 }; ['u', 'l', 'i', 'o', 'cr', 'cw'].forEach(function (x) { a[x] += f[x]; }); });
+  var filas = Object.keys(g).map(function (k) { var a = g[k], s = sugerencia(a.m, a), nuevo = s[0] === a.m ? a.u : costo(s[0], a); return { a: a, s: s, nuevo: nuevo, ahorro: a.u - nuevo }; })
+    .sort(function (x, y) { return y.ahorro - x.ahorro || y.a.u - x.a.u; });
+  var tot = filas.reduce(function (t, f) { t.u += f.a.u; t.n += f.nuevo; return t; }, { u: 0, n: 0 });
+  var h = '<div class="kpi-grid">' + kpi('Gasto del periodo', usd(tot.u), dias + ' días con medición') + kpi('Con los modelos sugeridos', usd(tot.n), 'mismo uso de tokens') +
+    kpi('Ahorro posible', '<span class="ahorro">' + usd(tot.u - tot.n) + '</span>', tot.u ? ((tot.u - tot.n) / tot.u * 100).toFixed(0) + '% menos' : '') + kpi('Ahorro al mes', '<span class="ahorro">' + usd((tot.u - tot.n) / dias * 30) + '</span>', 'si el uso se mantiene') + '</div>';
+  h += '<div class="card"><h3><span>Modelo recomendado por flujo</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Flujo</th><th>Cliente</th><th>Modelo actual</th><th>Recomendado</th><th class="num">Gasto actual</th><th class="num">Con el recomendado</th><th class="num">Ahorro</th><th>Por qué</th></tr>';
+  filas.forEach(function (f) { var w = WF[f.a.w] || {}, igual = f.s[0] === f.a.m;
+    h += '<tr><td>' + esc(w.n || f.a.w) + '</td><td>' + esc(w.c || '') + '</td><td><span class="tag ia">' + esc(f.a.m.replace('claude-', '')) + '</span></td><td>' + (igual ? '<span class="tag on">se queda</span>' : '<span class="tag manual">' + esc(f.s[0].replace('claude-', '')) + '</span>') + '</td>' +
+      '<td class="num">' + usd(f.a.u) + '</td><td class="num">' + usd(f.nuevo) + '</td><td class="num">' + (f.ahorro > 0.005 ? '<span class="ahorro">' + usd(f.ahorro) + '</span>' : '—') + '</td><td class="dim" style="min-width:260px">' + esc(f.s[1]) + '</td></tr>'; });
+  h += filas.length ? '' : '<tr><td colspan="8" class="dim">Sin gasto de Claude en este periodo.</td></tr>';
+  h += '</table></div><div class="nota">El cálculo usa los mismos tokens del periodo con el precio del modelo sugerido. Un modelo más chico puede escribir respuestas de otro largo, así que es un estimado. Ningún cambio se hace solo: cada uno se prueba con los casos del flujo antes de publicarlo.</div></div>';
+  $('panel').innerHTML = h;
+}
+
+function pLimites() {
+  var hoyU = sumar(usoEn([D.hoy, D.hoy]), function (f) { return f.c; });
+  var h = '<div class="card"><h3><span>Semáforo de hoy y límites diarios</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Cliente</th><th class="num">Hoy</th><th class="num">Límite diario</th><th class="num">Uso del límite</th><th>Semáforo</th></tr>';
+  D.clientes.slice().sort().forEach(function (c) { var u = (hoyU[c] || {}).u || 0, l = limite(c), nv = nivel(u, l);
+    h += '<tr><td>' + esc(c) + '</td><td class="num">' + usd(u) + '</td><td class="num">' + usd(l) + (D.limites[c] == null ? ' <span class="dim">(general)</span>' : '') + '</td><td class="num">' + (l ? (u / l * 100).toFixed(0) + '%' : '—') + '</td><td><span class="sem ' + nv + '" style="display:inline-block"></span></td></tr>'; });
+  var tu = total(usoEn([D.hoy, D.hoy]));
+  h += '<tr class="total"><td>Toda la cuenta</td><td class="num">' + usd(tu) + '</td><td class="num">' + usd(D.limiteTotal) + '</td><td class="num">' + (tu / D.limiteTotal * 100).toFixed(0) + '%</td><td><span class="sem ' + nivel(tu, D.limiteTotal) + '" style="display:inline-block"></span></td></tr></table></div>' +
+    '<div class="nota">Verde por debajo del 70% del límite, amarillo del 70 al 100%, rojo al pasarlo. Llega un correo a ' + esc(D.correo || 'GR') + ' la primera vez que un cliente o la cuenta pasa a amarillo y otra vez a rojo, y otro si en una sola hora se gastan más de ' + usd(D.picoHora) + '. La medición corre cada hora a los :05 (CDMX). Los límites se cambian en la tabla <b>gr_claude_config</b> de n8n.</div></div>';
+  var c = D.control || {};
+  h += '<div class="card"><h3><span>Cómo se mide</span></h3><div class="dim" style="font-size:13px;line-height:1.7">' +
+    'Cada hora se leen por la API de n8n las ejecuciones nuevas de los workflows que usan Claude y se suma el <i>usage</i> que Anthropic devuelve en cada respuesta (tokens de entrada, salida y caché), con el precio de cada modelo. Las ejecuciones de n8n se cuentan de todos los workflows. ' +
+    'Última carga: ' + num(c.workflows_leidos) + ' workflows leídos, ' + num(c.workflows_con_claude) + ' con Claude, ' + num(c.ejecuciones_leidas) + ' ejecuciones revisadas. ' +
+    'No se ven aquí: el uso de Claude Code y de claude.ai (van por la suscripción, no por la llave de la API) ni las ejecuciones que n8n no guarda.</div></div>';
+  $('panel').innerHTML = h;
+}
+
+cargar();
+</script>
+</body>
+</html>
