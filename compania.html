@@ -66,8 +66,8 @@
   function abrir(u) { return /^https:\/\//.test(u || '') ? '<a href="' + h(u.split(/\s+/)[0]) + '" target="_blank" rel="noopener">Abrir</a>' : '—'; }
   function tarjeta(n, titulo, cuerpo, extra) { return '<div class="card"><div class="card-h"><h2><span class="num">' + n + '</span>' + h(titulo) + '</h2>' + (extra || '') + '</div>' + cuerpo + '</div>'; }
   function seccion(n, id, titulo, cuerpo, c, ejemplo) { return tarjeta(n, titulo, cuerpo + P.pedir(id, titulo, ejemplo) + P.solicitudes(c.solicitudes, titulo)); }
-  var PESTANAS = [['equipo', 'Equipo'], ['conexiones', 'Conexiones'], ['marca', 'Tu marca y tus correos'], ['proceso', 'Objetivos y proceso']];
-  var pestana = (/^#(equipo|conexiones|marca|proceso)$/.exec(location.hash) || [])[1] || 'equipo';
+  var PESTANAS = [['equipo', 'Equipo'], ['conexiones', 'Conexiones'], ['marca', 'Tu marca y tus correos'], ['fases', 'Fases del pipeline'], ['proceso', 'Objetivos y proceso']];
+  var pestana = (/^#(equipo|conexiones|marca|fases|proceso)$/.exec(location.hash) || [])[1] || 'equipo';
   function elegir(t) {
     var c = estado.companias.filter(function (x) { return x.tenant === t; })[0]; if (!c) return;
     estado.sel = t; if ($('sel-cia')) $('sel-cia').value = t;
@@ -75,12 +75,13 @@
     P.aplicarMarca(d, 'Portal de ' + (d.portal_nombre || d.marca_nombre || t), 'Tu equipo, tus conexiones y cómo salen tus correos.');
     document.title = 'Portal de ' + (d.marca_nombre || t);
     var html = '<nav class="tabs" role="tablist">' + PESTANAS.map(function (p) { return '<button role="tab" class="tab' + (p[0] === pestana ? ' on' : '') + '" data-tab="' + p[0] + '" aria-selected="' + (p[0] === pestana) + '">' + p[1] + '</button>'; }).join('') + '</nav>';
-    html += '<div id="contenido">' + ({ equipo: equipo, conexiones: conexiones, marca: marca, proceso: proceso }[pestana])(c) + '</div>';
+    html += '<div id="contenido">' + ({ equipo: equipo, conexiones: conexiones, marca: marca, fases: fases, proceso: proceso }[pestana])(c) + '</div>';
     $('panel').innerHTML = html;
     Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function (b) { b.onclick = function () { pestana = b.getAttribute('data-tab'); try { history.replaceState(null, '', '#' + pestana); } catch (e) {} elegir(t); }; });
     P.activarPedir(ses, t, cargar);
     if (pestana === 'equipo') activarEquipo(c);
     if (pestana === 'conexiones') activarConexiones(c);
+    if (pestana === 'fases') activarFases(c);
     if (pestana === 'marca') {
       if ($('doc-completo')) $('doc-completo').onclick = function () { P.api({ accion: 'vitrina', sesion: ses(), tenant: t }).then(function (x) { if (x.html) P.abrirHtml(x.html); }); };
       cargarMuestras(c);
@@ -211,6 +212,46 @@
     html += seccion(5, 'marca', 'Tu marca', dl([['Nombre', d.marca_nombre, false, 'marca_nombre'], ['Colores', '<span class="sw"><i style="background:' + h(P.color(d.marca_color_primario, '#ccc')) + '"></i>' + h(d.marca_color_primario) + '</span><span class="sw"><i style="background:' + h(P.color(d.marca_color_oscuro, '#111')) + '"></i>' + h(d.marca_color_oscuro) + '</span>', true, 'marca_color_primario'], ['Colores secundarios', (d.marca_colores_secundarios || '').split(',').filter(Boolean).map(function (x) { return '<span class="sw"><i style="background:' + h(P.color(x, '#ccc')) + '"></i></span>'; }).join(''), true, 'marca_colores_secundarios'], ['Tipografía de los avisos', d.marca_fuente_interna, false, 'marca_fuente_interna'], ['Remitente', d.marca_remitente_interno, false, 'marca_remitente_interno'], ['Prefijo del asunto', d.marca_prefijo_asunto, false, 'marca_prefijo_asunto'], ['Pie', d.marca_pie, false, 'marca_pie']]) + '<div>' + P.aviso(d) + '</div>', c, 'Ej.: usa el logo a color en los avisos');
     if (c.ligas.tablero && d.motor !== 'propio') html += tarjeta(6, 'Tablero', '<div class="liga"><b>Tablero del pipeline:</b> <a href="' + h(c.ligas.tablero) + '" target="_blank" rel="noopener">Abrir</a></div>');
     return html;
+  }
+  // Fases del pipeline: dias maximos por fase (plazos_etapa) y como se comporta el semaforo del tablero.
+  // Regla del semaforo (la misma del tablero): rojo si pasa el plazo o ya vencio la fecha de cierre; amarillo desde el 75%
+  // del plazo o si cierra en 7 dias o menos; verde el resto. Guardar cambia los colores del tablero en su siguiente carga.
+  function plazosDe(c) { try { return JSON.parse((c.datos || {}).plazos_etapa || '{}') || {}; } catch (e) { return {}; } }
+  function franjas(p) { p = Number(p) || 0; if (!p) return null; var a = Math.ceil(p * 0.75); return { verde: a - 1, amarillo: [a, p], rojo: p + 1 }; }
+  function barra(p) {
+    var f = franjas(p); if (!f) return '<span class="vacio">Sin plazo: el semáforo solo usa la fecha de cierre.</span>';
+    var tot = f.rojo + Math.max(3, Math.round(p * 0.25)), w = function (n) { return Math.max(4, Math.round(n / tot * 100)) + '%'; };
+    return '<div class="sem-barra"><i class="v" style="width:' + w(f.verde + 1) + '"></i><i class="a" style="width:' + w(f.amarillo[1] - f.amarillo[0] + 1) + '"></i><i class="r" style="flex:1"></i></div>'
+      + '<div class="sem-txt">Verde del día 0 al ' + f.verde + ' · amarillo del ' + f.amarillo[0] + ' al ' + f.amarillo[1] + ' · rojo desde el día ' + f.rojo + '</div>';
+  }
+  function fases(c) {
+    var d = c.datos || {}, adm = !!(c.info || {}).administra, pl = plazosDe(c);
+    var et = String(d.pipeline_etapas || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+    if (!et.length) return tarjeta(6, 'Fases del pipeline', '<p class="vacio">Tu compañía todavía no tiene fases del pipeline configuradas. Pídelo abajo y Great Revenue las carga desde tu CRM.</p>' + P.pedir('fases', 'Fases del pipeline', 'Ej.: mis fases son Calificada, Propuesta, Negociación') + P.solicitudes(c.solicitudes, 'Fases del pipeline'));
+    var filas = et.map(function (e, i) {
+      return '<tr><td><b>' + (i + 1) + '. ' + h(e) + '</b></td><td>' + (adm ? '<input type="number" min="1" max="365" class="plazo" data-fase="' + h(e) + '" value="' + h(pl[e] || '') + '" style="width:80px"> días' : h(pl[e] ? pl[e] + ' días' : '—')) + '</td><td class="sem-c" data-sem="' + h(e) + '">' + barra(pl[e]) + '</td></tr>';
+    }).join('');
+    var cuerpo = '<p style="margin:0 0 10px">Cuántos días puede estar una oportunidad en cada fase antes de que el tablero la marque. Al guardar, el tablero cambia los colores la siguiente vez que se abra.</p>'
+      + '<div class="tw"><table class="tabla"><thead><tr><th>Fase</th><th>Días máximos</th><th>Cómo se ve el semáforo</th></tr></thead><tbody>' + filas + '</tbody></table></div>'
+      + '<div class="nota" style="margin-top:12px"><b>Cómo decide el color el tablero:</b><br><span class="sem-dot r"></span> <b>Rojo, atender:</b> lleva más días en la fase que su plazo, o su fecha de cierre ya pasó.<br><span class="sem-dot a"></span> <b>Amarillo, vigilar:</b> ya usó el 75% de su plazo, o cierra en 7 días o menos.<br><span class="sem-dot v"></span> <b>Verde, al día:</b> todo lo demás.<br><span class="sem-dot g"></span> <b>Gris:</b> sin fecha de cierre ni plazo.</div>'
+      + (adm ? '<div class="acciones" style="margin-top:12px"><button class="p" id="fases-guardar">Guardar plazos</button><span class="msg" id="m-fases"></span></div>' : '<p class="vacio">Solo quien administra el portal puede cambiar los plazos.</p>');
+    return tarjeta(6, 'Fases del pipeline', '<style>.sem-barra{display:flex;height:12px;border-radius:6px;overflow:hidden;min-width:160px;background:#eee}.sem-barra i{display:block;height:100%}.sem-barra .v{background:#2e7d32}.sem-barra .a{background:#e0a100}.sem-barra .r{background:#b3261e}.sem-txt{font-size:12px;color:#5c5c5c;margin-top:4px}.sem-dot{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle}.sem-dot.r{background:#b3261e}.sem-dot.a{background:#e0a100}.sem-dot.v{background:#2e7d32}.sem-dot.g{background:#9aa0a6}</style>' + cuerpo + P.pedir('fases', 'Fases del pipeline', 'Ej.: agrega la fase Propuesta enviada') + P.solicitudes(c.solicitudes, 'Fases del pipeline'));
+  }
+  function activarFases(c) {
+    Array.prototype.forEach.call(document.querySelectorAll('input.plazo'), function (inp) { inp.oninput = function () { var td = document.querySelector('[data-sem="' + inp.getAttribute('data-fase').replace(/"/g, '\\"') + '"]'); if (td) td.innerHTML = barra(inp.value); }; });
+    if (!$('fases-guardar')) return;
+    $('fases-guardar').onclick = function () {
+      var plazos = {}, mal = '';
+      Array.prototype.forEach.call(document.querySelectorAll('input.plazo'), function (inp) { var v = inp.value.trim(); if (!v) return; var n = Math.round(Number(v)); if (!(n >= 1 && n <= 365)) mal = inp.getAttribute('data-fase'); else plazos[inp.getAttribute('data-fase')] = n; });
+      if (mal) { $('m-fases').textContent = 'Revisa los días de ' + mal + ' (1 a 365).'; return; }
+      $('m-fases').textContent = 'Guardando...'; this.disabled = true; var btn = this;
+      P.api({ accion: 'fases_guardar', sesion: ses(), tenant: c.tenant, plazos: plazos }).then(function (x) {
+        btn.disabled = false;
+        if (x._codigo === 401) { salir(x.error); return; }
+        if (!x.ok) { $('m-fases').textContent = x.error || 'No se pudo guardar.'; return; }
+        c.datos.plazos_etapa = JSON.stringify(plazos); $('m-fases').textContent = 'Guardado. El tablero ya usa estos plazos.';
+      });
+    };
   }
   function proceso(c) {
     return tarjeta(7, 'Objetivos y proceso comercial', '<p class="vacio">Próximamente: aquí verás y ajustarás los objetivos que opera el motor y las etapas de tu proceso comercial.</p>' + P.pedir('proceso', 'Objetivos y proceso', 'Ej.: agrega una etapa de propuesta') + P.solicitudes(c.solicitudes, 'Objetivos y proceso'));
