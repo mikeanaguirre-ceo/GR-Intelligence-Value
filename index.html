@@ -1198,7 +1198,7 @@ let recapFilters = {
 };
 // ===== Estado unificado de filtros (homologado) =====
 var FILT = {
-  pipeline:   { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, excludeP:false, nueva:'ALL' },
+  pipeline:   { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, excludeP:false, nueva:'ALL', cierre:'ALL' },
   pendientes: { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', sort:'urgency', nueva:'ALL' },
   alertas:    { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, categoria:'ALL', accion:'ALL', sort:'monto_desc' },
   recap:      { persona:'Todos', grupo:'ALL', prod:'ALL' }
@@ -2031,6 +2031,22 @@ function pipeBuscar(v){
 var PIPE_ABIERTAS={};
 function nuevaMatch(createdate,val){ if(val==='ALL') return true; var f=new Date(createdate); if(isNaN(f)) return false; var now=new Date(); var sameMonth=f.getMonth()===now.getMonth()&&f.getFullYear()===now.getFullYear(); var age=Math.floor((now-f)/86400000); var dom=f.getDate(); if(val==='mes')return sameMonth; if(val==='s1')return sameMonth&&dom<=7; if(val==='s2')return sameMonth&&dom>=8&&dom<=14; if(val==='s3')return sameMonth&&dom>=15&&dom<=21; if(val==='s4')return sameMonth&&dom>=22; if(val==='g30')return age>30; if(val==='g45')return age>45; if(val==='g90')return age>90; return true; }
 function nuevaPasa(d,val){ return nuevaMatch(d.createdate,val); }
+// Fecha de cierre: vencidas, este mes, proximo mes, este trimestre o sin fecha (dia calendario local).
+var CIERRE_OPC=[['ALL','Todas'],['vencida','Vencidas'],['mes','Este mes'],['prox','Próximo mes'],['trim','Este trimestre'],['sin','Sin fecha']];
+function cierrePasa(d,val){
+  if(!val||val==='ALL') return true;
+  var s=(d.closedate&&d.closedate!=='null')?String(d.closedate).slice(0,10):'';
+  if(val==='sin') return !s;
+  if(!s) return false;
+  var f=new Date(s+'T00:00:00'); if(isNaN(f)) return false;
+  var h=new Date(); h.setHours(0,0,0,0);
+  if(val==='vencida') return f<h;
+  var y=h.getFullYear(), m=h.getMonth();
+  if(val==='mes') return f.getFullYear()===y && f.getMonth()===m;
+  if(val==='prox'){ var n=new Date(y,m+1,1); return f.getFullYear()===n.getFullYear() && f.getMonth()===n.getMonth(); }
+  if(val==='trim'){ var q=Math.floor(m/3); return f.getFullYear()===y && Math.floor(f.getMonth()/3)===q; }
+  return true;
+}
 function metaNuevas(goal){
   var prioMap={}; ((typeof CAT==='function'?CAT().stages:null)||CAT_FALLBACK.stages||[]).forEach(function(s){prioMap[s.id]=s.prioridad;});
   var now=new Date();
@@ -2066,6 +2082,7 @@ function renderPipeline() {
   const filtered = poolPipe.filter(d => {
     if (FILT.pipeline.excludeP && d.name && d.name.startsWith('P_')) return false;
     if (!nuevaPasa(d, FILT.pipeline.nueva)) return false;
+    if (!cierrePasa(d, FILT.pipeline.cierre)) return false;
     if (!pipeQPasa(d)) return false;
     return pasaFiltro('pipeline', d, 'deal');
   });
@@ -2091,6 +2108,10 @@ function renderPipeline() {
     <div class="section">
       <div id="pipeline-metrics-gr-pip" style="margin:0 0 12px"></div>
       ${filtrosHTML('pipeline', poolPipe, 'deal')}
+      <div class="filters">
+        <span class="filter-label">Fecha de cierre:</span>
+        ${CIERRE_OPC.map(o => `<button class="chip ${(FILT.pipeline.cierre||'ALL')===o[0]?'active':''}" data-f="pipeline" data-k="cierre" data-v="${o[0]}">${o[1]}</button>`).join('')}
+      </div>
       <div class="filters">
         <span class="filter-label">Nuevas oportunidades:</span>
         ${[['ALL','Todas'],['mes','Mes'],['s1','Sem 1'],['s2','Sem 2'],['s3','Sem 3'],['s4','Sem 4'],['g30','>30d'],['g45','>45d'],['g90','>90d']].map(o => { const col = ({s1:'#10B981',s2:'#34d399',s3:'#A3E635',s4:'#FFCD00',g30:'#F59E0B',g45:'#F97316',g90:'#EF4444'})[o[0]]||''; return `<button class="chip ${FILT.pipeline.nueva===o[0]?'active':''}" data-f="pipeline" data-k="nueva" data-v="${o[0]}" ${col?`style="border-color:${col}80;"`:''}>${o[1]}</button>`; }).join('')}
@@ -2212,6 +2233,7 @@ function renderPipelineMetricsPipeline(){
     if(d.stage==='closedwon'||esStagePerdida(d.stage)) return false;
     if(FILT.pipeline.excludeP&&d.name&&d.name.startsWith('P_')) return false;
     if(!nuevaPasa(d, FILT.pipeline.nueva)) return false;
+    if(!cierrePasa(d, FILT.pipeline.cierre)) return false;
     if(!pipeQPasa(d)) return false;
     return pasaFiltro('pipeline', d, 'deal');
   });
