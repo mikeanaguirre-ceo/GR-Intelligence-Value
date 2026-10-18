@@ -707,6 +707,7 @@ body {
   </header>
 
   <nav class="tabs" id="tabs">
+    <button class="tab" data-tab="calidad">Calidad del CRM</button>
     <button class="tab active" data-tab="recap">Recap</button>
     <button class="tab" data-tab="overview">Overview</button>
     <button class="tab" data-tab="pipeline">Pipeline</button>
@@ -723,6 +724,7 @@ body {
   </nav>
 
   <main id="panels">
+    <section class="panel" id="p-calidad"></section>
     <section class="panel active" id="p-recap"><div class="loading">Cargando datos en vivo…</div></section>
     <section class="panel" id="p-overview"></section>
     <section class="panel" id="p-pipeline"></section>
@@ -1444,6 +1446,13 @@ function renderCurrentTab() {
   // Metricas no depende de los datos principales del dashboard: tiene su propio
   // origen. Se atiende antes del guard de DATA para que un fallo del endpoint
   // principal no deje la pestana en blanco.
+  if (currentTab === 'calidad') {
+    try { renderCalidad(); } catch(e) {
+      var ec = document.getElementById('p-calidad');
+      if (ec) ec.innerHTML = '<div style="color:#ef4444;padding:16px;">Error en render: ' + e.message + '</div>';
+    }
+    return;
+  }
   if (currentTab === 'reuniones') {
     try { renderReuniones(); } catch(e) {
       var er = document.getElementById('p-reuniones');
@@ -5937,6 +5946,52 @@ document.addEventListener('click', function(ev){
 });
 
 
+
+/* ===================== PESTANA CALIDAD DEL CRM ===================== */
+/* Lee la primera medicion (antes) y la mas reciente (hoy) de la calidad del CRM de GR.
+   La mide cada lunes 7:00 «GR — Calidad del CRM (HubSpot)»; la entrega «GR — Calidad del CRM para el tablero».
+   Solo numeros agregados de HubSpot, ningun dato de personas. */
+var CALIDAD_URL = 'https://mikea.app.n8n.cloud/webhook/gr-calidad';
+var CAL_RAW = null, CAL_CARGANDO = false;
+function calEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function calFmt(r){ if(!r||r.valor===null||r.valor===undefined||r.valor==='') return '—'; var v=Number(r.valor);
+  if(r.tipo==='pct'||r.tipo==='pct_asociacion') return v.toLocaleString('es-MX',{maximumFractionDigits:1})+'%';
+  if(r.tipo==='suma'||r.tipo==='ponderado') return '$'+Math.round(v).toLocaleString('es-MX');
+  return Math.round(v).toLocaleString('es-MX'); }
+function calSem(r,g){ if(!r||g==='comercial'||r.valor===null||r.valor===undefined) return ''; var v=Number(r.valor), pct=(r.tipo==='pct'||r.tipo==='pct_asociacion');
+  if(pct) return r.mejor==='bajo' ? (v<=10?'#62D175':v<=25?'#FFCD00':'#DB0540') : (v>=80?'#62D175':v>=50?'#FFCD00':'#DB0540');
+  return v===0?'#62D175':v<=5?'#FFCD00':'#DB0540'; }
+function calCambio(a,b,una){ if(una||!a||!b||a.valor===null||b.valor===null) return '—'; var d=Math.round((Number(b.valor)-Number(a.valor))*10)/10; if(!d) return '=';
+  var bueno=(d>0)===(b.mejor!=='bajo'); var pct=(b.tipo==='pct'||b.tipo==='pct_asociacion');
+  return '<span style="color:'+(bueno?'#62D175':'#DB0540')+';font-weight:600">'+(d>0?'▲ ':'▼ ')+Math.abs(d).toLocaleString('es-MX',{maximumFractionDigits:1})+(pct?' pts':'')+'</span>'; }
+function renderCalidad(){
+  var el=document.getElementById('p-calidad'); if(!el) return;
+  if(!CAL_RAW){ if(CAL_CARGANDO) return; CAL_CARGANDO=true; el.innerHTML='<div class="loading">Cargando calidad del CRM…</div>';
+    fetch(CALIDAD_URL,{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){ CAL_RAW=j; CAL_CARGANDO=false; if(currentTab==='calidad') renderCalidad(); })
+      .catch(function(e){ CAL_CARGANDO=false; el.innerHTML='<div style="color:#ef4444;padding:16px;">No se pudo leer la calidad del CRM: '+calEsc(e.message)+'</div>'; });
+    return; }
+  var hoy={}, antes={}; (CAL_RAW.hoy||[]).forEach(function(r){hoy[r.clave]=r;}); (CAL_RAW.antes||[]).forEach(function(r){antes[r.clave]=r;});
+  var claves=Object.keys(hoy).sort(function(x,y){return Number(hoy[x].orden)-Number(hoy[y].orden);});
+  if(!claves.length){ el.innerHTML='<div class="section"><div class="section-title">Calidad del CRM</div><div style="color:var(--text-dim);padding:12px 0">Todavía no hay mediciones. La primera se guarda el próximo lunes a las 7:00.</div></div>'; return; }
+  var una=(CAL_RAW.mediciones||0)<2, fHoy=(hoy[claves[0]]||{}).fecha||'', fAntes=(antes[claves[0]]||{}).fecha||'';
+  var EX=CAL_RAW.explicacion||{};
+  var GR=[['datos','Calidad de datos','Qué tan completo está cada registro.'],['vigencia','Vigencia de los registros','Qué tan vivos o abandonados están.'],['comercial','Desempeño comercial (referencia)','Califica el proceso de venta; cambia más lento.']];
+  function enVerde(g){ var l=claves.filter(function(k){return hoy[k].grupo===g;}); return { v:l.filter(function(k){return calSem(hoy[k],g)==='#62D175';}).length, n:l.length }; }
+  var dV=enVerde('datos'), vV=enVerde('vigencia');
+  var html='<div class="section"><div class="section-title">Calidad del CRM <span style="margin-left:auto;color:var(--text-dim);font-size:12px">Medición del '+calEsc(fHoy)+' · se mide cada lunes'+(una?' · esta es la primera medición: es el «antes»':' · antes = '+calEsc(fAntes))+'</span></div>';
+  html+='<div style="display:flex;gap:12px;flex-wrap:wrap;margin:8px 0 16px">';
+  [[dV.v+' de '+dV.n,'Indicadores de datos en verde'],[vV.v+' de '+vV.n,'Indicadores de vigencia en verde'],[calFmt(hoy.d_pronostico||null),'Pronóstico ponderado'],[calFmt(hoy.d_monto_abierto||null),'Monto abierto']].forEach(function(k){
+    html+='<div style="background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;min-width:160px"><div style="font-size:22px;font-weight:700">'+k[0]+'</div><div style="font-size:12px;color:var(--text-dim)">'+k[1]+'</div></div>'; });
+  html+='</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:12px"><span style="color:#62D175">●</span> Bien &nbsp; <span style="color:#FFCD00">●</span> Vigilar &nbsp; <span style="color:#DB0540">●</span> Atender &nbsp; ▲▼ cambio contra la primera medición</div>';
+  GR.forEach(function(g){ var l=claves.filter(function(k){return hoy[k].grupo===g[0];}); if(!l.length) return;
+    html+='<div style="margin:18px 0 6px;font-weight:700">'+g[1]+'</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">'+g[2]+'</div>';
+    html+='<div style="overflow-x:auto"><table class="data-table" style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="text-align:left;padding:6px">Indicador</th><th style="text-align:right;padding:6px">Antes</th><th style="text-align:right;padding:6px">Hoy</th><th style="text-align:right;padding:6px">Cambio</th><th style="text-align:left;padding:6px">Quién lo mejora</th></tr></thead><tbody>';
+    l.forEach(function(k){ var b=hoy[k], a=antes[k], c=calSem(b,g[0]);
+      html+='<tr style="border-top:1px solid var(--border)"><td style="padding:6px"><b>'+(c?'<span style="color:'+c+'">●</span> ':'')+calEsc(b.etiqueta)+'</b>'+(EX[k]?'<div style="font-size:11px;color:var(--text-dim)">'+calEsc(EX[k])+'</div>':'')+'</td>'+
+        '<td style="text-align:right;padding:6px">'+(una?'—':calFmt(a))+'</td><td style="text-align:right;padding:6px"><b>'+calFmt(b)+'</b></td><td style="text-align:right;padding:6px">'+calCambio(a,b,una)+'</td><td style="padding:6px">'+calEsc(b.fuente||'')+'</td></tr>'; });
+    html+='</tbody></table></div>'; });
+  html+='</div>'; el.innerHTML=html;
+}
 
 var METRICAS_TENANT_FIJO = 'GR';
 /* ===================== PESTANA METRICAS ===================== */
