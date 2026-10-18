@@ -217,6 +217,7 @@
   // Fases del pipeline: dias maximos por fase (plazos_etapa) y como se comporta el semaforo del tablero.
   // Regla del semaforo (la misma del tablero): rojo si pasa el plazo o ya vencio la fecha de cierre; amarillo desde el 75%
   // del plazo o si cierra en 7 dias o menos; verde el resto. Guardar cambia los colores del tablero en su siguiente carga.
+  function probDe(c) { try { return JSON.parse((c.datos || {}).etapas_probabilidad || '{}') || {}; } catch (e) { return {}; } }
   function plazosDe(c) { try { return JSON.parse((c.datos || {}).plazos_etapa || '{}') || {}; } catch (e) { return {}; } }
   function franjas(p) { p = Number(p) || 0; if (!p) return null; var a = Math.ceil(p * 0.75); return { verde: a - 1, amarillo: [a, p], rojo: p + 1 }; }
   function barra(p) {
@@ -226,16 +227,16 @@
       + '<div class="sem-txt">Verde del día 0 al ' + f.verde + ' · amarillo del ' + f.amarillo[0] + ' al ' + f.amarillo[1] + ' · rojo desde el día ' + f.rojo + '</div>';
   }
   function fases(c) {
-    var d = c.datos || {}, adm = !!(c.info || {}).administra, pl = plazosDe(c);
+    var d = c.datos || {}, adm = !!(c.info || {}).administra, pl = plazosDe(c), pr = probDe(c);
     var et = String(d.pipeline_etapas || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
     if (!et.length) return tarjeta(6, 'Fases del pipeline', '<p class="vacio">Tu compañía todavía no tiene fases del pipeline configuradas. Pídelo abajo y Great Revenue las carga desde tu CRM.</p>' + P.pedir('fases', 'Fases del pipeline', 'Ej.: mis fases son Calificada, Propuesta, Negociación') + P.solicitudes(c.solicitudes, 'Fases del pipeline'));
     var filas = et.map(function (e, i) {
-      return '<tr><td><b>' + (i + 1) + '. ' + h(e) + '</b></td><td>' + (adm ? '<input type="number" min="1" max="365" class="plazo" data-fase="' + h(e) + '" value="' + h(pl[e] || '') + '" style="width:80px"> días' : h(pl[e] ? pl[e] + ' días' : '—')) + '</td><td class="sem-c" data-sem="' + h(e) + '">' + barra(pl[e]) + '</td></tr>';
+      return '<tr><td><b>' + (i + 1) + '. ' + h(e) + '</b></td><td>' + (adm ? '<input type="number" min="1" max="365" class="plazo" data-fase="' + h(e) + '" value="' + h(pl[e] || '') + '" style="width:80px"> días' : h(pl[e] ? pl[e] + ' días' : '—')) + '</td><td>' + (adm ? '<input type="number" min="0" max="100" class="prob" data-fase="' + h(e) + '" value="' + h(pr[e] != null ? pr[e] : '') + '" style="width:70px"> %' : h(pr[e] != null ? pr[e] + ' %' : 'Por definir')) + '</td><td class="sem-c" data-sem="' + h(e) + '">' + barra(pl[e]) + '</td></tr>';
     }).join('');
-    var cuerpo = '<p style="margin:0 0 10px">Cuántos días puede estar una oportunidad en cada fase antes de que el tablero la marque. Al guardar, el tablero cambia los colores la siguiente vez que se abra.</p>'
-      + '<div class="tw"><table class="tabla"><thead><tr><th>Fase</th><th>Días máximos</th><th>Cómo se ve el semáforo</th></tr></thead><tbody>' + filas + '</tbody></table></div>'
+    var cuerpo = '<p style="margin:0 0 10px">Cuántos días puede estar una oportunidad en cada fase antes de que el tablero la marque, y qué probabilidad de cierre tiene: el pronóstico del tablero suma el monto de cada oportunidad por la probabilidad de su fase. Al guardar, el tablero lo usa la siguiente vez que se abra.</p>'
+      + '<div class="tw"><table class="tabla"><thead><tr><th>Fase</th><th>Días máximos</th><th>Probabilidad de cierre</th><th>Cómo se ve el semáforo</th></tr></thead><tbody>' + filas + '</tbody></table></div>'
       + '<div class="nota" style="margin-top:12px"><b>Cómo decide el color el tablero:</b><br><span class="sem-dot r"></span> <b>Rojo, atender:</b> lleva más días en la fase que su plazo, o su fecha de cierre ya pasó.<br><span class="sem-dot a"></span> <b>Amarillo, vigilar:</b> ya usó el 75% de su plazo, o cierra en 7 días o menos.<br><span class="sem-dot v"></span> <b>Verde, al día:</b> todo lo demás.<br><span class="sem-dot g"></span> <b>Gris:</b> sin fecha de cierre ni plazo.</div>'
-      + (adm ? '<div class="acciones" style="margin-top:12px"><button class="p" id="fases-guardar">Guardar plazos</button><span class="msg" id="m-fases"></span></div>' : '<p class="vacio">Solo quien administra el portal puede cambiar los plazos.</p>');
+      + (adm ? '<div class="acciones" style="margin-top:12px"><button class="p" id="fases-guardar">Guardar plazos y probabilidades</button><span class="msg" id="m-fases"></span></div>' : '<p class="vacio">Solo quien administra el portal puede cambiar los plazos.</p>');
     return tarjeta(6, 'Fases del pipeline', '<style>.sem-barra{display:flex;height:12px;border-radius:6px;overflow:hidden;min-width:160px;background:#eee}.sem-barra i{display:block;height:100%}.sem-barra .v{background:#2e7d32}.sem-barra .a{background:#e0a100}.sem-barra .r{background:#b3261e}.sem-txt{font-size:12px;color:#5c5c5c;margin-top:4px}.sem-dot{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle}.sem-dot.r{background:#b3261e}.sem-dot.a{background:#e0a100}.sem-dot.v{background:#2e7d32}.sem-dot.g{background:#9aa0a6}</style>' + cuerpo + P.pedir('fases', 'Fases del pipeline', 'Ej.: agrega la fase Propuesta enviada') + P.solicitudes(c.solicitudes, 'Fases del pipeline'));
   }
   function activarFases(c) {
@@ -245,12 +246,15 @@
       var plazos = {}, mal = '';
       Array.prototype.forEach.call(document.querySelectorAll('input.plazo'), function (inp) { var v = inp.value.trim(); if (!v) return; var n = Math.round(Number(v)); if (!(n >= 1 && n <= 365)) mal = inp.getAttribute('data-fase'); else plazos[inp.getAttribute('data-fase')] = n; });
       if (mal) { $('m-fases').textContent = 'Revisa los días de ' + mal + ' (1 a 365).'; return; }
+      var probs = {}, malp = '';
+      Array.prototype.forEach.call(document.querySelectorAll('input.prob'), function (inp) { var v = inp.value.trim(); var f = inp.getAttribute('data-fase'); if (v === '') { probs[f] = ''; return; } var n = Math.round(Number(v)); if (!(n >= 0 && n <= 100)) malp = f; else probs[f] = n; });
+      if (malp) { $('m-fases').textContent = 'Revisa la probabilidad de ' + malp + ' (0 a 100).'; return; }
       $('m-fases').textContent = 'Guardando...'; this.disabled = true; var btn = this;
-      P.api({ accion: 'fases_guardar', sesion: ses(), tenant: c.tenant, plazos: plazos }).then(function (x) {
+      P.api({ accion: 'fases_guardar', sesion: ses(), tenant: c.tenant, plazos: plazos, probabilidades: probs }).then(function (x) {
         btn.disabled = false;
         if (x._codigo === 401) { salir(x.error); return; }
         if (!x.ok) { $('m-fases').textContent = x.error || 'No se pudo guardar.'; return; }
-        c.datos.plazos_etapa = JSON.stringify(plazos); $('m-fases').textContent = 'Guardado. El tablero ya usa estos plazos.';
+        c.datos.plazos_etapa = JSON.stringify(plazos); var np = probDe(c); Object.keys(probs).forEach(function (k) { if (probs[k] === '') delete np[k]; else np[k] = probs[k]; }); c.datos.etapas_probabilidad = JSON.stringify(np); $('m-fases').textContent = 'Guardado. El tablero ya usa estos plazos y probabilidades.';
       });
     };
   }
