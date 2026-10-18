@@ -66,8 +66,8 @@
   function abrir(u) { return /^https:\/\//.test(u || '') ? '<a href="' + h(u.split(/\s+/)[0]) + '" target="_blank" rel="noopener">Abrir</a>' : '—'; }
   function tarjeta(n, titulo, cuerpo, extra) { return '<div class="card"><div class="card-h"><h2><span class="num">' + n + '</span>' + h(titulo) + '</h2>' + (extra || '') + '</div>' + cuerpo + '</div>'; }
   function seccion(n, id, titulo, cuerpo, c, ejemplo) { return tarjeta(n, titulo, cuerpo + P.pedir(id, titulo, ejemplo) + P.solicitudes(c.solicitudes, titulo)); }
-  var PESTANAS = [['equipo', 'Equipo'], ['conexiones', 'Conexiones'], ['marca', 'Tu marca y tus correos'], ['fases', 'Fases del pipeline'], ['proceso', 'Objetivos y proceso']];
-  var pestana = (/^#(equipo|conexiones|marca|fases|proceso)$/.exec(location.hash) || [])[1] || 'equipo';
+  var PESTANAS = [['equipo', 'Equipo'], ['conexiones', 'Conexiones'], ['marca', 'Tu marca y tus correos'], ['fases', 'Fases del pipeline'], ['productos', 'Productos'], ['proceso', 'Objetivos y proceso']];
+  var pestana = (/^#(equipo|conexiones|marca|fases|productos|proceso)$/.exec(location.hash) || [])[1] || 'equipo';
   function elegir(t) {
     var c = estado.companias.filter(function (x) { return x.tenant === t; })[0]; if (!c) return;
     estado.sel = t; if ($('sel-cia')) $('sel-cia').value = t;
@@ -75,13 +75,14 @@
     P.aplicarMarca(d, 'Portal de ' + (d.portal_nombre || d.marca_nombre || t), 'Tu equipo, tus conexiones y cómo salen tus correos.');
     document.title = 'Portal de ' + (d.marca_nombre || t);
     var html = '<nav class="tabs" role="tablist">' + PESTANAS.map(function (p) { return '<button role="tab" class="tab' + (p[0] === pestana ? ' on' : '') + '" data-tab="' + p[0] + '" aria-selected="' + (p[0] === pestana) + '">' + p[1] + '</button>'; }).join('') + '</nav>';
-    html += '<div id="contenido">' + ({ equipo: equipo, conexiones: conexiones, marca: marca, fases: fases, proceso: proceso }[pestana])(c) + '</div>';
+    html += '<div id="contenido">' + ({ equipo: equipo, conexiones: conexiones, marca: marca, fases: fases, productos: productos, proceso: proceso }[pestana])(c) + '</div>';
     $('panel').innerHTML = html;
     Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function (b) { b.onclick = function () { pestana = b.getAttribute('data-tab'); try { history.replaceState(null, '', '#' + pestana); } catch (e) {} elegir(t); }; });
     P.activarPedir(ses, t, cargar);
     if (pestana === 'equipo') activarEquipo(c);
     if (pestana === 'conexiones') activarConexiones(c);
     if (pestana === 'fases') activarFases(c);
+    if (pestana === 'productos') activarProductos(c);
     if (pestana === 'marca') {
       if ($('doc-completo')) $('doc-completo').onclick = function () { P.api({ accion: 'vitrina', sesion: ses(), tenant: t }).then(function (x) { if (x.html) P.abrirHtml(x.html); }); };
       cargarMuestras(c);
@@ -253,8 +254,74 @@
       });
     };
   }
+  // Productos: una ficha por producto. La leen los motores: monto con que nace la oportunidad, a quien se avisa,
+  // quien hace la tarea y manda la minuta, el llamado a la accion y la propuesta de valor e ICP vigentes.
+  function productosDe(c) { try { var l = JSON.parse((c.datos || {}).productos || '[]'); return Array.isArray(l) ? l : []; } catch (e) { return []; } }
+  function familiasDe(c) { try { return JSON.parse((c.datos || {}).familias_cta || '{}') || {}; } catch (e) { return {}; } }
+  var PROD_CAMPOS = [
+    ['nombre', 'Nombre', 'txt'], ['monto', 'Monto con que nace la oportunidad', 'num'], ['activo', 'Activo', 'chk'],
+    ['prefijos', 'Prefijos de secuencia (separados por coma)', 'lista'],
+    ['lidera', 'Quién lo lidera', 'txt'], ['responsable_tarea', 'Quién hace la tarea', 'txt'], ['minuta_de', 'Quién manda la minuta', 'txt'], ['partner', 'Partner', 'txt'],
+    ['avisar_a', 'A quién se avisa (correos)', 'lista'], ['copia_a', 'Con copia a (correos)', 'lista'],
+    ['cta_primario', 'Qué se le ofrece al prospecto', 'txt'], ['cta_familia', 'Forma del llamado a la acción', 'fam'],
+    ['propuesta_nombre', 'Propuesta de valor vigente', 'txt'], ['propuesta_url', 'Liga a la propuesta', 'url'],
+    ['icp_nombre', 'ICP vigente', 'txt'], ['icp_url', 'Liga al ICP', 'url'], ['pendiente', 'Pendiente', 'txt']
+  ];
+  function valorCampo(p, k) { var v = p[k]; if (Array.isArray(v)) return v.join(', '); if (v === undefined || v === null) return ''; return String(v); }
+  function productos(c) {
+    var l = productosDe(c), fam = familiasDe(c), adm = !!(c.info || {}).administra;
+    if (!l.length) return tarjeta(7, 'Productos', '<p class="vacio">Tu compañía todavía no tiene productos configurados. Pídelo abajo y Great Revenue los carga: código, nombre, monto típico, responsables, a quién se avisa y qué se ofrece.</p>' + P.pedir('productos', 'Productos', 'Ej.: mis productos son Curso Excel (por alumno, 3,500) y Diplomado (por cohorte)') + P.solicitudes(c.solicitudes, 'Productos'));
+    var famOpc = function (sel) { return '<option value="">—</option>' + ['A', 'B', 'C', 'D', 'E'].map(function (k) { return '<option value="' + k + '"' + (sel === k ? ' selected' : '') + '>' + k + (fam[k] ? ' · ' + h(fam[k]) : '') + '</option>'; }).join(''); };
+    var fichas = l.map(function (p, i) {
+      var cuerpo = PROD_CAMPOS.map(function (f) {
+        var k = f[0], v = valorCampo(p, k), id = 'pf-' + i + '-' + k, ctrl;
+        if (!adm) {
+          if (f[2] === 'url') ctrl = v ? '<a href="' + h(v) + '" target="_blank" rel="noopener">Abrir</a>' : '—';
+          else if (f[2] === 'chk') ctrl = p.activo === false ? 'No' : 'Sí';
+          else if (f[2] === 'num') ctrl = Number(p.monto || 0).toLocaleString('es-MX');
+          else if (f[2] === 'fam') ctrl = v ? h(v + (fam[v] ? ' · ' + fam[v] : '')) : '—';
+          else ctrl = h(v || '—');
+        } else if (f[2] === 'chk') ctrl = '<input type="checkbox" id="' + id + '"' + (p.activo === false ? '' : ' checked') + '>';
+        else if (f[2] === 'fam') ctrl = '<select id="' + id + '">' + famOpc(v) + '</select>';
+        else ctrl = '<input id="' + id + '" type="' + (f[2] === 'num' ? 'number" min="0" step="100' : 'text') + '" value="' + h(v) + '"' + (f[2] === 'url' ? ' placeholder="https://..."' : '') + ' style="width:100%">'
+          + (f[2] === 'url' && v ? ' <a href="' + h(v) + '" target="_blank" rel="noopener" style="font-size:12px">Abrir</a>' : '');
+        return '<div class="pf"><label for="' + id + '">' + h(f[1]) + '</label><div>' + ctrl + '</div></div>';
+      }).join('');
+      return '<details class="prod"' + (i === 0 ? ' open' : '') + '><summary><b>' + h(p.codigo) + '</b> · ' + h(p.nombre || '') + ' <span class="prod-m">' + Number(p.monto || 0).toLocaleString('es-MX') + '</span>' + (p.pendiente ? ' <span class="prod-p">Pendiente</span>' : '') + (p.activo === false ? ' <span class="prod-p">Inactivo</span>' : '') + '</summary><div class="pfs">' + cuerpo + '</div></details>';
+    }).join('');
+    var estilo = '<style>.prod{border:1px solid #e5e5e5;border-radius:10px;margin:0 0 10px;padding:0 12px;background:#fff}.prod summary{cursor:pointer;padding:12px 0;font-size:15px}.prod-m{color:#5c5c5c;font-size:13px;margin-left:6px}.prod-p{font-size:11px;background:#fff4d6;color:#7a5600;border-radius:8px;padding:2px 8px;margin-left:6px}.pfs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px 16px;padding:0 0 14px}.pf label{display:block;font-size:12px;color:#5c5c5c;margin-bottom:3px}.pf input[type=text],.pf input[type=number],.pf select{width:100%;box-sizing:border-box}</style>';
+    var intro = '<p style="margin:0 0 10px">Una ficha por producto. De aquí salen el monto con que nace cada oportunidad, a quién se avisa, quién hace la tarea, quién manda la minuta, qué se le ofrece al prospecto y la propuesta de valor e ICP vigentes con los que se escriben los mensajes y se evalúan las campañas.</p>';
+    var leyenda = '<div class="nota" style="margin-top:12px"><b>Formas del llamado a la acción:</b><br>' + ['A', 'B', 'C', 'D', 'E'].filter(function (k) { return fam[k]; }).map(function (k) { return '<b>' + k + '</b> · ' + h(fam[k]); }).join('<br>') + '</div>';
+    return tarjeta(7, 'Productos', estilo + intro + fichas + leyenda
+      + (adm ? '<div class="acciones" style="margin-top:12px"><button class="p" id="prod-guardar">Guardar productos</button><span class="msg" id="m-prod"></span></div>' : '<p class="vacio">Solo quien administra el portal puede cambiar los productos.</p>')
+      + P.pedir('productos', 'Productos', 'Ej.: agrega el producto Synapsis') + P.solicitudes(c.solicitudes, 'Productos'));
+  }
+  function activarProductos(c) {
+    if (!$('prod-guardar')) return;
+    $('prod-guardar').onclick = function () {
+      var l = productosDe(c), btn = this;
+      var nuevos = l.map(function (p, i) {
+        var o = { codigo: p.codigo };
+        PROD_CAMPOS.forEach(function (f) {
+          var el = $('pf-' + i + '-' + f[0]); if (!el) { o[f[0]] = p[f[0]]; return; }
+          if (f[2] === 'chk') o[f[0]] = el.checked;
+          else if (f[2] === 'lista') o[f[0]] = el.value.split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+          else if (f[2] === 'num') o[f[0]] = el.value === '' ? 0 : Number(el.value);
+          else o[f[0]] = el.value.trim();
+        });
+        return o;
+      });
+      $('m-prod').textContent = 'Guardando...'; btn.disabled = true;
+      P.api({ accion: 'productos_guardar', sesion: ses(), tenant: c.tenant, productos: nuevos }).then(function (x) {
+        btn.disabled = false;
+        if (x._codigo === 401) { salir(x.error); return; }
+        if (!x.ok) { $('m-prod').textContent = x.error || 'No se pudo guardar.'; return; }
+        c.datos.productos = JSON.stringify(nuevos); $('m-prod').textContent = 'Guardado. Los motores usan estos datos desde ahora.';
+      });
+    };
+  }
   function proceso(c) {
-    return tarjeta(7, 'Objetivos y proceso comercial', '<p class="vacio">Próximamente: aquí verás y ajustarás los objetivos que opera el motor y las etapas de tu proceso comercial.</p>' + P.pedir('proceso', 'Objetivos y proceso', 'Ej.: agrega una etapa de propuesta') + P.solicitudes(c.solicitudes, 'Objetivos y proceso'));
+    return tarjeta(8, 'Objetivos y proceso comercial', '<p class="vacio">Próximamente: aquí verás y ajustarás los objetivos que opera el motor y las etapas de tu proceso comercial.</p>' + P.pedir('proceso', 'Objetivos y proceso', 'Ej.: agrega una etapa de propuesta') + P.solicitudes(c.solicitudes, 'Objetivos y proceso'));
   }
   function cargarMuestras(c) {
     var poner = function (actuales) {
