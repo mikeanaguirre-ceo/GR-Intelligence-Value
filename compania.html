@@ -66,8 +66,14 @@
   function abrir(u) { return /^https:\/\//.test(u || '') ? '<a href="' + h(u.split(/\s+/)[0]) + '" target="_blank" rel="noopener">Abrir</a>' : '—'; }
   function tarjeta(n, titulo, cuerpo, extra) { return '<div class="card"><div class="card-h"><h2><span class="num">' + n + '</span>' + h(titulo) + '</h2>' + (extra || '') + '</div>' + cuerpo + '</div>'; }
   function seccion(n, id, titulo, cuerpo, c, ejemplo) { return tarjeta(n, titulo, cuerpo + P.pedir(id, titulo, ejemplo) + P.solicitudes(c.solicitudes, titulo)); }
-  var PESTANAS = [['equipo', 'Equipo'], ['conexiones', 'Conexiones'], ['marca', 'Tu marca y tus correos'], ['fases', 'Fases del pipeline'], ['productos', 'Productos'], ['proceso', 'Objetivos y proceso']];
-  var pestana = (/^#(equipo|conexiones|marca|fases|productos|proceso)$/.exec(location.hash) || [])[1] || 'equipo';
+  var PESTANAS = [['equipo', 'Equipo'], ['conexiones', 'Conexiones'], ['marca', 'Tu marca y tus correos'], ['fases', 'Fases del pipeline'], ['productos', 'Productos'], ['mejoras', 'Mejoras de mensajes'], ['proceso', 'Objetivos y proceso']];
+  var pestana = (/^#(equipo|conexiones|marca|fases|productos|mejoras|proceso)(\?.*)?$/.exec(location.hash) || [])[1] || 'equipo';
+  // Liga "Corregir este mensaje" de los correos: #mejoras?c=<datos del mensaje en base64url>. Se lee una vez y se limpia de la barra.
+  var mensajeLiga = (function () {
+    var m = /[?&]c=([A-Za-z0-9_-]+)/.exec(location.hash || ''); if (!m) return null;
+    try { var b64 = m[1].replace(/-/g, '+').replace(/_/g, '/'); while (b64.length % 4) b64 += '='; return JSON.parse(decodeURIComponent(escape(atob(b64)))); } catch (e) { return null; }
+  })();
+  if (mensajeLiga) { try { history.replaceState(null, '', location.pathname + location.search + '#mejoras'); } catch (e) {} }
   function elegir(t) {
     var c = estado.companias.filter(function (x) { return x.tenant === t; })[0]; if (!c) return;
     estado.sel = t; if ($('sel-cia')) $('sel-cia').value = t;
@@ -75,7 +81,7 @@
     P.aplicarMarca(d, 'Portal de ' + (d.portal_nombre || d.marca_nombre || t), 'Tu equipo, tus conexiones y cómo salen tus correos.');
     document.title = 'Portal de ' + (d.marca_nombre || t);
     var html = '<nav class="tabs" role="tablist">' + PESTANAS.map(function (p) { return '<button role="tab" class="tab' + (p[0] === pestana ? ' on' : '') + '" data-tab="' + p[0] + '" aria-selected="' + (p[0] === pestana) + '">' + p[1] + '</button>'; }).join('') + '</nav>';
-    html += '<div id="contenido">' + ({ equipo: equipo, conexiones: conexiones, marca: marca, fases: fases, productos: productos, proceso: proceso }[pestana])(c) + '</div>';
+    html += '<div id="contenido">' + ({ equipo: equipo, conexiones: conexiones, marca: marca, fases: fases, productos: productos, mejoras: mejoras, proceso: proceso }[pestana])(c) + '</div>';
     $('panel').innerHTML = html;
     Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function (b) { b.onclick = function () { pestana = b.getAttribute('data-tab'); try { history.replaceState(null, '', '#' + pestana); } catch (e) {} elegir(t); }; });
     P.activarPedir(ses, t, cargar);
@@ -83,6 +89,7 @@
     if (pestana === 'conexiones') activarConexiones(c);
     if (pestana === 'fases') activarFases(c);
     if (pestana === 'productos') activarProductos(c);
+    if (pestana === 'mejoras') activarMejoras(c);
     if (pestana === 'marca') {
       if ($('doc-completo')) $('doc-completo').onclick = function () { P.api({ accion: 'vitrina', sesion: ses(), tenant: t }).then(function (x) { if (x.html) P.abrirHtml(x.html); }); };
       cargarMuestras(c);
@@ -346,8 +353,88 @@
       });
     };
   }
+  // Mejoras de mensajes: el equipo reporta un mensaje del motor que hay que corregir (desde la liga del correo o a mano)
+  // y quien administra decide: pendiente, enviada a corrección, resuelta o rechazada. Registro MOTOR_correcciones.
+  var TIPOS_CORR = [['tono', 'El tono'], ['dato', 'Un dato equivocado'], ['oferta', 'Lo que se ofrece'], ['destinatarios', 'A quién le llegó'], ['diseno', 'El diseño'], ['persona', 'Debió atenderlo una persona'], ['otro', 'Otra cosa']];
+  var ESTADOS_CORR = [['pendiente', 'Pendientes'], ['enviada', 'Enviadas a corrección'], ['resuelta', 'Resueltas'], ['rechazada', 'Rechazadas']];
+  var corrEstado = { lista: [], administra: false, ver: 'pendiente', filtros: {} };
+  function mejoras(c) {
+    var m = mensajeLiga || {}, adm = !!(c.info || {}).administra;
+    var estilo = '<style>.corr{border:1px solid #e5e5e5;border-radius:10px;padding:12px;margin:0 0 10px;background:#fff}.corr h4{margin:0 0 6px;font-size:14px}.corr .meta{font-size:12px;color:#5c5c5c;margin-bottom:6px}.corr blockquote{margin:6px 0;padding:8px 10px;background:#f6f6f4;border-radius:8px;white-space:pre-wrap;font-size:13px}.corr textarea,.mj textarea{width:100%;box-sizing:border-box}.mj label{display:block;font-size:12px;color:#5c5c5c;margin:8px 0 3px}.mj input,.mj select{width:100%;box-sizing:border-box}.chips button{margin:0 6px 6px 0}</style>';
+    var form = '<div class="mj"><p style="margin:0 0 8px">' + (mensajeLiga ? 'Llegaste desde un mensaje del motor: ya está cargado. Di qué estuvo mal y cómo lo dirías.' : 'Reporta un mensaje del motor que haya que corregir. Lo más fácil es usar la liga "Corregir este mensaje" que viene en cada correo; también puedes pegarlo aquí.') + '</p>'
+      + '<div class="pfs" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0 16px">'
+      + '<div><label>Proceso</label><input id="mj-proceso" value="' + h(m.p || '') + '" placeholder="Ej.: Respuesta a un prospecto"></div>'
+      + '<div><label>Medio</label><input id="mj-medio" value="' + h(m.m || '') + '" placeholder="Correo, WhatsApp, tarea"></div>'
+      + '<div><label>Producto</label><input id="mj-producto" value="' + h(m.pr || '') + '"></div>'
+      + '<div><label>Empresa</label><input id="mj-empresa" value="' + h(m.e || '') + '"></div></div>'
+      + '<input type="hidden" id="mj-ref" value="' + h(m.r || '') + '">'
+      + '<label>Lo que dijo el motor</label><textarea id="mj-texto" rows="5">' + h(m.x || '') + '</textarea>'
+      + '<label>¿Qué estuvo mal?</label><select id="mj-tipo">' + TIPOS_CORR.map(function (x) { return '<option value="' + x[0] + '">' + x[1] + '</option>'; }).join('') + '</select>'
+      + '<label>Cómo lo dirías tú</label><textarea id="mj-propuesta" rows="4"></textarea>'
+      + '<label>Comentario</label><textarea id="mj-comentario" rows="2"></textarea>'
+      + '<div class="acciones" style="margin-top:10px"><button class="p" id="mj-enviar">Enviar corrección</button><span class="msg" id="m-mj"></span></div></div>';
+    return tarjeta(8, 'Mejoras de mensajes', estilo + form + '<h3 style="margin:20px 0 8px">Correcciones</h3><div id="mj-lista"><p class="vacio">Cargando…</p></div>');
+  }
+  function pintarCorrecciones() {
+    var box = $('mj-lista'); if (!box) return;
+    var l = corrEstado.lista, f = corrEstado.filtros;
+    var cuenta = {}; l.forEach(function (x) { cuenta[x.estado] = (cuenta[x.estado] || 0) + 1; });
+    var tabs = '<div class="chips">' + ESTADOS_CORR.map(function (e) { return '<button class="' + (corrEstado.ver === e[0] ? 'p' : '') + '" data-ver="' + e[0] + '">' + e[1] + ' (' + (cuenta[e[0]] || 0) + ')</button>'; }).join('') + '</div>';
+    var campos = [['proceso', 'Proceso'], ['medio', 'Medio'], ['producto', 'Producto'], ['quien', 'Quién']];
+    var filtros = '<div class="pfs" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0 12px">' + campos.map(function (k) {
+      var vals = l.map(function (x) { return x[k[0]] || ''; }).filter(function (v, i, a) { return v && a.indexOf(v) === i; }).sort();
+      return '<div><label style="font-size:12px;color:#5c5c5c">' + k[1] + '</label><select data-filtro="' + k[0] + '" style="width:100%"><option value="">Todos</option>' + vals.map(function (v) { return '<option' + (f[k[0]] === v ? ' selected' : '') + '>' + h(v) + '</option>'; }).join('') + '</select></div>';
+    }).join('') + '</div>';
+    var vis = l.filter(function (x) { if (x.estado !== corrEstado.ver) return false; for (var k in f) if (f[k] && x[k] !== f[k]) return false; return true; });
+    var tipoTxt = {}; TIPOS_CORR.forEach(function (x) { tipoTxt[x[0]] = x[1]; });
+    var items = vis.length ? vis.map(function (x) {
+      var fecha = x.ts ? new Date(Number(x.ts)).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+      var dec = corrEstado.administra ? '<label style="font-size:12px;color:#5c5c5c">Versión final</label><textarea rows="3" data-c="' + h(x.corr_id) + '" data-k="version_final">' + h(x.version_final || '') + '</textarea>'
+        + '<label style="font-size:12px;color:#5c5c5c">Indicaciones o nota</label><textarea rows="2" data-c="' + h(x.corr_id) + '" data-k="nota">' + h(x.nota || '') + '</textarea>'
+        + '<label style="font-size:12px;color:#5c5c5c">Qué se cambió (al resolver)</label><textarea rows="2" data-c="' + h(x.corr_id) + '" data-k="resolucion">' + h(x.resolucion || '') + '</textarea>'
+        + '<div class="acciones" style="margin-top:8px">' + [['enviada', 'Enviar a corrección'], ['resuelta', 'Marcar resuelta'], ['rechazada', 'Rechazar'], ['pendiente', 'Regresar a pendiente']].filter(function (b) { return b[0] !== x.estado; }).map(function (b) { return '<button data-decidir="' + h(x.corr_id) + '" data-estado="' + b[0] + '">' + b[1] + '</button>'; }).join(' ') + '<span class="msg" data-m="' + h(x.corr_id) + '"></span></div>'
+        : ((x.version_final ? '<p><b>Versión final:</b> ' + h(x.version_final) + '</p>' : '') + (x.resolucion ? '<p><b>Qué se cambió:</b> ' + h(x.resolucion) + '</p>' : ''));
+      return '<div class="corr"><h4>' + h(x.proceso || 'Mensaje') + (x.empresa ? ' · ' + h(x.empresa) : '') + '</h4><div class="meta">' + h(fecha) + ' · ' + h(x.quien || '') + (x.medio ? ' · ' + h(x.medio) : '') + (x.producto ? ' · ' + h(x.producto) : '') + ' · ' + h(tipoTxt[x.tipo] || x.tipo || '') + '</div>'
+        + '<b>El motor dijo:</b><blockquote>' + h(x.texto_motor || '') + '</blockquote>' + (x.propuesta ? '<b>Cómo lo diría:</b><blockquote>' + h(x.propuesta) + '</blockquote>' : '') + (x.comentario ? '<p><b>Comentario:</b> ' + h(x.comentario) + '</p>' : '') + dec + '</div>';
+    }).join('') : '<p class="vacio">No hay correcciones aquí.</p>';
+    box.innerHTML = tabs + filtros + '<div style="margin-top:10px">' + items + '</div>';
+    Array.prototype.forEach.call(box.querySelectorAll('[data-ver]'), function (b) { b.onclick = function () { corrEstado.ver = b.getAttribute('data-ver'); pintarCorrecciones(); }; });
+    Array.prototype.forEach.call(box.querySelectorAll('[data-filtro]'), function (sel) { sel.onchange = function () { corrEstado.filtros[sel.getAttribute('data-filtro')] = sel.value; pintarCorrecciones(); }; });
+    Array.prototype.forEach.call(box.querySelectorAll('[data-decidir]'), function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute('data-decidir'), datos = { accion: 'correccion_decidir', sesion: ses(), tenant: corrEstado.tenant, corr_id: id, estado: b.getAttribute('data-estado') };
+        Array.prototype.forEach.call(box.querySelectorAll('textarea[data-c="' + id + '"]'), function (t) { datos[t.getAttribute('data-k')] = t.value; });
+        var msg = box.querySelector('[data-m="' + id + '"]'); if (msg) msg.textContent = 'Guardando...'; b.disabled = true;
+        P.api(datos).then(function (x) { b.disabled = false; if (x._codigo === 401) { salir(x.error); return; } if (!x.ok) { if (msg) msg.textContent = x.error || 'No se pudo guardar.'; return; } cargarCorrecciones(); });
+      };
+    });
+  }
+  function cargarCorrecciones() {
+    P.api({ accion: 'correcciones', sesion: ses(), tenant: corrEstado.tenant }).then(function (x) {
+      if (x._codigo === 401) { salir(x.error); return; }
+      if (!x.ok) { if ($('mj-lista')) $('mj-lista').innerHTML = '<p class="vacio">' + h(x.error || 'No se pudieron cargar las correcciones.') + '</p>'; return; }
+      corrEstado.lista = x.correcciones || []; corrEstado.administra = !!x.administra; pintarCorrecciones();
+    });
+  }
+  function activarMejoras(c) {
+    corrEstado.tenant = c.tenant; cargarCorrecciones();
+    if (!$('mj-enviar')) return;
+    $('mj-enviar').onclick = function () {
+      var btn = this, v = function (id) { return ($(id) || {}).value || ''; };
+      if (!v('mj-texto').trim()) { $('m-mj').textContent = 'Pega o escribe lo que dijo el motor.'; return; }
+      if (!v('mj-propuesta').trim() && !v('mj-comentario').trim()) { $('m-mj').textContent = 'Escribe cómo lo dirías tú o un comentario.'; return; }
+      $('m-mj').textContent = 'Enviando...'; btn.disabled = true;
+      P.api({ accion: 'correccion_nueva', sesion: ses(), tenant: c.tenant, proceso: v('mj-proceso'), medio: v('mj-medio'), producto: v('mj-producto'), empresa: v('mj-empresa'), referencia: v('mj-ref'), texto_motor: v('mj-texto'), tipo: v('mj-tipo'), propuesta: v('mj-propuesta'), comentario: v('mj-comentario') }).then(function (x) {
+        btn.disabled = false;
+        if (x._codigo === 401) { salir(x.error); return; }
+        if (!x.ok) { $('m-mj').textContent = x.error || 'No se pudo enviar.'; return; }
+        mensajeLiga = null; ['mj-texto', 'mj-propuesta', 'mj-comentario'].forEach(function (id) { if ($(id)) $(id).value = ''; });
+        $('m-mj').textContent = 'Recibida. Te avisamos por correo cuando se resuelva.'; corrEstado.ver = 'pendiente'; cargarCorrecciones();
+      });
+    };
+  }
   function proceso(c) {
-    return tarjeta(8, 'Objetivos y proceso comercial', '<p class="vacio">Próximamente: aquí verás y ajustarás los objetivos que opera el motor y las etapas de tu proceso comercial.</p>' + P.pedir('proceso', 'Objetivos y proceso', 'Ej.: agrega una etapa de propuesta') + P.solicitudes(c.solicitudes, 'Objetivos y proceso'));
+    return tarjeta(9, 'Objetivos y proceso comercial', '<p class="vacio">Próximamente: aquí verás y ajustarás los objetivos que opera el motor y las etapas de tu proceso comercial.</p>' + P.pedir('proceso', 'Objetivos y proceso', 'Ej.: agrega una etapa de propuesta') + P.solicitudes(c.solicitudes, 'Objetivos y proceso'));
   }
   function cargarMuestras(c) {
     var poner = function (actuales) {
