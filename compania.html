@@ -90,6 +90,7 @@
     if (pestana === 'fases') activarFases(c);
     if (pestana === 'productos') activarProductos(c);
     if (pestana === 'mejoras') activarMejoras(c);
+    if (pestana === 'proceso') activarNombres(c);
     if (pestana === 'marca') {
       if ($('doc-completo')) $('doc-completo').onclick = function () { P.api({ accion: 'vitrina', sesion: ses(), tenant: t }).then(function (x) { if (x.html) P.abrirHtml(x.html); }); };
       cargarMuestras(c);
@@ -433,8 +434,63 @@
       });
     };
   }
+  // Nombres: como el motor nombra cada oportunidad nueva (formato_nombre_oportunidad, con el folio de Zoho en
+  // campo_folio_oportunidad) y que prefijos de secuencia reconoce (prefijos_secuencia). La vista previa arma el nombre
+  // igual que el motor al crear la oportunidad: {empresa} sin espacios ni acentos, {empresa_texto} como se escribe.
+  var PIEZAS_NOMBRE = [
+    ['{producto}', 'el código del producto que se vende (lo ves en la pestaña Productos).'],
+    ['{empresa}', 'el nombre de la empresa del prospecto todo junto, sin espacios ni acentos (ComercializadoraEjemplo).'],
+    ['{empresa_texto}', 'el nombre de la empresa tal como se escribe (Comercializadora Ejemplo).'],
+    ['{contacto}', 'el nombre de la persona de contacto todo junto (AnaPerez).'],
+    ['{anio}', 'el año en que nace la oportunidad.'],
+    ['{folio}', 'el número que Zoho le pone solo a cada oportunidad. Se agrega en cuanto Zoho la crea.']
+  ];
+  function juntoNombre(x) { return String(x || '').normalize('NFD').replace(/\p{Mn}/gu, '').replace(/[^A-Za-z0-9 ]/g, ' ').trim().split(/\s+/).filter(Boolean).map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(''); }
+  function textoNombre(x) { return String(x || '').replace(/[_|]/g, ' ').replace(/\s+/g, ' ').trim(); }
+  function ejemploNombre(c, formato) {
+    var l = productosDe(c), prod = (l[0] && l[0].codigo) || 'PMP', emp = 'Comercializadora Ejemplo';
+    return String(formato || '').replace('{producto}', prod).replace('{empresa_texto}', textoNombre(emp)).replace('{empresa}', juntoNombre(emp)).replace('{contacto}', juntoNombre('Ana Pérez')).replace('{anio}', String(new Date().getFullYear())).replace('{folio}', '19400');
+  }
+  function nombres(c) {
+    var d = c.datos || {}, adm = !!(c.info || {}).administra, f = d.formato_nombre_oportunidad || '';
+    var piezas = '<div class="nota" style="margin-top:10px"><b>Piezas que puedes usar:</b><br>' + PIEZAS_NOMBRE.map(function (p) { return '<code>' + h(p[0]) + '</code>: ' + h(p[1]); }).join('<br>') + '<br>Lo demás (guiones, barras, letras fijas como ITIN) se copia tal cual.</div>';
+    var ejemplo = '<div class="nota" style="margin-top:10px"><b>Así se vería una oportunidad nueva:</b><br><span id="nom-ejemplo" style="word-break:break-word;font-weight:700">' + h(f ? ejemploNombre(c, f) : PD) + '</span><br><span style="font-size:12px;color:#5c5c5c">Ejemplo con la empresa Comercializadora Ejemplo, el contacto Ana Pérez y el folio 19400.</span></div>';
+    var cuerpo = '<p style="margin:0 0 10px">Cada oportunidad que el motor crea en Zoho lleva un nombre con este formato. Las oportunidades que ya existen no cambian de nombre; el cambio aplica a las siguientes.</p>';
+    if (adm) {
+      cuerpo += '<label for="nom-formato">Nombre de la oportunidad<input id="nom-formato" type="text" maxlength="200" value="' + h(f) + '" placeholder="{empresa_texto}_{folio}_{anio} | {producto}" style="width:100%;box-sizing:border-box"></label>'
+        + ejemplo + piezas
+        + '<label for="nom-folio" style="margin-top:12px">Campo de Zoho donde vive el folio (solo si usas {folio})<input id="nom-folio" type="text" maxlength="61" value="' + h(d.campo_folio_oportunidad || '') + '" placeholder="Folio_Oportunidad" style="width:100%;box-sizing:border-box"></label>'
+        + '<label for="nom-prefijos" style="margin-top:12px">Prefijos de secuencia (separados por coma)<input id="nom-prefijos" type="text" value="' + h(d.prefijos_secuencia || '') + '" placeholder="Ej.: IT, ITIN" style="width:100%;box-sizing:border-box"></label>'
+        + '<p class="nota" style="margin-top:6px">Con estos prefijos el motor reconoce cuáles secuencias de Amplemarket son de tu compañía: el nombre de la secuencia empieza con alguno de ellos.</p>'
+        + '<div class="acciones" style="margin-top:12px"><button class="p" id="nom-guardar">Guardar</button><span class="msg" id="m-nom"></span></div>';
+    } else {
+      cuerpo += dl([['Nombre de la oportunidad', f || PD], ['Campo de Zoho donde vive el folio', d.campo_folio_oportunidad || PD], ['Prefijos de secuencia', d.prefijos_secuencia ? d.prefijos_secuencia.split(',').map(function (x) { return x.trim(); }).filter(Boolean).join(', ') : PD]])
+        + ejemplo + piezas
+        + '<p class="nota" style="margin-top:6px">Con los prefijos de secuencia el motor reconoce cuáles secuencias de Amplemarket son de tu compañía: el nombre de la secuencia empieza con alguno de ellos.</p>'
+        + '<p class="vacio">Solo quien administra el portal puede cambiarlo.</p>';
+    }
+    return tarjeta(9, 'Cómo se nombran tus oportunidades y secuencias', cuerpo);
+  }
+  function activarNombres(c) {
+    if (!$('nom-formato')) return;
+    $('nom-formato').oninput = function () { $('nom-ejemplo').textContent = this.value.trim() ? ejemploNombre(c, this.value.trim()) : PD; };
+    $('nom-guardar').onclick = function () {
+      var formato = $('nom-formato').value.trim(), campo = $('nom-folio').value.trim(), prefijos = $('nom-prefijos').value.split(',').map(function (x) { return x.trim(); }).filter(Boolean).join(',');
+      if (!formato) { $('m-nom').textContent = 'Escribe cómo se nombra la oportunidad.'; return; }
+      if (!/\{empresa(_texto)?\}/.test(formato)) { $('m-nom').textContent = 'El nombre debe llevar la empresa: {empresa} o {empresa_texto}.'; return; }
+      if (/\{folio\}/.test(formato) && !campo) { $('m-nom').textContent = 'Si usas {folio}, escribe el campo de Zoho donde vive el folio.'; return; }
+      $('m-nom').textContent = 'Guardando...'; this.disabled = true; var btn = this;
+      P.api({ accion: 'nombres_guardar', sesion: ses(), tenant: c.tenant, formato: formato, campo_folio: campo, prefijos: prefijos }).then(function (x) {
+        btn.disabled = false;
+        if (x._codigo === 401) { salir(x.error); return; }
+        if (!x.ok) { $('m-nom').textContent = x.error || 'No se pudo guardar.'; return; }
+        c.datos.formato_nombre_oportunidad = formato; c.datos.campo_folio_oportunidad = campo; c.datos.prefijos_secuencia = prefijos; $('nom-prefijos').value = prefijos.split(',').join(', ');
+        $('m-nom').textContent = x.guardados ? 'Guardado. La siguiente oportunidad que cree el motor ya lleva este nombre.' : 'No había cambios que guardar.';
+      });
+    };
+  }
   function proceso(c) {
-    return tarjeta(9, 'Objetivos y proceso comercial', '<p class="vacio">Próximamente: aquí verás y ajustarás los objetivos que opera el motor y las etapas de tu proceso comercial.</p>' + P.pedir('proceso', 'Objetivos y proceso', 'Ej.: agrega una etapa de propuesta') + P.solicitudes(c.solicitudes, 'Objetivos y proceso'));
+    return nombres(c) + tarjeta(10, 'Objetivos y proceso comercial', '<p class="vacio">Próximamente: aquí verás y ajustarás los objetivos que opera el motor y las etapas de tu proceso comercial.</p>' + P.pedir('proceso', 'Objetivos y proceso', 'Ej.: agrega una etapa de propuesta') + P.solicitudes(c.solicitudes, 'Objetivos y proceso'));
   }
   function cargarMuestras(c) {
     var poner = function (actuales) {
