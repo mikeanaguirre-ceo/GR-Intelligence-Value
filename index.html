@@ -917,6 +917,7 @@ function abrirEditarDealGR(dealId){
   window.__grEditDias=(d.diasEnEtapa===undefined?null:d.diasEnEtapa);
   grmdPretty();
   grmdAplicarBloqueo();
+  document.getElementById('grmd-auto-msg').textContent='';
   grmdPintarCampos(d);
   grmdCargarContactos(dealId, d.cliente||d.name||'');
   document.getElementById('grmd-status').textContent=''; document.getElementById('grmd-save').disabled=false;
@@ -944,6 +945,38 @@ function grmdPintarCampos(d){
   document.getElementById('grmd-c-gr_apoyo').innerHTML=eq.length?eq.map(function(p){ return '<label style="display:flex;align-items:center;gap:5px;"><input type="checkbox" value="'+grEsc(p[0])+'"'+(ap.indexOf(p[0])>=0?' checked':'')+'> '+grEsc(p[1])+'</label>'; }).join(''):'<span style="color:#6B7280">Sin equipo en el portal</span>';
   document.getElementById('grmd-c-gr_prueba').checked=String(c.gr_prueba)==='true';
   var f=camposFaltan(d); document.getElementById('grmd-faltan').textContent=f.length?('· Falta: '+f.join(', ')):'';
+}
+// Boton "Completar solo": el motor llena lo vacio de esta oportunidad con sus reglas y se pinta lo que quedo.
+var GR_COMPLETAR='https://mikea.app.n8n.cloud/webhook/gr-completar-campos';
+var GR_CAMPOS_NOMBRE={gr_responsable:'Responsable',gr_apoyo:'Apoyo',gr_origen:'Origen',gr_tipo_oportunidad:'Tipo',gr_partner:'Partner',gr_prueba:'Prueba',gr_producto:'Producto',gr_secuencia_origen:'Secuencia',gr_canal_respuesta:'Canal',gr_motivo_perdida:'Motivo de pérdida'};
+async function grmdCompletarAuto(){
+  var id=window.__grEditId; if(!id) return;
+  var b=document.getElementById('grmd-auto'), m=document.getElementById('grmd-auto-msg');
+  b.disabled=true; m.style.color='#9CA3AF'; m.textContent='Completando…';
+  try{
+    var r=await fetch(GR_COMPLETAR,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:id})});
+    var res=await r.json();
+    if(!res||res.ok!==true) throw new Error('el motor no confirmó');
+    var c=res.campos||{}, ks=Object.keys(c);
+    var d=(DATA.deals||[]).filter(function(x){return String(x.id)===String(id);})[0];
+    if(d){ d.campos=d.campos||{}; ks.forEach(function(k){ if(k in d.campos) d.campos[k]=String(c[k]); }); if(c.gr_producto && !d.prod) d.prod=c.gr_producto; grmdPintarCampos(d); }
+    m.style.color=ks.length?'#62D175':'#9CA3AF';
+    m.textContent=ks.length?('Se completó: '+ks.map(function(k){return GR_CAMPOS_NOMBRE[k]||k;}).join(', ')+'. Ya está en HubSpot.'):'No había nada que se pudiera completar solo; lo que falta se elige aquí.';
+  }catch(e){ m.style.color='#DB0540'; m.textContent='No se completó: '+e.message; }
+  b.disabled=false;
+}
+// Boton "Completar datos de todas": corre el mismo motor sobre toda la base (sustituye la corrida diaria).
+async function pipeCompletarTodas(btn){
+  if(!confirm('El motor va a llenar lo vacío de todas las oportunidades (sin cambiar lo que ya tiene valor). ¿Continuar?')) return;
+  if(btn){ btn.disabled=true; btn.textContent='Completando…'; }
+  try{
+    var r=await fetch(GR_COMPLETAR,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({})});
+    var res=await r.json(); if(!res||res.ok!==true) throw new Error('el motor no confirmó');
+    var n=res.porEscribir||0;
+    taskToast(n?('Se completaron datos en '+n+' oportunidades. Actualizando…'):'No había datos que se pudieran completar solos.', true);
+    if(n) await loadDataFresco();
+  }catch(e){ taskToast('No se completó: '+e.message, false); }
+  if(btn){ btn.disabled=false; btn.textContent='Completar datos de todas'; }
 }
 function grmdCamposCambiados(){
   var o=window.__grEditCampos||{}, out={};
@@ -2192,6 +2225,7 @@ function renderPipeline() {
         <span class="filter-label">Otros:</span>
         <button class="chip ${FILT.pipeline.excludeP ? 'active' : ''}" data-f="pipeline" data-k="excludeP" data-v="toggle">Excluir P_</button>
         <button class="chip ${FILT.pipeline.faltan ? 'active' : ''}" data-f="pipeline" data-k="faltan" data-v="toggle" title="Oportunidades sin responsable, origen, tipo o partner">Faltan datos</button>
+        <button class="chip" onclick="pipeCompletarTodas(this)" title="El motor llena lo vacío de todas las oportunidades; nunca cambia lo que ya tiene valor" style="border-color:#02ADBA80;color:#02ADBA;">Completar datos de todas</button>
         ${hayFiltrosPipeline() ? `<button class="chip" onclick="quitarFiltrosPipeline()" style="border-color:#DB054080;">Quitar filtros</button>` : ''}
       </div>
       <div class="filters">
@@ -5834,7 +5868,11 @@ if (document.readyState === 'loading') {
     <input id="grmd-close" type="date" onfocus="try{this.showPicker&&this.showPicker()}catch(e){}" onclick="try{this.showPicker&&this.showPicker()}catch(e){}" oninput="grmdPretty()" style="width:100%;margin:5px 0 2px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;">
     <div id="grmd-close-pretty" style="font-size:12px;color:#02ADBA;font-weight:700;margin:0 0 2px;min-height:15px;"></div>
     <div id="grmd-close-nota" style="font-size:11px;color:#9CA3AF;line-height:1.5;margin:0 0 14px;"></div>
-    <div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px;">Datos de la oportunidad <span id="grmd-faltan" style="color:#FFCD00;text-transform:none;letter-spacing:0;font-weight:600;"></span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 6px;">
+      <div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Datos de la oportunidad <span id="grmd-faltan" style="color:#FFCD00;text-transform:none;letter-spacing:0;font-weight:600;"></span></div>
+      <button id="grmd-auto" onclick="grmdCompletarAuto()" title="El motor llena solo lo que se puede saber (producto, ficha del portal, nota de origen) y nunca cambia lo que ya tiene valor" style="background:transparent;color:#02ADBA;border:1px solid #02ADBA80;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;flex:none;">Completar solo</button>
+    </div>
+    <div id="grmd-auto-msg" style="font-size:11px;color:#9CA3AF;margin:0 0 6px;min-height:0;"></div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 10px;margin:0 0 10px;">
       <label style="font-size:11px;color:#9CA3AF;">Responsable<select id="grmd-c-gr_responsable" style="width:100%;margin-top:4px;padding:8px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:13px;"></select></label>
       <label style="font-size:11px;color:#9CA3AF;">Origen<select id="grmd-c-gr_origen" style="width:100%;margin-top:4px;padding:8px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:13px;"></select></label>
