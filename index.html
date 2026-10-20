@@ -965,6 +965,31 @@ async function grmdCompletarAuto(){
   }catch(e){ m.style.color='#DB0540'; m.textContent='No se completó: '+e.message; }
   b.disabled=false;
 }
+// Botones con creditos de Amplemarket: datos (0.5 creditos) o telefono (0.5 + costo del telefono). Una persona a la vez,
+// con tope diario en el portal. Solo llena lo vacio y no escribe si Amplemarket devuelve a otra persona.
+var GR_AMPLE='https://mikea.app.n8n.cloud/webhook/gr-actualizar-prospecto';
+var GR_AM_NOMBRE={firstname:'Nombre',lastname:'Apellido',jobtitle:'Puesto',hs_linkedin_url:'LinkedIn',hs_seniority:'Nivel',gr_amplemarket_id:'Id de Amplemarket',country:'País',city:'Ciudad',company:'Empresa',phone:'Teléfono',mobilephone:'Celular',industry:'Industria',numberofemployees:'Empleados',linkedin_company_page:'LinkedIn de la empresa',website:'Sitio web',founded_year:'Año de fundación',state:'Estado'};
+async function grmdAmplemarket(nivel){
+  var id=window.__grEditId; if(!id) return;
+  var tel=nivel==='telefono';
+  if(!confirm(tel?'Buscar el teléfono en Amplemarket cuesta 0.5 créditos más el costo del teléfono. Si el contacto ya tiene teléfono no se consulta. ¿Continuar?':'Actualizar con Amplemarket cuesta 0.5 créditos. Solo se llena lo vacío. ¿Continuar?')) return;
+  var m=document.getElementById('grmd-auto-msg'), b1=document.getElementById('grmd-am-datos'), b2=document.getElementById('grmd-am-tel');
+  var sel=document.getElementById('grmd-contact');
+  b1.disabled=b2.disabled=true; m.style.color='#9CA3AF'; m.textContent='Consultando Amplemarket…';
+  try{
+    var r=await fetch(GR_AMPLE,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:id,nivel:nivel,contactId:(sel&&sel.value)||''})});
+    var res=await r.json();
+    var nom=function(l){ return (l||[]).map(function(k){ return GR_AM_NOMBRE[k]||k; }).join(', '); };
+    var t=res.mensaje||'';
+    if((res.contacto||[]).length) t+=' Contacto: '+nom(res.contacto)+'.';
+    if((res.empresa||[]).length) t+=' Empresa: '+nom(res.empresa)+'.';
+    if(res.consultado) t+=' Costo: '+(res.credito||'')+'.';
+    m.style.color=res.ok?((res.contacto||[]).length||(res.empresa||[]).length?'#62D175':'#9CA3AF'):'#DB0540';
+    m.textContent=t.trim();
+    if(res.telefono){ var d=(DATA.deals||[]).filter(function(x){return String(x.id)===String(id);})[0]; grmdCargarContactos(id,(d&&(d.cliente||d.name))||''); }
+  }catch(e){ m.style.color='#DB0540'; m.textContent='No se consultó: '+e.message; }
+  b1.disabled=b2.disabled=false;
+}
 // Boton "Completar datos de todas": corre el mismo motor sobre toda la base (sustituye la corrida diaria).
 async function pipeCompletarTodas(btn){
   if(!confirm('El motor va a llenar lo vacío de todas las oportunidades (sin cambiar lo que ya tiene valor). ¿Continuar?')) return;
@@ -5871,6 +5896,10 @@ if (document.readyState === 'loading') {
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 6px;">
       <div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Datos de la oportunidad <span id="grmd-faltan" style="color:#FFCD00;text-transform:none;letter-spacing:0;font-weight:600;"></span></div>
       <button id="grmd-auto" onclick="grmdCompletarAuto()" title="El motor llena solo lo que se puede saber (producto, ficha del portal, nota de origen) y nunca cambia lo que ya tiene valor" style="background:transparent;color:#02ADBA;border:1px solid #02ADBA80;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;flex:none;">Completar solo</button>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px;">
+      <button id="grmd-am-datos" onclick="grmdAmplemarket('datos')" title="Busca al contacto en Amplemarket y llena lo vacío: puesto, LinkedIn, nivel, país, empresa, industria, empleados. Cuesta 0.5 créditos." style="background:transparent;color:#c4b5fd;border:1px solid #7C3AED;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;">Actualizar con Amplemarket · 0.5 créditos</button>
+      <button id="grmd-am-tel" onclick="grmdAmplemarket('telefono')" title="Busca el teléfono del contacto para WhatsApp. Cuesta 0.5 créditos más el costo del teléfono. Si ya tiene teléfono, no se consulta." style="background:transparent;color:#FFCD00;border:1px solid #FFCD0080;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;">Buscar teléfono · con créditos</button>
     </div>
     <div id="grmd-auto-msg" style="font-size:11px;color:#9CA3AF;margin:0 0 6px;min-height:0;"></div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 10px;margin:0 0 10px;">
