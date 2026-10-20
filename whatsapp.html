@@ -85,6 +85,11 @@
   .estado-apr{font-size:11.5px;font-weight:650;padding:1px 8px;border-radius:10px;white-space:nowrap}
   .estado-apr.procesada{background:#e4f4ea;color:var(--ok)} .estado-apr.por_procesar{background:#f1eafe;color:#5b21b6} .estado-apr.sin_transcript{background:#eceaea;color:#555}
   #conf .tabla{display:block;overflow-x:auto}
+  .apr-res .mal b{color:var(--mal)} .web{text-decoration:none;font-size:12px} code{background:#f1eafe;border-radius:5px;padding:1px 6px;font-size:12px} .m .pie .corregir{font-size:10.5px;margin-right:auto} .apr-h3{font:700 13px var(--disp);margin:16px 0 6px;text-transform:uppercase;letter-spacing:.04em}
+  .insumo{border:1px solid var(--borde);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:13px;display:flex;flex-direction:column;gap:4px}
+  .barra-apr{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0 10px}
+  .persona{margin-bottom:4px;font-size:12.5px} .li{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:3px;background:#0a66c2;color:#fff;font:700 10px Arial;text-decoration:none}
+  .estado-apr.en_cola{background:#e2f0ff;color:#174f98} .estado-apr.descartada{background:#eceaea;color:#555} .estado-apr.error{background:#fde2e1;color:#a3261f}
   .celcap{display:flex;gap:4px} .celin{width:130px;font:inherit;font-size:12.5px;padding:4px 6px;border:1px solid var(--borde);border-radius:6px}
   .celok{padding:4px 10px;font-size:12px}
   #opor .tabla{display:block;overflow-x:auto} #opor .tabla .etq{white-space:nowrap} #opor td{font-size:12.5px}
@@ -367,6 +372,7 @@
   var elegidos = {};   // contact_id -> { o, ct }
 
   function empresaDe(o, ct){
+    if (o && o.empresa && o.empresa.nombre) return o.empresa.nombre;
     if (ct && ct.empresa) return ct.empresa;
     var t = String(o.nombre || '').replace(/^P_/i, '').split('_');
     return (t[1] || '').replace(/([a-z])([A-Z])/g, '$1 $2');
@@ -426,13 +432,13 @@
         (col.length ? '' : '<div class="kvacio">—</div>');
       col.forEach(function(o){
         var cs = o.contactos;
-        h += '<div class="kcard' + (pendienteOpen3(o) ? ' pend' : '') + '"><div class="kcard-n">' + esc(empresaDe(o, cs[0]) || o.nombre) + '</div>' +
+        h += '<div class="kcard' + (pendienteOpen3(o) ? ' pend' : '') + '"><div class="kcard-n">' + esc(empresaDe(o, cs[0]) || o.nombre) + (o.empresa && o.empresa.web ? ' <a class="web" href="' + esc(/^https?:/.test(o.empresa.web) ? o.empresa.web : 'https://' + o.empresa.web) + '" target="_blank" rel="noopener" title="Sitio web">🌐</a>' : '') + (o.empresa && o.empresa.linkedin ? ' <a class="li" href="' + esc(o.empresa.linkedin) + '" target="_blank" rel="noopener" title="LinkedIn de la empresa">in</a>' : '') + '</div>' + (o.empresa && o.empresa.industria ? '<div class="tenue">' + esc(o.empresa.industria) + '</div>' : '') +
           '<a class="kcard-s" href="' + esc(o.url) + '" target="_blank" rel="noopener">' + esc(o.nombre) + '</a>' +
           '<div class="kchips"><span class="etq producto">' + esc(o.linea.nombre) + '</span><span class="etq">' + esc(o.dueno) + '</span>' + (pendienteOpen3(o) ? '<span class="etq pendopen">Pendiente Open+3</span>' : '') + '</div>';
         if (!cs.length) h += '<div class="kct tenue">Sin contacto en HubSpot</div>';
         cs.forEach(function(ct){
           var est = estadoContacto(ct), puede = est.k === 'listo';
-          h += '<div class="kct"><div><b>' + esc(ct.nombre || 'Sin nombre') + '</b>' + (ct.puesto ? ' · <span class="tenue">' + esc(ct.puesto) + '</span>' : '') + '</div>' +
+          h += '<div class="kct"><div><b>' + esc(ct.nombre || 'Sin nombre') + '</b>' + (ct.linkedin ? ' <a class="li" href="' + esc(ct.linkedin) + '" target="_blank" rel="noopener" title="LinkedIn">in</a>' : '') + (ct.puesto ? ' · <span class="tenue">' + esc(ct.puesto) + '</span>' : '') + '</div>' +
             (ct.c10 ? '<div class="kcel">' + (puede ? '<label class="kchk"><input type="checkbox" class="elegir" data-c="' + esc(ct.id) + '"' + (elegidos[ct.id] ? ' checked' : '') + '> ' : '<span>') + '📱 ' + esc(ct.cel) + (puede ? '</label>' : '</span>') + '</div>'
               : '<div class="celcap"><input class="celin" data-c="' + esc(ct.id) + '" inputmode="tel" placeholder="Celular (WhatsApp)"><button class="btn sec celok" data-c="' + esc(ct.id) + '">Guardar</button></div>') +
             '<span class="estado-wa ' + est.k + '">' + esc(est.t) + '</span>' + (est.c ? ' <button class="enlace verconv" data-w="' + esc(est.c.wa_id) + '">ver chat</button>' : '') + '</div>';
@@ -608,7 +614,7 @@
       var desdeHs = (m.estado || '').indexOf('Hootsuite') >= 0;
       var autor = m.dir === 'nota' ? 'Nota interna' : (m.dir === 'saliente' ? (m.autor === 'bot' ? (desdeHs ? 'Agente virtual de Hootsuite' : 'Bot') : (m.tipo === 'plantilla' ? 'Plantilla' : (desdeHs ? 'Equipo · desde Hootsuite' : 'Equipo'))) : '');
       html += '<div class="m ' + cls + '">' + (autor ? '<div class="autor">' + autor + '</div>' : '') + cuerpoMsg(m) +
-        '<div class="pie">' + ((m.estado || '').indexOf('fallido') === 0 ? '<span>' + esc(m.estado.replace('fallido: ', '')) + '</span>' : '') + '<span>' + hora(m.ts) + '</span>' + check(m) + '</div></div>';
+        '<div class="pie">' + (m.dir === 'saliente' && m.autor === 'bot' && !desdeHs ? '<button class="enlace corregir" data-id="' + esc(m.id) + '" title="Reportar este mensaje del bot en Mejoras">Corregir</button>' : '') + ((m.estado || '').indexOf('fallido') === 0 ? '<span>' + esc(m.estado.replace('fallido: ', '')) + '</span>' : '') + '<span>' + hora(m.ts) + '</span>' + check(m) + '</div></div>';
     });
     html += '</div><div class="caja"><div class="opciones"><label><input type="checkbox" id="comoNota"> Nota interna (el cliente no la ve)</label>' +
       '<button class="enlace" id="abrirPlantilla">Enviar plantilla</button></div>' +
@@ -618,6 +624,7 @@
     $('texto').value = borrador; $('comoNota').checked = esNota; ajustarCaja();
     ms = $('msgs'); if (bajar || alFinal) ms.scrollTop = ms.scrollHeight;
     $('volver').onclick = function(){ sel = null; $('app').classList.remove('abierto'); pintarLista(); };
+    $('msgs').onclick = function(e){ var b = e.target.closest('.corregir'); if (!b) return; var m = c.msgs.find(function(x){ return x.id === b.getAttribute('data-id'); }); if (m) corregir(c, m); };
     $('renombrar').onclick = renombrar;
     if ($('tomar')) $('tomar').onclick = function(){ cambiarModo('persona'); };
     if ($('devolver')) $('devolver').onclick = function(){ cambiarModo('bot'); };
@@ -793,10 +800,67 @@
       }).catch(function(e){ if (!$('conf').hidden) $('conf').innerHTML = '<p class="error">' + esc(e.message) + '</p>'; });
   }
   function liga(o){ return o && o.url ? '<a href="' + esc(o.url) + '" target="_blank" rel="noopener">' + esc(o.nombre) + '</a>' : '<span class="estado-f falta">' + esc(o && o.nombre || 'Por definir') + '</span>'; }
+  // ===== Mejoras (homologado con intelligence.greatrevenue.com/gr/portal#mejoras) =====
+  // "Corregir" en un mensaje del bot guarda la correccion en la misma tabla del motor (MOTOR_correcciones, medio
+  // WhatsApp). Se decide en el portal de Great Revenue, pestana Mejoras de mensajes.
+  var TIPOS_CORR = [['tono', 'El tono'], ['dato', 'Un dato equivocado'], ['oferta', 'Lo que se ofrece'], ['destinatarios', 'A quién le llegó'], ['diseno', 'El diseño'], ['persona', 'Debió atenderlo una persona'], ['otro', 'Otra cosa']];
+  var ESTADOS_CORR = { pendiente: 'Pendiente', enviada: 'Enviada a corrección', resuelta: 'Resuelta', rechazada: 'Rechazada' };
+  var corrs = null;
+  function quienSoy(){ try { return localStorage.getItem('gr_wa_quien') || ''; } catch (e) { return ''; } }
+  function corregir(c, m){
+    var op = oporDe(c), lin = lineaDe(c);
+    modal('<h2>Corregir mensaje del bot</h2><p class="tenue" style="margin:0">Llega a la pestaña <b>Mejoras de mensajes</b> del portal de Great Revenue, donde se decide y se corrige el bot.</p>' +
+      '<div class="vista">' + esc(m.texto) + '</div>' +
+      '<label>¿Qué estuvo mal?<select id="cTipo">' + TIPOS_CORR.map(function(t){ return '<option value="' + t[0] + '">' + t[1] + '</option>'; }).join('') + '</select></label>' +
+      '<label>Cómo lo dirías tú<textarea id="cProp" rows="4" style="font:inherit;padding:8px 10px;border:1px solid var(--borde);border-radius:8px"></textarea></label>' +
+      '<label>Comentario<textarea id="cCom" rows="2" style="font:inherit;padding:8px 10px;border:1px solid var(--borde);border-radius:8px"></textarea></label>' +
+      '<label>Tu nombre<input id="cQuien" value="' + esc(quienSoy()) + '" maxlength="80"></label><div class="error" id="cErr"></div>' +
+      '<div class="pieModal"><button class="btn sec" id="cancelar">Cancelar</button><button class="btn" id="cOk">Enviar corrección</button></div>');
+    $('cancelar').onclick = cerrar;
+    $('cOk').onclick = function(){
+      var prop = $('cProp').value.trim(), com = $('cCom').value.trim(), quien = $('cQuien').value.trim();
+      if (!prop && !com) { $('cErr').textContent = 'Escribe cómo lo dirías tú o un comentario.'; return; }
+      try { localStorage.setItem('gr_wa_quien', quien); } catch (e) {}
+      this.disabled = true;
+      postJson('gr-portal-correccion', { quien: quien, producto: lin.nombre || '', empresa: op ? empresaDe(op.o, op.c) : (c.nombre || ''), referencia: c.wa_id + ' · ' + m.id, texto_motor: m.texto, tipo: $('cTipo').value, propuesta: prop, comentario: com })
+        .then(function(){ cerrar(); corrs = null; toast('Corrección enviada a Mejoras'); })
+        .catch(function(e){ $('cErr').textContent = e.message; $('cOk').disabled = false; });
+    };
+  }
+  function cargarCorrs(){
+    return postJson('gr-portal-correcciones', {}).then(function(j){ corrs = j.correcciones || []; }).catch(function(e){ corrs = { error: e.message }; })
+      .finally(function(){ if (!$('conf').hidden && confSub === 'mejoras') pintarConf(); });
+  }
+  function confMejoras(){
+    var liga = '<a href="https://intelligence.greatrevenue.com/gr/portal#mejoras" target="_blank" rel="noopener">intelligence.greatrevenue.com/gr/portal → Mejoras de mensajes</a>';
+    var cab = '<p class="nota">Igual que en el portal de Great Revenue: se reporta un mensaje del bot (botón <b>Corregir</b> en cada mensaje del chat), se decide y se corrige. Se decide en ' + liga + '. Aquí ves las del WhatsApp y en qué van.</p>';
+    if (!corrs) return tarjeta(5, 'Mejoras de mensajes', cab + '<p class="tenue">Cargando…</p>');
+    if (corrs.error) return tarjeta(5, 'Mejoras de mensajes', cab + '<p class="error">' + esc(corrs.error) + '</p>');
+    var tipo = {}; TIPOS_CORR.forEach(function(t){ tipo[t[0]] = t[1]; });
+    return tarjeta(5, 'Mejoras de mensajes', cab + (corrs.length ? corrs.map(function(x){
+      return '<div class="tarjeta"><b>' + esc(x.empresa || 'Conversación') + '</b> <span class="estado-apr ' + (x.estado === 'resuelta' ? 'procesada' : x.estado === 'rechazada' ? 'descartada' : 'en_cola') + '">' + esc(ESTADOS_CORR[x.estado] || x.estado) + '</span>' +
+        '<div class="tenue">' + esc(new Date(x.ts).toLocaleString('es-MX', { timeZone: TZ, dateStyle: 'medium', timeStyle: 'short' })) + ' · ' + esc(x.quien) + ' · ' + esc(x.producto) + ' · ' + esc(tipo[x.tipo] || x.tipo) + '</div>' +
+        '<div class="plantilla-texto">' + esc(x.texto_motor) + '</div>' + (x.propuesta ? '<div><b>Cómo lo diría:</b> ' + esc(x.propuesta) + '</div>' : '') + (x.comentario ? '<div class="tenue">' + esc(x.comentario) + '</div>' : '') +
+        (x.version_final ? '<div><b>Versión final:</b> ' + esc(x.version_final) + '</div>' : '') + (x.resolucion ? '<div><b>Qué se cambió:</b> ' + esc(x.resolucion) + '</div>' : '') + '</div>';
+    }).join('') : '<p class="tenue">Todavía no hay correcciones del WhatsApp. Usa <b>Corregir</b> en un mensaje del bot.</p>'), '<a class="btn sec" href="https://intelligence.greatrevenue.com/gr/portal#mejoras" target="_blank" rel="noopener" style="text-decoration:none">Decidir en el portal</a>');
+  }
+  // Nombres de reuniones (REA 8.4): asi debe llamarse cada evento para que el aprendizaje sepa de que linea es.
+  function confReuniones(){
+    var d = apr[aprLinea];
+    return tarjeta(6, 'Nombres de reuniones', '<p class="nota">El formato está definido en el REA (§8.4). Con él, cada reunión dice de qué cliente y de qué línea es, y el aprendizaje continuo la ubica sin adivinar. Hoy la mayoría no lo cumple' + (d && d.total ? ' (en ' + esc(aprLinea) + ': ' + d.fuera_de_formato + ' de ' + d.total + ' fuera de formato)' : '') + '. Aplica a las reuniones nuevas; las pasadas no se renombran porque el cambio les llegaría a los invitados.</p>' +
+      '<table class="tabla"><thead><tr><th>Reunión</th><th>Formato</th><th>Ejemplo</th></tr></thead><tbody>' +
+      [['Primera reunión con el cliente', 'Discovery | Cliente & GR / Producto', 'Discovery | Corporación Fabpsa & GR / IT Support'],
+       ['Reuniones siguientes', '<N>da reunión | Cliente & GR / Producto', '2da reunión | Corporación Fabpsa & GR / IT Support'],
+       ['Cliente activo (consultoría)', 'Consultoría | Cliente & GR / Producto', 'Consultoría | Grupo Peña Verde & GR / IT Support'],
+       ['Interna operativa', 'INT | Operativa - Tema', 'INT | Operativa - Pipeline'],
+       ['Interna de revisión', 'INT | Review - Tema', 'INT | Review - Semana 43'],
+       ['Con un partner, sin cliente', 'Tema | GR + Partner', 'Demo IT Support | GR + Roomie IT']].map(function(r){ return '<tr><td>' + esc(r[0]) + '</td><td><code>' + esc(r[1]) + '</code></td><td class="tenue">' + esc(r[2]) + '</td></tr>'; }).join('') + '</tbody></table>');
+  }
+
   // Configuracion con la misma estructura del portal de cada compania (intelligence.greatrevenue.com/gr/portal):
   // sub-pestanas y tarjetas numeradas. Productos, PV, ICP y responsables son los mismos datos de ese portal.
   var confSub = 'productos', aprLinea = 'ITS', apr = {};
-  var SUBS = [['productos', 'Productos'], ['plantillas', 'Plantillas'], ['pendientes', 'Pendientes'], ['aprendizaje', 'Aprendizaje continuo']];
+  var SUBS = [['productos', 'Productos'], ['plantillas', 'Plantillas'], ['pendientes', 'Pendientes'], ['aprendizaje', 'Aprendizaje continuo'], ['mejoras', 'Mejoras de mensajes'], ['reuniones', 'Nombres de reuniones']];
   function tarjeta(n, titulo, cuerpo, extra){ return '<div class="card"><div class="card-h"><h2><span class="n">' + n + '</span>' + esc(titulo) + '</h2>' + (extra || '') + '</div>' + cuerpo + '</div>'; }
   function pintarConf(){
     if (!conf) { $('conf').innerHTML = '<p class="tenue">Cargando configuración…</p>'; return; }
@@ -805,13 +869,26 @@
     if (confSub === 'plantillas') h += confPlantillas();
     if (confSub === 'pendientes') h += confPendientes();
     if (confSub === 'aprendizaje') h += confAprendizaje();
+    if (confSub === 'mejoras') h += confMejoras();
+    if (confSub === 'reuniones') h += confReuniones();
     $('conf').innerHTML = h;
     $('conf').onclick = function(e){
       var b = e.target.closest('button'); if (!b) return;
-      if (b.getAttribute('data-s')) { confSub = b.getAttribute('data-s'); pintarConf(); if (confSub === 'aprendizaje' && !apr[aprLinea]) cargarApr(); return; }
+      if (b.getAttribute('data-s')) { confSub = b.getAttribute('data-s'); pintarConf(); if ((confSub === 'aprendizaje' || confSub === 'reuniones') && !apr[aprLinea]) cargarApr(); if (confSub === 'mejoras' && !corrs) cargarCorrs(); return; }
       if (b.getAttribute('data-tipo') !== null && b.closest('#resumen')) { confTipo = b.getAttribute('data-tipo'); pintarConf(); return; }
-      if (b.getAttribute('data-al')) { aprLinea = b.getAttribute('data-al'); pintarConf(); if (!apr[aprLinea]) cargarApr(); return; }
-      if (b.id === 'aprBuscar') { delete apr[aprLinea]; pintarConf(); cargarApr(); }
+      if (b.getAttribute('data-al')) { aprLinea = b.getAttribute('data-al'); aprSel = {}; pintarConf(); if (!apr[aprLinea]) cargarApr(); return; }
+      if (b.id === 'aprBuscar') { buscarNuevo(false); return; }
+      if (b.id === 'aprRecargar') { cargarApr(); return; }
+      if (b.getAttribute('data-av')) { aprVer = b.getAttribute('data-av'); pintarConf(); return; }
+      if (b.getAttribute('data-af') !== null && b.classList.contains('chip') && b.hasAttribute('data-af')) { aprFiltro = b.getAttribute('data-af'); pintarConf(); return; }
+      if (b.id === 'aprCola') { cambiarCola('en_cola'); return; }
+      if (b.id === 'aprDesc') { cambiarCola('descartada'); return; }
+      if (b.id === 'aprAhora') { procesarAhora(); return; }
+    };
+    $('conf').onchange = function(e){
+      var x = e.target; if (!x.classList.contains('aprchk')) return;
+      if (x.checked) aprSel[x.getAttribute('data-e')] = true; else delete aprSel[x.getAttribute('data-e')];
+      pintarConf();
     };
   }
   function confProductos(){
@@ -845,36 +922,88 @@
       '<span class="tenue">' + conf.pendientes.length + ' pendientes</span>');
   }
 
-  // Aprendizaje continuo: por linea, las reuniones con sus oportunidades (abiertas y cerradas), si tienen transcript
-  // y si ya alimentaron el conocimiento. Las recientes pesan mas: la propuesta se va afinando.
+  // Aprendizaje continuo: por linea, las reuniones de sus oportunidades (abiertas y cerradas), guardadas en n8n.
+  // Se leen al instante; "Buscar lo nuevo" revisa la agenda solo desde la ultima busqueda. Las que se eligen pasan a
+  // la cola, Claude saca sus insumos y quedan como "ya aporto". Las recientes pesan mas: la propuesta se va afinando.
   var FRESCURA = { reciente: 'Reciente (90 días)', media: 'Media (3 a 6 meses)', antigua: 'Antigua (más de 6 meses)' };
-  var ESTADO_APR = { procesada: 'Ya aportó', por_procesar: 'Por procesar', sin_transcript: 'Sin transcript' };
+  var ESTADO_APR = { procesada: 'Ya aportó', por_procesar: 'Por procesar', en_cola: 'En cola', sin_transcript: 'Sin transcript', descartada: 'Descartada', error: 'Error' };
+  var TIPO_INS = { dolor: 'Dolores', pregunta: 'Preguntas', objecion: 'Objeciones', frase_cliente: 'Frases del cliente', caso_o_cifra: 'Casos y cifras', oferta: 'Qué se ofreció', siguiente_paso: 'Siguientes pasos', dato_tecnico: 'Datos técnicos', senal_interes: 'Señales de interés' };
+  var aprSel = {}, aprVer = 'reuniones', aprFiltro = '';
+  function postJson(ruta, cuerpo){
+    return fetch(BASE + ruta, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(Object.assign({ k: K }, cuerpo)) })
+      .then(function(r){ return r.text().then(function(t){ var j = null; try { j = JSON.parse(t); } catch(e) {} if (!r.ok || !j || j.ok === false) throw new Error((j && (j.error || j.message)) || 'Error ' + r.status); return j; }); });
+  }
   function cargarApr(){
     var l = aprLinea;
-    return fetch(BASE + 'gr-portal-aprendizaje', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ k: K, linea: l }) })
-      .then(function(r){ return r.json(); })
-      .then(function(j){ if (!j.ok) throw new Error(j.message || 'No se pudo leer'); apr[l] = j; })
+    return postJson('gr-portal-aprendizaje', { linea: l })
+      .then(function(j){ apr[l] = j; if (!j.ultima_busqueda && !j.total) return buscarNuevo(true); })
       .catch(function(e){ apr[l] = { error: e.message }; })
       .finally(function(){ if (!$('conf').hidden && confSub === 'aprendizaje') pintarConf(); });
+  }
+  function buscarNuevo(primera){
+    var l = aprLinea; apr[l] = Object.assign({}, apr[l] || {}, { buscando: true }); pintarConf();
+    return postJson('gr-portal-aprendizaje-actualizar', { linea: l })
+      .then(function(j){ toast((primera ? 'Primera búsqueda: ' : 'Búsqueda: ') + j.nuevas + ' reuniones nuevas, ' + j.transcripts_nuevos + ' con transcript nuevo'); return new Promise(function(ok){ setTimeout(ok, 4000); }); })
+      .then(function(){ return postJson('gr-portal-aprendizaje', { linea: l }).then(function(j){ apr[l] = j; }); })
+      .catch(function(e){ toast(e.message); if (apr[l]) apr[l].buscando = false; })
+      .finally(function(){ if (!$('conf').hidden && confSub === 'aprendizaje') pintarConf(); });
+  }
+  function cambiarCola(estado){
+    var ids = Object.keys(aprSel); if (!ids.length) return;
+    postJson('gr-portal-aprendizaje-cola', { event_ids: ids, estado: estado }).then(function(j){
+      toast(estado === 'en_cola' ? j.cambiadas + ' en cola. Claude las procesa en la siguiente hora, o pulsa "Procesar ahora".' : j.cambiadas + ' marcadas como ' + (ESTADO_APR[estado] || estado).toLowerCase());
+      aprSel = {}; return postJson('gr-portal-aprendizaje', { linea: aprLinea }).then(function(x){ apr[aprLinea] = x; pintarConf(); });
+    }).catch(function(e){ toast(e.message); });
+  }
+  function procesarAhora(){
+    postJson('gr-portal-aprendizaje-procesar', {}).then(function(){ toast('Procesando hasta 3 reuniones de la cola. Tarda un par de minutos; luego pulsa ↻.'); }).catch(function(e){ toast(e.message); });
+  }
+  function personaFicha(c){
+    return '<div class="persona"><b>' + esc(c.nombre) + '</b>' + (c.linkedin ? ' <a href="' + esc(c.linkedin) + '" target="_blank" rel="noopener" class="li" title="LinkedIn">in</a>' : '') +
+      '<div class="tenue">' + esc([c.puesto, c.empresa].filter(Boolean).join(' · ')) + '</div></div>';
   }
   function confAprendizaje(){
     var lineas = (conf.productos || []).map(function(p){ return [p.codigo, p.nombre.replace(/ \(.*\)$/, '')]; });
     var d = apr[aprLinea];
-    var cab = '<p class="nota">Para cada línea se buscan las reuniones con los contactos de sus oportunidades (abiertas y cerradas) en la agenda de Mike. Se ve cuáles tienen transcript (notas de Gemini) y cuáles ya alimentaron el conocimiento de la ficha. <b>Primero se procesan las recientes:</b> la propuesta se va afinando y lo viejo puede estar desactualizado. Lo antiguo sirve sobre todo para objeciones y lenguaje del cliente.</p>' +
+    var cab = '<p class="nota">Las reuniones de las oportunidades de cada línea (abiertas y cerradas) se guardan; "Buscar lo nuevo" revisa la agenda solo desde la última búsqueda. <b>Elige las que deben aportar al conocimiento</b> y ponlas en cola: Claude lee el transcript, saca preguntas, objeciones, dolores y lenguaje del cliente, y los compara con la ficha del bot. <b>Primero las recientes:</b> la propuesta se va afinando; lo antiguo sirve sobre todo para objeciones y lenguaje.</p>' +
       '<div class="filters"><span class="flabel">Línea:</span>' + lineas.map(function(x){ return '<button class="chip' + (aprLinea === x[0] ? ' on' : '') + '" data-al="' + esc(x[0]) + '">' + esc(x[1]) + '</button>'; }).join('') + '</div>';
-    if (!d) return tarjeta(4, 'Aprendizaje continuo', cab + '<p class="tenue">Buscando reuniones en la agenda… (unos segundos)</p>');
+    if (!d || (d.buscando && !d.reuniones)) return tarjeta(4, 'Aprendizaje continuo', cab + '<p class="tenue">' + (d && d.buscando ? 'Buscando en la agenda por primera vez (unos segundos)…' : 'Cargando…') + '</p>');
     if (d.error) return tarjeta(4, 'Aprendizaje continuo', cab + '<p class="error">' + esc(d.error) + '</p>');
-    var res = '<div class="apr-res"><div><b>' + d.oportunidades + '</b><span>oportunidades</span></div><div><b>' + d.total + '</b><span>reuniones</span></div>' +
-      '<div class="ok"><b>' + d.procesadas + '</b><span>ya aportaron</span></div><div class="pend"><b>' + d.por_procesar + '</b><span>por procesar</span></div><div><b>' + d.sin_transcript + '</b><span>sin transcript</span></div></div>';
-    var filas = d.reuniones.map(function(r){
-      return '<tr><td>' + esc(r.fecha) + '<div><span class="estado-f fr-' + r.frescura + '">' + esc(FRESCURA[r.frescura]) + '</span></div></td>' +
-        '<td>' + (r.liga ? '<a href="' + esc(r.liga) + '" target="_blank" rel="noopener">' + esc(r.titulo || '(sin título)') + '</a>' : esc(r.titulo)) + '<div class="tenue">' + esc(r.contactos.map(function(c){ return c.nombre + (c.empresa ? ' · ' + c.empresa : ''); }).join('; ')) + '</div></td>' +
-        '<td>' + r.oportunidades.map(function(o){ return '<a href="' + esc(o.url) + '" target="_blank" rel="noopener">' + esc(o.nombre) + '</a><div class="tenue">' + esc(o.etapa) + '</div>'; }).join('') + '</td>' +
-        '<td>' + (r.transcript ? '<a href="' + esc(r.transcript.url) + '" target="_blank" rel="noopener">' + esc(r.transcript.titulo) + '</a>' : '<span class="tenue">No hay</span>') + '</td>' +
-        '<td><span class="estado-apr ' + r.estado + '">' + esc(ESTADO_APR[r.estado] || r.estado) + '</span>' + (r.procesada && r.procesada.nota ? '<div class="tenue">' + esc(r.procesada.nota) + '</div>' : '') + '</td></tr>';
-    }).join('');
-    return tarjeta(4, 'Aprendizaje continuo', cab + res + '<table class="tabla"><thead><tr><th>Fecha</th><th>Reunión y contactos</th><th>Oportunidad</th><th>Transcript</th><th>Conocimiento</th></tr></thead><tbody>' + filas + '</tbody></table>',
-      '<button class="btn sec" id="aprBuscar">↻ Volver a buscar</button>');
+    var ult = d.ultima_busqueda ? new Date(d.ultima_busqueda).toLocaleString('es-MX', { timeZone: TZ, dateStyle: 'medium', timeStyle: 'short' }) : 'nunca';
+    var res = '<div class="apr-res"><div><b>' + d.total + '</b><span>reuniones</span></div>' +
+      '<div class="ok"><b>' + d.procesadas + '</b><span>ya aportaron</span></div><div class="pend"><b>' + (d.por_procesar + d.en_cola) + '</b><span>por procesar' + (d.en_cola ? ' (' + d.en_cola + ' en cola)' : '') + '</span></div>' +
+      '<div><b>' + d.sin_transcript + '</b><span>sin transcript</span></div><div class="mal"><b>' + d.fuera_de_formato + '</b><span>nombre fuera de formato</span></div>' +
+      '<div><b>' + (d.insumos || []).length + '</b><span>insumos</span></div></div>';
+    var acc = '<div class="filters"><button class="chip' + (aprVer === 'reuniones' ? ' on' : '') + '" data-av="reuniones">Reuniones</button><button class="chip' + (aprVer === 'insumos' ? ' on' : '') + '" data-av="insumos">Insumos (' + (d.insumos || []).length + ')</button>' +
+      '<span class="flabel" style="margin-left:10px">Ver:</span>' + [['', 'Todas'], ['por_procesar', 'Por procesar'], ['en_cola', 'En cola'], ['procesada', 'Ya aportaron'], ['sin_transcript', 'Sin transcript'], ['error', 'Error']].map(function(x){ return '<button class="chip' + (aprFiltro === x[0] ? ' on' : '') + '" data-af="' + x[0] + '">' + x[1] + '</button>'; }).join('') +
+      '<span class="tenue" style="margin-left:auto">Última búsqueda: ' + esc(ult) + '</span></div>';
+    var cuerpo;
+    if (aprVer === 'insumos') {
+      var grupos = {}; (d.insumos || []).forEach(function(x){ (grupos[x.tipo] = grupos[x.tipo] || []).push(x); });
+      cuerpo = Object.keys(TIPO_INS).filter(function(t){ return grupos[t]; }).map(function(t){
+        return '<h3 class="apr-h3">' + esc(TIPO_INS[t]) + ' (' + grupos[t].length + ')</h3>' + grupos[t].map(function(x){
+          return '<div class="insumo"><div>' + esc(x.texto) + '</div>' + (x.cita ? '<div class="tenue">“' + esc(x.cita) + '”</div>' : '') +
+            '<div class="kchips"><span class="etq">' + esc(x.fecha) + '</span><span class="etq ' + (x.citable ? 'respondio' : 'sinresp') + '">' + (x.citable ? 'Se puede usar en público' : 'Solo interno') + '</span><span class="etq">' + esc(x.vigencia || '') + '</span>' + (x.aplicado ? '<span class="etq respondio">Ya está en la ficha</span>' : '<span class="etq pendopen">Por llevar a la ficha</span>') + '</div></div>';
+        }).join('');
+      }).join('') || '<p class="tenue">Todavía no hay insumos procesados por Claude en esta línea. Elige reuniones en "Reuniones" y ponlas en cola.</p>';
+    } else {
+      var ls = d.reuniones.filter(function(r){ return !aprFiltro || r.estado === aprFiltro; });
+      var nSel = Object.keys(aprSel).length;
+      cuerpo = '<div class="barra-apr"><b>' + nSel + ' seleccionada' + (nSel === 1 ? '' : 's') + '</b><button class="btn" id="aprCola"' + (nSel ? '' : ' disabled') + '>Poner en cola para aprender</button><button class="btn sec" id="aprDesc"' + (nSel ? '' : ' disabled') + '>Descartar</button><button class="btn sec" id="aprAhora">Procesar ahora (' + d.en_cola + ' en cola)</button></div>' +
+        '<table class="tabla"><thead><tr><th></th><th>Fecha</th><th>Reunión</th><th>Personas</th><th>Oportunidad</th><th>Transcript</th><th>Conocimiento</th></tr></thead><tbody>' +
+        ls.map(function(r){
+          var elegible = r.transcript && (r.estado === 'por_procesar' || r.estado === 'error' || r.estado === 'descartada');
+          return '<tr><td>' + (elegible ? '<input type="checkbox" class="aprchk" data-e="' + esc(r.event_id) + '"' + (aprSel[r.event_id] ? ' checked' : '') + '>' : '') + '</td>' +
+            '<td>' + esc(r.fecha) + '<div><span class="estado-f fr-' + r.frescura + '">' + esc(FRESCURA[r.frescura]) + '</span></div></td>' +
+            '<td>' + (r.liga ? '<a href="' + esc(r.liga) + '" target="_blank" rel="noopener">' + esc(r.titulo || '(sin título)') + '</a>' : esc(r.titulo)) + (r.formato_ok ? '' : '<div><span class="estado-f falta" title="Formato: Discovery | Cliente & GR / Producto">Nombre fuera de formato</span></div>') + '</td>' +
+            '<td>' + r.contactos.map(personaFicha).join('') + '</td>' +
+            '<td>' + r.oportunidades.map(function(o){ return '<a href="' + esc(o.url) + '" target="_blank" rel="noopener">' + esc(o.nombre) + '</a><div class="tenue">' + esc(o.etapa) + '</div>'; }).join('') + '</td>' +
+            '<td>' + (r.transcript ? '<a href="' + esc(r.transcript.url) + '" target="_blank" rel="noopener">' + esc(r.transcript.titulo) + '</a>' : '<span class="tenue">No hay</span>') + '</td>' +
+            '<td><span class="estado-apr ' + r.estado + '">' + esc(ESTADO_APR[r.estado] || r.estado) + '</span>' + (r.insumos ? ' <span class="tenue">' + r.insumos + ' insumos</span>' : '') +
+            (r.resumen ? '<details><summary class="tenue">Resumen</summary><div class="plantilla-texto">' + esc(r.resumen) + '</div></details>' : '') + (r.nota ? '<div class="tenue">' + esc(r.nota) + '</div>' : '') + '</td></tr>';
+        }).join('') + '</tbody></table>';
+    }
+    return tarjeta(4, 'Aprendizaje continuo', cab + res + acc + cuerpo, '<span><button class="btn sec" id="aprBuscar">' + (d.buscando ? 'Buscando…' : 'Buscar lo nuevo en la agenda') + '</button> <button class="btn sec" id="aprRecargar">↻</button></span>');
   }
   $('tabs').onclick = function(e){
     var b = e.target.closest('button'); if (!b) return;
