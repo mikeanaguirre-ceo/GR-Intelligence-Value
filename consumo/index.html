@@ -117,7 +117,7 @@ var PRECIOS = [ // USD por millon de tokens: entrada, salida, cache leido. Escri
   [/sonnet-5/, 2, 10, 0.20], [/sonnet/, 3, 15, 0.30], [/haiku-5/, 0.10, 0.50, 0.01], [/haiku-4/, 1, 5, 0.10], [/haiku/, 0.25, 1.25, 0.03]];
 var REPARTIR = '(repartir por ejecuciones)';
 var D = null, clave = '';
-var est = { tab: 'resumen', periodo: 'mes', desde: '', hasta: '', cliente: '', flujo: '', buscar: '', soloIA: false, soloNoId: false, orden: 'u' };
+var est = { tab: 'resumen', periodo: 'mes', desde: '', hasta: '', cliente: '', flujo: '', buscar: '', soloIA: false, soloNoId: false, soloNuevos: false, orden: 'u' };
 try { var e0 = JSON.parse(localStorage.getItem('gr_consumo_estado') || '{}'); ['tab', 'periodo', 'desde', 'hasta', 'cliente'].forEach(function (k) { if (e0[k]) est[k] = e0[k]; }); } catch (e) {}
 function guardarEstado() { try { localStorage.setItem('gr_consumo_estado', JSON.stringify({ tab: est.tab, periodo: est.periodo, desde: est.desde, hasta: est.hasta, cliente: est.cliente })); } catch (e) {} }
 
@@ -403,10 +403,12 @@ function pAuditoria() {
     if (est.cliente && w.c !== est.cliente) return false;
     if (est.soloIA && !w.cl && !w.ia) return false;
     if (est.soloNoId && w.c !== 'No identificado') return false;
+    if (est.soloNuevos && !(w.cr && w.cr >= dia(D.hoy, -6))) return false;
     return !q || (w.n + ' ' + w.id + ' ' + w.f + ' ' + w.s).toLowerCase().indexOf(q) >= 0;
   });
   var val = function (w) { return est.orden === 'e' ? (ejW[w.id] || 0) : est.orden === 'n' ? 0 : ((porW[w.id] || {}).u || 0); };
-  lista.sort(function (a, b) { return est.orden === 'n' ? a.n.localeCompare(b.n) : (val(b) - val(a)) || (ejW[b.id] || 0) - (ejW[a.id] || 0) || a.n.localeCompare(b.n); });
+  lista.sort(function (a, b) { if (est.orden === 'c') return (b.cr || '').localeCompare(a.cr || ''); return est.orden === 'n' ? a.n.localeCompare(b.n) : (val(b) - val(a)) || (ejW[b.id] || 0) - (ejW[a.id] || 0) || a.n.localeCompare(b.n); });
+  var nuevos = D.wf.filter(function (w) { return !w.ar && w.cr && w.cr >= dia(D.hoy, -6) && (!est.cliente || w.c === est.cliente); }).length;
   var porCli = {}; D.wf.forEach(function (w) { if (!w.ar) { var c = porCli[w.c] = porCli[w.c] || { n: 0, a: 0, cl: 0 }; c.n++; if (w.a) c.a++; if (w.cl) c.cl++; } });
   var porCU = sumar(usoEn(r, true), function (f) { return f.c; }), ejCU = {}, erCU = {}; ejEn(r, true).forEach(function (f) { ejCU[f.c] = (ejCU[f.c] || 0) + f.e; erCU[f.c] = (erCU[f.c] || 0) + f.x; });
   var h = '<div class="card"><h3><span>Resumen ' + (est.cliente ? 'de ' + esc(est.cliente) : 'por cliente') + ay('Cuántos workflows tiene cada cliente, cuántos están activos, cuántos usan Claude, y sus ejecuciones, errores y gasto en el periodo.') + '</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Cliente</th><th class="num">Workflows</th><th class="num" title="Publicados y corriendo">Activos</th><th class="num" title="Tienen al menos un nodo que llama a Claude">Usan Claude</th><th class="num">Ejecuciones n8n</th><th class="num" title="Ejecuciones que terminaron en error o se cayeron">Con error</th><th class="num">Gasto Claude</th></tr>';
@@ -416,23 +418,26 @@ function pAuditoria() {
   h += '<div class="card"><h3><span>Workflows de ' + quien() + ' (' + lista.length + ')</span></h3>' +
     '<div class="filtros"><input type="search" id="fBuscar" placeholder="Buscar por nombre, id o carpeta" value="' + esc(est.buscar) + '" style="min-width:240px" title="Filtra por texto en el nombre, el id o la carpeta">' +
     '<button class="chip' + (est.soloIA ? ' active' : '') + '" id="fIA" title="Solo los workflows que usan Claude u otra IA">Solo con IA</button><button class="chip' + (est.soloNoId ? ' active' : '') + '" id="fNoId" title="Solo los que no tienen cliente; asígnalos con el selector de su fila">Solo no identificados</button>' +
-    '<select id="fOrden" title="Orden de la tabla"><option value="u"' + (est.orden === 'u' ? ' selected' : '') + '>Ordenar por gasto</option><option value="e"' + (est.orden === 'e' ? ' selected' : '') + '>Ordenar por ejecuciones</option><option value="n"' + (est.orden === 'n' ? ' selected' : '') + '>Ordenar por nombre</option></select></div>' +
-    '<div class="tbl-wrap"><table class="tbl"><tr><th>Workflow</th><th title="Cámbialo con el selector: se guarda a mano y reacomoda también el gasto pasado">Cliente</th><th title="Carpeta: viene de la carpeta del cliente en n8n. Nombre: del prefijo (PINTA, CENCO…). A mano: lo cambió alguien aquí. Sin pista: falta asignarlo.">De dónde sale</th><th>Carpeta en n8n</th><th>Estado</th><th title="Qué IA usa y con qué modelo">IA</th><th class="num">Ejecuciones</th><th class="num">Con error</th><th class="num">Gasto Claude</th></tr>';
+    '<button class="chip' + (est.soloNuevos ? ' active' : '') + '" id="fNuevos" title="Solo los workflows creados en los últimos 7 días">Nuevos (7 días)' + (nuevos ? ' · ' + nuevos : '') + '</button>' +
+    '<select id="fOrden" title="Orden de la tabla"><option value="u"' + (est.orden === 'u' ? ' selected' : '') + '>Ordenar por gasto</option><option value="e"' + (est.orden === 'e' ? ' selected' : '') + '>Ordenar por ejecuciones</option><option value="n"' + (est.orden === 'n' ? ' selected' : '') + '>Ordenar por nombre</option><option value="c"' + (est.orden === 'c' ? ' selected' : '') + '>Más nuevos primero</option></select></div>' +
+    '<div class="tbl-wrap"><table class="tbl"><tr><th>Workflow</th><th title="Cámbialo con el selector: se guarda a mano y reacomoda también el gasto pasado">Cliente</th><th title="Carpeta: viene de la carpeta del cliente en n8n. Nombre: del prefijo (PINTA, CENCO, MOTOR…). Sesión: asignado con lo que dicen las sesiones de trabajo. A mano: lo cambió alguien aquí. Sin pista: falta asignarlo.">De dónde sale</th><th>Carpeta en n8n</th><th>Estado</th><th title="Fecha en que se creó el workflow en n8n">Creado</th><th title="Qué IA usa y con qué modelo">IA</th><th class="num">Ejecuciones</th><th class="num">Con error</th><th class="num">Gasto Claude</th></tr>';
   var opciones = D.clientes.slice().sort().map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '<option value="__otro">+ Otro cliente…</option>';
   lista.slice(0, 400).forEach(function (w) { var u = (porW[w.id] || {}).u || 0;
     h += '<tr><td>' + esc(w.n) + '<div class="dim">' + esc(w.id) + '</div></td>' +
       '<td><select class="asignar" data-id="' + w.id + '" title="Cambiar el cliente de este workflow">' + opciones.replace('<option>' + esc(w.c) + '</option>', '<option selected>' + esc(w.c) + '</option>') + '</select></td>' +
-      '<td>' + ({ carpeta: '<span class="tag">carpeta</span>', prefijo: '<span class="tag">nombre</span>', manual: '<span class="tag manual">a mano</span>' }[w.o] || '<span class="tag noid">sin pista</span>') + '</td>' +
+      '<td>' + ({ carpeta: '<span class="tag">carpeta</span>', prefijo: '<span class="tag">nombre</span>', manual: '<span class="tag manual">a mano</span>', sesion: '<span class="tag" title="Asignado con lo que dicen las sesiones de trabajo (p. ej. temporales de Itera en la carpeta 90)">sesión</span>' }[w.o] || '<span class="tag noid">sin pista</span>') + '</td>' +
       '<td class="dim">' + esc(w.f || 'sin carpeta') + (w.s ? ' / ' + esc(w.s) : '') + '</td>' +
       '<td>' + (w.a ? '<span class="tag on">activo</span>' : '<span class="tag">apagado</span>') + '</td>' +
+      '<td class="dim" style="white-space:nowrap">' + (w.cr ? fechaCorta(w.cr) + (w.cr >= dia(D.hoy, -6) ? ' <span class="tag manual" title="Creado en los últimos 7 días">nuevo</span>' : '') : '—') + '</td>' +
       '<td>' + (w.cl ? '<span class="tag ia">Claude' + (w.m ? ' · ' + esc(w.m.replace(/claude-/g, '')) : '') + '</span>' : '') + (w.ia ? ' <span class="tag">' + esc(w.ia) + '</span>' : '') + '</td>' +
       '<td class="num">' + num(ejW[w.id] || 0) + '</td><td class="num">' + (erW[w.id] ? '<span class="sube">' + num(erW[w.id]) + '</span>' : '0') + '</td><td class="num">' + (u ? '<b>' + usd(u) + '</b>' : '<span class="dim">—</span>') + '</td></tr>'; });
-  if (lista.length > 400) h += '<tr><td colspan="9" class="dim">Se muestran 400; usa la búsqueda para ver el resto.</td></tr>';
+  if (lista.length > 400) h += '<tr><td colspan="10" class="dim">Se muestran 400; usa la búsqueda para ver el resto.</td></tr>';
   h += '</table></div><div class="nota">El cliente sale de la carpeta del workflow en n8n; si no está en una carpeta de cliente, del prefijo de su nombre; si no hay pista, queda como <b>No identificado</b>. Al cambiarlo aquí se guarda "a mano", la carga automática ya no lo toca, y también reacomoda el gasto pasado de ese workflow.</div></div>';
   $('panel').innerHTML = h;
   var t; $('fBuscar').oninput = function () { clearTimeout(t); var v = this.value; t = setTimeout(function () { est.buscar = v; pAuditoria(); var i = $('fBuscar'); i.focus(); i.setSelectionRange(v.length, v.length); }, 250); };
   $('fIA').onclick = function () { est.soloIA = !est.soloIA; pAuditoria(); };
   $('fNoId').onclick = function () { est.soloNoId = !est.soloNoId; pAuditoria(); };
+  $('fNuevos').onclick = function () { est.soloNuevos = !est.soloNuevos; pAuditoria(); };
   $('fOrden').onchange = function () { est.orden = this.value; pAuditoria(); };
   Array.prototype.forEach.call(document.querySelectorAll('.asignar'), function (s) { s.onchange = function () {
     var id = s.getAttribute('data-id'), c = s.value, w = WF[id];
