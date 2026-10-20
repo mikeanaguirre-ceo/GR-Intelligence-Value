@@ -476,6 +476,13 @@
         + '<p class="nota" style="margin-top:6px">Con los prefijos de secuencia el motor reconoce cuáles secuencias de Amplemarket son de tu compañía: el nombre de la secuencia empieza con alguno de ellos.</p>'
         + '<p class="vacio">Solo quien administra el portal puede cambiarlo.</p>';
     }
+    // 20oct2026 — Nomenclatura completa de la compania (clave nomenclatura): oportunidades, tareas, notas y campanas.
+    var nom = {}; try { nom = JSON.parse(d.nomenclatura || '{}') || {}; } catch (e) { nom = {}; }
+    var NOM_ETQ = [['oportunidad_prospeccion', 'Oportunidad en prospección'], ['oportunidad_regular', 'Oportunidad (desde Atracción)'], ['oportunidad_pintaando', 'Oportunidad de Pintaando'], ['oportunidad_contenedor', 'Oportunidades contenedor'], ['codigos_producto', 'Códigos de producto'],
+      ['secuencia', 'Campaña de Amplemarket'], ['secuencia_partes', 'Partes de la campaña'], ['secuencia_reglas', 'Reglas de la campaña'], ['secuencia_ejemplos', 'Ejemplos de campaña'], ['senal', 'Señal de Amplemarket'],
+      ['tarea', 'Tarea'], ['tarea_compartida', 'Tarea compartida'], ['tarea_whatsapp_open3', 'Tarea de WhatsApp Open+3'], ['nota_origen', 'Nota de origen'], ['nota_post_reunion', 'Nota post-reunión'], ['nota_operativa', 'Nota operativa'], ['versiones_documento', 'Versiones de documentos'], ['reglas', 'Reglas generales'], ['aprobado', 'Aprobación']];
+    var filasNom = NOM_ETQ.filter(function (x) { return nom[x[0]]; }).map(function (x) { return [x[1], String(nom[x[0]])]; });
+    if (filasNom.length) cuerpo += '<h3 style="margin:18px 0 6px;font-size:15px">Nomenclatura completa</h3><p class="nota" style="margin:0 0 8px">Así se nombran oportunidades, campañas, tareas y notas. Para cambiarla, pídelo abajo y Great Revenue la actualiza.</p>' + dl(filasNom) + P.pedir('nomenclatura', 'Nomenclatura', 'Ej.: agrega el país BR a las campañas');
     return tarjeta(9, 'Cómo se nombran tus oportunidades y secuencias', cuerpo);
   }
   function activarNombres(c) {
