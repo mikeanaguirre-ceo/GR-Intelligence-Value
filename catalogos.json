@@ -241,6 +241,46 @@
       "grupo": "GR"
     },
     {
+      "id": "GENIARH",
+      "label": "GenIA RH",
+      "prefijos": [
+        "GENIARH",
+        "GENIA RH"
+      ],
+      "color": "azul",
+      "grupo": "GR"
+    },
+    {
+      "id": "GENIAVTA",
+      "label": "GenIA Ventas",
+      "prefijos": [
+        "GENIAVTA",
+        "GENIA VTA"
+      ],
+      "color": "azul",
+      "grupo": "GR"
+    },
+    {
+      "id": "GENIACOB",
+      "label": "GenIA Cobranza",
+      "prefijos": [
+        "GENIACOB",
+        "GENIA COB"
+      ],
+      "color": "azul",
+      "grupo": "GR"
+    },
+    {
+      "id": "SYN",
+      "label": "Synapsis",
+      "prefijos": [
+        "SYN",
+        "SYNAPSIS"
+      ],
+      "color": "azul",
+      "grupo": "GR"
+    },
+    {
       "id": "ITS",
       "label": "ITS",
       "prefijos": [
