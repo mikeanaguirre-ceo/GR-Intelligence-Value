@@ -41,7 +41,14 @@
   .tenue{color:var(--tenue);font-size:12px}
   .filtros select{background:transparent;border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:14px;padding:2px 8px;font-size:12px}
   .filtros select option{color:#14201c}
-  .etq.producto{background:#e8eefb;color:#2b4a8f} .etq.respondio{background:#e4f4ea;color:var(--ok)} .etq.sinresp{background:#fdf3e1;color:#9a5300}
+  .etq.producto{background:#e8eefb;color:#2b4a8f} .etq.etapa.prospeccion{background:#fff1d6;color:#8a5200} .etq.etapa.venta{background:#e2f0ff;color:#174f98}
+  .estado-wa{font-size:11.5px;font-weight:650;padding:1px 8px;border-radius:10px;white-space:nowrap}
+  .estado-wa.conversa{background:#e4f4ea;color:var(--ok)} .estado-wa.enviada{background:#efe9fb;color:#5a3fa0} .estado-wa.listo{background:#e2f0ff;color:#174f98}
+  .estado-wa.telefono{background:#fff1d6;color:#8a5200} .estado-wa.falta{background:#fde2e1;color:#a3261f}
+  .celcap{display:flex;gap:4px} .celin{width:130px;font:inherit;font-size:12.5px;padding:4px 6px;border:1px solid var(--borde);border-radius:6px}
+  .celok{padding:4px 10px;font-size:12px}
+  #opor .tabla{display:block;overflow-x:auto} #opor .tabla .etq{white-space:nowrap} #opor td{font-size:12.5px}
+  #opor .resumen select,#opor .resumen input{font:inherit;font-size:12.5px;padding:5px 8px;border:1px solid var(--borde);border-radius:8px} .etq.respondio{background:#e4f4ea;color:var(--ok)} .etq.sinresp{background:#fdf3e1;color:#9a5300}
   .lista{background:var(--panel);border-right:1px solid var(--borde);display:flex;flex-direction:column;min-width:0;min-height:0}
   .cab{background:var(--marca);color:#fff;padding:12px 14px;display:flex;flex-direction:column;gap:10px;flex:0 0 auto}
   .cab .fila{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -136,8 +143,9 @@
 </style>
 </head>
 <body>
-<nav class="tabs" id="tabs"><button data-t="conv" class="on">Conversaciones</button><button data-t="conf" id="t-conf">Configuración</button></nav>
+<nav class="tabs" id="tabs"><button data-t="conv" class="on">Conversaciones</button><button data-t="opor" id="t-opor">Oportunidades</button><button data-t="conf" id="t-conf">Configuración</button></nav>
 <section class="conf" id="conf" hidden></section>
+<section class="conf" id="opor" hidden></section>
 <div class="app" id="app">
   <aside class="lista">
     <div class="cab">
@@ -153,7 +161,8 @@
         <button data-f="ventana">Ventana abierta</button>
         <button data-f="sinresp">Plantilla sin respuesta</button>
         <button data-f="respondio">Respondió a plantilla</button>
-        <select id="f-producto" aria-label="Producto"><option value="">Todos los productos</option></select>
+        <select id="f-linea" aria-label="Línea"><option value="">Todas las líneas</option></select>
+        <select id="f-etapa" aria-label="Etapa"><option value="">Todas las etapas</option></select>
       </div>
     </div>
     <div class="items" id="items"></div>
@@ -176,7 +185,8 @@
   var abrirPlantillaDesde = '';
   var pendiente = null;
   var sel = null, filtro = 'todas', plantillas = {}, ocupado = false, syncTimer = null;
-  var conf = null, confTipo = '', producto = '';
+  var conf = null, confTipo = '', linea = '', etapaF = '';
+  var opor = null, oporF = { fase: '', etapa: '', linea: '', cel: '', pend: false, q: '' };
   var $ = function(id){ return document.getElementById(id); };
 
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -256,6 +266,142 @@
     return { enviadas: p.length, respondio: c.msgs.some(function(m){ return m.dir === 'entrante' && m.ts > p[0].ts; }), ultima: ultima };
   }
   function productoDe(c){ return conf && conf.conv_producto ? (conf.conv_producto[c.wa_id] || '') : ''; }
+  // ===== HubSpot (20 oct): cada conversacion se liga a su oportunidad por los ultimos 10 digitos del telefono. =====
+  var idxTel = {};
+  function diez(t){ return String(t || '').replace(/\D/g, '').slice(-10); }
+  function indexarTel(){
+    idxTel = {};
+    ((opor && opor.oportunidades) || []).forEach(function(o){ o.contactos.forEach(function(ct){
+      [ct.cel10, ct.tel10].forEach(function(t){ if (t && !idxTel[t]) idxTel[t] = { o: o, c: ct }; });
+    }); });
+  }
+  function oporDe(c){ return idxTel[diez(c.wa_id)] || null; }
+  function convDeTel(t){ return t ? datos.convs.find(function(c){ return diez(c.wa_id) === t; }) : null; }
+  // Linea de la conversacion: la de su oportunidad; si no tiene, la del producto que entendio el bot.
+  function lineaDe(c){
+    var op = oporDe(c); if (op) return op.o.linea;
+    var slug = productoDe(c); if (!slug || !conf) return { codigo: '', nombre: '' };
+    var p = (conf.productos || []).find(function(x){ return x.slug === slug; });
+    return p ? { codigo: p.codigo, nombre: p.nombre.replace(/ \(.*\)$/, '') } : { codigo: '', nombre: '' };
+  }
+  function coincideEtapa(op, f){
+    if (f === 'sin') return !op;
+    if (!op) return false;
+    if (f === 'prospeccion' || f === 'venta') return op.o.etapa.fase === f;
+    return op.o.etapa.id === f;
+  }
+  function opcionesEtapa(todas){
+    var et = (opor && opor.etapas) || [];
+    var grupo = function(f, t){ return '<optgroup label="' + t + '"><option value="' + f + '">Toda la ' + t.toLowerCase() + '</option>' +
+      et.filter(function(e){ return e.fase === f; }).map(function(e){ return '<option value="' + esc(e.id) + '">' + esc(e.nombre) + '</option>'; }).join('') + '</optgroup>'; };
+    return '<option value="">' + todas + '</option>' + grupo('prospeccion', 'Prospección') + grupo('venta', 'Venta');
+  }
+  function lineasConocidas(){
+    var m = {};
+    ((conf && conf.productos) || []).forEach(function(p){ m[p.codigo] = p.nombre.replace(/ \(.*\)$/, ''); });
+    ((opor && opor.lineas) || []).forEach(function(l){ if (l.codigo !== 'SIN') m[l.codigo] = l.nombre; });
+    return Object.keys(m).map(function(k){ return { codigo: k, nombre: m[k] }; }).sort(function(a, b){ return a.nombre.localeCompare(b.nombre); });
+  }
+  function pintarSelects(){
+    $('f-linea').innerHTML = '<option value="">Todas las líneas</option>' + lineasConocidas().map(function(l){ return '<option value="' + esc(l.codigo) + '">' + esc(l.nombre) + '</option>'; }).join('');
+    $('f-linea').value = linea;
+    $('f-etapa').innerHTML = opcionesEtapa('Todas las etapas') + '<option value="sin">Sin oportunidad en HubSpot</option>';
+    $('f-etapa').value = etapaF;
+  }
+
+  // Estado de cada contacto frente a WhatsApp.
+  function estadoContacto(ct){
+    var c = convDeTel(ct.cel10) || convDeTel(ct.tel10);
+    if (c) {
+      var pi = plantillaInfo(c);
+      if (c.msgs.some(function(m){ return m.dir === 'entrante'; })) return { k: 'conversa', t: 'Ya conversa por WhatsApp', c: c };
+      if (pi) return { k: 'enviada', t: 'Plantilla enviada, sin respuesta', c: c };
+    }
+    if (ct.cel10) return { k: 'listo', t: 'Tiene celular' };
+    if (ct.tel10) return { k: 'telefono', t: 'Solo teléfono: ¿es celular?' };
+    return { k: 'falta', t: 'Falta celular' };
+  }
+  // Pendiente de Open+3: la oportunidad esta en Senal Detectada (asi nace el Open+3) y nadie le ha escrito por WhatsApp.
+  function pendienteOpen3(o){ return o.etapa.id === '1332596061' && !o.contactos.some(function(ct){ var e = estadoContacto(ct).k; return e === 'conversa' || e === 'enviada'; }); }
+
+  function cargarOpor(){
+    return fetch(BASE + 'gr-portal-oportunidades', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ k: K }) })
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (!j.ok) throw new Error(j.error || j.message || 'No se pudo leer HubSpot');
+        j.oportunidades = j.oportunidades.filter(function(o){ return !/_INTERNO$/i.test(o.nombre); });
+        opor = j; indexarTel(); pintarSelects();
+        var n = j.oportunidades.filter(pendienteOpen3).length;
+        $('t-opor').innerHTML = 'Oportunidades' + (n ? '<span class="num">' + n + '</span>' : '');
+        pintarLista(); if (!$('opor').hidden) pintarOpor();
+      }).catch(function(e){ if (!$('opor').hidden) $('opor').innerHTML = '<p class="error">' + esc(e.message) + '</p>'; });
+  }
+
+  function pintarOpor(){
+    if (!opor) { $('opor').innerHTML = '<p class="tenue">Leyendo oportunidades de HubSpot…</p>'; return; }
+    var f = oporF, q = f.q.trim().toLowerCase();
+    var todas = opor.oportunidades;
+    var ls = todas.filter(function(o){
+      if (f.pend && !pendienteOpen3(o)) return false;
+      if (f.linea && o.linea.codigo !== f.linea) return false;
+      if (f.etapa && !coincideEtapa({ o: o }, f.etapa)) return false;
+      if (f.cel === 'con' && !o.contactos.some(function(ct){ return ct.cel10; })) return false;
+      if (f.cel === 'sin' && o.contactos.some(function(ct){ return ct.cel10; })) return false;
+      if (q && (o.nombre + ' ' + o.dueno + ' ' + o.contactos.map(function(ct){ return ct.nombre + ' ' + ct.empresa; }).join(' ')).toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    });
+    var pend = todas.filter(pendienteOpen3);
+    var pendCel = pend.filter(function(o){ return o.contactos.some(function(ct){ return ct.cel10; }); }).length;
+    var cts = [].concat.apply([], todas.map(function(o){ return o.contactos; }));
+    var h = '<h2>Oportunidades abiertas en HubSpot (' + todas.length + ')</h2>' +
+      '<p class="nota">Salen de HubSpot cada vez que abres esta pestaña. La línea sale del nombre de la oportunidad. Si un contacto no tiene celular, escríbelo aquí: se guarda en HubSpot y le sirve a todo el equipo. No se revela nada en Amplemarket.</p>' +
+      '<div class="resumen"><button id="o-pend" class="' + (f.pend ? 'on' : '') + '">Pendientes de Open+3: ' + pend.length + ' (' + pendCel + ' con celular)</button>' +
+      '<span class="tenue" style="align-self:center">Contactos con celular: ' + cts.filter(function(ct){ return ct.cel10; }).length + ' de ' + cts.length + '</span></div>' +
+      '<div class="resumen">' +
+      '<select id="o-linea"><option value="">Todas las líneas</option>' + opor.lineas.map(function(l){ return '<option value="' + esc(l.codigo) + '">' + esc(l.nombre) + '</option>'; }).join('') + '</select>' +
+      '<select id="o-etapa">' + opcionesEtapa('Todas las etapas') + '</select>' +
+      '<select id="o-cel"><option value="">Con y sin celular</option><option value="con">Con celular</option><option value="sin">Sin celular</option></select>' +
+      '<input id="o-q" placeholder="Buscar empresa, contacto o dueño" value="' + esc(f.q) + '"></div>' +
+      '<p class="tenue">' + ls.length + ' de ' + todas.length + ' oportunidades</p>' +
+      '<table class="tabla"><thead><tr><th>Oportunidad</th><th>Línea</th><th>Etapa</th><th>Dueño</th><th>Contacto</th><th>Celular</th><th>WhatsApp</th></tr></thead><tbody>';
+    ls.forEach(function(o){
+      var cs = o.contactos.length ? o.contactos : [null];
+      cs.forEach(function(ct, i){
+        var e = ct ? estadoContacto(ct) : { k: 'falta', t: 'Sin contacto en HubSpot' };
+        var cel = !ct ? '—' : (ct.celular ? esc(ct.celular) :
+          '<span class="celcap"><input class="celin" data-c="' + esc(ct.id) + '" inputmode="tel" placeholder="Celular con lada" value="' + (ct.tel10 && e.k === 'telefono' ? '' : '') + '"><button class="btn sec celok" data-c="' + esc(ct.id) + '">Guardar</button></span>' +
+          (ct.telefono ? '<div class="tenue">Teléfono: ' + esc(ct.telefono) + ' <button class="enlace usartel" data-c="' + esc(ct.id) + '" data-t="' + esc(ct.telefono) + '">usar como celular</button></div>' : ''));
+        h += '<tr>' + (i === 0 ? '<td rowspan="' + cs.length + '"><a href="' + esc(o.url) + '" target="_blank" rel="noopener">' + esc(o.nombre) + '</a></td><td rowspan="' + cs.length + '">' + esc(o.linea.nombre) + '</td>' +
+          '<td rowspan="' + cs.length + '"><span class="etq etapa ' + o.etapa.fase + '">' + esc(o.etapa.nombre) + '</span>' + (pendienteOpen3(o) ? '<div class="tenue">Pendiente Open+3</div>' : '') + '</td><td rowspan="' + cs.length + '">' + esc(o.dueno) + '</td>' : '') +
+          '<td>' + (ct ? esc(ct.nombre) + (ct.puesto ? '<div class="tenue">' + esc(ct.puesto) + '</div>' : '') : '—') + '</td><td>' + cel + '</td>' +
+          '<td><span class="estado-wa ' + e.k + '">' + esc(e.t) + '</span>' + (e.c ? ' <button class="enlace verconv" data-w="' + esc(e.c.wa_id) + '">ver</button>' : '') + '</td></tr>';
+      });
+    });
+    h += '</tbody></table>';
+    $('opor').innerHTML = h;
+    $('o-linea').value = f.linea; $('o-etapa').value = f.etapa; $('o-cel').value = f.cel;
+    $('o-pend').onclick = function(){ f.pend = !f.pend; pintarOpor(); };
+    $('o-linea').onchange = function(){ f.linea = this.value; pintarOpor(); };
+    $('o-etapa').onchange = function(){ f.etapa = this.value; pintarOpor(); };
+    $('o-cel').onchange = function(){ f.cel = this.value; pintarOpor(); };
+    $('o-q').oninput = function(){ f.q = this.value; var pos = this.selectionStart; pintarOpor(); $('o-q').focus(); $('o-q').setSelectionRange(pos, pos); };
+    $('opor').onclick = function(ev){
+      var b = ev.target.closest('button'); if (!b) return;
+      if (b.classList.contains('celok')) { var inp = document.querySelector('.celin[data-c="' + b.getAttribute('data-c') + '"]'); guardarCel(b.getAttribute('data-c'), inp.value, b); }
+      if (b.classList.contains('usartel')) guardarCel(b.getAttribute('data-c'), b.getAttribute('data-t'), b);
+      if (b.classList.contains('verconv')) { document.querySelector('#tabs [data-t="conv"]').click(); abrir(b.getAttribute('data-w')); }
+    };
+  }
+  function guardarCel(id, tel, btn){
+    if (String(tel || '').replace(/\D/g, '').length < 10) { toast('Escribe el celular completo, con lada'); return; }
+    btn.disabled = true;
+    fetch(BASE + 'gr-portal-telefono', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ k: K, contact_id: id, telefono: tel }) })
+      .then(function(r){ return r.text().then(function(t){ var j = null; try { j = JSON.parse(t); } catch(e) {} if (!r.ok || !j || !j.ok) throw new Error('No se guardó. Revisa que el número lleve lada (10 dígitos si es de México) y que el contacto no tenga ya otro celular en HubSpot.'); return j; }); })
+      .then(function(j){
+        opor.oportunidades.forEach(function(o){ o.contactos.forEach(function(ct){ if (ct.id === id) { ct.celular = j.celular; ct.cel10 = diez(j.celular); } }); });
+        indexarTel(); toast('Celular guardado en HubSpot'); pintarOpor(); pintarLista();
+      }).catch(function(e){ toast(e.message); btn.disabled = false; });
+  }
   function nombreProducto(slug){
     var p = conf && (conf.productos || []).find(function(x){ return x.slug === slug; });
     return p ? p.nombre.replace(/ \(.*\)$/, '') : slug;
@@ -275,7 +421,8 @@
       if (filtro === 'ventana' && !ventana(c).abierta) return false;
       if (filtro === 'sinresp' && !(pi && !pi.respondio)) return false;
       if (filtro === 'respondio' && !(pi && pi.respondio)) return false;
-      if (producto && productoDe(c) !== producto) return false;
+      if (linea && lineaDe(c).codigo !== linea) return false;
+      if (etapaF && !coincideEtapa(oporDe(c), etapaF)) return false;
       if (!q) return true;
       var txt = (c.nombre + ' ' + c.wa_id + ' ' + c.msgs.map(function(m){ return m.texto; }).join(' ')).toLowerCase();
       return txt.indexOf(q) >= 0;
@@ -284,7 +431,7 @@
     if (filtro === 'ventana') ls.sort(function(a, b){ return ventana(a).fin - ventana(b).fin; });
     $('items').innerHTML = ls.map(function(c){
       var ult = c.msgs.filter(function(m){ return m.dir !== 'nota'; }).slice(-1)[0];
-      var v = ventana(c), pi = plantillaInfo(c), prod = productoDe(c);
+      var v = ventana(c), pi = plantillaInfo(c), lin = lineaDe(c), op = oporDe(c);
       var ini = (c.nombre || '#').trim().charAt(0).toUpperCase();
       return '<div class="item' + (c.wa_id === sel ? ' sel' : '') + '" data-w="' + esc(c.wa_id) + '">' +
         '<div class="ava">' + esc(ini) + '</div><div class="cuerpo">' +
@@ -293,7 +440,8 @@
         '<div class="prev">' + esc(ult ? ((ult.dir === 'saliente' ? (ult.autor === 'bot' ? 'Bot: ' : 'Tú: ') : '') + (ult.texto || '(' + ult.tipo + ')')) : '') + '</div>' +
         '<div class="etqs">' + etqAtencion(c) + '<span class="etq ' + c.modo + '">' + (c.modo === 'persona' ? 'Persona' : 'Bot') + '</span>' +
         '<span class="etq ' + (v.abierta ? 'abierta' : 'cerrada') + '">' + (v.abierta ? 'Ventana abierta · quedan ' + horasVentana(c) + ' h' : 'Solo plantilla') + '</span>' +
-        (prod ? '<span class="etq producto">' + esc(nombreProducto(prod)) + '</span>' : '') +
+        (lin.codigo ? '<span class="etq producto">' + esc(lin.nombre) + '</span>' : '') +
+        (op ? '<span class="etq etapa ' + op.o.etapa.fase + '">' + esc(op.o.etapa.nombre) + '</span>' : '') +
         (pi ? '<span class="etq ' + (pi.respondio ? 'respondio' : 'sinresp') + '">' + (pi.respondio ? 'Respondió' : 'Sin respuesta') + '</span>' : '') +
         (c.origen && c.origen.indexOf('anuncio') === 0 ? '<span class="etq anuncio">Anuncio</span>' : '') +
         (variosNumeros() ? '<span class="etq">' + esc(nombreNumero(c.phone_id)) + '</span>' : '') +
@@ -525,10 +673,7 @@
         if (!j.ok) throw new Error(j.error || 'No se pudo leer la configuración');
         conf = j;
         $('t-conf').innerHTML = 'Configuración' + (j.pendientes.length ? '<span class="num">' + j.pendientes.length + '</span>' : '');
-        var usados = {}; Object.keys(j.conv_producto || {}).forEach(function(w){ usados[j.conv_producto[w]] = true; });
-        $('f-producto').innerHTML = '<option value="">Todos los productos</option>' + j.productos.filter(function(p){ return usados[p.slug]; })
-          .map(function(p){ return '<option value="' + esc(p.slug) + '">' + esc(p.nombre.replace(/ \(.*\)$/, '')) + '</option>'; }).join('');
-        $('f-producto').value = producto;
+        pintarSelects();
         pintarLista(); if (!$('conf').hidden) pintarConf();
       }).catch(function(e){ if (!$('conf').hidden) $('conf').innerHTML = '<p class="error">' + esc(e.message) + '</p>'; });
   }
@@ -566,11 +711,13 @@
     var b = e.target.closest('button'); if (!b) return;
     var t = b.getAttribute('data-t');
     document.querySelectorAll('#tabs button').forEach(function(x){ x.classList.toggle('on', x === b); });
-    $('conf').hidden = t !== 'conf'; $('app').hidden = t === 'conf';
+    $('conf').hidden = t !== 'conf'; $('opor').hidden = t !== 'opor'; $('app').hidden = t !== 'conv';
     if (t === 'conf') { pintarConf(); cargarConf(); }
+    if (t === 'opor') { pintarOpor(); cargarOpor(); }
   };
-  $('f-producto').onchange = function(){ producto = this.value; pintarLista(); };
-  $('f-producto').onclick = function(e){ e.stopPropagation(); };
+  $('f-linea').onchange = function(){ linea = this.value; pintarLista(); };
+  $('f-etapa').onchange = function(){ etapaF = this.value; pintarLista(); };
+  $('f-linea').onclick = $('f-etapa').onclick = function(e){ e.stopPropagation(); };
 
   $('actualizar').onclick = actualizar;
   $('nuevo').onclick = function(){ abrirPlantilla(null); };
@@ -591,7 +738,7 @@
     document.body.appendChild(aviso);
   }
   if (!K) { $('estado').textContent = 'Falta la clave en la liga (?k=…)'; $('items').innerHTML = '<div class="vacio">Abre el portal con la liga completa que incluye la clave.</div>'; }
-  else { cargar().then(function(){ if ((datos.numeros || []).some(function(n){ return n.hootsuite; })) actualizar(); }); cargarConf(); }
+  else { cargar().then(function(){ if ((datos.numeros || []).some(function(n){ return n.hootsuite; })) actualizar(); }); cargarConf(); cargarOpor(); }
 })();
 </script>
 </body>
