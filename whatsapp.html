@@ -3,30 +3,41 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Conversaciones Great Revenue</title>
+<title>WhatsApp Great Revenue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
   :root{
-    --marca:#0f3d34; --acento:#1f8a6b; --fondo:#eef0ec; --panel:#fff; --borde:#dfe3de; --texto:#14201c; --tenue:#62706b;
-    --b-cliente:#fff; --b-bot:#e3f1ec; --b-persona:#dcecff; --b-nota:#fff4c7; --b-fallo:#fde4df;
-    --ok:#1d7a45; --alerta:#a35a00; --mal:#b3261e; --azul:#1f6fd1;
+    /* Formato Great Revenue (como portal_comun.css de intelligence.greatrevenue.com): morado de marca, texto oscuro, fondo claro, Poppins. */
+    --marca:#111827; --acento:#7c3aed; --fondo:#f6f6f4; --panel:#fff; --borde:#e4e4df; --texto:#111827; --tenue:#5f5f5a;
+    --b-cliente:#fff; --b-bot:#f1eafe; --b-persona:#e6f0ff; --b-nota:#fff4c7; --b-fallo:#fde4df;
+    --ok:#2e7d32; --alerta:#a35a00; --mal:#b3261e; --azul:#1f6fd1; --disp:"Poppins","Segoe UI",Arial,sans-serif;
   }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0;overflow:hidden}
-  body{font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--texto);background:var(--fondo)}
+  body{font:15px/1.45 "Segoe UI",-apple-system,BlinkMacSystemFont,Calibri,Arial,sans-serif;color:var(--texto);background:var(--fondo)}
   button{font:inherit}
-  .tabs{height:42px;background:#0b2e27;display:flex;align-items:center;gap:4px;padding:0 10px}
-  .tabs button{background:transparent;border:0;color:#cfe0da;padding:7px 14px;border-radius:16px;font-weight:650;font-size:13px;cursor:pointer}
-  .tabs button.on{background:#fff;color:var(--marca)}
-  .tabs .num{background:#d9463b;color:#fff;border-radius:9px;font-size:10.5px;padding:0 6px;margin-left:5px}
-  .app{display:grid;grid-template-columns:360px 1fr;height:calc(100% - 42px);overflow:hidden}
+  .tabs{height:56px;background:#fff;border-bottom:1px solid var(--borde);display:flex;align-items:stretch;gap:2px;padding:0 14px;overflow-x:auto}
+  .tabs .logo{display:flex;align-items:center;gap:10px;margin-right:18px;flex:0 0 auto}
+  .tabs .logo img{height:30px;display:block} .tabs .logo b{font:700 14px var(--disp);color:var(--marca);white-space:nowrap}
+  .tabs button{background:transparent;border:0;border-bottom:3px solid transparent;color:var(--tenue);padding:0 14px;font:700 14px var(--disp);cursor:pointer;white-space:nowrap}
+  .tabs button.on{color:var(--marca);border-bottom-color:var(--acento)}
+  .tabs .num{background:var(--acento);color:#fff;border-radius:9px;font-size:10.5px;padding:0 6px;margin-left:6px;font-family:inherit}
+  .app{display:grid;grid-template-columns:360px 1fr;height:calc(100% - 56px);overflow:hidden}
   .app[hidden]{display:none}
-  .conf{height:calc(100% - 42px);overflow-y:auto;padding:18px 22px 40px}
-  .conf h2{font-size:16px;margin:22px 0 8px} .conf h2:first-child{margin-top:0}
+  .conf{height:calc(100% - 56px);overflow-y:auto;padding:20px 22px 60px}
+  .conf h2{font:700 15px var(--disp);text-transform:uppercase;letter-spacing:.05em;margin:22px 0 8px} .conf h2:first-child{margin-top:0}
+  .card{background:#fff;border:1px solid var(--borde);border-radius:12px;padding:16px;margin-bottom:16px;min-width:0}
+  .card-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:3px solid var(--acento);padding-bottom:8px;margin-bottom:12px}
+  .card-h h2{margin:0 !important} .card-h .n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--marca);color:#fff;font:700 12px var(--disp);margin-right:8px}
+  .subtabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:2px solid var(--borde);margin-bottom:16px}
+  .subtabs button{background:transparent;border:0;border-bottom:3px solid transparent;margin-bottom:-2px;padding:10px 14px;font:700 14px var(--disp);color:var(--tenue);cursor:pointer}
+  .subtabs button.on{color:var(--marca);border-bottom-color:var(--acento)}
   .conf .nota{font-size:12.5px;color:var(--tenue);margin:0 0 10px}
   .conf .tarjeta{background:#fff;border:1px solid var(--borde);border-radius:10px;padding:12px 14px;margin-bottom:10px}
   .resumen{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
   .resumen button{border:1px solid var(--borde);background:#fff;border-radius:16px;padding:5px 12px;font-size:12.5px;cursor:pointer}
-  .resumen button.on{background:var(--marca);color:#fff;border-color:var(--marca)}
+  .resumen button.on{background:var(--acento);color:#fff;border-color:var(--acento)}
   .tabla{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid var(--borde);border-radius:10px;overflow:hidden}
   .tabla th{text-align:left;font-size:11.5px;color:var(--tenue);font-weight:650;padding:8px 10px;border-bottom:1px solid var(--borde);background:#f7f8f6}
   .tabla td{padding:8px 10px;border-bottom:1px solid var(--borde);vertical-align:top}
@@ -43,8 +54,37 @@
   .filtros select option{color:#14201c}
   .etq.producto{background:#e8eefb;color:#2b4a8f} .etq.etapa.prospeccion{background:#fff1d6;color:#8a5200} .etq.etapa.venta{background:#e2f0ff;color:#174f98}
   .estado-wa{font-size:11.5px;font-weight:650;padding:1px 8px;border-radius:10px;white-space:nowrap}
-  .estado-wa.conversa{background:#e4f4ea;color:var(--ok)} .estado-wa.enviada{background:#efe9fb;color:#5a3fa0} .estado-wa.listo{background:#e2f0ff;color:#174f98}
+  .estado-wa.conversa{background:#e4f4ea;color:var(--ok)} .estado-wa.enviada{background:#efe9fb;color:#5a3fa0} .estado-wa.listo{background:#f1eafe;color:#5b21b6}
   .estado-wa.telefono{background:#fff1d6;color:#8a5200} .estado-wa.falta{background:#fde2e1;color:#a3261f}
+  .filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}
+  .flabel{font-size:12px;color:var(--tenue);font-weight:650;min-width:58px}
+  .chip{border:1px solid var(--borde);background:#fff;color:var(--marca);border-radius:16px;padding:5px 12px;font-size:12.5px;cursor:pointer}
+  .chip.on{background:var(--acento);border-color:var(--acento);color:#fff} .chip.pend{border-color:var(--acento)}
+  #o-q{flex:1;min-width:0;max-width:420px;font:inherit;font-size:13px;padding:8px 12px;border:1px solid var(--borde);border-radius:9px}
+  .kanban{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,1fr);gap:10px;overflow-x:auto;padding-bottom:10px}
+  .kcol{background:#fff;border:1px solid var(--borde);border-radius:10px;display:flex;flex-direction:column;min-width:230px}
+  .kcol-h{padding:10px 12px;border-bottom:1px solid var(--borde);border-top:3px solid var(--acento);border-radius:10px 10px 0 0}
+  .kcol.venta .kcol-h{border-top-color:var(--azul)}
+  .kcol-t{font:700 12px var(--disp);text-transform:uppercase;letter-spacing:.04em} .kcol-n{font-size:11px;color:var(--tenue);margin-top:2px}
+  .kcol-b{padding:8px;display:flex;flex-direction:column;gap:8px;max-height:70vh;overflow-y:auto}
+  .kvacio{color:var(--tenue);text-align:center;padding:10px}
+  .kcard{border:1px solid var(--borde);border-radius:8px;padding:9px 10px;background:#fff;display:flex;flex-direction:column;gap:5px}
+  .kcard.pend{border-left:3px solid var(--acento)}
+  .kcard-n{font-weight:700;font-size:13.5px} .kcard-s{font-size:11px;color:var(--azul);text-decoration:none;word-break:break-all}
+  .kchips{display:flex;gap:4px;flex-wrap:wrap} .etq.pendopen{background:#f1eafe;color:#5b21b6;font-weight:600}
+  .kct{border-top:1px solid var(--borde);padding-top:6px;font-size:12px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+  .kcel{font-size:12.5px} .kct .celcap{width:100%} .kct .celin{flex:1;min-width:0;width:auto} .kct .celok{flex:0 0 auto} .kchk{display:flex;gap:6px;align-items:center;cursor:pointer;color:var(--marca)}
+  .barra-env{position:sticky;bottom:0;background:#fff;border:1px solid var(--acento);border-radius:12px;padding:10px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;box-shadow:0 4px 14px rgba(0,0,0,.12);margin-top:10px}
+  .barra-env[hidden]{display:none}
+  .envlista{display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow-y:auto} .envfila{border:1px solid var(--borde);border-radius:8px;padding:8px 10px;font-size:13px}
+  .envfila.mal{background:#fdf3f2}
+  .apr-res{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 14px}
+  .apr-res div{background:#faf9fd;border:1px solid var(--borde);border-radius:10px;padding:8px 14px;display:flex;flex-direction:column;min-width:110px}
+  .apr-res b{font:900 22px var(--disp)} .apr-res span{font-size:12px;color:var(--tenue)} .apr-res .ok b{color:var(--ok)} .apr-res .pend b{color:var(--acento)}
+  .estado-f.fr-reciente{background:#e4f4ea;color:var(--ok)} .estado-f.fr-media{background:#fff1d6;color:#8a5200} .estado-f.fr-antigua{background:#eceaea;color:#555}
+  .estado-apr{font-size:11.5px;font-weight:650;padding:1px 8px;border-radius:10px;white-space:nowrap}
+  .estado-apr.procesada{background:#e4f4ea;color:var(--ok)} .estado-apr.por_procesar{background:#f1eafe;color:#5b21b6} .estado-apr.sin_transcript{background:#eceaea;color:#555}
+  #conf .tabla{display:block;overflow-x:auto}
   .celcap{display:flex;gap:4px} .celin{width:130px;font:inherit;font-size:12.5px;padding:4px 6px;border:1px solid var(--borde);border-radius:6px}
   .celok{padding:4px 10px;font-size:12px}
   #opor .tabla{display:block;overflow-x:auto} #opor .tabla .etq{white-space:nowrap} #opor td{font-size:12.5px}
@@ -52,7 +92,7 @@
   .lista{background:var(--panel);border-right:1px solid var(--borde);display:flex;flex-direction:column;min-width:0;min-height:0}
   .cab{background:var(--marca);color:#fff;padding:12px 14px;display:flex;flex-direction:column;gap:10px;flex:0 0 auto}
   .cab .fila{display:flex;justify-content:space-between;align-items:center;gap:8px}
-  .cab h1{font-size:15px;margin:0;font-weight:650;letter-spacing:.2px}
+  .cab h1{font:700 14px var(--disp);margin:0;letter-spacing:.02em;text-transform:uppercase}
   .cab .estado{font-size:11px;opacity:.8}
   .cab .botones{display:flex;gap:8px}
   .cab .botones button{flex:1;border:0;border-radius:18px;padding:9px 12px;font-weight:650;cursor:pointer}
@@ -64,8 +104,8 @@
   .items{overflow-y:auto;flex:1;min-height:0;overscroll-behavior:contain}
   .vacio{padding:24px 16px;color:var(--tenue);font-size:14px}
   .item{padding:10px 14px;border-bottom:1px solid var(--borde);cursor:pointer;display:flex;gap:10px}
-  .item:hover{background:#f6f7f5} .item.sel{background:#eaf1ee}
-  .ava{width:38px;height:38px;border-radius:50%;background:#dbe5e1;color:#34504a;display:flex;align-items:center;justify-content:center;font-weight:650;flex:0 0 auto}
+  .item:hover{background:#faf9fd} .item.sel{background:#f1eafe}
+  .ava{width:38px;height:38px;border-radius:50%;background:#ece4fb;color:#5b21b6;display:flex;align-items:center;justify-content:center;font-weight:650;flex:0 0 auto}
   .item .cuerpo{min-width:0;flex:1;display:flex;flex-direction:column;gap:2px}
   .arriba{display:flex;justify-content:space-between;gap:6px}
   .nom{font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -74,7 +114,7 @@
   .prev{font-size:13px;color:var(--tenue);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .etqs{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
   .etq{font-size:10px;padding:1px 7px;border-radius:10px;background:#eef1ef;color:#3b4a45}
-  .etq.bot{background:#e3f1ec;color:#155a45} .etq.persona{background:#dcecff;color:#174f98}
+  .etq.bot{background:#f1eafe;color:#5b21b6} .etq.persona{background:#dcecff;color:#174f98}
   .etq.abierta{background:#e4f4ea;color:var(--ok)} .etq.cerrada{background:#f3eee2;color:var(--alerta)}
   .etq.anuncio{background:#efe9fb;color:#5a3fa0}
   .etq.atender{background:#fde2e1;color:#a3261f;font-weight:600} .etq.espera{background:#ffeccc;color:#9a5300;font-weight:600}
@@ -92,7 +132,7 @@
   .btn.tomar{background:var(--azul)}
   .btn:disabled{opacity:.5;cursor:default}
   .aviso{padding:8px 16px;font-size:13px;flex:0 0 auto}
-  .aviso.persona{background:#e8f1ff;color:#174f98} .aviso.bot{background:#e8f4ef;color:#155a45}
+  .aviso.persona{background:#e8f1ff;color:#174f98} .aviso.bot{background:#f4effe;color:#5b21b6}
   .aviso.cerrada{background:#fdf3e1;color:#7a4b00}
   .msgs{flex:1;min-height:0;overflow-y:auto;padding:18px 7%;display:flex;flex-direction:column;gap:6px;overscroll-behavior:contain}
   .dia{align-self:center;font-size:11px;color:var(--tenue);background:#fff;border-radius:8px;padding:2px 10px;margin:8px 0}
@@ -126,7 +166,7 @@
   .vista{background:#f5f6f3;border-radius:8px;padding:10px;font-size:13.5px;white-space:pre-wrap}
   .pieModal{display:flex;justify-content:flex-end;gap:8px}
   .error{color:var(--mal);font-size:13px}
-  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#14201c;color:#fff;padding:9px 16px;border-radius:20px;font-size:13px;z-index:9}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 16px;border-radius:20px;font-size:13px;z-index:9}
   .volver{display:none}
   .mudanza{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:8;background:#7a4b00;color:#fff;padding:10px 40px 10px 16px;border-radius:12px;font-size:13.5px;max-width:92vw;box-shadow:0 4px 14px rgba(0,0,0,.25)}
   .mudanza a{color:#ffe7b3;font-weight:650} .mudanza button{position:absolute;right:8px;top:6px;border:0;background:none;color:#fff;font-size:18px;cursor:pointer}
@@ -143,13 +183,13 @@
 </style>
 </head>
 <body>
-<nav class="tabs" id="tabs"><button data-t="conv" class="on">Conversaciones</button><button data-t="opor" id="t-opor">Oportunidades</button><button data-t="conf" id="t-conf">Configuración</button></nav>
+<nav class="tabs" id="tabs"><span class="logo"><img src="https://intelligence.greatrevenue.com/logos/gr.png" alt="Great Revenue"><b>WhatsApp</b></span><button data-t="conv" class="on">Conversaciones</button><button data-t="opor" id="t-opor">Oportunidades</button><button data-t="conf" id="t-conf">Configuración</button></nav>
 <section class="conf" id="conf" hidden></section>
 <section class="conf" id="opor" hidden></section>
 <div class="app" id="app">
   <aside class="lista">
     <div class="cab">
-      <div class="fila"><h1>Conversaciones Great Revenue</h1><span class="estado" id="estado">Cargando…</span></div>
+      <div class="fila"><h1>Conversaciones</h1><span class="estado" id="estado">Cargando…</span></div>
       <div class="botones"><button class="b-act" id="actualizar">↻ Actualizar</button><button class="b-nuevo" id="nuevo">+ Nuevo contacto</button></div>
       <input class="buscar" id="buscar" placeholder="Buscar nombre, número o texto" autocomplete="off">
       <div class="filtros" id="filtros">
@@ -186,7 +226,7 @@
   var pendiente = null;
   var sel = null, filtro = 'todas', plantillas = {}, ocupado = false, syncTimer = null;
   var conf = null, confTipo = '', linea = '', etapaF = '';
-  var opor = null, oporF = { fase: '', etapa: '', linea: '', cel: '', pend: false, q: '' };
+  var opor = null, oporF = { fase: '', linea: '', dueno: '', cel: '', pend: false, q: '' };
   var $ = function(id){ return document.getElementById(id); };
 
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -272,7 +312,7 @@
   function indexarTel(){
     idxTel = {};
     ((opor && opor.oportunidades) || []).forEach(function(o){ o.contactos.forEach(function(ct){
-      [ct.cel10, ct.tel10].forEach(function(t){ if (t && !idxTel[t]) idxTel[t] = { o: o, c: ct }; });
+      [ct.c10 || ct.cel10, ct.tel10].forEach(function(t){ if (t && !idxTel[t]) idxTel[t] = { o: o, c: ct }; });
     }); });
   }
   function oporDe(c){ return idxTel[diez(c.wa_id)] || null; }
@@ -309,20 +349,31 @@
     $('f-etapa').value = etapaF;
   }
 
-  // Estado de cada contacto frente a WhatsApp.
+  // Estado de cada contacto frente a WhatsApp. El numero es uno solo: el celular (es WhatsApp); si HubSpot solo
+  // tiene "telefono", se toma ese, como en el tablero de Great Revenue.
   function estadoContacto(ct){
-    var c = convDeTel(ct.cel10) || convDeTel(ct.tel10);
+    var c = convDeTel(ct.c10);
     if (c) {
-      var pi = plantillaInfo(c);
-      if (c.msgs.some(function(m){ return m.dir === 'entrante'; })) return { k: 'conversa', t: 'Ya conversa por WhatsApp', c: c };
-      if (pi) return { k: 'enviada', t: 'Plantilla enviada, sin respuesta', c: c };
+      if (c.msgs.some(function(m){ return m.dir === 'entrante'; })) return { k: 'conversa', t: 'Ya conversa', c: c };
+      if (plantillaInfo(c)) return { k: 'enviada', t: 'Plantilla enviada', c: c };
     }
-    if (ct.cel10) return { k: 'listo', t: 'Tiene celular' };
-    if (ct.tel10) return { k: 'telefono', t: 'Solo teléfono: ¿es celular?' };
+    if (ct.c10) return { k: 'listo', t: 'Listo para WhatsApp' };
     return { k: 'falta', t: 'Falta celular' };
   }
   // Pendiente de Open+3: la oportunidad esta en Senal Detectada (asi nace el Open+3) y nadie le ha escrito por WhatsApp.
   function pendienteOpen3(o){ return o.etapa.id === '1332596061' && !o.contactos.some(function(ct){ var e = estadoContacto(ct).k; return e === 'conversa' || e === 'enviada'; }); }
+  // Plantilla Open+3 vigente de cada linea (codigo del catalogo -> sufijo de gr_open3_*_v2).
+  var SUFIJO = { TW: 'tw', HS: 'hs', AM: 'am', AEO: 'aeo', GenIA: 'genia', GENIARH: 'rh', GENIAVTA: 'vta', GENIACOB: 'cob', SYN: 'syn', ITS: 'its', LT: 'lt', BD: 'bd', '360': '360', WB: 'wb' };
+  var elegidos = {};   // contact_id -> { o, ct }
+
+  function empresaDe(o, ct){
+    if (ct && ct.empresa) return ct.empresa;
+    var t = String(o.nombre || '').replace(/^P_/i, '').split('_');
+    return (t[1] || '').replace(/([a-z])([A-Z])/g, '$1 $2');
+  }
+  function chips(k, opciones, actual){
+    return opciones.map(function(op){ return '<button class="chip' + (String(actual) === String(op[0]) ? ' on' : '') + '" data-k="' + k + '" data-v="' + esc(op[0]) + '">' + esc(op[1]) + '</button>'; }).join('');
+  }
 
   function cargarOpor(){
     return fetch(BASE + 'gr-portal-oportunidades', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ k: K }) })
@@ -330,6 +381,7 @@
       .then(function(j){
         if (!j.ok) throw new Error(j.error || j.message || 'No se pudo leer HubSpot');
         j.oportunidades = j.oportunidades.filter(function(o){ return !/_INTERNO$/i.test(o.nombre); });
+        j.oportunidades.forEach(function(o){ o.contactos.forEach(function(ct){ ct.cel = ct.celular || ct.telefono || ''; ct.c10 = diez(ct.cel); }); });
         opor = j; indexarTel(); pintarSelects();
         var n = j.oportunidades.filter(pendienteOpen3).length;
         $('t-opor').innerHTML = 'Oportunidades' + (n ? '<span class="num">' + n + '</span>' : '');
@@ -337,59 +389,77 @@
       }).catch(function(e){ if (!$('opor').hidden) $('opor').innerHTML = '<p class="error">' + esc(e.message) + '</p>'; });
   }
 
+  // Oportunidades con el formato del tablero de Great Revenue: filtros en chips y una columna por etapa.
   function pintarOpor(){
     if (!opor) { $('opor').innerHTML = '<p class="tenue">Leyendo oportunidades de HubSpot…</p>'; return; }
     var f = oporF, q = f.q.trim().toLowerCase();
     var todas = opor.oportunidades;
-    var ls = todas.filter(function(o){
+    var pasa = function(o){
       if (f.pend && !pendienteOpen3(o)) return false;
+      if (f.fase && o.etapa.fase !== f.fase) return false;
       if (f.linea && o.linea.codigo !== f.linea) return false;
-      if (f.etapa && !coincideEtapa({ o: o }, f.etapa)) return false;
-      if (f.cel === 'con' && !o.contactos.some(function(ct){ return ct.cel10; })) return false;
-      if (f.cel === 'sin' && o.contactos.some(function(ct){ return ct.cel10; })) return false;
+      if (f.dueno && o.dueno !== f.dueno) return false;
+      if (f.cel === 'con' && !o.contactos.some(function(ct){ return ct.c10; })) return false;
+      if (f.cel === 'sin' && o.contactos.some(function(ct){ return ct.c10; })) return false;
       if (q && (o.nombre + ' ' + o.dueno + ' ' + o.contactos.map(function(ct){ return ct.nombre + ' ' + ct.empresa; }).join(' ')).toLowerCase().indexOf(q) < 0) return false;
       return true;
-    });
+    };
+    var ls = todas.filter(pasa);
     var pend = todas.filter(pendienteOpen3);
-    var pendCel = pend.filter(function(o){ return o.contactos.some(function(ct){ return ct.cel10; }); }).length;
     var cts = [].concat.apply([], todas.map(function(o){ return o.contactos; }));
-    var h = '<h2>Oportunidades abiertas en HubSpot (' + todas.length + ')</h2>' +
-      '<p class="nota">Salen de HubSpot cada vez que abres esta pestaña. La línea sale del nombre de la oportunidad. Si un contacto no tiene celular, escríbelo aquí: se guarda en HubSpot y le sirve a todo el equipo. No se revela nada en Amplemarket.</p>' +
-      '<div class="resumen"><button id="o-pend" class="' + (f.pend ? 'on' : '') + '">Pendientes de Open+3: ' + pend.length + ' (' + pendCel + ' con celular)</button>' +
-      '<span class="tenue" style="align-self:center">Contactos con celular: ' + cts.filter(function(ct){ return ct.cel10; }).length + ' de ' + cts.length + '</span></div>' +
-      '<div class="resumen">' +
-      '<select id="o-linea"><option value="">Todas las líneas</option>' + opor.lineas.map(function(l){ return '<option value="' + esc(l.codigo) + '">' + esc(l.nombre) + '</option>'; }).join('') + '</select>' +
-      '<select id="o-etapa">' + opcionesEtapa('Todas las etapas') + '</select>' +
-      '<select id="o-cel"><option value="">Con y sin celular</option><option value="con">Con celular</option><option value="sin">Sin celular</option></select>' +
-      '<input id="o-q" placeholder="Buscar empresa, contacto o dueño" value="' + esc(f.q) + '"></div>' +
-      '<p class="tenue">' + ls.length + ' de ' + todas.length + ' oportunidades</p>' +
-      '<table class="tabla"><thead><tr><th>Oportunidad</th><th>Línea</th><th>Etapa</th><th>Dueño</th><th>Contacto</th><th>Celular</th><th>WhatsApp</th></tr></thead><tbody>';
-    ls.forEach(function(o){
-      var cs = o.contactos.length ? o.contactos : [null];
-      cs.forEach(function(ct, i){
-        var e = ct ? estadoContacto(ct) : { k: 'falta', t: 'Sin contacto en HubSpot' };
-        var cel = !ct ? '—' : (ct.celular ? esc(ct.celular) :
-          '<span class="celcap"><input class="celin" data-c="' + esc(ct.id) + '" inputmode="tel" placeholder="Celular con lada" value="' + (ct.tel10 && e.k === 'telefono' ? '' : '') + '"><button class="btn sec celok" data-c="' + esc(ct.id) + '">Guardar</button></span>' +
-          (ct.telefono ? '<div class="tenue">Teléfono: ' + esc(ct.telefono) + ' <button class="enlace usartel" data-c="' + esc(ct.id) + '" data-t="' + esc(ct.telefono) + '">usar como celular</button></div>' : ''));
-        h += '<tr>' + (i === 0 ? '<td rowspan="' + cs.length + '"><a href="' + esc(o.url) + '" target="_blank" rel="noopener">' + esc(o.nombre) + '</a></td><td rowspan="' + cs.length + '">' + esc(o.linea.nombre) + '</td>' +
-          '<td rowspan="' + cs.length + '"><span class="etq etapa ' + o.etapa.fase + '">' + esc(o.etapa.nombre) + '</span>' + (pendienteOpen3(o) ? '<div class="tenue">Pendiente Open+3</div>' : '') + '</td><td rowspan="' + cs.length + '">' + esc(o.dueno) + '</td>' : '') +
-          '<td>' + (ct ? esc(ct.nombre) + (ct.puesto ? '<div class="tenue">' + esc(ct.puesto) + '</div>' : '') : '—') + '</td><td>' + cel + '</td>' +
-          '<td><span class="estado-wa ' + e.k + '">' + esc(e.t) + '</span>' + (e.c ? ' <button class="enlace verconv" data-w="' + esc(e.c.wa_id) + '">ver</button>' : '') + '</td></tr>';
+    var duenos = todas.map(function(o){ return o.dueno; }).filter(function(x, i, l){ return x && l.indexOf(x) === i; }).sort();
+    var lineasUsadas = opor.lineas.filter(function(l){ return todas.some(function(o){ return o.linea.codigo === l.codigo; }); });
+    var h = '<div class="card"><div class="card-h"><h2><span class="n">1</span>Oportunidades abiertas en HubSpot</h2><span class="tenue">' + todas.length + ' oportunidades · contactos con celular: ' + cts.filter(function(ct){ return ct.c10; }).length + ' de ' + cts.length + '</span></div>' +
+      '<p class="nota">Salen de HubSpot cada vez que abres esta pestaña. La línea sale del nombre de la oportunidad. El celular es el WhatsApp de la persona: si falta, escríbelo en la tarjeta y se guarda en HubSpot para todo el equipo. No se revela nada en Amplemarket.</p>' +
+      '<div class="filters"><span class="flabel">Open+3:</span><button class="chip pend' + (f.pend ? ' on' : '') + '" data-k="pend" data-v="1">Pendientes de Open+3 · ' + pend.length + ' (' + pend.filter(function(o){ return o.contactos.some(function(ct){ return ct.c10; }); }).length + ' con celular)</button></div>' +
+      '<div class="filters"><span class="flabel">Fase:</span>' + chips('fase', [['', 'Todas'], ['prospeccion', 'Prospección'], ['venta', 'Venta']], f.fase) + '</div>' +
+      '<div class="filters"><span class="flabel">Línea:</span>' + chips('linea', [['', 'Todas']].concat(lineasUsadas.map(function(l){ return [l.codigo, l.nombre]; })), f.linea) + '</div>' +
+      '<div class="filters"><span class="flabel">Dueño:</span>' + chips('dueno', [['', 'Todos']].concat(duenos.map(function(d){ return [d, d]; })), f.dueno) +
+      '<span class="flabel" style="margin-left:10px">Celular:</span>' + chips('cel', [['', 'Todos'], ['con', 'Con celular'], ['sin', 'Sin celular']], f.cel) + '</div>' +
+      '<div class="filters"><input id="o-q" type="search" placeholder="Buscar empresa, oportunidad o contacto" value="' + esc(f.q) + '"><span class="tenue">' + ls.length + ' de ' + todas.length + '</span></div></div>';
+    var etapas = (opor.etapas || []).filter(function(e){ return !f.fase || e.fase === f.fase; });
+    h += '<div class="kanban">';
+    etapas.forEach(function(e){
+      var col = ls.filter(function(o){ return o.etapa.id === e.id; });
+      var monto = col.reduce(function(sm, o){ return sm + (o.monto || 0); }, 0);
+      h += '<div class="kcol ' + e.fase + '"><div class="kcol-h"><div class="kcol-t">' + esc(e.nombre) + '</div><div class="kcol-n">' + col.length + ' · $' + Math.round(monto / 1000) + 'K</div></div><div class="kcol-b">' +
+        (col.length ? '' : '<div class="kvacio">—</div>');
+      col.forEach(function(o){
+        var cs = o.contactos;
+        h += '<div class="kcard' + (pendienteOpen3(o) ? ' pend' : '') + '"><div class="kcard-n">' + esc(empresaDe(o, cs[0]) || o.nombre) + '</div>' +
+          '<a class="kcard-s" href="' + esc(o.url) + '" target="_blank" rel="noopener">' + esc(o.nombre) + '</a>' +
+          '<div class="kchips"><span class="etq producto">' + esc(o.linea.nombre) + '</span><span class="etq">' + esc(o.dueno) + '</span>' + (pendienteOpen3(o) ? '<span class="etq pendopen">Pendiente Open+3</span>' : '') + '</div>';
+        if (!cs.length) h += '<div class="kct tenue">Sin contacto en HubSpot</div>';
+        cs.forEach(function(ct){
+          var est = estadoContacto(ct), puede = est.k === 'listo';
+          h += '<div class="kct"><div><b>' + esc(ct.nombre || 'Sin nombre') + '</b>' + (ct.puesto ? ' · <span class="tenue">' + esc(ct.puesto) + '</span>' : '') + '</div>' +
+            (ct.c10 ? '<div class="kcel">' + (puede ? '<label class="kchk"><input type="checkbox" class="elegir" data-c="' + esc(ct.id) + '"' + (elegidos[ct.id] ? ' checked' : '') + '> ' : '<span>') + '📱 ' + esc(ct.cel) + (puede ? '</label>' : '</span>') + '</div>'
+              : '<div class="celcap"><input class="celin" data-c="' + esc(ct.id) + '" inputmode="tel" placeholder="Celular (WhatsApp)"><button class="btn sec celok" data-c="' + esc(ct.id) + '">Guardar</button></div>') +
+            '<span class="estado-wa ' + est.k + '">' + esc(est.t) + '</span>' + (est.c ? ' <button class="enlace verconv" data-w="' + esc(est.c.wa_id) + '">ver chat</button>' : '') + '</div>';
+        });
+        h += '</div>';
       });
+      h += '</div></div>';
     });
-    h += '</tbody></table>';
+    h += '</div>';
+    var nSel = Object.keys(elegidos).length;
+    h += '<div class="barra-env"' + (nSel ? '' : ' hidden') + '><b>' + nSel + ' seleccionado' + (nSel === 1 ? '' : 's') + '</b><button class="btn" id="o-enviar">Enviar plantilla Open+3</button><button class="btn sec" id="o-limpiar">Quitar selección</button></div>';
     $('opor').innerHTML = h;
-    $('o-linea').value = f.linea; $('o-etapa').value = f.etapa; $('o-cel').value = f.cel;
-    $('o-pend').onclick = function(){ f.pend = !f.pend; pintarOpor(); };
-    $('o-linea').onchange = function(){ f.linea = this.value; pintarOpor(); };
-    $('o-etapa').onchange = function(){ f.etapa = this.value; pintarOpor(); };
-    $('o-cel').onchange = function(){ f.cel = this.value; pintarOpor(); };
     $('o-q').oninput = function(){ f.q = this.value; var pos = this.selectionStart; pintarOpor(); $('o-q').focus(); $('o-q').setSelectionRange(pos, pos); };
+    $('opor').onchange = function(ev){
+      var x = ev.target; if (!x.classList.contains('elegir')) return;
+      var id = x.getAttribute('data-c');
+      if (x.checked) { todas.forEach(function(o){ o.contactos.forEach(function(ct){ if (ct.id === id) elegidos[id] = { o: o, ct: ct }; }); }); }
+      else delete elegidos[id];
+      pintarOpor();
+    };
     $('opor').onclick = function(ev){
       var b = ev.target.closest('button'); if (!b) return;
+      if (b.classList.contains('chip')) { var k = b.getAttribute('data-k'), v = b.getAttribute('data-v'); if (k === 'pend') f.pend = !f.pend; else f[k] = v; pintarOpor(); return; }
       if (b.classList.contains('celok')) { var inp = document.querySelector('.celin[data-c="' + b.getAttribute('data-c') + '"]'); guardarCel(b.getAttribute('data-c'), inp.value, b); }
-      if (b.classList.contains('usartel')) guardarCel(b.getAttribute('data-c'), b.getAttribute('data-t'), b);
       if (b.classList.contains('verconv')) { document.querySelector('#tabs [data-t="conv"]').click(); abrir(b.getAttribute('data-w')); }
+      if (b.id === 'o-limpiar') { elegidos = {}; pintarOpor(); }
+      if (b.id === 'o-enviar') enviarOpen3();
     };
   }
   function guardarCel(id, tel, btn){
@@ -398,9 +468,54 @@
     fetch(BASE + 'gr-portal-telefono', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ k: K, contact_id: id, telefono: tel }) })
       .then(function(r){ return r.text().then(function(t){ var j = null; try { j = JSON.parse(t); } catch(e) {} if (!r.ok || !j || !j.ok) throw new Error('No se guardó. Revisa que el número lleve lada (10 dígitos si es de México) y que el contacto no tenga ya otro celular en HubSpot.'); return j; }); })
       .then(function(j){
-        opor.oportunidades.forEach(function(o){ o.contactos.forEach(function(ct){ if (ct.id === id) { ct.celular = j.celular; ct.cel10 = diez(j.celular); } }); });
+        opor.oportunidades.forEach(function(o){ o.contactos.forEach(function(ct){ if (ct.id === id) { ct.celular = j.celular; ct.cel = j.celular; ct.c10 = diez(j.celular); } }); });
         indexarTel(); toast('Celular guardado en HubSpot'); pintarOpor(); pintarLista();
       }).catch(function(e){ toast(e.message); btn.disabled = false; });
+  }
+
+  // Envio de la plantilla Open+3 de cada linea a los contactos elegidos. Usa el mismo envio del portal (uno por
+  // persona, uno por segundo). Variables: {{1}} nombre, {{2}} empresa, {{3}} firma (dueño de la oportunidad).
+  var TOPE_ENVIO = 20;
+  function enviarOpen3(){
+    var sel = Object.keys(elegidos).map(function(k){ return elegidos[k]; });
+    if (!sel.length) return;
+    traerPlantillas((datos.numeros[0] || {}).phone_id).then(function(ls){
+      var aprob = {}; ls.filter(function(t){ return t.soportada; }).forEach(function(t){ aprob[t.nombre] = t; });
+      var filas = sel.map(function(x){
+        var nom = 'gr_open3_' + (SUFIJO[x.o.linea.codigo] || '') + '_v2', t = aprob[nom];
+        var vars = [String(x.ct.nombre || '').split(' ')[0], empresaDe(x.o, x.ct), String(x.o.dueno || '').split(' ')[0]].slice(0, t ? t.variables : 0);
+        var vista = t ? t.texto.replace(/\{\{(\d+)\}\}/g, function(m, i){ return vars[i - 1] || m; }) : '';
+        return { x: x, t: t, nom: nom, vars: vars, vista: vista, ok: !!t && vars.every(Boolean) };
+      });
+      var buenos = filas.filter(function(r){ return r.ok; }).slice(0, TOPE_ENVIO);
+      modal('<h2>Enviar plantilla Open+3</h2>' +
+        '<p class="tenue" style="margin:0">A cada persona le llega la plantilla de su línea, con su nombre y su empresa. Máximo ' + TOPE_ENVIO + ' por envío. WhatsApp pide que la persona haya aceptado recibir mensajes del negocio.</p>' +
+        '<div class="envlista">' + filas.map(function(r){
+          return '<div class="envfila' + (r.ok ? '' : ' mal') + '"><b>' + esc(r.x.ct.nombre) + '</b> · ' + esc(empresaDe(r.x.o, r.x.ct)) + ' · <span class="tenue">' + esc(r.x.ct.cel) + '</span><div class="tenue">' +
+            (r.t ? esc(r.nom) : 'No hay plantilla aprobada para ' + esc(r.x.o.linea.nombre)) + (r.t && !r.ok ? ' · falta nombre o empresa' : '') + '</div>' +
+            (r.ok ? '<details><summary class="tenue">Ver mensaje</summary><div class="vista">' + esc(r.vista) + '</div></details>' : '') + '</div>';
+        }).join('') + '</div><div class="error" id="envErr"></div>' +
+        '<div class="pieModal"><button class="btn sec" id="cancelar">Cancelar</button><button class="btn" id="envOk"' + (buenos.length ? '' : ' disabled') + '>Enviar ' + buenos.length + ' mensaje' + (buenos.length === 1 ? '' : 's') + '</button></div>');
+      $('cancelar').onclick = cerrar;
+      $('envOk').onclick = function(){
+        var btn = this; btn.disabled = true; $('cancelar').disabled = true;
+        var bien = 0, mal = [], i = 0;
+        var siguiente = function(){
+          if (i >= buenos.length) {
+            cerrar(); elegidos = {};
+            toast('Enviados: ' + bien + (mal.length ? ' · no se enviaron: ' + mal.length : ''));
+            if (mal.length) setTimeout(function(){ alert('No se enviaron:\n' + mal.join('\n')); }, 300);
+            return cargar().then(function(){ pintarOpor(); });
+          }
+          var r = buenos[i++]; btn.textContent = 'Enviando ' + i + ' de ' + buenos.length + '…';
+          api('plantilla', { plantilla: r.nom, idioma: r.t.idioma, variables: r.vars, vista: r.vista, phone_id: (datos.numeros[0] || {}).phone_id, numero: r.x.ct.cel.replace(/\D/g, ''), nombre: r.x.ct.nombre })
+            .then(function(j){ if (j.ok === false) mal.push(r.x.ct.nombre + ': ' + (j.error || 'WhatsApp no la aceptó')); else bien++; })
+            .catch(function(e){ mal.push(r.x.ct.nombre + ': ' + e.message); })
+            .finally(function(){ setTimeout(siguiente, 1100); });
+        };
+        siguiente();
+      };
+    }).catch(function(e){ toast(e.message); });
   }
   function nombreProducto(slug){
     var p = conf && (conf.productos || []).find(function(x){ return x.slug === slug; });
@@ -678,34 +793,88 @@
       }).catch(function(e){ if (!$('conf').hidden) $('conf').innerHTML = '<p class="error">' + esc(e.message) + '</p>'; });
   }
   function liga(o){ return o && o.url ? '<a href="' + esc(o.url) + '" target="_blank" rel="noopener">' + esc(o.nombre) + '</a>' : '<span class="estado-f falta">' + esc(o && o.nombre || 'Por definir') + '</span>'; }
+  // Configuracion con la misma estructura del portal de cada compania (intelligence.greatrevenue.com/gr/portal):
+  // sub-pestanas y tarjetas numeradas. Productos, PV, ICP y responsables son los mismos datos de ese portal.
+  var confSub = 'productos', aprLinea = 'ITS', apr = {};
+  var SUBS = [['productos', 'Productos'], ['plantillas', 'Plantillas'], ['pendientes', 'Pendientes'], ['aprendizaje', 'Aprendizaje continuo']];
+  function tarjeta(n, titulo, cuerpo, extra){ return '<div class="card"><div class="card-h"><h2><span class="n">' + n + '</span>' + esc(titulo) + '</h2>' + (extra || '') + '</div>' + cuerpo + '</div>'; }
   function pintarConf(){
     if (!conf) { $('conf').innerHTML = '<p class="tenue">Cargando configuración…</p>'; return; }
-    var tipos = {}; conf.pendientes.forEach(function(p){ tipos[p.tipo] = (tipos[p.tipo] || 0) + 1; });
-    var pend = conf.pendientes.filter(function(p){ return !confTipo || p.tipo === confTipo; });
-    var h = '<h2>Pendientes (' + conf.pendientes.length + ')</h2><p class="nota">Lo que está mal o falta para que el bot y las plantillas estén al día. Se recalcula cada vez que abres esta pestaña.</p>' +
-      '<div class="resumen" id="resumen"><button data-tipo="" class="' + (confTipo ? '' : 'on') + '">Todos</button>' +
-      Object.keys(tipos).map(function(t){ return '<button data-tipo="' + esc(t) + '" class="' + (confTipo === t ? 'on' : '') + '">' + esc(t) + ' (' + tipos[t] + ')</button>'; }).join('') + '</div>' +
-      '<table class="tabla"><thead><tr><th>Producto</th><th>Qué</th><th>Detalle</th><th>Lo resuelve</th></tr></thead><tbody>' +
-      pend.map(function(p){ return '<tr><td>' + esc(p.producto.replace(/ \(.*\)$/, '')) + '</td><td>' + esc(p.tipo) + '</td><td>' + esc(p.texto) + '</td><td>' + esc(p.quien) + '</td></tr>'; }).join('') + '</tbody></table>';
-    h += '<h2>Productos (' + conf.productos.length + ')</h2><p class="nota">La propuesta de valor, el ICP y qué se ofrece son los del catálogo del motor. Hoy se cambian en <a href="https://intelligence.greatrevenue.com/gr/portal#productos" target="_blank" rel="noopener">intelligence.greatrevenue.com/gr/portal#productos</a>.</p>' +
-      '<table class="tabla"><thead><tr><th>Producto</th><th>Qué se ofrece</th><th>Propuesta de valor vigente</th><th>ICP vigente</th><th>Ficha del bot</th><th>Plantilla Open+3</th><th>Lidera · aviso del bot</th></tr></thead><tbody>' +
+    var h = '<nav class="subtabs">' + SUBS.map(function(x){ return '<button data-s="' + x[0] + '" class="' + (confSub === x[0] ? 'on' : '') + '">' + x[1] + (x[0] === 'pendientes' && conf.pendientes.length ? ' (' + conf.pendientes.length + ')' : '') + '</button>'; }).join('') + '</nav>';
+    if (confSub === 'productos') h += confProductos();
+    if (confSub === 'plantillas') h += confPlantillas();
+    if (confSub === 'pendientes') h += confPendientes();
+    if (confSub === 'aprendizaje') h += confAprendizaje();
+    $('conf').innerHTML = h;
+    $('conf').onclick = function(e){
+      var b = e.target.closest('button'); if (!b) return;
+      if (b.getAttribute('data-s')) { confSub = b.getAttribute('data-s'); pintarConf(); if (confSub === 'aprendizaje' && !apr[aprLinea]) cargarApr(); return; }
+      if (b.getAttribute('data-tipo') !== null && b.closest('#resumen')) { confTipo = b.getAttribute('data-tipo'); pintarConf(); return; }
+      if (b.getAttribute('data-al')) { aprLinea = b.getAttribute('data-al'); pintarConf(); if (!apr[aprLinea]) cargarApr(); return; }
+      if (b.id === 'aprBuscar') { delete apr[aprLinea]; pintarConf(); cargarApr(); }
+    };
+  }
+  function confProductos(){
+    return tarjeta(1, 'Productos', '<p class="nota">Los mismos productos del portal de Great Revenue. La propuesta de valor, el ICP, qué se ofrece y quién lo lidera se cambian en <a href="https://intelligence.greatrevenue.com/gr/portal#productos" target="_blank" rel="noopener">intelligence.greatrevenue.com/gr/portal → Productos</a> y aquí se ven al instante. Lo propio de WhatsApp es la ficha del bot y la plantilla.</p>' +
+      '<table class="tabla"><thead><tr><th>Producto</th><th>Qué se ofrece</th><th>Propuesta de valor vigente</th><th>ICP vigente</th><th>Quién lo lidera</th><th>Aviso del bot</th><th>Ficha del bot</th><th>Plantilla WhatsApp</th></tr></thead><tbody>' +
       conf.productos.map(function(p){
         var v = p.plantillas.filter(function(t){ return t.version === '2'; })[0];
         return '<tr><td><b>' + esc(p.nombre.replace(/ \(.*\)$/, '')) + '</b><div class="tenue">' + esc(p.codigo) + '</div></td>' +
           '<td>' + (/^por definir$/i.test(p.ofrece) || !p.ofrece ? '<span class="estado-f falta">Por definir</span>' : esc(p.ofrece)) + '</td>' +
-          '<td>' + liga(p.propuesta) + '</td><td>' + liga(p.icp) + '</td>' +
+          '<td>' + liga(p.propuesta) + '</td><td>' + liga(p.icp) + '</td><td>' + esc(p.lidera) + '</td><td>' + esc(p.seguimiento_bot.join(', ') || '—') + '</td>' +
           '<td><span class="estado-f ' + esc(p.ficha.estado) + '">' + esc(ESTADO_FICHA[p.ficha.estado] || p.ficha.estado) + '</span></td>' +
-          '<td>' + (v ? esc(v.nombre) + ' <span class="estado-f ' + esc(v.estado) + '">' + esc(ESTADO_META[v.estado] || v.estado) + '</span>' : '<span class="estado-f falta">Falta</span>') + '</td>' +
-          '<td>' + esc(p.lidera) + '<div class="tenue">aviso: ' + esc(p.seguimiento_bot.join(', ') || '—') + '</div></td></tr>';
-      }).join('') + '</tbody></table>';
-    h += '<h2>Plantillas en Meta (' + conf.plantillas.length + ')</h2><p class="nota">Todas las plantillas de la cuenta de WhatsApp, con su estado en Meta. Las v2 son las vigentes de Open+3.</p>' +
+          '<td>' + (v ? esc(v.nombre) + ' <span class="estado-f ' + esc(v.estado) + '">' + esc(ESTADO_META[v.estado] || v.estado) + '</span>' : '<span class="estado-f falta">Falta</span>') + '</td></tr>';
+      }).join('') + '</tbody></table>');
+  }
+  function confPlantillas(){
+    return tarjeta(2, 'Plantillas en Meta', '<p class="nota">Todas las plantillas de la cuenta de WhatsApp de Great Revenue con su estado en Meta. Las v2 son las vigentes de Open+3, una por línea.</p>' +
       conf.plantillas.map(function(t){
         return '<div class="tarjeta"><b>' + esc(t.nombre) + '</b> <span class="estado-f ' + esc(t.estado) + '">' + esc(ESTADO_META[t.estado] || t.estado) + '</span>' +
           ' <span class="tenue">· ' + esc((t.categoria || '').toLowerCase()) + ' · ' + t.variables + ' variable' + (t.variables === 1 ? '' : 's') + (t.motivo ? ' · motivo: ' + esc(t.motivo) : '') + '</span>' +
           '<details><summary class="tenue" style="cursor:pointer">Ver texto</summary><div class="plantilla-texto">' + esc(t.texto) + '</div></details></div>';
-      }).join('');
-    $('conf').innerHTML = h;
-    $('resumen').onclick = function(e){ var b = e.target.closest('button'); if (!b) return; confTipo = b.getAttribute('data-tipo'); pintarConf(); };
+      }).join(''), '<span class="tenue">' + conf.plantillas.length + ' plantillas</span>');
+  }
+  function confPendientes(){
+    var tipos = {}; conf.pendientes.forEach(function(p){ tipos[p.tipo] = (tipos[p.tipo] || 0) + 1; });
+    var pend = conf.pendientes.filter(function(p){ return !confTipo || p.tipo === confTipo; });
+    return tarjeta(3, 'Pendientes', '<p class="nota">Lo que está mal o falta para que el bot y las plantillas estén al día. Se recalcula cada vez que abres esta pestaña.</p>' +
+      '<div class="resumen" id="resumen"><button data-tipo="" class="' + (confTipo ? '' : 'on') + '">Todos</button>' +
+      Object.keys(tipos).map(function(t){ return '<button data-tipo="' + esc(t) + '" class="' + (confTipo === t ? 'on' : '') + '">' + esc(t) + ' (' + tipos[t] + ')</button>'; }).join('') + '</div>' +
+      '<table class="tabla"><thead><tr><th>Producto</th><th>Qué</th><th>Detalle</th><th>Lo resuelve</th></tr></thead><tbody>' +
+      pend.map(function(p){ return '<tr><td>' + esc(p.producto.replace(/ \(.*\)$/, '')) + '</td><td>' + esc(p.tipo) + '</td><td>' + esc(p.texto) + '</td><td>' + esc(p.quien) + '</td></tr>'; }).join('') + '</tbody></table>',
+      '<span class="tenue">' + conf.pendientes.length + ' pendientes</span>');
+  }
+
+  // Aprendizaje continuo: por linea, las reuniones con sus oportunidades (abiertas y cerradas), si tienen transcript
+  // y si ya alimentaron el conocimiento. Las recientes pesan mas: la propuesta se va afinando.
+  var FRESCURA = { reciente: 'Reciente (90 días)', media: 'Media (3 a 6 meses)', antigua: 'Antigua (más de 6 meses)' };
+  var ESTADO_APR = { procesada: 'Ya aportó', por_procesar: 'Por procesar', sin_transcript: 'Sin transcript' };
+  function cargarApr(){
+    var l = aprLinea;
+    return fetch(BASE + 'gr-portal-aprendizaje', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ k: K, linea: l }) })
+      .then(function(r){ return r.json(); })
+      .then(function(j){ if (!j.ok) throw new Error(j.message || 'No se pudo leer'); apr[l] = j; })
+      .catch(function(e){ apr[l] = { error: e.message }; })
+      .finally(function(){ if (!$('conf').hidden && confSub === 'aprendizaje') pintarConf(); });
+  }
+  function confAprendizaje(){
+    var lineas = (conf.productos || []).map(function(p){ return [p.codigo, p.nombre.replace(/ \(.*\)$/, '')]; });
+    var d = apr[aprLinea];
+    var cab = '<p class="nota">Para cada línea se buscan las reuniones con los contactos de sus oportunidades (abiertas y cerradas) en la agenda de Mike. Se ve cuáles tienen transcript (notas de Gemini) y cuáles ya alimentaron el conocimiento de la ficha. <b>Primero se procesan las recientes:</b> la propuesta se va afinando y lo viejo puede estar desactualizado. Lo antiguo sirve sobre todo para objeciones y lenguaje del cliente.</p>' +
+      '<div class="filters"><span class="flabel">Línea:</span>' + lineas.map(function(x){ return '<button class="chip' + (aprLinea === x[0] ? ' on' : '') + '" data-al="' + esc(x[0]) + '">' + esc(x[1]) + '</button>'; }).join('') + '</div>';
+    if (!d) return tarjeta(4, 'Aprendizaje continuo', cab + '<p class="tenue">Buscando reuniones en la agenda… (unos segundos)</p>');
+    if (d.error) return tarjeta(4, 'Aprendizaje continuo', cab + '<p class="error">' + esc(d.error) + '</p>');
+    var res = '<div class="apr-res"><div><b>' + d.oportunidades + '</b><span>oportunidades</span></div><div><b>' + d.total + '</b><span>reuniones</span></div>' +
+      '<div class="ok"><b>' + d.procesadas + '</b><span>ya aportaron</span></div><div class="pend"><b>' + d.por_procesar + '</b><span>por procesar</span></div><div><b>' + d.sin_transcript + '</b><span>sin transcript</span></div></div>';
+    var filas = d.reuniones.map(function(r){
+      return '<tr><td>' + esc(r.fecha) + '<div><span class="estado-f fr-' + r.frescura + '">' + esc(FRESCURA[r.frescura]) + '</span></div></td>' +
+        '<td>' + (r.liga ? '<a href="' + esc(r.liga) + '" target="_blank" rel="noopener">' + esc(r.titulo || '(sin título)') + '</a>' : esc(r.titulo)) + '<div class="tenue">' + esc(r.contactos.map(function(c){ return c.nombre + (c.empresa ? ' · ' + c.empresa : ''); }).join('; ')) + '</div></td>' +
+        '<td>' + r.oportunidades.map(function(o){ return '<a href="' + esc(o.url) + '" target="_blank" rel="noopener">' + esc(o.nombre) + '</a><div class="tenue">' + esc(o.etapa) + '</div>'; }).join('') + '</td>' +
+        '<td>' + (r.transcript ? '<a href="' + esc(r.transcript.url) + '" target="_blank" rel="noopener">' + esc(r.transcript.titulo) + '</a>' : '<span class="tenue">No hay</span>') + '</td>' +
+        '<td><span class="estado-apr ' + r.estado + '">' + esc(ESTADO_APR[r.estado] || r.estado) + '</span>' + (r.procesada && r.procesada.nota ? '<div class="tenue">' + esc(r.procesada.nota) + '</div>' : '') + '</td></tr>';
+    }).join('');
+    return tarjeta(4, 'Aprendizaje continuo', cab + res + '<table class="tabla"><thead><tr><th>Fecha</th><th>Reunión y contactos</th><th>Oportunidad</th><th>Transcript</th><th>Conocimiento</th></tr></thead><tbody>' + filas + '</tbody></table>',
+      '<button class="btn sec" id="aprBuscar">↻ Volver a buscar</button>');
   }
   $('tabs').onclick = function(e){
     var b = e.target.closest('button'); if (!b) return;
