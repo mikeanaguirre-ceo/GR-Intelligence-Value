@@ -1301,7 +1301,7 @@ var FILT_PIPELINE_BASE = JSON.parse(JSON.stringify(Object.assign({ q:'' }, FILT.
 FILT.pipeline.q = '';
 try { var _fp = JSON.parse(localStorage.getItem('gr_filt_pipeline') || 'null'); if (_fp && typeof _fp === 'object') Object.keys(FILT_PIPELINE_BASE).forEach(function(k){ if (_fp[k] !== undefined) FILT.pipeline[k] = _fp[k]; }); } catch (e) {}
 function guardarFiltrosPipeline(){ try { localStorage.setItem('gr_filt_pipeline', JSON.stringify(FILT.pipeline)); } catch (e) {} }
-function hayFiltrosPipeline(){ return Object.keys(FILT_PIPELINE_BASE).some(function(k){ return String(FILT.pipeline[k]) !== String(FILT_PIPELINE_BASE[k]); }); }
+function hayFiltrosPipeline(){ return Object.keys(FILT_PIPELINE_BASE).some(function(k){ if((k==='fdesde'||k==='fhasta')&&FILT.pipeline.fper!=='rango') return false; if(k==='fcampo'&&(FILT.pipeline.fper||'todo')==='todo') return false; return String(FILT.pipeline[k]) !== String(FILT_PIPELINE_BASE[k]); }); }
 function quitarFiltrosPipeline(){ Object.keys(FILT_PIPELINE_BASE).forEach(function(k){ FILT.pipeline[k] = FILT_PIPELINE_BASE[k]; }); PIPE_ABIERTAS = {}; guardarFiltrosPipeline(); if (typeof renderCurrentTab === 'function') renderCurrentTab(); }
 var MONTO_OPC=[ {id:0,label:'Todos'},{id:10000,label:'≥10k'},{id:50000,label:'≥50k'},{id:100000,label:'≥100k'} ];
 
@@ -2163,7 +2163,16 @@ function periodoPasa(d,f){
   if(f.fcampo!=='cierre'){ var t=new Date(v); if(!isNaN(t)) s=_diaLocal(t); }
   return s>=r[0] && s<=r[1];
 }
-function pipePeriodoFecha(k,v){ FILT.pipeline.fper='rango'; FILT.pipeline[k]=v; guardarFiltrosPipeline(); renderCurrentTab(); }
+// Lo que se ve en los calendarios: el periodo elegido con sus fechas reales. En "Todo" se ve de la primera fecha
+// que hay en el pipeline a hoy (creacion) o a la ultima fecha de cierre (cierre), como en Consumo.
+function periodoVista(f){
+  var r=periodoRango(f); if(r[0]) return r;
+  var cierre=f.fcampo==='cierre', hoy=_diaLocal(new Date()), mn='', mx='';
+  ((typeof DATA!=='undefined'&&DATA&&DATA.deals)||[]).forEach(function(d){ var v=cierre?d.closedate:d.createdate; if(!v||v==='null') return; var s=String(v).slice(0,10); if(!cierre){ var t=new Date(v); if(!isNaN(t)) s=_diaLocal(t); } if(!mn||s<mn) mn=s; if(!mx||s>mx) mx=s; });
+  return [mn||hoy, cierre?(mx&&mx>hoy?mx:hoy):hoy];
+}
+// Al mover cualquiera de los dos calendarios el periodo pasa a Rango con las dos fechas que se ven.
+function pipePeriodoFecha(){ var a=document.getElementById('pipe-desde'), b=document.getElementById('pipe-hasta'); if(!a||!b||!a.value||!b.value) return; FILT.pipeline.fper='rango'; FILT.pipeline.fdesde=a.value; FILT.pipeline.fhasta=b.value; guardarFiltrosPipeline(); renderCurrentTab(); }
 // Datos de la oportunidad que el equipo completa en Editar: responsable, origen, tipo y partner.
 var GR_CAMPOS_REQ=[['gr_responsable','Responsable'],['gr_origen','Origen'],['gr_tipo_oportunidad','Tipo'],['gr_partner','Partner']];
 function camposFaltan(d){ var c=d.campos||{}; return GR_CAMPOS_REQ.filter(function(x){ return !c[x[0]]; }).map(function(x){ return x[1]; }); }
@@ -2240,7 +2249,7 @@ function renderPipeline() {
         ${[['creacion','Creación'],['cierre','Cierre']].map(o => `<button class="chip ${(FILT.pipeline.fcampo||'creacion')===o[0]?'active':''}" data-f="pipeline" data-k="fcampo" data-v="${o[0]}" title="La fecha a la que se aplica el periodo">${o[1]}</button>`).join('')}
         <span style="width:1px;height:20px;background:#2A3142;margin:0 4px;"></span>
         ${PERIODO_OPC.map(o => `<button class="chip ${(FILT.pipeline.fper||'todo')===o[0]?'active':''}" data-f="pipeline" data-k="fper" data-v="${o[0]}" title="${o[2]}">${o[1]}</button>`).join('')}
-        ${(() => { const r = periodoRango(FILT.pipeline); return `<span style="color:var(--text-dim);font-size:12px;">del</span><input type="date" value="${r[0]}" onchange="pipePeriodoFecha('fdesde',this.value)" style="padding:6px 8px;border-radius:8px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:12px;"><span style="color:var(--text-dim);font-size:12px;">al</span><input type="date" value="${r[1]}" onchange="pipePeriodoFecha('fhasta',this.value)" style="padding:6px 8px;border-radius:8px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:12px;">`; })()}
+        ${(() => { const r = periodoVista(FILT.pipeline); const mx = (FILT.pipeline.fcampo === 'cierre') ? '' : ` max="${_diaLocal(new Date())}"`; const est = 'background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;padding:7px 10px;border-radius:8px;font:inherit;font-size:13px;color-scheme:dark;cursor:pointer;'; const abrir = `onclick="try{this.showPicker&&this.showPicker()}catch(e){}"`; return `<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><span style="color:var(--text-dim);font-size:12px;">del</span><input type="date" id="pipe-desde" value="${r[0]}"${mx} ${abrir} onchange="pipePeriodoFecha()" title="Fecha de inicio del rango" style="${est}"><span style="color:var(--text-dim);font-size:12px;">al</span><input type="date" id="pipe-hasta" value="${r[1]}"${mx} ${abrir} onchange="pipePeriodoFecha()" title="Fecha de fin del rango (incluida)" style="${est}"></span>`; })()}
       </div>
       <div class="filters">
         <span class="filter-label">Nuevas oportunidades:</span>
