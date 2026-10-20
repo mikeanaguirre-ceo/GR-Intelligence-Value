@@ -917,10 +917,42 @@ function abrirEditarDealGR(dealId){
   window.__grEditDias=(d.diasEnEtapa===undefined?null:d.diasEnEtapa);
   grmdPretty();
   grmdAplicarBloqueo();
+  grmdPintarCampos(d);
   grmdCargarContactos(dealId, d.cliente||d.name||'');
   document.getElementById('grmd-status').textContent=''; document.getElementById('grmd-save').disabled=false;
   document.getElementById('gr-modal-edit').style.display='flex';
   cargarActividadesGR(dealId, 'grmd-acts');
+}
+// Datos de la oportunidad: personas del equipo del portal (nombre corto) y listas fijas del portal.
+// Se guarda solo lo que cambio; lo vacio se marca para que el equipo lo complete.
+function grmdOpc(sel, lista, actual){
+  var el=document.getElementById(sel); if(!el) return;
+  var tiene=lista.some(function(o){ return o[0]===actual; });
+  el.innerHTML='<option value="">— Por definir —</option>'+lista.map(function(o){ return '<option value="'+grEsc(o[0])+'"'+(o[0]===actual?' selected':'')+'>'+grEsc(o[1])+'</option>'; }).join('')+((actual&&!tiene)?'<option value="'+grEsc(actual)+'" selected>'+grEsc(actual)+'</option>':'');
+  el.style.borderColor=actual?'#2A3142':'#FFCD0080';
+}
+function grmdPintarCampos(d){
+  var cfg=pipeCfg()||{}, c=d.campos||{}, L=cfg.campos||{};
+  var eq=(cfg.equipo||[]).map(function(p){ return [String(p.email).toLowerCase(), p.nombre]; });
+  var lst=function(k){ return (L[k]||[]).map(function(o){ return [o.valor, o.label]; }); };
+  window.__grEditCampos=JSON.parse(JSON.stringify(c));
+  grmdOpc('grmd-c-gr_responsable', eq, String(c.gr_responsable||'').toLowerCase());
+  grmdOpc('grmd-c-gr_origen', lst('origen'), c.gr_origen||'');
+  grmdOpc('grmd-c-gr_tipo_oportunidad', lst('tipo'), c.gr_tipo_oportunidad||'');
+  grmdOpc('grmd-c-gr_partner', lst('partner'), c.gr_partner||'');
+  var ap=String(c.gr_apoyo||'').toLowerCase().split(';').filter(Boolean);
+  document.getElementById('grmd-c-gr_apoyo').innerHTML=eq.length?eq.map(function(p){ return '<label style="display:flex;align-items:center;gap:5px;"><input type="checkbox" value="'+grEsc(p[0])+'"'+(ap.indexOf(p[0])>=0?' checked':'')+'> '+grEsc(p[1])+'</label>'; }).join(''):'<span style="color:#6B7280">Sin equipo en el portal</span>';
+  document.getElementById('grmd-c-gr_prueba').checked=String(c.gr_prueba)==='true';
+  var f=camposFaltan(d); document.getElementById('grmd-faltan').textContent=f.length?('· Falta: '+f.join(', ')):'';
+}
+function grmdCamposCambiados(){
+  var o=window.__grEditCampos||{}, out={};
+  ['gr_responsable','gr_origen','gr_tipo_oportunidad','gr_partner'].forEach(function(k){ var v=document.getElementById('grmd-c-'+k).value||''; if(v!==String(o[k]||'').toLowerCase() && v!==String(o[k]||'')) out[k]=v; });
+  var ap=[].slice.call(document.querySelectorAll('#grmd-c-gr_apoyo input:checked')).map(function(x){ return x.value; }).sort();
+  var apo=String(o.gr_apoyo||'').toLowerCase().split(';').filter(Boolean).sort();
+  if(ap.join(';')!==apo.join(';')) out.gr_apoyo=ap;
+  var pr=document.getElementById('grmd-c-gr_prueba').checked; if(pr!==(String(o.gr_prueba)==='true')) out.gr_prueba=pr;
+  return out;
 }
 function cerrarModalGR(){ document.getElementById('gr-modal-edit').style.display='none'; window.__grEditId=null; }
 function grmdNuevaTarea(){
@@ -984,6 +1016,7 @@ async function guardarDealGR(){
   stt.textContent='Guardando…'; stt.style.color='#9CA3AF'; btn.disabled=true;
   try{
     var body={dealId:dealId,dealstage:stage}; if(close) body.closedate=close; if(motivo) body.motivo=motivo;
+    var campos=grmdCamposCambiados(); if(Object.keys(campos).length) body.campos=campos;
     var r=await fetch('https://mikea.app.n8n.cloud/webhook/gr-deal',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     if(!r.ok) throw new Error('HTTP '+r.status);
     var res=null; try{ res=await r.json(); }catch(e){ res=null; }
@@ -1006,6 +1039,7 @@ async function guardarDealGR(){
         var _pl=stageOrder().filter(function(x){return String(x.id)===String(stage);})[0]; _d.plazoEtapa=_pl?(_pl.plazo||null):null;
       }
       if(hp.closedate) _d.closedate=String(hp.closedate).slice(0,10); else if(close) _d.closedate=close;
+      if(Object.keys(campos).length){ _d.campos=_d.campos||{}; Object.keys(campos).forEach(function(k){ _d.campos[k]=(hp[k]!==undefined&&hp[k]!==null)?String(hp[k]):(Array.isArray(campos[k])?campos[k].join(';'):String(campos[k])); }); }
       if(phoneChanged && !phoneErr && _d.contacto && (!_d.contacto.id || String(_d.contacto.id)===String(_sel.value))){
         _d.contacto.telefono=_ph.value;
       }
@@ -1175,7 +1209,8 @@ document.addEventListener('click', function(ev){
   var menu=b.getAttribute('data-f'), k=b.getAttribute('data-k'), v=b.getAttribute('data-v');
   if(!FILT[menu]) return;
   if(k==='monto') FILT[menu][k]=Number(v);
-  else if(k==='excludeP') FILT[menu][k]=!FILT[menu][k];
+  else if(k==='excludeP'||k==='faltan') FILT[menu][k]=!FILT[menu][k];
+  else if(k==='fper'){ FILT[menu][k]=v; if(v==='rango'&&!FILT[menu].fdesde){ var _r=periodoRango(FILT[menu]); FILT[menu].fdesde=_r[0]; FILT[menu].fhasta=_r[1]; } }
   else FILT[menu][k]=v;
   if(menu==='pipeline') guardarFiltrosPipeline();
   if(typeof renderCurrentTab==='function') renderCurrentTab();
@@ -1198,7 +1233,7 @@ let recapFilters = {
 };
 // ===== Estado unificado de filtros (homologado) =====
 var FILT = {
-  pipeline:   { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, excludeP:false, nueva:'ALL', cierre:'ALL' },
+  pipeline:   { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, excludeP:false, nueva:'ALL', cierre:'ALL', fcampo:'creacion', fper:'todo', fdesde:'', fhasta:'', faltan:false },
   pendientes: { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', sort:'urgency', nueva:'ALL' },
   alertas:    { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, categoria:'ALL', accion:'ALL', sort:'monto_desc' },
   recap:      { persona:'Todos', grupo:'ALL', prod:'ALL' }
@@ -2047,6 +2082,34 @@ function cierrePasa(d,val){
   if(val==='trim'){ var q=Math.floor(m/3); return f.getFullYear()===y && Math.floor(f.getMonth()/3)===q; }
   return true;
 }
+// Periodo de fechas, igual que en Consumo: Hoy, Ayer, 7 dias, 30 dias, Este mes, Mes pasado, Todo o Rango (del..al).
+// Se aplica a la fecha que se elija: creacion de la oportunidad o fecha de cierre. Dia calendario local.
+var PERIODO_OPC=[['hoy','Hoy','Solo el día de hoy'],['ayer','Ayer','El día de ayer'],['7','7 días','Los últimos 7 días, incluido hoy'],['30','30 días','Los últimos 30 días, incluido hoy'],['mes','Este mes','Del día 1 de este mes a hoy'],['mesant','Mes pasado','El mes anterior completo'],['todo','Todo','Sin filtro de fecha'],['rango','Rango','Elige las fechas de inicio y fin']];
+function _diaLocal(dt){ return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); }
+function _diaMas(s,n){ var d=new Date(s+'T00:00:00'); d.setDate(d.getDate()+n); return _diaLocal(d); }
+function periodoRango(f){
+  var h=_diaLocal(new Date()), p=(f&&f.fper)||'todo';
+  if(p==='hoy') return [h,h];
+  if(p==='ayer') return [_diaMas(h,-1),_diaMas(h,-1)];
+  if(p==='7') return [_diaMas(h,-6),h];
+  if(p==='30') return [_diaMas(h,-29),h];
+  if(p==='mes') return [h.slice(0,8)+'01',h];
+  if(p==='mesant'){ var u=_diaMas(h.slice(0,8)+'01',-1); return [u.slice(0,8)+'01',u]; }
+  if(p==='todo') return ['',''];
+  var a=f.fdesde||_diaMas(h,-6), b=f.fhasta||h; return a<=b?[a,b]:[b,a];
+}
+function periodoPasa(d,f){
+  if(!f||!f.fper||f.fper==='todo') return true;
+  var r=periodoRango(f); var v=f.fcampo==='cierre'?d.closedate:d.createdate;
+  var s=(v&&v!=='null')?String(v).slice(0,10):''; if(!s) return false;
+  if(f.fcampo!=='cierre'){ var t=new Date(v); if(!isNaN(t)) s=_diaLocal(t); }
+  return s>=r[0] && s<=r[1];
+}
+function pipePeriodoFecha(k,v){ FILT.pipeline.fper='rango'; FILT.pipeline[k]=v; guardarFiltrosPipeline(); renderCurrentTab(); }
+// Datos de la oportunidad que el equipo completa en Editar: responsable, origen, tipo y partner.
+var GR_CAMPOS_REQ=[['gr_responsable','Responsable'],['gr_origen','Origen'],['gr_tipo_oportunidad','Tipo'],['gr_partner','Partner']];
+function camposFaltan(d){ var c=d.campos||{}; return GR_CAMPOS_REQ.filter(function(x){ return !c[x[0]]; }).map(function(x){ return x[1]; }); }
+function faltanPasa(d){ return !FILT.pipeline.faltan || camposFaltan(d).length>0; }
 function metaNuevas(goal){
   var prioMap={}; ((typeof CAT==='function'?CAT().stages:null)||CAT_FALLBACK.stages||[]).forEach(function(s){prioMap[s.id]=s.prioridad;});
   var now=new Date();
@@ -2083,6 +2146,8 @@ function renderPipeline() {
     if (FILT.pipeline.excludeP && d.name && d.name.startsWith('P_')) return false;
     if (!nuevaPasa(d, FILT.pipeline.nueva)) return false;
     if (!cierrePasa(d, FILT.pipeline.cierre)) return false;
+    if (!periodoPasa(d, FILT.pipeline)) return false;
+    if (!faltanPasa(d)) return false;
     if (!pipeQPasa(d)) return false;
     return pasaFiltro('pipeline', d, 'deal');
   });
@@ -2113,12 +2178,20 @@ function renderPipeline() {
         ${CIERRE_OPC.map(o => `<button class="chip ${(FILT.pipeline.cierre||'ALL')===o[0]?'active':''}" data-f="pipeline" data-k="cierre" data-v="${o[0]}">${o[1]}</button>`).join('')}
       </div>
       <div class="filters">
+        <span class="filter-label">Periodo:</span>
+        ${[['creacion','Creación'],['cierre','Cierre']].map(o => `<button class="chip ${(FILT.pipeline.fcampo||'creacion')===o[0]?'active':''}" data-f="pipeline" data-k="fcampo" data-v="${o[0]}" title="La fecha a la que se aplica el periodo">${o[1]}</button>`).join('')}
+        <span style="width:1px;height:20px;background:#2A3142;margin:0 4px;"></span>
+        ${PERIODO_OPC.map(o => `<button class="chip ${(FILT.pipeline.fper||'todo')===o[0]?'active':''}" data-f="pipeline" data-k="fper" data-v="${o[0]}" title="${o[2]}">${o[1]}</button>`).join('')}
+        ${(() => { const r = periodoRango(FILT.pipeline); return `<span style="color:var(--text-dim);font-size:12px;">del</span><input type="date" value="${r[0]}" onchange="pipePeriodoFecha('fdesde',this.value)" style="padding:6px 8px;border-radius:8px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:12px;"><span style="color:var(--text-dim);font-size:12px;">al</span><input type="date" value="${r[1]}" onchange="pipePeriodoFecha('fhasta',this.value)" style="padding:6px 8px;border-radius:8px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:12px;">`; })()}
+      </div>
+      <div class="filters">
         <span class="filter-label">Nuevas oportunidades:</span>
         ${[['ALL','Todas'],['mes','Mes'],['s1','Sem 1'],['s2','Sem 2'],['s3','Sem 3'],['s4','Sem 4'],['g30','>30d'],['g45','>45d'],['g90','>90d']].map(o => { const col = ({s1:'#10B981',s2:'#34d399',s3:'#A3E635',s4:'#FFCD00',g30:'#F59E0B',g45:'#F97316',g90:'#EF4444'})[o[0]]||''; return `<button class="chip ${FILT.pipeline.nueva===o[0]?'active':''}" data-f="pipeline" data-k="nueva" data-v="${o[0]}" ${col?`style="border-color:${col}80;"`:''}>${o[1]}</button>`; }).join('')}
       </div>
       <div class="filters">
         <span class="filter-label">Otros:</span>
         <button class="chip ${FILT.pipeline.excludeP ? 'active' : ''}" data-f="pipeline" data-k="excludeP" data-v="toggle">Excluir P_</button>
+        <button class="chip ${FILT.pipeline.faltan ? 'active' : ''}" data-f="pipeline" data-k="faltan" data-v="toggle" title="Oportunidades sin responsable, origen, tipo o partner">Faltan datos</button>
         ${hayFiltrosPipeline() ? `<button class="chip" onclick="quitarFiltrosPipeline()" style="border-color:#DB054080;">Quitar filtros</button>` : ''}
       </div>
       <div class="filters">
@@ -2234,6 +2307,8 @@ function renderPipelineMetricsPipeline(){
     if(FILT.pipeline.excludeP&&d.name&&d.name.startsWith('P_')) return false;
     if(!nuevaPasa(d, FILT.pipeline.nueva)) return false;
     if(!cierrePasa(d, FILT.pipeline.cierre)) return false;
+    if(!periodoPasa(d, FILT.pipeline)) return false;
+    if(!faltanPasa(d)) return false;
     if(!pipeQPasa(d)) return false;
     return pasaFiltro('pipeline', d, 'deal');
   });
@@ -5759,6 +5834,16 @@ if (document.readyState === 'loading') {
     <input id="grmd-close" type="date" onfocus="try{this.showPicker&&this.showPicker()}catch(e){}" onclick="try{this.showPicker&&this.showPicker()}catch(e){}" oninput="grmdPretty()" style="width:100%;margin:5px 0 2px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;">
     <div id="grmd-close-pretty" style="font-size:12px;color:#02ADBA;font-weight:700;margin:0 0 2px;min-height:15px;"></div>
     <div id="grmd-close-nota" style="font-size:11px;color:#9CA3AF;line-height:1.5;margin:0 0 14px;"></div>
+    <div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px;">Datos de la oportunidad <span id="grmd-faltan" style="color:#FFCD00;text-transform:none;letter-spacing:0;font-weight:600;"></span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 10px;margin:0 0 10px;">
+      <label style="font-size:11px;color:#9CA3AF;">Responsable<select id="grmd-c-gr_responsable" style="width:100%;margin-top:4px;padding:8px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:13px;"></select></label>
+      <label style="font-size:11px;color:#9CA3AF;">Origen<select id="grmd-c-gr_origen" style="width:100%;margin-top:4px;padding:8px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:13px;"></select></label>
+      <label style="font-size:11px;color:#9CA3AF;">Tipo<select id="grmd-c-gr_tipo_oportunidad" style="width:100%;margin-top:4px;padding:8px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:13px;"></select></label>
+      <label style="font-size:11px;color:#9CA3AF;">Partner<select id="grmd-c-gr_partner" style="width:100%;margin-top:4px;padding:8px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:13px;"></select></label>
+    </div>
+    <div style="font-size:11px;color:#9CA3AF;margin:0 0 4px;">Apoyo (quién acompaña en reuniones)</div>
+    <div id="grmd-c-gr_apoyo" style="display:flex;flex-wrap:wrap;gap:6px 12px;margin:0 0 10px;font-size:13px;color:#E5E7EB;"></div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#E5E7EB;margin:0 0 14px;"><input id="grmd-c-gr_prueba" type="checkbox"> Es una oportunidad de prueba</label>
     <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Contacto</label>
     <select id="grmd-contact" onchange="grmdSyncPhone()" style="width:100%;margin:5px 0 8px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;"></select>
     <label style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;">Teléfono</label>
