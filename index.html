@@ -1278,8 +1278,8 @@ document.addEventListener('click', function(ev){
 let TASKS = null;
 let currentTab = 'recap';
 let pipelineFilters = { group: 'ALL', prod: 'ALL', owner: 'ALL', excludeP: false };
-const PROD_GROUPS = { GR:['TW','AM','AEO','3V','GenIA','ITS','LT','BD','WB','HS'], PT:['PT'], INTERNO:['Interno'], IMMMU:['IMMMU'] };
-function inGroup(d){ if(pipelineFilters.group==='ALL') return true; return (PROD_GROUPS[pipelineFilters.group]||[]).includes(d.prod); }
+// 20oct2026 — El grupo de cada producto sale del catalogo (catalogos.json), no de una lista escrita aqui.
+function inGroup(d){ if(pipelineFilters.group==='ALL') return true; return grupoDeProd(d.prod)===pipelineFilters.group; }
 let pendientesFilters = { persona: 'Todos', urgency: 'ALL', scope: 'ALL', sort: 'urgency', stage: 'ALL' };
 let alertasFilters = { accion: 'ALL', categoria: 'ALL', persona: 'Todos', producto: 'ALL', stage: 'ALL', minMonto: 0, sort: 'monto_desc' };
 let recapFilters = {
@@ -2205,7 +2205,7 @@ function renderPipeline() {
   const _uniqP=[...new Set(DATA.deals.map(d => d.prod).filter(Boolean))];
   const _ORD=((CAT().productos)||CAT_FALLBACK.productos||[]).map(p=>p.id);
   _uniqP.sort((a,b)=>{const ia=_ORD.indexOf(a),ib=_ORD.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
-  let _grp=_uniqP; if(pipelineFilters.group!=='ALL'){ const gs=PROD_GROUPS[pipelineFilters.group]||[]; _grp=_uniqP.filter(p=>gs.includes(p)); }
+  let _grp=_uniqP; if(pipelineFilters.group!=='ALL'){ _grp=_uniqP.filter(p=>grupoDeProd(p)===pipelineFilters.group); }
   const prods = ['ALL', ..._grp];
   const owners = ['ALL', ...new Set(DATA.deals.map(d => d.owner).filter(Boolean))];
 
