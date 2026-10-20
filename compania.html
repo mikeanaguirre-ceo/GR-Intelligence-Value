@@ -279,7 +279,8 @@
     ['propuesta_nombre', 'Propuesta de valor vigente', 'txt'], ['propuesta_url', 'Liga a la propuesta', 'url'],
     ['icp_nombre', 'ICP vigente', 'txt'], ['icp_url', 'Liga al ICP', 'url'],
     ['template_nombre', 'Template de propuesta vigente', 'txt'], ['template_url', 'Liga al template', 'url'],
-    ['presentacion_nombre', 'Presentación de Discovery vigente', 'txt'], ['presentacion_url', 'Liga a la presentación', 'url'], ['motor_usa', 'Lo que usa hoy el motor al escribir', 'ro'], ['pendiente', 'Pendiente', 'txt']
+    ['presentacion_nombre', 'Presentación de Discovery vigente', 'txt'], ['presentacion_url', 'Liga a la presentación', 'url'], ['motor_usa', 'Lo que usa hoy el motor al escribir', 'ro'], ['pendiente', 'Pendiente', 'txt'],
+    ['por_revisar', 'Por revisar: versiones encontradas en Drive (quien revisa elige, corrige arriba y borra este texto)', 'rev']
   ];
   // Lo que la compania aun no define se ve como "Por definir", nunca vacio ni en cero.
   var PD = 'Por definir';
@@ -309,6 +310,10 @@
             ctrl = '<div id="' + id + '">' + todos.map(function (e) { return '<label style="display:block;font-size:13px"><input type="checkbox" value="' + h(e) + '"' + (sel.map(function (x) { return String(x).toLowerCase(); }).indexOf(e) >= 0 ? ' checked' : '') + '> ' + h(nm[e] || e) + (eq.indexOf(e) < 0 ? ' (sin alta en el portal)' : '') + '</label>'; }).join('') + '</div>';
           }
         }
+        else if (f[2] === 'rev') {
+          var ligas = (v.match(/https:\/\/[^\s)]+/g) || []).map(function (u, j) { return '<a href="' + h(u) + '" target="_blank" rel="noopener" style="font-size:12px;margin-right:10px">Abrir ' + (j + 1) + '</a>'; }).join('');
+          ctrl = (adm ? '<textarea id="' + id + '" rows="3" style="width:100%;box-sizing:border-box;font:inherit;font-size:13px" placeholder="Nada por revisar">' + h(v) + '</textarea>' : '<div style="white-space:pre-wrap;font-size:13px">' + h(v || 'Nada por revisar') + '</div>') + (ligas ? '<div style="margin-top:4px">' + ligas + '</div>' : '');
+        }
         else if (f[2] === 'ro') ctrl = h(v || PD) + (v && p.propuesta_nombre && v.indexOf(p.propuesta_nombre) === -1 ? ' <span class="prod-p">No es la vigente</span>' : '');
         else if (!adm) {
           if (f[2] === 'url') ctrl = v ? '<a href="' + h(v) + '" target="_blank" rel="noopener">Abrir</a>' : PD;
@@ -320,9 +325,9 @@
         else if (f[2] === 'fam') ctrl = '<select id="' + id + '">' + famOpc(v) + '</select>';
         else ctrl = '<input id="' + id + '" type="' + (f[2] === 'num' ? 'number" min="0" step="100' : 'text') + '" value="' + h(f[2] === 'num' && !(Number(v) > 0) ? '' : v) + '" placeholder="' + (f[2] === 'url' ? 'https://...' : PD) + '" style="width:100%">'
           + (f[2] === 'url' && v ? ' <a href="' + h(v) + '" target="_blank" rel="noopener" style="font-size:12px">Abrir</a>' : '');
-        return '<div class="pf"><label for="' + id + '">' + h(f[1]) + '</label><div>' + ctrl + '</div></div>';
+        return '<div class="pf"' + (f[2] === 'rev' ? ' style="grid-column:1/-1;' + (v ? 'background:#fff8e6;border:1px solid #f3d27a;border-radius:8px;padding:8px 10px' : '') + '"' : '') + '><label for="' + id + '">' + h(f[1]) + '</label><div>' + ctrl + '</div></div>';
       }).join('');
-      return '<details class="prod"' + (i === 0 ? ' open' : '') + '><summary><b>' + h(p.codigo) + '</b> · ' + h(p.nombre || '') + ' <span class="prod-m">' + montoTxt(p.monto) + '</span>' + (p.pendiente ? ' <span class="prod-p">Pendiente</span>' : '') + (p.activo === false ? ' <span class="prod-p">Inactivo</span>' : '') + '</summary><div class="pfs">' + cuerpo + '</div></details>';
+      return '<details class="prod"' + (i === 0 ? ' open' : '') + '><summary><b>' + h(p.codigo) + '</b> · ' + h(p.nombre || '') + ' <span class="prod-m">' + montoTxt(p.monto) + '</span>' + (p.pendiente ? ' <span class="prod-p">Pendiente</span>' : '') + (p.por_revisar ? ' <span class="prod-p" style="background:#ffe1d6;color:#8a2c0d">Por revisar</span>' : '') + (p.activo === false ? ' <span class="prod-p">Inactivo</span>' : '') + '</summary><div class="pfs">' + cuerpo + '</div></details>';
     }).join('');
     var estilo = '<style>.prod{border:1px solid #e5e5e5;border-radius:10px;margin:0 0 10px;padding:0 12px;background:#fff}.prod summary{cursor:pointer;padding:12px 0;font-size:15px}.prod-m{color:#5c5c5c;font-size:13px;margin-left:6px}.prod-p{font-size:11px;background:#fff4d6;color:#7a5600;border-radius:8px;padding:2px 8px;margin-left:6px}.pfs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px 16px;padding:0 0 14px}.pf label{display:block;font-size:12px;color:#5c5c5c;margin-bottom:3px}.pf input[type=text],.pf input[type=number],.pf select{width:100%;box-sizing:border-box}</style>';
     var intro = '<p style="margin:0 0 10px">Una ficha por producto. De aquí salen el monto con que nace cada oportunidad, a quién se avisa, quién hace la tarea, quién manda la minuta, qué se le ofrece al prospecto y la propuesta de valor e ICP vigentes con los que se escriben los mensajes y se evalúan las campañas.</p>';
