@@ -938,6 +938,8 @@ function grmdPintarCampos(d){
   var eq=(cfg.equipo||[]).map(function(p){ return [String(p.email).toLowerCase(), p.nombre]; });
   var lst=function(k){ return (L[k]||[]).map(function(o){ return [o.valor, o.label]; }); };
   window.__grEditCampos=JSON.parse(JSON.stringify(c));
+  var prods=(cfg.productos||[]).map(function(x){ return [x.codigo, x.codigo+' · '+x.nombre]; });
+  grmdOpc('grmd-c-gr_producto', prods, String(c.gr_producto||''));
   grmdOpc('grmd-c-gr_responsable', eq, String(c.gr_responsable||'').toLowerCase());
   grmdOpc('grmd-c-gr_origen', lst('origen'), c.gr_origen||'');
   grmdOpc('grmd-c-gr_tipo_oportunidad', lst('tipo'), c.gr_tipo_oportunidad||'');
@@ -972,13 +974,16 @@ var GR_AMPLE='https://mikea.app.n8n.cloud/webhook/gr-actualizar-prospecto';
 var GR_AM_NOMBRE={firstname:'Nombre',lastname:'Apellido',jobtitle:'Puesto',hs_linkedin_url:'LinkedIn',hs_seniority:'Nivel',gr_amplemarket_id:'Id de Amplemarket',country:'País',city:'Ciudad',company:'Empresa',phone:'Teléfono',mobilephone:'Celular',industry:'Industria',numberofemployees:'Empleados',linkedin_company_page:'LinkedIn de la empresa',website:'Sitio web',founded_year:'Año de fundación',state:'Estado'};
 async function grmdAmplemarket(nivel){
   var id=window.__grEditId; if(!id) return;
-  var tel=nivel==='telefono';
-  if(!confirm(tel?'Buscar el teléfono en Amplemarket cuesta 0.5 créditos más el costo del teléfono. Si el contacto ya tiene teléfono no se consulta. ¿Continuar?':'Actualizar con Amplemarket cuesta 0.5 créditos. Solo se llena lo vacío. ¿Continuar?')) return;
-  var m=document.getElementById('grmd-am-msg'), b1=document.getElementById('grmd-am-datos'), b2=document.getElementById('grmd-am-tel');
+  var tel=nivel==='telefono', forzar=false;
   var sel=document.getElementById('grmd-contact');
-  b1.disabled=b2.disabled=true; m.style.color='#9CA3AF'; m.textContent='Consultando Amplemarket…';
+  var ct=(window.__grContactos||[]).filter(function(x){return String(x.id)===String(sel&&sel.value);})[0]||{};
+  if(tel && ct.tel_amplemarket==='no_encontrado'){
+    if(!confirm('Amplemarket ya buscó el teléfono de este contacto el '+(ct.tel_amplemarket_fecha||'')+' y no lo encontró. Volver a buscarlo gasta créditos otra vez. ¿Buscar de nuevo?')) return; forzar=true;
+  } else if(nivel!=='gratis' && !confirm(tel?'Buscar el teléfono en Amplemarket cuesta 0.5 créditos más el costo del teléfono. Si el contacto ya tiene teléfono no se consulta. ¿Continuar?':'Actualizar con Amplemarket cuesta 0.5 créditos. Solo se llena lo vacío. ¿Continuar?')) return;
+  var m=document.getElementById('grmd-am-msg'), b0=document.getElementById('grmd-am-gratis'), b1=document.getElementById('grmd-am-datos'), b2=document.getElementById('grmd-am-tel');
+  b0.disabled=b1.disabled=b2.disabled=true; m.style.color='#9CA3AF'; m.textContent='Consultando Amplemarket…';
   try{
-    var r=await fetch(GR_AMPLE,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:id,nivel:nivel,contactId:(sel&&sel.value)||''})});
+    var r=await fetch(GR_AMPLE,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:id,nivel:nivel,contactId:(sel&&sel.value)||'',forzar:forzar})});
     var res=await r.json();
     var nom=function(l){ return (l||[]).map(function(k){ return GR_AM_NOMBRE[k]||k; }).join(', '); };
     var t=res.mensaje||'';
@@ -987,9 +992,9 @@ async function grmdAmplemarket(nivel){
     if(res.consultado) t+=' Costo: '+(res.credito||'')+'.';
     m.style.color=res.ok?((res.contacto||[]).length||(res.empresa||[]).length?'#62D175':'#9CA3AF'):'#DB0540';
     m.textContent=t.trim();
-    if(res.telefono){ var d=(DATA.deals||[]).filter(function(x){return String(x.id)===String(id);})[0]; grmdCargarContactos(id,(d&&(d.cliente||d.name))||''); }
+    if(res.telefono||tel){ var d=(DATA.deals||[]).filter(function(x){return String(x.id)===String(id);})[0]; grmdCargarContactos(id,(d&&(d.cliente||d.name))||''); }
   }catch(e){ m.style.color='#DB0540'; m.textContent='No se consultó: '+e.message; }
-  b1.disabled=b2.disabled=false;
+  b0.disabled=b1.disabled=b2.disabled=false;
 }
 // Boton "Completar datos de todas": corre el mismo motor sobre toda la base (sustituye la corrida diaria).
 async function pipeCompletarTodas(btn){
@@ -1006,7 +1011,7 @@ async function pipeCompletarTodas(btn){
 }
 function grmdCamposCambiados(){
   var o=window.__grEditCampos||{}, out={};
-  ['gr_responsable','gr_origen','gr_tipo_oportunidad','gr_partner'].forEach(function(k){ var v=document.getElementById('grmd-c-'+k).value||''; if(v!==String(o[k]||'').toLowerCase() && v!==String(o[k]||'')) out[k]=v; });
+  ['gr_producto','gr_responsable','gr_origen','gr_tipo_oportunidad','gr_partner'].forEach(function(k){ var v=document.getElementById('grmd-c-'+k).value||''; if(k==='gr_producto'&&!v) return; if(v!==String(o[k]||'').toLowerCase() && v!==String(o[k]||'')) out[k]=v; });
   var ap=[].slice.call(document.querySelectorAll('#grmd-c-gr_apoyo input:checked')).map(function(x){ return x.value; }).sort();
   var apo=String(o.gr_apoyo||'').toLowerCase().split(';').filter(Boolean).sort();
   if(ap.join(';')!==apo.join(';')) out.gr_apoyo=ap;
@@ -1050,7 +1055,8 @@ function grmdAplicarBloqueo(){
   }
 }
 function grmdPretty(){ var el=document.getElementById('grmd-close'); var out=document.getElementById('grmd-close-pretty'); if(!el||!out) return; var v=el.value; if(!v){ out.textContent=''; return; } var pr=fmtFecha(v+'T00:00:00Z'); out.textContent=pr?('\u2192 '+pr):''; }
-function grmdSyncPhone(){ var sel=document.getElementById('grmd-contact'); var ph=document.getElementById('grmd-phone'); if(!sel||!ph) return; var c=(window.__grContactos||[]).filter(function(x){return String(x.id)===String(sel.value);})[0]; ph.value=c?(c.telefono||''):''; ph.setAttribute('data-orig', ph.value); }
+function grmdSyncPhone(){ var sel=document.getElementById('grmd-contact'); var ph=document.getElementById('grmd-phone'); if(!sel||!ph) return; var c=(window.__grContactos||[]).filter(function(x){return String(x.id)===String(sel.value);})[0]; ph.value=c?(c.telefono||''):''; ph.setAttribute('data-orig', ph.value);
+  var tn=document.getElementById('grmd-tel-nota'); if(tn) tn.textContent=(c&&c.tel_amplemarket==='no_encontrado'&&!c.telefono)?('Amplemarket no encontró teléfono de este contacto ('+(c.tel_amplemarket_fecha||'')+'). Volver a buscarlo gasta créditos.'):''; }
 async function grmdCargarContactos(dealId, empresa){
   var sel=document.getElementById('grmd-contact'); var ph=document.getElementById('grmd-phone');
   if(!sel) return; window.__grContactos=[]; sel.innerHTML='<option value="">Cargando…</option>'; if(ph) ph.value='';
@@ -1098,6 +1104,7 @@ async function guardarDealGR(){
         var _pl=stageOrder().filter(function(x){return String(x.id)===String(stage);})[0]; _d.plazoEtapa=_pl?(_pl.plazo||null):null;
       }
       if(hp.closedate) _d.closedate=String(hp.closedate).slice(0,10); else if(close) _d.closedate=close;
+      if(campos.gr_producto) _d.prod=campos.gr_producto;
       if(Object.keys(campos).length){ _d.campos=_d.campos||{}; Object.keys(campos).forEach(function(k){ _d.campos[k]=(hp[k]!==undefined&&hp[k]!==null)?String(hp[k]):(Array.isArray(campos[k])?campos[k].join(';'):String(campos[k])); }); }
       if(phoneChanged && !phoneErr && _d.contacto && (!_d.contacto.id || String(_d.contacto.id)===String(_sel.value))){
         _d.contacto.telefono=_ph.value;
@@ -1114,6 +1121,17 @@ function catColor(name){ return (CAT().paleta || CAT_FALLBACK.paleta)[name] || '
 function catStagesAct(){ return ((CAT().stages)||CAT_FALLBACK.stages).filter(function(s){return s.prioridad<=8;}); }
 function catStageLabelsAct(){ return catStagesAct().map(function(s){return s.label;}); }
 function catStageColHex(){ var m={},pal=(CAT().paleta||CAT_FALLBACK.paleta); catStagesAct().forEach(function(s){m[s.label]=pal[s.color];}); return m; }
+// 20oct2026 — Productos para los filtros: todo el catalogo (catalogos.json) mas lo que traigan los datos, sin duplicar
+// por mayusculas. Se usa el valor de los datos cuando existe, para que el filtro coincida.
+function prodsConCatalogo(presentes){
+  var excl={'INTERNO':1,'OTRO':1,'P-OTRO':1};
+  var cat=((CAT().productos)||CAT_FALLBACK.productos||[]).filter(function(p){return p&&p.id&&p.grupo!=='INTERNO';}).map(function(p){return p.id;});
+  var porK={}; (presentes||[]).filter(Boolean).forEach(function(x){ porK[String(x).toUpperCase()]=x; });
+  var out=[], vistos={};
+  cat.forEach(function(id){ var k=String(id).toUpperCase(); if(vistos[k]) return; vistos[k]=1; out.push(porK[k]||id); });
+  (presentes||[]).filter(Boolean).forEach(function(x){ var k=String(x).toUpperCase(); if(!vistos[k]&&!excl[k]){ vistos[k]=1; out.push(x); } });
+  return out;
+}
 function catProdsPresentes(){
   var orden=((CAT().productos)||CAT_FALLBACK.productos||[]).map(function(p){return p.id;});
   var excl={'Interno':1,'Otro':1};
@@ -1207,16 +1225,12 @@ function filtrosHTML(menu, arr, kind){
   GRUPOS_ORDEN.forEach(function(g){ H+=_chip(menu,'grupo',g,grupoLabel(g), (f.grupo||'ALL')===g); });
   H+='</div>';
   // Producto (todos) canónico, presente
-  var prods;
-  if(menu==='alertas'){
-    var _excl={'Interno':1,'Otro':1,'P-Otro':1};
-    prods=((CAT().productos)||CAT_FALLBACK.productos||[]).map(function(x){return x.id;}).filter(function(x){return !_excl[x];});
-  } else { prods=prodsPresentesDe(arr); }
+  var prods=prodsConCatalogo(prodsPresentesDe(arr));
   if(f.grupo && f.grupo!=='ALL'){ prods=prods.filter(function(p){return grupoDeProd(p)===f.grupo;}); }
   var _pc={}; (arr||[]).forEach(function(it){ if(it&&it.prod) _pc[it.prod]=(_pc[it.prod]||0)+1; });
   H+='<div class="filters"><span class="filter-label">Producto:</span>';
   H+=_chip(menu,'prod','ALL','Todos', (f.prod||'ALL')==='ALL');
-  prods.forEach(function(p){ H+=_chip(menu,'prod',p, (menu==='alertas'? (p+' ('+(_pc[p]||0)+')') : p), f.prod===p); });
+  prods.forEach(function(p){ H+=_chip(menu,'prod',p, p+' ('+(_pc[p]||0)+')', f.prod===p); });
   H+='</div>';
   // Stage (solo deals: pipeline, alertas)
   if(kind==='deal'||kind==='alerta'){
@@ -2175,7 +2189,7 @@ function periodoVista(f){
 // Al mover cualquiera de los dos calendarios el periodo pasa a Rango con las dos fechas que se ven.
 function pipePeriodoFecha(){ var a=document.getElementById('pipe-desde'), b=document.getElementById('pipe-hasta'); if(!a||!b||!a.value||!b.value) return; FILT.pipeline.fper='rango'; FILT.pipeline.fdesde=a.value; FILT.pipeline.fhasta=b.value; guardarFiltrosPipeline(); renderCurrentTab(); }
 // Datos de la oportunidad que el equipo completa en Editar: responsable, origen, tipo y partner.
-var GR_CAMPOS_REQ=[['gr_responsable','Responsable'],['gr_origen','Origen'],['gr_tipo_oportunidad','Tipo'],['gr_partner','Partner']];
+var GR_CAMPOS_REQ=[['gr_producto','Producto'],['gr_responsable','Responsable'],['gr_origen','Origen'],['gr_tipo_oportunidad','Tipo'],['gr_partner','Partner']];
 function camposFaltan(d){ var c=d.campos||{}; return GR_CAMPOS_REQ.filter(function(x){ return !c[x[0]]; }).map(function(x){ return x[1]; }); }
 function faltanPasa(d){ return !FILT.pipeline.faltan || camposFaltan(d).length>0; }
 function metaNuevas(goal){
@@ -4693,7 +4707,7 @@ function renderProspeccion() {
     if(cat&&cat.length) return cat.filter(function(r){return r.activo!==false;}).map(function(r){return String(r.codigo||'');}).filter(Boolean);
     return ['TW','AM','AEO','360','GenIA','ITS','LT','BD','WB','HS'];
   })();
-  var activeProd=GR_PRODS.filter(function(p){ return PEV.some(function(e){return (e.producto||'')===p;}); });
+  var activeProd=prodsConCatalogo(GR_PRODS.filter(function(p){ return PEV.some(function(e){return (e.producto||'')===p;}); }));
   var _cf=function(field,val,lbl,cur){ return '<button class="chip'+(cur===val?' active':'')+'" data-pf="'+field+'" data-pv="'+encodeURIComponent(val)+'" style="font-size:11px;padding:5px 11px;border-radius:18px;">'+lbl+'</button>'; };
   var _row=function(label,inner){ return '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px;"><span style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-right:2px;min-width:62px;">'+label+'</span>'+inner+'</div>'; };
   var GRUPOS_PRES=['GR','PT','IMMMU'].filter(function(g){ return activeProd.some(function(p){return grupoDeProd(p)===g;}); });
@@ -5659,7 +5673,7 @@ function renderAmplemarket() {
                 style="${amFilters.producto === 'todos' ? 'background:var(--purple);color:white;border-color:var(--purple)' : ''}">
           Todos
         </button>
-        ${productosConDatos.map(prod => `
+        ${prodsConCatalogo(productosConDatos).map(prod => `
           <button onclick="setAmFilter('producto','${prod}')" class="chip" 
                   style="${prod === amFilters.producto ? 'background:var(--purple);color:white;border-color:var(--purple)' : ''}">
             ${prod}
@@ -5959,9 +5973,11 @@ if (document.readyState === 'loading') {
               <div><label class="md-lbl" for="grmd-contact">Persona</label><select id="grmd-contact" class="md-in" onchange="grmdSyncPhone()"></select></div>
               <div><label class="md-lbl" for="grmd-phone">Teléfono</label><input id="grmd-phone" class="md-in" type="tel" placeholder="+52 ..."></div>
             </div>
+            <div id="grmd-tel-nota" class="md-nota" style="color:#FCA5A5;"></div>
             <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
-              <button id="grmd-am-datos" class="md-btn" onclick="grmdAmplemarket('datos')" title="Busca al contacto en Amplemarket y llena lo vacío: puesto, LinkedIn, nivel, país, empresa, industria, empleados. Cuesta 0.5 créditos." style="color:#c4b5fd;border:1px solid #7C3AED;">Actualizar con Amplemarket · 0.5 créditos</button>
-              <button id="grmd-am-tel" class="md-btn" onclick="grmdAmplemarket('telefono')" title="Busca el teléfono del contacto para WhatsApp. Cuesta 0.5 créditos más el costo del teléfono. Si ya tiene teléfono, no se consulta." style="color:#FFCD00;border:1px solid #FFCD0080;">Buscar teléfono · con créditos</button>
+              <button id="grmd-am-gratis" class="md-btn" onclick="grmdAmplemarket('gratis')" title="Lee al contacto en la cuenta de Amplemarket de GR (si ya estuvo en una secuencia) y llena lo vacío: puesto, LinkedIn, ubicación y teléfonos que ya tenga. No gasta créditos." style="color:#62D175;border:1px solid #62D17580;">Actualizar sin créditos</button>
+              <button id="grmd-am-datos" class="md-btn" onclick="grmdAmplemarket('datos')" title="Busca al contacto en Amplemarket y llena lo vacío: puesto, LinkedIn, nivel, país, empresa, industria, empleados. Cuesta 0.5 créditos." style="color:#c4b5fd;border:1px solid #7C3AED;">LinkedIn y datos · 0.5 créditos</button>
+              <button id="grmd-am-tel" class="md-btn" onclick="grmdAmplemarket('telefono')" title="Busca el teléfono del contacto para WhatsApp. Cuesta 0.5 créditos más el costo del teléfono. Si ya tiene teléfono, no se consulta." style="color:#FFCD00;border:1px solid #FFCD0080;">Teléfono WhatsApp · con créditos</button>
             </div>
             <div id="grmd-am-msg" class="md-msg"></div>
           </div>
@@ -5971,6 +5987,7 @@ if (document.readyState === 'loading') {
             <div class="md-h"><span>Datos de la oportunidad <span id="grmd-faltan" style="color:#FFCD00;text-transform:none;letter-spacing:0;font-weight:600;"></span></span>
               <button id="grmd-auto" class="md-btn" onclick="grmdCompletarAuto()" title="El motor llena solo lo que se puede saber (producto, ficha del portal, nota de origen) y nunca cambia lo que ya tiene valor" style="color:#02ADBA;border:1px solid #02ADBA80;text-transform:none;letter-spacing:0;">Completar solo</button>
             </div>
+            <div style="margin-bottom:10px;"><label class="md-lbl" for="grmd-c-gr_producto">Producto</label><select id="grmd-c-gr_producto" class="md-in"></select></div>
             <div class="md-2">
               <div><label class="md-lbl" for="grmd-c-gr_responsable">Responsable</label><select id="grmd-c-gr_responsable" class="md-in"></select></div>
               <div><label class="md-lbl" for="grmd-c-gr_origen">Origen</label><select id="grmd-c-gr_origen" class="md-in"></select></div>
@@ -6670,7 +6687,7 @@ function mtPintar(){
     var ms=(cat.meses||[]).slice(0,12).map(function(x){return {v:x,l:mtMesLbl(x),sub:1};});
     if(ms.length) h+=mtChips('Mes','mes',ms,MT_STATE.mes);
   }
-  h+=mtChips('Producto','producto',['TODOS'].concat(cat.productos||[]),MT_STATE.producto);
+  h+=mtChips('Producto','producto',['TODOS'].concat(prodsConCatalogo(cat.productos||[])),MT_STATE.producto);
   h+=mtChips('Responsable','owner',['TODOS'].concat(cat.owners||[]),MT_STATE.owner);
   h+='<div style="font-size:11px;color:'+MT_C.gris+';margin-top:4px;">Del '+mtEsc(D.rango.desde)+' al '+mtEsc(D.rango.hasta)
     +' · <span style="cursor:pointer;text-decoration:underline;" data-mt="recargar">actualizar datos</span></div></div>';
