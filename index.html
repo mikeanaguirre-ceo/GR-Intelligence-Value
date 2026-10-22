@@ -935,26 +935,72 @@ function grmdTab(t){
 // Origen e ICP con las etiquetas de Amplemarket. Los textos largos (mensaje y respuesta) llegan al abrir la ficha.
 function grmdEtiquetaCampo(k, v){ if(k==='gr_como_llego') return grmdEtiqueta('como_llego', v); if(k==='gr_origen') return grmdEtiqueta('origen', v); return String(v||''); }
 function grmdEtiqueta(lista, v){ var o=(((pipeCfg()||{}).campos||{})[lista]||[]).filter(function(x){ return x.valor===v; })[0]; return o?o.label:(v||''); }
-function grmdPintarOrigen(op){
-  window.__grOrigen=op||null; op=op||{};
+function grmdPintarOrigen(op, emp){
+  // 23oct2026 (aprobado por Mike): el origen son dos datos, camino (Sequence/DUO) y tipo de senal (Reply/Open+3).
+  // Reply lleva "Como llego" (etiqueta de Amplemarket); Open+3 lleva su tipo de interes y aperturas.
+  window.__grOrigen=op||null; window.__grEmpresa=emp||null; window.__grEmpresaFull=null; op=op||{};
   var CANAL={correo:'Correo',linkedin:'LinkedIn',whatsapp:'WhatsApp',llamada:'Llamada',otro:'Otro'};
-  var put=function(id,v,vacio){ var el=document.getElementById(id); if(!el) return; el.textContent=v||vacio||'—'; el.style.color=v?'':'#6B7280'; };
   var cargando=!window.__grOrigen;
-  put('grmd-como', op.como_llego?grmdEtiqueta('como_llego',op.como_llego):'', cargando?'Cargando…':'Sin dato');
-  put('grmd-canal', CANAL[op.canal]||op.canal||'', cargando?'Cargando…':'Sin dato');
-  put('grmd-campana', String(op.campana||'').trim(), cargando?'Cargando…':'Sin dato');
-  put('grmd-mensaje', op.mensaje||'', cargando?'Cargando…':'Todavía no se sabe qué mensaje contestó. Usa Actualizar sin créditos (pestaña Contacto y empresa) o espera al barrido de la noche.');
-  put('grmd-respuesta', op.respuesta||'', cargando?'Cargando…':(op.como_llego==='sin_respuesta'?'No contestó: llegó por aperturas o por señal.':'Sin respuesta registrada.'));
-  var _od=document.getElementById('grmd-origen-detalle'); if(_od){ _od.textContent=op.camino==='senal'?'Llegó por una señal de Amplemarket (DUO): el nombre dice la empresa, la persona y lo que hizo.':(op.camino==='respuesta'?'Llegó porque contestó una secuencia de Amplemarket.':(op.camino==='open3'?'Llegó porque abrió 3 o más veces los correos de la secuencia.':'')); }
-  grmdPintarIcp();
+  var put=function(id,v,vacio){ var el=document.getElementById(id); if(!el) return; el.textContent=v||vacio||'—'; el.style.color=v?'':'#6B7280'; };
+  var faltan=cargando?'Cargando…':'Sin dato';
+  var esOpen=op.tipo_senal==='open3';
+  var tipoTxt=op.tipo_senal?grmdEtiqueta('tipo_senal',op.tipo_senal):'';
+  put('grmd-tipo-senal', tipoTxt, faltan);
+  var lb=document.getElementById('grmd-como-lbl'); if(lb) lb.textContent=esOpen?'Tipo de interés':'Cómo llegó';
+  if(esOpen){ var ti=op.tipo_interes?grmdEtiqueta('tipo_interes',op.tipo_interes):''; put('grmd-como', ti?(ti+(op.aperturas?(' · '+op.aperturas+' aperturas'):'')):'', faltan); }
+  else put('grmd-como', op.como_llego?grmdEtiqueta('como_llego',op.como_llego):'', faltan);
+  put('grmd-canal', CANAL[op.canal]||op.canal||'', faltan);
+  put('grmd-campana', String(op.campana||'').trim(), faltan);
+  var fs=String(op.fecha_senal||''); var dias=''; if(fs){ var t=new Date(fs+'T12:00:00'); if(!isNaN(t)){ var dd=Math.floor((Date.now()-t)/86400000); dias=dd<=0?'hoy':(dd===1?'hace 1 día':'hace '+dd+' días'); } }
+  put('grmd-fecha-senal', fs?((fmtFecha(fs+'T12:00:00Z')||fs)+(dias?' · '+dias:'')):'', faltan);
+  var mh=document.getElementById('grmd-mensaje-h'); if(mh) mh.textContent=esOpen?'Correo nuestro que abrió':'Mensaje nuestro que contestó';
+  put('grmd-mensaje', op.mensaje||'', cargando?'Cargando…':'Todavía no se sabe. Usa Actualizar sin créditos (pestaña Contacto y empresa).');
+  put('grmd-respuesta', op.respuesta||'', cargando?'Cargando…':(esOpen?'No contestó: abrió los correos sin responder.':'Sin respuesta registrada.'));
+  var camino=op.camino==='senal'?'DUO':(op.camino==='respuesta'?'Sequence':(op.camino?grmdEtiqueta('origen',op.camino):''));
+  var _od=document.getElementById('grmd-origen-detalle'); if(_od){ _od.textContent=op.camino==='senal'?'DUO: Amplemarket detectó una señal de la persona (publicación, cambio de puesto, contratación) y le escribió.':(op.camino==='respuesta'?'Sequence: la persona venía en una secuencia de Amplemarket.':''); }
+  // Linea de origen en el encabezado: "DUO · Reply · Interested · hace 3 dias"
+  var linea=[camino, tipoTxt, esOpen?(op.tipo_interes?grmdEtiqueta('tipo_interes',op.tipo_interes):''):(op.como_llego?grmdEtiqueta('como_llego',op.como_llego):''), dias].filter(Boolean).join(' · ');
+  var ol=document.getElementById('grmd-origen-linea'); if(ol) ol.textContent=cargando?'':(linea?('Origen: '+linea):'');
+  grmdPintarIcp(); grmdPintarEmpresa(); grmdPintarLigas();
 }
 function grmdPintarIcp(){
   var box=document.getElementById('grmd-icp'); if(!box) return;
   var op=window.__grOrigen; if(!op){ box.innerHTML='<div class="md-nota">Cargando…</div>'; return; }
   var sel=document.getElementById('grmd-contact');
   var ct=(window.__grContactos||[]).filter(function(x){return String(x.id)===String(sel&&sel.value);})[0]||{};
-  var filas=[['Puesto',ct.puesto],['Área',op.area],['Nivel',op.nivel],['País',op.pais||ct.pais],['Sector',op.sector],['Tamaño de empresa',op.tamano]];
-  box.innerHTML=filas.map(function(f){ return '<div class="k">'+grEsc(f[0])+'</div><div class="v'+(f[1]?'':' falta')+'">'+grEsc(f[1]||'Falta')+'</div>'; }).join('');
+  var ubic=[ct.ciudad, op.pais||ct.pais].filter(Boolean).join(', ');
+  var li=ct.linkedin?'<a href="'+grEsc(ct.linkedin)+'" target="_blank" rel="noopener" style="color:#06B6D4;">Abrir perfil ↗</a>':'';
+  var filas=[['Nombre',ct.nombre],['Puesto',ct.puesto],['Área',op.area],['Nivel',op.nivel],['Ubicación',ubic]];
+  box.innerHTML=filas.map(function(f){ return '<div class="k">'+grEsc(f[0])+'</div><div class="v'+(f[1]?'':' falta')+'">'+grEsc(f[1]||'Falta')+'</div>'; }).join('')+'<div class="k">LinkedIn</div><div class="v'+(li?'':' falta')+'">'+(li||'Falta')+'</div>';
+}
+function grmdPintarEmpresa(){
+  var box=document.getElementById('grmd-emp'), ds=document.getElementById('grmd-emp-desc'); if(!box) return;
+  var op=window.__grOrigen, e=window.__grEmpresa; if(!op){ box.innerHTML='<div class="md-nota">Cargando…</div>'; if(ds) ds.textContent=''; return; }
+  e=Object.assign({}, e||{});
+  // Respaldo: el mismo directorio de empresas que usa la tarjeta de Prospeccion (por nombre de empresa).
+  try{
+    var MAP=(typeof EMPRESAS_DATA!=='undefined'&&EMPRESAS_DATA&&EMPRESAS_DATA.empresas)?EMPRESAS_DATA.empresas:{};
+    var nE=function(x){ return String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,''); };
+    var d=((DATA&&DATA.deals)||[]).concat((DATA&&DATA.won)||[],(DATA&&DATA.perdidas)||[]).filter(function(x){ return String(x.id)===String(window.__grEditId); })[0]||{};
+    var cand=[e.nombre, String(d.cliente||'').split(/\s+[\u2014-]\s+/)[0]].filter(Boolean);
+    var c=null; cand.some(function(k){ c=MAP[nE(k)]; return !!c; });
+    if(c){ if(!e.descripcion) e.descripcion=c.descripcion||''; if(!e.web) e.web=c.web||''; if(!e.linkedin) e.linkedin=c.linkedin_empresa||''; if(!e.empleados) e.empleados=c.empleados||''; }
+  }catch(x){}
+  window.__grEmpresaFull=e;
+  var emps=e.empleados?(Number(e.empleados).toLocaleString('es-MX')+' empleados'):'';
+  var tam=[op.tamano, emps].filter(Boolean).join(' · ');
+  var web=String(e.web||''); var webH=web?(/^https?:/i.test(web)?web:'https://'+web):'';
+  var filas=[['Nombre',grEsc(e.nombre||'')],['Sector',grEsc(op.sector||'')],['Tamaño',grEsc(tam)],['Ubicación',grEsc([e.ciudad,e.pais||op.pais].filter(Boolean).join(', '))],['Sitio web',webH?('<a href="'+grEsc(webH)+'" target="_blank" rel="noopener" style="color:#06B6D4;">'+grEsc(web.replace(/^https?:\/\//,''))+' ↗</a>'):''],['LinkedIn',e.linkedin?('<a href="'+grEsc(e.linkedin)+'" target="_blank" rel="noopener" style="color:#3b82f6;">Abrir página ↗</a>'):'']];
+  box.innerHTML=filas.map(function(f){ return '<div class="k">'+f[0]+'</div><div class="v'+(f[1]?'':' falta')+'">'+(f[1]||'Falta')+'</div>'; }).join('');
+  if(ds){ ds.textContent=e.descripcion||''; ds.style.display=e.descripcion?'':'none'; }
+}
+function grmdPintarLigas(){
+  var box=document.getElementById('grmd-ligas'); if(!box) return;
+  var sel=document.getElementById('grmd-contact');
+  var ct=(window.__grContactos||[]).filter(function(x){return String(x.id)===String(sel&&sel.value);})[0]||{};
+  var e=window.__grEmpresaFull||window.__grEmpresa||{}; var web=String(e.web||''); var webH=web?(/^https?:/i.test(web)?web:'https://'+web):'';
+  var b=function(h,l,c){ return h?('<a class="md-pill" href="'+grEsc(h)+'" target="_blank" rel="noopener" style="color:'+c+';font-weight:700;text-decoration:none;border-color:'+c+'55;">'+l+'</a>'):''; };
+  box.innerHTML=b(ct.linkedin,'in Persona ↗','#06B6D4')+b(e.linkedin,'in Empresa ↗','#3b82f6')+b(webH,'Web ↗','#9CA3AF');
 }
 // Datos de la oportunidad: personas del equipo del portal (nombre corto) y listas fijas del portal.
 // Se guarda solo lo que cambio; lo vacio se marca para que el equipo lo complete.
@@ -1105,7 +1151,7 @@ function grmdAplicarBloqueo(){
 function grmdPretty(){ var el=document.getElementById('grmd-close'); var out=document.getElementById('grmd-close-pretty'); if(!el||!out) return; var v=el.value; if(!v){ out.textContent=''; return; } var pr=fmtFecha(v+'T00:00:00Z'); out.textContent=pr?('\u2192 '+pr):''; }
 function grmdSyncPhone(){ var sel=document.getElementById('grmd-contact'); var ph=document.getElementById('grmd-phone'); if(!sel||!ph) return; var c=(window.__grContactos||[]).filter(function(x){return String(x.id)===String(sel.value);})[0]; ph.value=c?(c.telefono||''):''; ph.setAttribute('data-orig', ph.value);
   var tn=document.getElementById('grmd-tel-nota'); if(tn) tn.textContent=(c&&c.tel_amplemarket==='no_encontrado'&&!c.telefono)?('Amplemarket no encontró teléfono de este contacto ('+(c.tel_amplemarket_fecha||'')+'). Volver a buscarlo gasta créditos.'):'';
-  grmdPintarIcp(); }
+  grmdPintarIcp(); grmdPintarLigas(); }
 async function grmdCargarContactos(dealId, empresa){
   var sel=document.getElementById('grmd-contact'); var ph=document.getElementById('grmd-phone');
   if(!sel) return; window.__grContactos=[]; sel.innerHTML='<option value="">Cargando…</option>'; if(ph) ph.value='';
@@ -1113,7 +1159,7 @@ async function grmdCargarContactos(dealId, empresa){
   try{
     var r=await fetch('https://mikea.app.n8n.cloud/webhook/gr-company',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:dealId||'',empresa:empresa||''})});
     var data=await r.json(); var cts=(data&&data.contactos)||[]; window.__grContactos=cts;
-    if(String(window.__grEditId||'')===String(dealId||'')) grmdPintarOrigen((data&&data.oportunidad)||{});
+    if(String(window.__grEditId||'')===String(dealId||'')) grmdPintarOrigen((data&&data.oportunidad)||{}, (data&&data.empresa_ficha)||{});
     if(!cts.length){ sel.innerHTML='<option value="">(sin contactos)</option>'; return; }
     sel.innerHTML=cts.map(function(c){ return '<option value="'+c.id+'">'+grEsc(c.nombre)+(c.puesto?(' \u00b7 '+grEsc(c.puesto)):'')+'</option>'; }).join('');
     grmdSyncPhone();
@@ -4707,12 +4753,14 @@ function grSyncListasLlamadas(){
    eventos: por campana o senal, camino, como llego, sector, area, nivel, tamano y pais, cuantas oportunidades hubo y cuantas
    llegaron a cita agendada (Atraccion). Respeta los filtros de grupo, producto y periodo de Prospeccion.
    Las etiquetas son las de Amplemarket, igual que en HubSpot. */
-var GAN_DIMS=[['campana','Campaña o señal'],['camino','Camino de llegada'],['como','Cómo llegó'],['sector','Sector'],['area','Área'],['nivel','Nivel'],['tamano','Tamaño de empresa'],['pais','País']];
+var GAN_DIMS=[['campana','Campaña o señal'],['camino','Camino'],['tipo','Tipo de señal'],['como','Cómo llegó (Reply)'],['interes','Tipo de interés (Open+3)'],['sector','Sector'],['area','Área'],['nivel','Nivel'],['tamano','Tamaño de empresa'],['pais','País']];
 var ganDim='campana', ganSel=null;
 function ganValor(d,dim){ var c=d.campos||{};
   if(dim==='campana') return String(c.gr_secuencia_origen||'').trim();
   if(dim==='camino') return c.gr_origen?grmdEtiqueta('origen',c.gr_origen):'';
   if(dim==='como') return c.gr_como_llego?grmdEtiqueta('como_llego',c.gr_como_llego):'';
+  if(dim==='tipo') return c.gr_tipo_senal?grmdEtiqueta('tipo_senal',c.gr_tipo_senal):'';
+  if(dim==='interes') return c.gr_tipo_interes?grmdEtiqueta('tipo_interes',c.gr_tipo_interes):'';
   return String(c['gr_'+dim]||'').trim(); }
 function ganLlegoACita(d){
   if((d.campos||{}).gr_cita || String(d.stage)==='closedwon') return true;
@@ -5536,6 +5584,7 @@ function renderProspDetalle(ptype, pval, pwin) {
         '<a class="pv4-btn lc" href="'+liEmpHref(e)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">in Empresa ↗</a>'+
         (e.web?'<a class="pv4-btn" style="border-color:#6B7280;color:#9CA3AF;" href="'+esc(e.web)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">Web ↗</a>':'')+
         '<button class="pv4-btn dt" onclick="event.stopPropagation();openProspModal('+i+')">Ver detalle</button>'+
+        ((e.deal_id && grOportunidadEnTablero(e.deal_id))?'<button class="pv4-btn" style="border-color:#02ADBA;color:#02ADBA;" onclick="event.stopPropagation();abrirEditarDealGR(\''+String(e.deal_id)+'\');grmdTab(\'origen\')">Ver oportunidad</button>':'')+
       '</div>'+
     '</div>';
   });
@@ -5544,13 +5593,12 @@ function renderProspDetalle(ptype, pval, pwin) {
   renderPipelineMetricsGR(pool);
 }
 
+function grOportunidadEnTablero(id){ var L=((typeof DATA!=='undefined'&&DATA)?[].concat(DATA.deals||[],DATA.won||[],DATA.perdidas||[]):[]); return L.some(function(d){ return String(d.id)===String(id); }); }
 function closeProspModal(){ const ov=document.getElementById('prosp-modal'); if(ov) ov.remove(); }
 function openProspModal(i){
   var pool=window.__pv4pool||[];
   var e=(typeof i==='number')?pool[i]:pool.find(function(x){return String(x.event_key)===String(i);});
   if(!e) return;
-  // 22oct2026 (Mike): si el prospecto ya es oportunidad de GR, se abre la misma ficha que en Pipeline, en Origen y campana.
-  if(e.deal_id && (e.tenant==='GR'||e.tenant==='GR_PT'||!e.tenant) && ((DATA&&DATA.deals)||[]).some(function(d){ return String(d.id)===String(e.deal_id); })){ abrirEditarDealGR(String(e.deal_id)); grmdTab('origen'); return; }
   var PORT={GR:'49671716',GR_PT:'49671716',STIL:'51496709',IMMMU:'51496709'};
   var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
   var portal=PORT[e.tenant]||'49671716';
@@ -5594,6 +5642,8 @@ function openProspModal(i){
       abtn(liEmpUrl,'in Empresa ↗','#3b82f6')+
       (webUrl?abtn(webUrl,'Web ↗','#9CA3AF'):'')+
       (e.deal_id?abtn('https://app.hubspot.com/contacts/'+portal+'/record/0-3/'+e.deal_id,'HubSpot ↗','#10B981'):'')+
+      // 23oct2026 (Mike): la tarjeta conserva su detalle; si ya hay oportunidad de GR, se abre su ficha completa de Pipeline.
+      ((e.deal_id && grOportunidadEnTablero(e.deal_id))?'<button onclick="closeProspModal();abrirEditarDealGR(\''+String(e.deal_id)+'\');grmdTab(\'origen\')" style="flex:1;min-width:100px;padding:9px 6px;border-radius:9px;border:1px solid #02ADBA;background:transparent;color:#02ADBA;font-size:12px;font-weight:700;cursor:pointer;">Ver oportunidad</button>':'')+
     '</div>';
   var ov=document.getElementById('prosp-modal');
   if(!ov){ov=document.createElement('div');ov.id='prosp-modal';document.body.appendChild(ov);}
@@ -6061,6 +6111,8 @@ if (document.readyState === 'loading') {
       <div style="min-width:0;">
         <div id="grmd-title" style="font-size:18px;font-weight:800;color:#F3F4F6;line-height:1.3;"></div>
         <div id="grmd-info" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+        <div id="grmd-origen-linea" style="font-size:12px;color:#9CA3AF;margin-top:8px;"></div>
+        <div id="grmd-ligas" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
       </div>
       <button class="md-x" onclick="cerrarModalGR()" title="Cerrar">×</button>
     </div>
@@ -6110,7 +6162,7 @@ if (document.readyState === 'loading') {
       <div class="md-pane" data-pane="contacto">
         <div class="md-grid">
           <div class="md-col">
-          <div class="md-card">
+            <div class="md-card">
               <div class="md-h">Contacto</div>
               <div class="md-2">
                 <div><label class="md-lbl" for="grmd-contact">Persona</label><select id="grmd-contact" class="md-in" onchange="grmdSyncPhone()"></select></div>
@@ -6124,12 +6176,17 @@ if (document.readyState === 'loading') {
               </div>
               <div id="grmd-am-msg" class="md-msg"></div>
             </div>
+            <div class="md-card">
+              <div class="md-h">Persona <span style="text-transform:none;letter-spacing:0;font-weight:600;color:#6B7280;">Etiquetas de Amplemarket</span></div>
+              <div id="grmd-icp" class="md-kv"><div class="md-nota">Cargando…</div></div>
+            </div>
           </div>
           <div class="md-col">
             <div class="md-card">
-              <div class="md-h">Perfil del prospecto (ICP) <span style="text-transform:none;letter-spacing:0;font-weight:600;color:#6B7280;">Etiquetas de Amplemarket</span></div>
-              <div id="grmd-icp" class="md-kv"><div class="md-nota">Cargando…</div></div>
-              <div class="md-nota">Se llenan solos con el puesto del contacto y la empresa. Si falta algo, usa Actualizar sin créditos.</div>
+              <div class="md-h">Empresa</div>
+              <div id="grmd-emp" class="md-kv"><div class="md-nota">Cargando…</div></div>
+              <div id="grmd-emp-desc" class="md-texto" style="margin-top:8px;max-height:160px;"></div>
+              <div class="md-nota">Si falta algo, usa Actualizar sin créditos.</div>
             </div>
           </div>
         </div>
@@ -6140,17 +6197,19 @@ if (document.readyState === 'loading') {
             <div class="md-card">
               <div class="md-h">Cómo llegó</div>
               <div class="md-2">
-                <div><label class="md-lbl" for="grmd-c-gr_origen">Camino de llegada</label><select id="grmd-c-gr_origen" class="md-in"></select></div>
-                <div><label class="md-lbl">Cómo llegó</label><div id="grmd-como" class="md-val">—</div></div>
+                <div><label class="md-lbl" for="grmd-c-gr_origen">Camino</label><select id="grmd-c-gr_origen" class="md-in"></select></div>
+                <div><label class="md-lbl">Tipo de señal</label><div id="grmd-tipo-senal" class="md-val">—</div></div>
+                <div><label class="md-lbl" id="grmd-como-lbl">Cómo llegó</label><div id="grmd-como" class="md-val">—</div></div>
                 <div><label class="md-lbl">Canal</label><div id="grmd-canal" class="md-val">—</div></div>
-                <div><label class="md-lbl">Campaña o señal</label><div id="grmd-campana" class="md-val">—</div></div>
               </div>
+              <label class="md-lbl" style="margin-top:6px;">Campaña o señal</label><div id="grmd-campana" class="md-val">—</div>
+              <label class="md-lbl" style="margin-top:6px;">Fecha de la señal</label><div id="grmd-fecha-senal" class="md-val">—</div>
               <div id="grmd-origen-detalle" class="md-nota"></div>
             </div>
           </div>
           <div class="md-col">
             <div class="md-card">
-              <div class="md-h">Mensaje nuestro que contestó</div>
+              <div class="md-h" id="grmd-mensaje-h">Mensaje nuestro que contestó</div>
               <div id="grmd-mensaje" class="md-texto">—</div>
             </div>
             <div class="md-card">
