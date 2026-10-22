@@ -997,7 +997,8 @@ async function grmdCompletarAuto(){
     if(ks.length && d) grmdCargarContactos(id, d.cliente||d.name||'');
     m.style.color=ks.length?'#62D175':'#9CA3AF';
     m.textContent=ks.length?('Se completó: '+ks.map(function(k){return GR_CAMPOS_NOMBRE[k]||k;}).join(', ')+'. Ya está en HubSpot.'):'No había nada que se pudiera completar solo; lo que falta se elige aquí.';
-  }catch(e){ m.style.color='#DB0540'; m.textContent='No se completó: '+e.message; }
+    m.style.borderColor=ks.length?'#62D17580':'#2A3142'; try{ taskToast(m.textContent, true); }catch(e){}
+  }catch(e){ m.style.color='#DB0540'; m.textContent='No se completó: '+e.message; try{ taskToast(m.textContent, false); }catch(x){} }
   b.disabled=false;
 }
 // Botones con creditos de Amplemarket: datos (0.5 creditos) o telefono (0.5 + costo del telefono). Una persona a la vez,
@@ -1035,10 +1036,12 @@ async function grmdAmplemarket(nivel){
     if(res.consultado) t+=' Costo: '+(nivel==='gratis'?'sin costo':(tel?'0.5 créditos de búsqueda (más el teléfono si Amplemarket lo cobra)':'0.5 créditos'))+'.';
     m.style.color=res.ok?((res.contacto||[]).length||(res.empresa||[]).length||(res.oportunidad||[]).length?'#62D175':'#9CA3AF'):'#DB0540';
     m.textContent=t.trim();
+    m.style.borderColor=res.ok?((res.contacto||[]).length||(res.empresa||[]).length||(res.oportunidad||[]).length?'#62D17580':'#2A3142'):'#DB054080';
+    try{ taskToast(m.textContent, res.ok!==false); }catch(e){}
     var _dd=(DATA.deals||[]).filter(function(x){return String(x.id)===String(id);})[0];
     if(_dd && (res.oportunidad||[]).length){ _dd.campos=_dd.campos||{}; (res.oportunidad||[]).forEach(function(k){ if(!({gr_mensaje_contesto:1,gr_respuesta_prospecto:1})[k]) _dd.campos[k]=String(val[k]||''); }); }
     if(res.telefono||tel||(res.oportunidad||[]).length){ var d=(DATA.deals||[]).filter(function(x){return String(x.id)===String(id);})[0]; grmdCargarContactos(id,(d&&(d.cliente||d.name))||''); }
-  }catch(e){ m.style.color='#DB0540'; m.textContent='No se consultó: '+e.message; }
+  }catch(e){ m.style.color='#DB0540'; m.textContent='No se consultó: '+e.message; try{ taskToast(m.textContent, false); }catch(x){} }
   b0.disabled=b1.disabled=b2.disabled=false;
 }
 // Boton "Completar datos de todas": corre el mismo motor sobre toda la base (sustituye la corrida diaria).
@@ -6020,7 +6023,7 @@ if (document.readyState === 'loading') {
 #gr-modal-edit .md-in:focus{outline:none;border-color:#02ADBA;}
 #gr-modal-edit .md-2{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;}
 #gr-modal-edit .md-nota{font-size:11px;color:#8b93a7;line-height:1.5;margin-top:6px;}
-#gr-modal-edit .md-msg{font-size:12px;color:#9CA3AF;margin-top:8px;line-height:1.5;}
+#gr-modal-edit .md-msg{font-size:13px;color:#9CA3AF;margin-top:10px;line-height:1.5;padding:10px 12px;border-radius:10px;background:#0a0e17;border:1px solid #2A3142;font-weight:600;}
 #gr-modal-edit .md-msg:empty{display:none;}
 #gr-modal-edit .md-btn{border-radius:9px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;background:transparent;white-space:nowrap;}
 #gr-modal-edit .md-btn:disabled{opacity:.5;cursor:wait;}
