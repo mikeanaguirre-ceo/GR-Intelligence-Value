@@ -66,7 +66,7 @@
   function abrir(u) { return /^https:\/\//.test(u || '') ? '<a href="' + h(u.split(/\s+/)[0]) + '" target="_blank" rel="noopener">Abrir</a>' : '—'; }
   function tarjeta(n, titulo, cuerpo, extra) { return '<div class="card"><div class="card-h"><h2><span class="num">' + n + '</span>' + h(titulo) + '</h2>' + (extra || '') + '</div>' + cuerpo + '</div>'; }
   function seccion(n, id, titulo, cuerpo, c, ejemplo) { return tarjeta(n, titulo, cuerpo + P.pedir(id, titulo, ejemplo) + P.solicitudes(c.solicitudes, titulo)); }
-  var PESTANAS = [['equipo', 'Equipo'], ['conexiones', 'Conexiones'], ['marca', 'Tu marca y tus correos'], ['fases', 'Fases del pipeline'], ['productos', 'Productos'], ['mejoras', 'Mejoras de mensajes'], ['proceso', 'Objetivos y proceso']];
+  var PESTANAS = [['equipo', 'Equipo'], ['conexiones', 'Conexiones'], ['marca', 'Tu marca y tus correos'], ['fases', 'Fases del pipeline'], ['productos', 'Productos'], ['mejoras', 'Mejoras de mensajes'], ['proceso', 'Objetivos, reuniones y proceso']];
   var pestana = (/^#(equipo|conexiones|marca|fases|productos|mejoras|proceso)(\?.*)?$/.exec(location.hash) || [])[1] || 'equipo';
   // Liga "Corregir este mensaje" de los correos: #mejoras?c=<datos del mensaje en base64url>. Se lee una vez y se limpia de la barra.
   var mensajeLiga = (function () {
@@ -228,11 +228,15 @@
   function probDe(c) { try { return JSON.parse((c.datos || {}).etapas_probabilidad || '{}') || {}; } catch (e) { return {}; } }
   function plazosDe(c) { try { return JSON.parse((c.datos || {}).plazos_etapa || '{}') || {}; } catch (e) { return {}; } }
   function franjas(p) { p = Number(p) || 0; if (!p) return null; var a = Math.ceil(p * 0.75); return { verde: a - 1, amarillo: [a, p], rojo: p + 1 }; }
-  function barra(p) {
-    var f = franjas(p); if (!f) return '<span class="vacio">Sin plazo: el semáforo solo usa la fecha de cierre.</span>';
+  // Cantidad con su unidad: horas (h) o dias (habiles si la compania cuenta en habiles).
+  function enUnidad(n, u, hab) { return u === 'horas' ? n + ' h' : n + ' ' + (n === 1 ? 'día' : 'días') + (hab ? (n === 1 ? ' hábil' : ' hábiles') : ''); }
+  // Barra del semaforo de una fase (la misma para prospeccion y oportunidades): verde hasta ceil(75%)-1, amarillo hasta el plazo, rojo despues.
+  function barra(p, u, hab, sinPlazo) {
+    p = Math.round(Number(p) || 0); var f = franjas(p); if (!f) return '<span class="vacio">' + (sinPlazo || 'Sin plazo: el semáforo solo usa la fecha de cierre.') + '</span>';
     var tot = f.rojo + Math.max(3, Math.round(p * 0.25)), w = function (n) { return Math.max(4, Math.round(n / tot * 100)) + '%'; };
+    var e = function (n) { return enUnidad(n, u, hab); };
     return '<div class="sem-barra"><i class="v" style="width:' + w(f.verde + 1) + '"></i><i class="a" style="width:' + w(f.amarillo[1] - f.amarillo[0] + 1) + '"></i><i class="r" style="flex:1"></i></div>'
-      + '<div class="sem-txt">Verde del día 0 al ' + f.verde + ' · amarillo del ' + f.amarillo[0] + ' al ' + f.amarillo[1] + ' · rojo desde el día ' + f.rojo + '</div>';
+      + '<div class="sem-txt">' + (f.verde >= 1 ? 'Verde hasta ' + e(f.verde) : 'Verde solo al entrar') + ' · amarillo ' + (f.amarillo[0] === f.amarillo[1] ? 'en ' + e(f.amarillo[0]) : 'de ' + f.amarillo[0] + ' a ' + e(f.amarillo[1])) + ' · rojo después de ' + e(p) + '</div>';
   }
   // Prospeccion (Posibles clientes): fases en orden (prospeccion_etapas), estados que la cierran (prospeccion_cerradas) y
   // tiempo maximo por fase en horas o dias (plazos_prospeccion). criterios_etapa: que significa cada fase y cuando avanza.
@@ -244,26 +248,53 @@
   function filaCriterio(e, cols, adm, crit) {
     return '<tr class="crit-r"><td colspan="' + cols + '"><span class="crit-l">Qué significa y cuándo avanza</span>' + (adm ? '<textarea class="crit" data-fase="' + h(e) + '" rows="2" maxlength="500" placeholder="' + PD + '">' + h(crit[e] || '') + '</textarea>' : '<div class="crit-t">' + h(crit[e] || PD) + '</div>') + '</td></tr>';
   }
+  // Probabilidad de una fase de prospeccion: la que trae su nombre ("25% Sembrado - respondió" = 25 %). Solo lectura.
+  function probNombre(e) { var m = /^\s*(\d{1,3})\s*%/.exec(String(e || '')); return m ? m[1] + ' %' : '—'; }
+  // Motivos de perdida de la compania: [{d: nombre tal cual en el CRM, v: valor interno}].
+  function motivosCat(c) { try { var l = JSON.parse((c.datos || {}).motivos_perdida_catalogo || '[]'); return Array.isArray(l) ? l.map(function (x) { return String((x && x.d) || '').trim(); }).filter(Boolean) : []; } catch (e) { return []; } }
+  // Encabezado comun de las dos tablas de fases (prospeccion y oportunidades): mismas columnas, mismo orden.
+  var CABEZA_FASES = '<thead><tr><th>Fase</th><th>Probabilidad</th><th>Tiempo máximo</th><th>Semáforo</th></tr></thead>';
+  function filaFase(e, i, prob, tiempo, ref, sem, adm, crit) {
+    return '<tr><td><b>' + (i + 1) + '. ' + h(e) + '</b></td><td>' + prob + '</td><td style="white-space:nowrap">' + tiempo + '</td><td class="sem-c" data-sem="' + ref + '">' + sem + '</td></tr>' + filaCriterio(e, 4, adm, crit);
+  }
+  // Cierres: fases que terminan el proceso. Sin tiempo ni semaforo. Con catalogo, quien administra marca cuales se usan.
+  function bloqueCierres(lista, activos, clase, adm, crit, conCasilla, nota) {
+    if (!lista.length) return '';
+    var filas = lista.map(function (e) {
+      var casilla = conCasilla ? '<td><label class="se-usa"><input type="checkbox" class="' + clase + '" value="' + h(e) + '"' + (activos.indexOf(e) >= 0 ? ' checked' : '') + (adm ? '' : ' disabled') + '> Se usa</label></td>' : '';
+      return '<tr class="fase-cierre"><td><b>' + h(e) + '</b></td>' + casilla + '</tr>' + filaCriterio(e, conCasilla ? 2 : 1, adm, crit);
+    }).join('');
+    return '<h3 class="sub-f">Cierres</h3><p class="nota" style="margin:0 0 8px">' + nota + '</p>'
+      + '<div class="tw"><table class="tabla"><thead><tr><th>Cierre</th>' + (conCasilla ? '<th>Se usa</th>' : '') + '</tr></thead><tbody>' + filas + '</tbody></table></div>';
+  }
   function fases(c) {
     var d = c.datos || {}, adm = !!(c.info || {}).administra, pl = plazosDe(c), pr = probDe(c), crit = jsonDe(c, 'criterios_etapa'), pp = jsonDe(c, 'plazos_prospeccion');
-    var dias = d.plazos_unidad === 'habiles' ? 'días hábiles' : 'días';
+    var hab = d.plazos_unidad === 'habiles', dias = hab ? 'días hábiles' : 'días';
     var et = String(d.pipeline_etapas || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
-    var pe = listaFases(d.prospeccion_etapas), pc = listaFases(d.prospeccion_cerradas);
-    var cierres = unicas(listaFases(d.etapas_cerradas).concat(listaFases(d.etapas_perdidas))).filter(function (x) { return et.indexOf(x) < 0; });
+    var pe = listaFases(d.prospeccion_etapas), pc = listaFases(d.prospeccion_cerradas), pca = listaFases(d.prospeccion_cerradas_activas);
+    var cat = listaFases(d.cierres_catalogo), editables = listaFases(d.pipeline_etapas_editables);
+    var cierres = cat.length ? cat : unicas(listaFases(d.etapas_cerradas).concat(listaFases(d.etapas_perdidas))).filter(function (x) { return et.indexOf(x) < 0; });
+    var mcat = motivosCat(c), mact = listaFases(d.pipeline_motivos_perdida);
     var estilo = '<style>.sem-barra{display:flex;height:12px;border-radius:6px;overflow:hidden;min-width:160px;background:#eee}.sem-barra i{display:block;height:100%}.sem-barra .v{background:#2e7d32}.sem-barra .a{background:#e0a100}.sem-barra .r{background:#b3261e}.sem-txt{font-size:12px;color:#5c5c5c;margin-top:4px}.sem-dot{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle}.sem-dot.r{background:#b3261e}.sem-dot.a{background:#e0a100}.sem-dot.v{background:#2e7d32}.sem-dot.g{background:#9aa0a6}'
-      + '.tw{overflow-x:auto;min-width:0;max-width:100%}.crit-r td{border-top:0;padding-top:0}.crit-l{display:block;font-size:12px;color:#5c5c5c;margin-bottom:3px}.crit-t{font-size:13px;white-space:pre-wrap}textarea.crit{width:100%;box-sizing:border-box;font:inherit;font-size:13px}.fase-cierre td{background:#f6f6f4}</style>';
+      + '.tw{overflow-x:auto;min-width:0;max-width:100%}.crit-r td{border-top:0;padding-top:0}.crit-l{display:block;font-size:12px;color:#5c5c5c;margin-bottom:3px}.crit-t{font-size:13px;white-space:pre-wrap}textarea.crit{width:100%;box-sizing:border-box;font:inherit;font-size:13px}.fase-cierre td{background:#f6f6f4}'
+      + '.sub-f{margin:18px 0 6px;font-size:15px}.se-usa{display:inline-flex;gap:6px;align-items:center;white-space:nowrap}.motivos{list-style:none;margin:0;padding:0}.motivos li{padding:6px 0;border-top:1px solid #eee}.motivos label{display:flex;gap:8px;align-items:flex-start}.motivos input{margin-top:3px}</style>';
+    var reglas = function (cierre) {
+      return '<div class="nota" style="margin-top:12px"><b>Cómo decide el color:</b><br><span class="sem-dot r"></span> <b>Rojo, atender:</b> lleva más tiempo en la fase que su máximo' + (cierre ? ', o su fecha de cierre ya pasó' : '') + '.<br><span class="sem-dot a"></span> <b>Amarillo, vigilar:</b> ya usó el 75% de su tiempo' + (cierre ? ', o cierra en 7 días o menos' : '') + '.<br><span class="sem-dot v"></span> <b>Verde, al día:</b> todo lo demás.' + (cierre ? '<br><span class="sem-dot g"></span> <b>Gris:</b> sin fecha de cierre ni plazo.' : '') + '</div>';
+    };
     // Prospeccion
     var prosp;
     if (!pe.length) prosp = '<p class="vacio">Tu compañía todavía no tiene fases de prospección.</p>';
     else {
-      var unidadSel = function (e, u) { return '<select class="punidad" data-fase="' + h(e) + '"><option value="horas"' + (u === 'horas' ? ' selected' : '') + '>horas</option><option value="dias"' + (u !== 'horas' ? ' selected' : '') + '>' + dias + '</option></select>'; };
-      var txtPlazo = function (o) { return o && Number(o.n) > 0 ? o.n + ' ' + (o.unidad === 'horas' ? 'horas' : dias) : 'Sin plazo'; };
+      var unidadSel = function (e, u, ref) { return '<select class="punidad" data-fase="' + h(e) + '" data-ref="' + ref + '"><option value="horas"' + (u === 'horas' ? ' selected' : '') + '>horas</option><option value="dias"' + (u !== 'horas' ? ' selected' : '') + '>' + dias + '</option></select>'; };
+      var txtPlazo = function (o) { var n = Math.round(Number(o && o.n) || 0); return n > 0 ? (o.unidad === 'horas' ? n + (n === 1 ? ' hora' : ' horas') : enUnidad(n, 'dias', hab)) : 'Sin plazo'; };
       var filasP = pe.map(function (e, i) {
-        var o = pp[e] || {};
-        return '<tr><td><b>' + (i + 1) + '. ' + h(e) + '</b></td><td>' + (adm ? '<input type="number" min="1" max="720" class="pplazo" data-fase="' + h(e) + '" value="' + h(Number(o.n) > 0 ? o.n : '') + '" style="width:70px"> ' + unidadSel(e, o.unidad) : h(txtPlazo(o))) + '</td></tr>' + filaCriterio(e, 2, adm, crit);
-      }).join('') + pc.map(function (e) { return '<tr class="fase-cierre"><td colspan="2"><b>Cierre · ' + h(e) + '</b></td></tr>' + filaCriterio(e, 2, adm, crit); }).join('');
-      prosp = '<p style="margin:0 0 10px">Las fases por las que pasa un posible cliente antes de que nazca la oportunidad, cuánto tiempo puede estar en cada una y qué significa cada fase. Al final, los estados que terminan la prospección.</p>'
-        + '<div class="tw"><table class="tabla"><thead><tr><th>Fase</th><th>Tiempo máximo</th></tr></thead><tbody>' + filasP + '</tbody></table></div>';
+        var o = pp[e] || {}, u = o.unidad === 'horas' ? 'horas' : 'dias', ref = 'p' + i;
+        var tiempo = adm ? '<input type="number" min="1" max="720" class="pplazo" data-fase="' + h(e) + '" data-ref="' + ref + '" value="' + h(Number(o.n) > 0 ? o.n : '') + '" style="width:70px"> ' + unidadSel(e, o.unidad, ref) : h(txtPlazo(o));
+        return filaFase(e, i, h(probNombre(e)), tiempo, ref, barra(o.n, u, hab, 'Sin plazo: sin semáforo.'), adm, crit);
+      }).join('');
+      prosp = '<p style="margin:0 0 10px">Las fases por las que pasa un posible cliente antes de que nazca la oportunidad: su probabilidad, cuánto tiempo puede estar en cada una, cómo se ve el semáforo y qué significa cada fase.</p>'
+        + '<div class="tw"><table class="tabla">' + CABEZA_FASES + '<tbody>' + filasP + '</tbody></table></div>' + reglas(false)
+        + bloqueCierres(pc, pca, 'cierre-pr', adm, crit, true, 'Los estados que terminan la prospección. Solo los marcados se usan.');
     }
     var html = tarjeta('6.1', 'Prospección (Posibles clientes)', prosp + P.pedir('prospeccion', 'Prospección (Posibles clientes)', 'Ej.: agrega la fase Reagendar sesión') + P.solicitudes(c.solicitudes, 'Prospección (Posibles clientes)'));
     // Oportunidades
@@ -271,20 +302,37 @@
     if (!et.length) cuerpo = '<p class="vacio">Tu compañía todavía no tiene fases del pipeline configuradas. Pídelo abajo y Great Revenue las carga desde tu CRM.</p>';
     else {
       var filas = et.map(function (e, i) {
-        return '<tr><td><b>' + (i + 1) + '. ' + h(e) + '</b></td><td>' + (adm ? '<input type="number" min="1" max="365" class="plazo" data-fase="' + h(e) + '" value="' + h(pl[e] || '') + '" style="width:80px"> ' + dias : h(pl[e] ? pl[e] + ' ' + dias : '—')) + '</td><td>' + (adm ? '<input type="number" min="0" max="100" class="prob" data-fase="' + h(e) + '" value="' + h(pr[e] != null ? pr[e] : '') + '" style="width:70px"> %' : h(pr[e] != null ? pr[e] + ' %' : 'Por definir')) + '</td><td class="sem-c" data-sem="' + h(e) + '">' + barra(pl[e]) + '</td></tr>' + filaCriterio(e, 4, adm, crit);
-      }).join('') + cierres.map(function (e) { return '<tr class="fase-cierre"><td colspan="4"><b>Cierre · ' + h(e) + '</b></td></tr>' + filaCriterio(e, 4, adm, crit); }).join('');
-      cuerpo = '<p style="margin:0 0 10px">Cuántos ' + dias + ' puede estar una oportunidad en cada fase antes de que el tablero la marque, qué probabilidad de cierre tiene y qué significa cada fase: el pronóstico del tablero suma el monto de cada oportunidad por la probabilidad de su fase. Al guardar, el tablero lo usa la siguiente vez que se abra.</p>'
-        + '<div class="tw"><table class="tabla"><thead><tr><th>Fase</th><th>' + (dias === 'días hábiles' ? 'Días hábiles máximos' : 'Días máximos') + '</th><th>Probabilidad de cierre</th><th>Cómo se ve el semáforo</th></tr></thead><tbody>' + filas + '</tbody></table></div>'
-        + '<div class="nota" style="margin-top:12px"><b>Cómo decide el color el tablero:</b><br><span class="sem-dot r"></span> <b>Rojo, atender:</b> lleva más días en la fase que su plazo, o su fecha de cierre ya pasó.<br><span class="sem-dot a"></span> <b>Amarillo, vigilar:</b> ya usó el 75% de su plazo, o cierra en 7 días o menos.<br><span class="sem-dot v"></span> <b>Verde, al día:</b> todo lo demás.<br><span class="sem-dot g"></span> <b>Gris:</b> sin fecha de cierre ni plazo.</div>';
+        var ref = 'o' + i;
+        var prob = adm ? '<input type="number" min="0" max="100" class="prob" data-fase="' + h(e) + '" value="' + h(pr[e] != null ? pr[e] : '') + '" style="width:64px"> %' : h(pr[e] != null ? pr[e] + ' %' : 'Por definir');
+        var tiempo = adm ? '<input type="number" min="1" max="365" class="plazo" data-fase="' + h(e) + '" data-ref="' + ref + '" value="' + h(pl[e] || '') + '" style="width:70px"> ' + dias : h(pl[e] ? pl[e] + ' ' + dias : 'Sin plazo');
+        return filaFase(e, i, prob, tiempo, ref, barra(pl[e], 'dias', hab), adm, crit);
+      }).join('');
+      cuerpo = '<p style="margin:0 0 10px">Las fases de una oportunidad: qué probabilidad de cierre tiene cada una, cuántos ' + dias + ' puede estar en ella antes de que el tablero la marque, cómo se ve el semáforo y qué significa cada fase. El pronóstico del tablero suma el monto de cada oportunidad por la probabilidad de su fase. Al guardar, el tablero lo usa la siguiente vez que se abra.</p>'
+        + '<div class="tw"><table class="tabla">' + CABEZA_FASES + '<tbody>' + filas + '</tbody></table></div>' + reglas(true)
+        + bloqueCierres(cierres, editables, 'cierre-op', adm, crit, !!cat.length, cat.length ? 'Los cierres que existen en tu CRM. El equipo solo puede mover una oportunidad a los marcados desde el tablero.' : 'Los estados que cierran una oportunidad.');
+      if (mcat.length) {
+        cuerpo += '<h3 class="sub-f">Motivos de pérdida</h3><p class="nota" style="margin:0 0 8px">El equipo solo verá los que estén marcados al cerrar una oportunidad como perdida. Los nombres son los de tu Zoho.</p>'
+          + '<ul class="motivos">' + mcat.map(function (m) { return '<li><label><input type="checkbox" class="motivo" value="' + h(m) + '"' + (mact.indexOf(m) >= 0 ? ' checked' : '') + (adm ? '' : ' disabled') + '><span>' + h(m) + '</span></label></li>'; }).join('') + '</ul>';
+      } else if (mact.length) cuerpo += '<h3 class="sub-f">Motivos de pérdida</h3><p class="nota" style="margin:0">Al cerrar una oportunidad como perdida, el equipo elige entre: ' + mact.map(h).join(' · ') + '.</p>';
     }
-    if (et.length || pe.length) cuerpo += adm ? '<div class="acciones" style="margin-top:12px"><button class="p" id="fases-guardar">Guardar fases, plazos y criterios</button><span class="msg" id="m-fases"></span></div>' : '<p class="vacio">Solo quien administra el portal puede cambiar los plazos y los criterios.</p>';
+    if (et.length || pe.length) cuerpo += adm ? '<div class="acciones" style="margin-top:12px"><button class="p" id="fases-guardar">Guardar fases, cierres y motivos</button><span class="msg" id="m-fases"></span></div>' : '<p class="vacio">Solo quien administra el portal puede cambiar las fases, los cierres y los motivos.</p>';
     html += tarjeta('6.2', 'Fases del pipeline (Oportunidades)', cuerpo + P.pedir('fases', 'Fases del pipeline', et.length ? 'Ej.: agrega la fase Propuesta enviada' : 'Ej.: mis fases son Calificada, Propuesta, Negociación') + P.solicitudes(c.solicitudes, 'Fases del pipeline'));
     return estilo + html;
   }
   function activarFases(c) {
-    Array.prototype.forEach.call(document.querySelectorAll('input.plazo'), function (inp) { inp.oninput = function () { var td = document.querySelector('[data-sem="' + inp.getAttribute('data-fase').replace(/"/g, '\\"') + '"]'); if (td) td.innerHTML = barra(inp.value); }; });
+    var hab = (c.datos || {}).plazos_unidad === 'habiles';
+    var poner = function (ref, html) { var td = document.querySelector('[data-sem="' + ref + '"]'); if (td) td.innerHTML = html; };
+    Array.prototype.forEach.call(document.querySelectorAll('input.plazo'), function (inp) { inp.oninput = function () { poner(inp.getAttribute('data-ref'), barra(inp.value, 'dias', hab)); }; });
+    var repintarP = function (ref) {
+      var inp = document.querySelector('input.pplazo[data-ref="' + ref + '"]'), sel = document.querySelector('select.punidad[data-ref="' + ref + '"]');
+      if (inp) poner(ref, barra(inp.value, sel ? sel.value : 'dias', hab, 'Sin plazo: sin semáforo.'));
+    };
+    Array.prototype.forEach.call(document.querySelectorAll('input.pplazo'), function (inp) { inp.oninput = function () { repintarP(inp.getAttribute('data-ref')); }; });
+    Array.prototype.forEach.call(document.querySelectorAll('select.punidad'), function (sel) { sel.onchange = function () { repintarP(sel.getAttribute('data-ref')); }; });
     if (!$('fases-guardar')) return;
+    var marcados = function (clase) { return Array.prototype.filter.call(document.querySelectorAll('input.' + clase), function (x) { return x.checked; }).map(function (x) { return x.value; }); };
     $('fases-guardar').onclick = function () {
+      var d = c.datos || {};
       var cuerpo = { accion: 'fases_guardar', sesion: ses(), tenant: c.tenant };
       var plazos = {}, mal = '';
       Array.prototype.forEach.call(document.querySelectorAll('input.plazo'), function (inp) { var v = inp.value.trim(); if (!v) return; var n = Math.round(Number(v)); if (!(n >= 1 && n <= 365)) mal = inp.getAttribute('data-fase'); else plazos[inp.getAttribute('data-fase')] = n; });
@@ -295,15 +343,26 @@
       var pp = {}, malpp = '';
       Array.prototype.forEach.call(document.querySelectorAll('input.pplazo'), function (inp) {
         var f = inp.getAttribute('data-fase'), v = inp.value.trim(); if (!v) return;
-        var sel = document.querySelector('select.punidad[data-fase="' + f.replace(/"/g, '\\"') + '"]'), u = sel ? sel.value : 'dias', n = Math.round(Number(v)), max = u === 'horas' ? 720 : 365;
+        var sel = document.querySelector('select.punidad[data-ref="' + inp.getAttribute('data-ref') + '"]'), u = sel ? sel.value : 'dias', n = Math.round(Number(v)), max = u === 'horas' ? 720 : 365;
         if (!(n >= 1 && n <= max)) malpp = f + ' (1 a ' + max + ' ' + (u === 'horas' ? 'horas' : 'días') + ')'; else pp[f] = { n: n, unidad: u };
       });
       if (malpp) { $('m-fases').textContent = 'Revisa el tiempo de ' + malpp + '.'; return; }
       var crit = {};
       Array.prototype.forEach.call(document.querySelectorAll('textarea.crit'), function (t) { crit[t.getAttribute('data-fase')] = t.value.trim(); });
+      var hayCierres = !!document.querySelector('input.cierre-op'), hayCierresP = !!document.querySelector('input.cierre-pr'), hayMotivos = !!document.querySelector('input.motivo');
+      var cierresAct = marcados('cierre-op'), cierresP = marcados('cierre-pr'), motivos = marcados('motivo');
+      // Si queda habilitado un cierre perdido, el tablero pide el motivo: tiene que haber al menos uno marcado.
+      if (hayMotivos && !motivos.length) {
+        var perdidas = listaFases(d.etapas_perdidas), habil = hayCierres ? cierresAct : listaFases(d.pipeline_etapas_editables);
+        var perdida = habil.filter(function (x) { return perdidas.indexOf(x) >= 0; })[0];
+        if (perdida) { $('m-fases').textContent = 'Marca al menos un motivo de pérdida: el cierre ' + perdida + ' está en uso y el tablero pide el motivo.'; return; }
+      }
       if (document.querySelector('input.plazo')) { cuerpo.plazos = plazos; cuerpo.probabilidades = probs; }
       if (document.querySelector('input.pplazo')) cuerpo.plazos_prospeccion = pp;
       if (document.querySelector('textarea.crit')) cuerpo.criterios = crit;
+      if (hayCierres) cuerpo.cierres_activos = cierresAct;
+      if (hayCierresP) cuerpo.prospeccion_cierres_activos = cierresP;
+      if (hayMotivos) cuerpo.motivos_activos = motivos;
       $('m-fases').textContent = 'Guardando...'; this.disabled = true; var btn = this;
       P.api(cuerpo).then(function (x) {
         btn.disabled = false;
@@ -312,7 +371,10 @@
         if (cuerpo.plazos) { c.datos.plazos_etapa = JSON.stringify(plazos); var np = probDe(c); Object.keys(probs).forEach(function (k) { if (probs[k] === '') delete np[k]; else np[k] = probs[k]; }); c.datos.etapas_probabilidad = JSON.stringify(np); }
         if (cuerpo.plazos_prospeccion) c.datos.plazos_prospeccion = JSON.stringify(pp);
         if (cuerpo.criterios) { var nc = jsonDe(c, 'criterios_etapa'); Object.keys(crit).forEach(function (k) { if (crit[k]) nc[k] = crit[k]; else delete nc[k]; }); c.datos.criterios_etapa = JSON.stringify(nc); }
-        $('m-fases').textContent = 'Guardado. El tablero y el motor ya usan estos plazos y criterios.';
+        if (hayCierres) { var et = String(c.datos.pipeline_etapas || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean); c.datos.pipeline_etapas_editables = et.concat(listaFases(c.datos.cierres_catalogo).filter(function (x) { return cierresAct.indexOf(x) >= 0 && et.indexOf(x) < 0; })).join(','); }
+        if (hayCierresP) c.datos.prospeccion_cerradas_activas = listaFases(c.datos.prospeccion_cerradas).filter(function (x) { return cierresP.indexOf(x) >= 0; }).join(',');
+        if (hayMotivos) c.datos.pipeline_motivos_perdida = motivosCat(c).filter(function (x) { return motivos.indexOf(x) >= 0; }).join(',');
+        $('m-fases').textContent = 'Guardado. El tablero y el motor ya usan estas fases, cierres y motivos.';
       });
     };
   }
@@ -533,7 +595,7 @@
       ['tarea', 'Tarea'], ['tarea_compartida', 'Tarea compartida'], ['tarea_whatsapp_open3', 'Tarea de WhatsApp Open+3'], ['nota_origen', 'Nota de origen'], ['nota_post_reunion', 'Nota post-reunión'], ['nota_operativa', 'Nota operativa'], ['versiones_documento', 'Versiones de documentos'], ['reglas', 'Reglas generales'], ['aprobado', 'Aprobación']];
     var filasNom = NOM_ETQ.filter(function (x) { return nom[x[0]]; }).map(function (x) { return [x[1], String(nom[x[0]])]; });
     if (filasNom.length) cuerpo += '<h3 style="margin:18px 0 6px;font-size:15px">Nomenclatura completa</h3><p class="nota" style="margin:0 0 8px">Así se nombran oportunidades, campañas, tareas y notas. Para cambiarla, pídelo abajo y Great Revenue la actualiza.</p>' + dl(filasNom) + P.pedir('nomenclatura', 'Nomenclatura', 'Ej.: agrega el país BR a las campañas');
-    return tarjeta(9, 'Cómo se nombran tus oportunidades y secuencias', cuerpo);
+    return tarjeta(10, 'Cómo se nombran tus oportunidades y secuencias', cuerpo);
   }
   function activarNombres(c) {
     if (!$('nom-formato')) return;
@@ -567,7 +629,7 @@
       cuerpo += dl([['Duración de la reunión', dur ? dur + ' minutos' : PD], ['¿Los mensajes pueden decir cuánto dura?', men === 'si' ? 'Sí' : men === 'no' ? 'No' : PD]])
         + '<p class="vacio">Solo quien administra el portal puede cambiarlo.</p>';
     }
-    return tarjeta(10, 'Reuniones', cuerpo);
+    return tarjeta(9, 'Reuniones', cuerpo);
   }
   function activarReuniones(c) {
     if (!$('reu-guardar')) return;
@@ -586,7 +648,7 @@
     };
   }
   function proceso(c) {
-    return nombres(c) + reuniones(c) + tarjeta(11, 'Objetivos y proceso comercial', '<p class="vacio">Próximamente: aquí verás y ajustarás los objetivos que opera el motor y las etapas de tu proceso comercial.</p>' + P.pedir('proceso', 'Objetivos y proceso', 'Ej.: agrega una etapa de propuesta') + P.solicitudes(c.solicitudes, 'Objetivos y proceso'));
+    return reuniones(c) + nombres(c) + tarjeta(11, 'Objetivos y proceso comercial', '<p class="vacio">Próximamente: aquí verás y ajustarás los objetivos que opera el motor y las etapas de tu proceso comercial.</p>' + P.pedir('proceso', 'Objetivos y proceso', 'Ej.: agrega una etapa de propuesta') + P.solicitudes(c.solicitudes, 'Objetivos y proceso'));
   }
   function cargarMuestras(c) {
     var poner = function (actuales) {
