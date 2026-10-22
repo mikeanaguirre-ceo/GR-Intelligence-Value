@@ -942,6 +942,7 @@ function grmdPintarCampos(d){
   grmdOpc('grmd-c-gr_producto', prods, String(c.gr_producto||''));
   grmdOpc('grmd-c-gr_responsable', eq, String(c.gr_responsable||'').toLowerCase());
   grmdOpc('grmd-c-gr_origen', lst('origen'), c.gr_origen||'');
+  var _od=document.getElementById('grmd-origen-detalle'); if(_od){ var _so=String(c.gr_secuencia_origen||''); _od.textContent=_so?((/\s[–-]\s\S/.test(_so)?'Señal: ':'Campaña: ')+_so):''; }
   grmdOpc('grmd-c-gr_tipo_oportunidad', lst('tipo'), c.gr_tipo_oportunidad||'');
   grmdOpc('grmd-c-gr_partner', lst('partner'), c.gr_partner||'');
   var ap=String(c.gr_apoyo||'').toLowerCase().split(';').filter(Boolean);
@@ -971,7 +972,7 @@ async function grmdCompletarAuto(){
 // Botones con creditos de Amplemarket: datos (0.5 creditos) o telefono (0.5 + costo del telefono). Una persona a la vez,
 // con tope diario en el portal. Solo llena lo vacio y no escribe si Amplemarket devuelve a otra persona.
 var GR_AMPLE='https://mikea.app.n8n.cloud/webhook/gr-actualizar-prospecto';
-var GR_AM_NOMBRE={firstname:'Nombre',lastname:'Apellido',jobtitle:'Puesto',hs_linkedin_url:'LinkedIn',hs_seniority:'Nivel',gr_amplemarket_id:'Id de Amplemarket',country:'País',city:'Ciudad',company:'Empresa',phone:'Teléfono',mobilephone:'Celular',industry:'Industria',numberofemployees:'Empleados',linkedin_company_page:'LinkedIn de la empresa',website:'Sitio web',founded_year:'Año de fundación',state:'Estado'};
+var GR_AM_NOMBRE={gr_tel_amplemarket:'Teléfono en Amplemarket',gr_tel_amplemarket_fecha:'Fecha de búsqueda',firstname:'Nombre',lastname:'Apellido',jobtitle:'Puesto',hs_linkedin_url:'LinkedIn',hs_seniority:'Nivel',gr_amplemarket_id:'Id de Amplemarket',country:'País',city:'Ciudad',company:'Empresa',phone:'Teléfono',mobilephone:'Celular',industry:'Industria',numberofemployees:'Empleados',linkedin_company_page:'LinkedIn de la empresa',website:'Sitio web',founded_year:'Año de fundación',state:'Estado'};
 async function grmdAmplemarket(nivel){
   var id=window.__grEditId; if(!id) return;
   var tel=nivel==='telefono', forzar=false;
@@ -987,8 +988,9 @@ async function grmdAmplemarket(nivel){
     var res=await r.json();
     var nom=function(l){ return (l||[]).map(function(k){ return GR_AM_NOMBRE[k]||k; }).join(', '); };
     var t=res.mensaje||'';
-    if((res.contacto||[]).length) t+=' Contacto: '+nom(res.contacto)+'.';
-    if((res.empresa||[]).length) t+=' Empresa: '+nom(res.empresa)+'.';
+    var val=res.valores||{}; var nomv=function(l){ return (l||[]).map(function(k){ return (GR_AM_NOMBRE[k]||k)+(val[k]?(' ('+String(val[k]).slice(0,60)+')'):''); }).join(', '); };
+    if((res.contacto||[]).length) t+=' Contacto: '+nomv(res.contacto)+'.';
+    if((res.empresa||[]).length) t+=' Empresa: '+nomv(res.empresa)+'.';
     if(res.consultado) t+=' Costo: '+(res.credito||'')+'.';
     m.style.color=res.ok?((res.contacto||[]).length||(res.empresa||[]).length?'#62D175':'#9CA3AF'):'#DB0540';
     m.textContent=t.trim();
@@ -2333,6 +2335,7 @@ function renderPipeline() {
               <span title="Antigüedad de creación" style="width:8px;height:8px;border-radius:50%;background:${nuevaCol(d)};display:inline-block;margin-left:auto;"></span>
             </div>
             ${_perChips}
+            ${(d.campos&&String(d.campos.gr_sin_telefono)==='true') ? `<div title="Se buscó en Amplemarket y no se encontró número de teléfono ni WhatsApp. Seguir por correo o LinkedIn." style="display:inline-block;margin-top:5px;font-size:10px;font-weight:700;color:#62D175;background:#62D1751f;border:1px solid #62D17566;border-radius:999px;padding:2px 8px;">Sin teléfono · seguir por correo o LinkedIn</div>` : ''}
             ${_contactoHtml}
             ${d.closedate ? `<div class="kanban-card-date ${dateClass}">${fmtFecha(d.closedate)}</div>` : ''}
             <div style="text-align:right;margin-top:2px"><span onclick="event.stopPropagation();abrirEditarDealGR('${d.id}')" title="Editar" style="cursor:pointer;font-size:13px;opacity:.5">✏️</span></div>
@@ -5990,7 +5993,7 @@ if (document.readyState === 'loading') {
             <div style="margin-bottom:10px;"><label class="md-lbl" for="grmd-c-gr_producto">Producto</label><select id="grmd-c-gr_producto" class="md-in"></select></div>
             <div class="md-2">
               <div><label class="md-lbl" for="grmd-c-gr_responsable">Responsable</label><select id="grmd-c-gr_responsable" class="md-in"></select></div>
-              <div><label class="md-lbl" for="grmd-c-gr_origen">Origen</label><select id="grmd-c-gr_origen" class="md-in"></select></div>
+              <div><label class="md-lbl" for="grmd-c-gr_origen">Origen</label><select id="grmd-c-gr_origen" class="md-in"></select><div id="grmd-origen-detalle" class="md-nota" style="margin-top:4px;"></div></div>
               <div><label class="md-lbl" for="grmd-c-gr_tipo_oportunidad">Tipo</label><select id="grmd-c-gr_tipo_oportunidad" class="md-in"></select></div>
               <div><label class="md-lbl" for="grmd-c-gr_partner">Partner</label><select id="grmd-c-gr_partner" class="md-in"></select></div>
             </div>
