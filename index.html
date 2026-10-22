@@ -986,12 +986,19 @@ async function grmdAmplemarket(nivel){
   try{
     var r=await fetch(GR_AMPLE,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:id,nivel:nivel,contactId:(sel&&sel.value)||'',forzar:forzar})});
     var res=await r.json();
-    var nom=function(l){ return (l||[]).map(function(k){ return GR_AM_NOMBRE[k]||k; }).join(', '); };
-    var t=res.mensaje||'';
-    var val=res.valores||{}; var nomv=function(l){ return (l||[]).map(function(k){ return (GR_AM_NOMBRE[k]||k)+(val[k]?(' ('+String(val[k]).slice(0,60)+')'):''); }).join(', '); };
-    if((res.contacto||[]).length) t+=' Contacto: '+nomv(res.contacto)+'.';
-    if((res.empresa||[]).length) t+=' Empresa: '+nomv(res.empresa)+'.';
-    if(res.consultado) t+=' Costo: '+(res.credito||'')+'.';
+    // 22oct2026 (Mike): mensaje corto: que paso y, si hubo telefono, el numero. Sin ids ni etiquetas internas.
+    var INTERNOS={gr_amplemarket_id:1,gr_tel_amplemarket:1,gr_tel_amplemarket_fecha:1};
+    var val=res.valores||{};
+    var vis=function(l){ return (l||[]).filter(function(k){ return !INTERNOS[k]; }).map(function(k){ var v=String(val[k]||''); if(k==='hs_linkedin_url'||k==='linkedin_company_page'||k==='website') v=''; return (GR_AM_NOMBRE[k]||k)+(v?(': '+v.slice(0,40)):''); }); };
+    var tels=['phone','mobilephone'].filter(function(k){ return val[k]; }).map(function(k){ return val[k]; });
+    var otros=vis(res.contacto).concat(vis(res.empresa)).filter(function(x){ return !/^Teléfono|^Celular/.test(x); });
+    var t;
+    if(!res.consultado){ t=res.mensaje||'No se consultó.'; }
+    else if(res.resultado==='otra_persona'){ t='Amplemarket regresó a otra persona; no se cambió nada.'; }
+    else if(tel){ t=tels.length?('Teléfono encontrado: '+tels.join(', ')+'.'):'No se encontró teléfono ni WhatsApp. Quedó marcado para seguir por correo o LinkedIn.'; if(otros.length) t+=' También: '+otros.join(' · ')+'.'; }
+    else if(res.resultado==='no_encontrado'){ t=nivel==='gratis'?'No está en la cuenta de Amplemarket de GR. Usa LinkedIn y datos.':'Amplemarket no encontró a esta persona.'; }
+    else { var todo=(tels.length?['Teléfono: '+tels.join(', ')]:[]).concat(otros); t=todo.length?('Se actualizó: '+todo.join(' · ')+'.'):'No había datos vacíos que llenar.'; }
+    if(res.consultado) t+=' Costo: '+(nivel==='gratis'?'sin costo':(tel?'0.5 créditos de búsqueda (más el teléfono si Amplemarket lo cobra)':'0.5 créditos'))+'.';
     m.style.color=res.ok?((res.contacto||[]).length||(res.empresa||[]).length?'#62D175':'#9CA3AF'):'#DB0540';
     m.textContent=t.trim();
     if(res.telefono||tel){ var d=(DATA.deals||[]).filter(function(x){return String(x.id)===String(id);})[0]; grmdCargarContactos(id,(d&&(d.cliente||d.name))||''); }
