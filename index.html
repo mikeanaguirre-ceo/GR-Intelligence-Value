@@ -908,7 +908,9 @@ function abrirEditarDealGR(dealId){
   var _url=String((pipeCfg()||{}).urlOportunidad||'').replace('{id}', encodeURIComponent(String(dealId)));
   document.getElementById('grmd-info').innerHTML='<span class="md-pill">'+grEsc(d.prod||'Sin producto')+'</span><span class="md-pill">$'+((d.amount||0).toLocaleString())+'</span>'
     +(d.stageLabel?('<span class="md-pill">'+grEsc(d.stageLabel)+'</span>'):'')
+    +(String((d.campos||{}).gr_sin_telefono)==='true'?'<span class="md-pill" style="color:#FCA5A5;border-color:#DB054055;">Sin teléfono · seguir por correo o LinkedIn</span>':'')
     +(_url?('<a class="md-pill" href="'+grEsc(_url)+'" target="_blank" rel="noopener" style="color:#02ADBA;font-weight:700;text-decoration:none;border-color:#02ADBA55;">Abrir en HubSpot ↗</a>'):'');
+  grmdTab('resumen'); grmdPintarOrigen(null);
   var _mot=(pipeCfg()||{}).motivos||[];
   document.getElementById('grmd-motivo').innerHTML='<option value="">Elige el motivo…</option>'+_mot.map(function(m){return '<option value="'+grEsc(m.valor)+'">'+grEsc(m.label)+'</option>';}).join('');
   var stgs=grStagesForSelect(); var curId=''; stgs.forEach(function(x){ if(x.id===d.stage) curId=x.id; });
@@ -924,6 +926,35 @@ function abrirEditarDealGR(dealId){
   document.getElementById('grmd-status').textContent=''; document.getElementById('grmd-save').disabled=false;
   document.getElementById('gr-modal-edit').style.display='flex';
   cargarActividadesGR(dealId, 'grmd-acts');
+}
+// 22oct2026 — Ventana por pestanas (aprobada por Mike): Resumen, Contacto y empresa, Origen y campana, Tareas y notas.
+function grmdTab(t){
+  [].slice.call(document.querySelectorAll('#gr-modal-edit .md-tab')).forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-tab')===t); });
+  [].slice.call(document.querySelectorAll('#gr-modal-edit .md-pane')).forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-pane')===t); });
+}
+// Origen e ICP con las etiquetas de Amplemarket. Los textos largos (mensaje y respuesta) llegan al abrir la ficha.
+function grmdEtiquetaCampo(k, v){ if(k==='gr_como_llego') return grmdEtiqueta('como_llego', v); if(k==='gr_origen') return grmdEtiqueta('origen', v); return String(v||''); }
+function grmdEtiqueta(lista, v){ var o=(((pipeCfg()||{}).campos||{})[lista]||[]).filter(function(x){ return x.valor===v; })[0]; return o?o.label:(v||''); }
+function grmdPintarOrigen(op){
+  window.__grOrigen=op||null; op=op||{};
+  var CANAL={correo:'Correo',linkedin:'LinkedIn',whatsapp:'WhatsApp',llamada:'Llamada',otro:'Otro'};
+  var put=function(id,v,vacio){ var el=document.getElementById(id); if(!el) return; el.textContent=v||vacio||'—'; el.style.color=v?'':'#6B7280'; };
+  var cargando=!window.__grOrigen;
+  put('grmd-como', op.como_llego?grmdEtiqueta('como_llego',op.como_llego):'', cargando?'Cargando…':'Sin dato');
+  put('grmd-canal', CANAL[op.canal]||op.canal||'', cargando?'Cargando…':'Sin dato');
+  put('grmd-campana', String(op.campana||'').trim(), cargando?'Cargando…':'Sin dato');
+  put('grmd-mensaje', op.mensaje||'', cargando?'Cargando…':'Todavía no se sabe qué mensaje contestó. Usa Actualizar sin créditos (pestaña Contacto y empresa) o espera al barrido de la noche.');
+  put('grmd-respuesta', op.respuesta||'', cargando?'Cargando…':(op.como_llego==='sin_respuesta'?'No contestó: llegó por aperturas o por señal.':'Sin respuesta registrada.'));
+  var _od=document.getElementById('grmd-origen-detalle'); if(_od){ _od.textContent=op.camino==='senal'?'Llegó por una señal de Amplemarket (DUO): el nombre dice la empresa, la persona y lo que hizo.':(op.camino==='respuesta'?'Llegó porque contestó una secuencia de Amplemarket.':(op.camino==='open3'?'Llegó porque abrió 3 o más veces los correos de la secuencia.':'')); }
+  grmdPintarIcp();
+}
+function grmdPintarIcp(){
+  var box=document.getElementById('grmd-icp'); if(!box) return;
+  var op=window.__grOrigen; if(!op){ box.innerHTML='<div class="md-nota">Cargando…</div>'; return; }
+  var sel=document.getElementById('grmd-contact');
+  var ct=(window.__grContactos||[]).filter(function(x){return String(x.id)===String(sel&&sel.value);})[0]||{};
+  var filas=[['Puesto',ct.puesto],['Área',op.area],['Nivel',op.nivel],['País',op.pais||ct.pais],['Sector',op.sector],['Tamaño de empresa',op.tamano]];
+  box.innerHTML=filas.map(function(f){ return '<div class="k">'+grEsc(f[0])+'</div><div class="v'+(f[1]?'':' falta')+'">'+grEsc(f[1]||'Falta')+'</div>'; }).join('');
 }
 // Datos de la oportunidad: personas del equipo del portal (nombre corto) y listas fijas del portal.
 // Se guarda solo lo que cambio; lo vacio se marca para que el equipo lo complete.
@@ -942,7 +973,6 @@ function grmdPintarCampos(d){
   grmdOpc('grmd-c-gr_producto', prods, String(c.gr_producto||''));
   grmdOpc('grmd-c-gr_responsable', eq, String(c.gr_responsable||'').toLowerCase());
   grmdOpc('grmd-c-gr_origen', lst('origen'), c.gr_origen||'');
-  var _od=document.getElementById('grmd-origen-detalle'); if(_od){ var _so=String(c.gr_secuencia_origen||''); _od.textContent=_so?((/\s[–-]\s\S/.test(_so)?'Señal: ':'Campaña: ')+_so):''; }
   grmdOpc('grmd-c-gr_tipo_oportunidad', lst('tipo'), c.gr_tipo_oportunidad||'');
   grmdOpc('grmd-c-gr_partner', lst('partner'), c.gr_partner||'');
   var ap=String(c.gr_apoyo||'').toLowerCase().split(';').filter(Boolean);
@@ -952,7 +982,7 @@ function grmdPintarCampos(d){
 }
 // Boton "Completar solo": el motor llena lo vacio de esta oportunidad con sus reglas y se pinta lo que quedo.
 var GR_COMPLETAR='https://mikea.app.n8n.cloud/webhook/gr-completar-campos';
-var GR_CAMPOS_NOMBRE={gr_responsable:'Responsable',gr_apoyo:'Apoyo',gr_origen:'Origen',gr_tipo_oportunidad:'Tipo',gr_partner:'Partner',gr_prueba:'Prueba',gr_producto:'Producto',gr_secuencia_origen:'Secuencia',gr_canal_respuesta:'Canal',gr_motivo_perdida:'Motivo de pérdida'};
+var GR_CAMPOS_NOMBRE={gr_responsable:'Responsable',gr_apoyo:'Apoyo',gr_origen:'Origen',gr_tipo_oportunidad:'Tipo',gr_partner:'Partner',gr_prueba:'Prueba',gr_producto:'Producto',gr_secuencia_origen:'Secuencia',gr_canal_respuesta:'Canal',gr_motivo_perdida:'Motivo de pérdida',gr_como_llego:'Cómo llegó',gr_respuesta_prospecto:'Respuesta del prospecto',gr_sector:'Sector',gr_area:'Área',gr_nivel:'Nivel',gr_tamano:'Tamaño de empresa',gr_pais:'País'};
 async function grmdCompletarAuto(){
   var id=window.__grEditId; if(!id) return;
   var b=document.getElementById('grmd-auto'), m=document.getElementById('grmd-auto-msg');
@@ -964,6 +994,7 @@ async function grmdCompletarAuto(){
     var c=res.campos||{}, ks=Object.keys(c);
     var d=(DATA.deals||[]).filter(function(x){return String(x.id)===String(id);})[0];
     if(d){ d.campos=d.campos||{}; ks.forEach(function(k){ if(k in d.campos) d.campos[k]=String(c[k]); }); if(c.gr_producto && !d.prod) d.prod=c.gr_producto; grmdPintarCampos(d); }
+    if(ks.length && d) grmdCargarContactos(id, d.cliente||d.name||'');
     m.style.color=ks.length?'#62D175':'#9CA3AF';
     m.textContent=ks.length?('Se completó: '+ks.map(function(k){return GR_CAMPOS_NOMBRE[k]||k;}).join(', ')+'. Ya está en HubSpot.'):'No había nada que se pudiera completar solo; lo que falta se elige aquí.';
   }catch(e){ m.style.color='#DB0540'; m.textContent='No se completó: '+e.message; }
@@ -972,7 +1003,7 @@ async function grmdCompletarAuto(){
 // Botones con creditos de Amplemarket: datos (0.5 creditos) o telefono (0.5 + costo del telefono). Una persona a la vez,
 // con tope diario en el portal. Solo llena lo vacio y no escribe si Amplemarket devuelve a otra persona.
 var GR_AMPLE='https://mikea.app.n8n.cloud/webhook/gr-actualizar-prospecto';
-var GR_AM_NOMBRE={gr_tel_amplemarket:'Teléfono en Amplemarket',gr_tel_amplemarket_fecha:'Fecha de búsqueda',firstname:'Nombre',lastname:'Apellido',jobtitle:'Puesto',hs_linkedin_url:'LinkedIn',hs_seniority:'Nivel',gr_amplemarket_id:'Id de Amplemarket',country:'País',city:'Ciudad',company:'Empresa',phone:'Teléfono',mobilephone:'Celular',industry:'Industria',numberofemployees:'Empleados',linkedin_company_page:'LinkedIn de la empresa',website:'Sitio web',founded_year:'Año de fundación',state:'Estado'};
+var GR_AM_NOMBRE={gr_mensaje_contesto:'Mensaje que contestó',gr_respuesta_prospecto:'Respuesta del prospecto',gr_como_llego:'Cómo llegó',gr_secuencia_origen:'Campaña o señal',gr_origen:'Camino de llegada',gr_sector:'Sector',gr_area:'Área',gr_nivel:'Nivel',gr_tamano:'Tamaño de empresa',gr_pais:'País de la oportunidad',gr_canal_respuesta:'Canal',gr_producto:'Producto',gr_responsable:'Responsable',gr_apoyo:'Apoyo',gr_partner:'Partner',gr_tipo_oportunidad:'Tipo',gr_tel_amplemarket:'Teléfono en Amplemarket',gr_tel_amplemarket_fecha:'Fecha de búsqueda',firstname:'Nombre',lastname:'Apellido',jobtitle:'Puesto',hs_linkedin_url:'LinkedIn',hs_seniority:'Nivel',gr_amplemarket_id:'Id de Amplemarket',country:'País',city:'Ciudad',company:'Empresa',phone:'Teléfono',mobilephone:'Celular',industry:'Industria',numberofemployees:'Empleados',linkedin_company_page:'LinkedIn de la empresa',website:'Sitio web',founded_year:'Año de fundación',state:'Estado'};
 async function grmdAmplemarket(nivel){
   var id=window.__grEditId; if(!id) return;
   var tel=nivel==='telefono', forzar=false;
@@ -992,16 +1023,21 @@ async function grmdAmplemarket(nivel){
     var vis=function(l){ return (l||[]).filter(function(k){ return !INTERNOS[k]; }).map(function(k){ var v=String(val[k]||''); if(k==='hs_linkedin_url'||k==='linkedin_company_page'||k==='website') v=''; return (GR_AM_NOMBRE[k]||k)+(v?(': '+v.slice(0,40)):''); }); };
     var tels=['phone','mobilephone'].filter(function(k){ return val[k]; }).map(function(k){ return val[k]; });
     var otros=vis(res.contacto).concat(vis(res.empresa)).filter(function(x){ return !/^Teléfono|^Celular/.test(x); });
+    var LARGOS={gr_mensaje_contesto:1,gr_respuesta_prospecto:1};
+    var opor=(res.oportunidad||[]).map(function(k){ var v=String(val[k]||''); return (GR_AM_NOMBRE[k]||k)+((v&&!LARGOS[k])?(': '+grmdEtiquetaCampo(k,v).slice(0,40)):''); });
     var t;
     if(!res.consultado){ t=res.mensaje||'No se consultó.'; }
     else if(res.resultado==='otra_persona'){ t='Amplemarket regresó a otra persona; no se cambió nada.'; }
     else if(tel){ t=tels.length?('Teléfono encontrado: '+tels.join(', ')+'.'):'No se encontró teléfono ni WhatsApp. Quedó marcado para seguir por correo o LinkedIn.'; if(otros.length) t+=' También: '+otros.join(' · ')+'.'; }
     else if(res.resultado==='no_encontrado'){ t=nivel==='gratis'?'No está en la cuenta de Amplemarket de GR. Usa LinkedIn y datos.':'Amplemarket no encontró a esta persona.'; }
-    else { var todo=(tels.length?['Teléfono: '+tels.join(', ')]:[]).concat(otros); t=todo.length?('Se actualizó: '+todo.join(' · ')+'.'):'No había datos vacíos que llenar.'; }
+    else { var todo=(tels.length?['Teléfono: '+tels.join(', ')]:[]).concat(otros); t=todo.length?('Contacto y empresa: '+todo.join(' · ')+'.'):'El contacto ya estaba completo.'; }
+    if(res.consultado && res.resultado!=='otra_persona') t+=opor.length?(' Oportunidad: '+opor.join(' · ')+'.'):' La oportunidad ya tenía todo lo que se puede llenar sin costo.';
     if(res.consultado) t+=' Costo: '+(nivel==='gratis'?'sin costo':(tel?'0.5 créditos de búsqueda (más el teléfono si Amplemarket lo cobra)':'0.5 créditos'))+'.';
-    m.style.color=res.ok?((res.contacto||[]).length||(res.empresa||[]).length?'#62D175':'#9CA3AF'):'#DB0540';
+    m.style.color=res.ok?((res.contacto||[]).length||(res.empresa||[]).length||(res.oportunidad||[]).length?'#62D175':'#9CA3AF'):'#DB0540';
     m.textContent=t.trim();
-    if(res.telefono||tel){ var d=(DATA.deals||[]).filter(function(x){return String(x.id)===String(id);})[0]; grmdCargarContactos(id,(d&&(d.cliente||d.name))||''); }
+    var _dd=(DATA.deals||[]).filter(function(x){return String(x.id)===String(id);})[0];
+    if(_dd && (res.oportunidad||[]).length){ _dd.campos=_dd.campos||{}; (res.oportunidad||[]).forEach(function(k){ if(!({gr_mensaje_contesto:1,gr_respuesta_prospecto:1})[k]) _dd.campos[k]=String(val[k]||''); }); }
+    if(res.telefono||tel||(res.oportunidad||[]).length){ var d=(DATA.deals||[]).filter(function(x){return String(x.id)===String(id);})[0]; grmdCargarContactos(id,(d&&(d.cliente||d.name))||''); }
   }catch(e){ m.style.color='#DB0540'; m.textContent='No se consultó: '+e.message; }
   b0.disabled=b1.disabled=b2.disabled=false;
 }
@@ -1065,7 +1101,8 @@ function grmdAplicarBloqueo(){
 }
 function grmdPretty(){ var el=document.getElementById('grmd-close'); var out=document.getElementById('grmd-close-pretty'); if(!el||!out) return; var v=el.value; if(!v){ out.textContent=''; return; } var pr=fmtFecha(v+'T00:00:00Z'); out.textContent=pr?('\u2192 '+pr):''; }
 function grmdSyncPhone(){ var sel=document.getElementById('grmd-contact'); var ph=document.getElementById('grmd-phone'); if(!sel||!ph) return; var c=(window.__grContactos||[]).filter(function(x){return String(x.id)===String(sel.value);})[0]; ph.value=c?(c.telefono||''):''; ph.setAttribute('data-orig', ph.value);
-  var tn=document.getElementById('grmd-tel-nota'); if(tn) tn.textContent=(c&&c.tel_amplemarket==='no_encontrado'&&!c.telefono)?('Amplemarket no encontró teléfono de este contacto ('+(c.tel_amplemarket_fecha||'')+'). Volver a buscarlo gasta créditos.'):''; }
+  var tn=document.getElementById('grmd-tel-nota'); if(tn) tn.textContent=(c&&c.tel_amplemarket==='no_encontrado'&&!c.telefono)?('Amplemarket no encontró teléfono de este contacto ('+(c.tel_amplemarket_fecha||'')+'). Volver a buscarlo gasta créditos.'):'';
+  grmdPintarIcp(); }
 async function grmdCargarContactos(dealId, empresa){
   var sel=document.getElementById('grmd-contact'); var ph=document.getElementById('grmd-phone');
   if(!sel) return; window.__grContactos=[]; sel.innerHTML='<option value="">Cargando…</option>'; if(ph) ph.value='';
@@ -1073,6 +1110,7 @@ async function grmdCargarContactos(dealId, empresa){
   try{
     var r=await fetch('https://mikea.app.n8n.cloud/webhook/gr-company',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:dealId||'',empresa:empresa||''})});
     var data=await r.json(); var cts=(data&&data.contactos)||[]; window.__grContactos=cts;
+    if(String(window.__grEditId||'')===String(dealId||'')) grmdPintarOrigen((data&&data.oportunidad)||{});
     if(!cts.length){ sel.innerHTML='<option value="">(sin contactos)</option>'; return; }
     sel.innerHTML=cts.map(function(c){ return '<option value="'+c.id+'">'+grEsc(c.nombre)+(c.puesto?(' \u00b7 '+grEsc(c.puesto)):'')+'</option>'; }).join('');
     grmdSyncPhone();
@@ -4662,6 +4700,53 @@ function grSyncListasLlamadas(){
     .then(function(){ btn.disabled = false; btn.textContent = txt; btn.style.opacity = '1'; });
 }
 
+/* 22oct2026 — QUE ESTA GENERANDO REUNIONES (paquete A aprobado por Mike). Sale de las oportunidades de HubSpot, no de los
+   eventos: por campana o senal, camino, como llego, sector, area, nivel, tamano y pais, cuantas oportunidades hubo y cuantas
+   llegaron a cita agendada (Atraccion). Respeta los filtros de grupo, producto y periodo de Prospeccion.
+   Las etiquetas son las de Amplemarket, igual que en HubSpot. */
+var GAN_DIMS=[['campana','Campaña o señal'],['camino','Camino de llegada'],['como','Cómo llegó'],['sector','Sector'],['area','Área'],['nivel','Nivel'],['tamano','Tamaño de empresa'],['pais','País']];
+var ganDim='campana', ganSel=null;
+function ganValor(d,dim){ var c=d.campos||{};
+  if(dim==='campana') return String(c.gr_secuencia_origen||'').trim();
+  if(dim==='camino') return c.gr_origen?grmdEtiqueta('origen',c.gr_origen):'';
+  if(dim==='como') return c.gr_como_llego?grmdEtiqueta('como_llego',c.gr_como_llego):'';
+  return String(c['gr_'+dim]||'').trim(); }
+function ganLlegoACita(d){
+  if((d.campos||{}).gr_cita || String(d.stage)==='closedwon') return true;
+  var ord=stageOrder(), ia=-1, id=-1; ord.forEach(function(x,i){ if(String(x.id)==='appointmentscheduled') ia=i; if(String(x.id)===String(d.stage)) id=i; });
+  return ia>=0 && id>=ia;
+}
+function renderGanadoresGR(cont){
+  if(!cont) return;
+  var r=(prospPer.fper&&prospPer.fper!=='todo')?periodoRango(prospPer):null;
+  var _todas=((DATA&&DATA.deals)||[]).concat((DATA&&DATA.won)||[], (DATA&&DATA.perdidas)||[]), _vistas={};
+  var deals=_todas.filter(function(d){ var c=d.campos||{}; if(_vistas[d.id]) return false; _vistas[d.id]=1;
+    if(String(c.gr_prueba)==='true') return false;
+    var p=String(c.gr_producto||d.prod||'');
+    if(prospGrupo!=='ALL' && grupoDeProd(p)!==prospGrupo) return false;
+    if(prospProducto!=='ALL' && p!==prospProducto) return false;
+    if(r){ var t=new Date(d.createdate); if(isNaN(t)) return false; var s=_diaLocal(t); if(s<r[0]||s>r[1]) return false; }
+    return true; });
+  var g={}; deals.forEach(function(d){ var v=ganValor(d,ganDim)||'(sin dato)'; var x=g[v]=g[v]||{v:v,n:0,c:0,ds:[]}; x.n++; if(ganLlegoACita(d)) x.c++; x.ds.push(d); });
+  var filas=Object.keys(g).map(function(k){return g[k];}).sort(function(a,b){ if((a.v==='(sin dato)')!==(b.v==='(sin dato)')) return a.v==='(sin dato)'?1:-1; return (b.c-a.c)||(b.n-a.n); });
+  var totN=deals.length, totC=deals.filter(ganLlegoACita).length;
+  var chip=function(k,l){ return '<button class="chip'+(ganDim===k?' active':'')+'" data-gdim="'+k+'" style="font-size:11px;padding:5px 11px;border-radius:18px;">'+l+'</button>'; };
+  var html='<div class="section" id="prosp-ganadores"><div class="section-title">Qué está generando reuniones</div>'
+    +'<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Oportunidades de HubSpot (abiertas, ganadas y perdidas) con los filtros de arriba: '+totN+' oportunidades, '+totC+' llegaron a cita agendada. Las etiquetas son las de Amplemarket. Toca una fila para ver las oportunidades.</div>'
+    +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">'+GAN_DIMS.map(function(x){return chip(x[0],x[1]);}).join('')+'</div>'
+    +'<div style="overflow-x:auto;"><table class="tbl" style="width:100%;"><thead><tr><th style="width:55%;">'+grEsc((GAN_DIMS.filter(function(x){return x[0]===ganDim;})[0]||[])[1]||'')+'</th><th style="text-align:center;">OPORTUNIDADES</th><th style="text-align:center;">LLEGARON A CITA</th><th style="text-align:center;">% A CITA</th></tr></thead><tbody>';
+  if(!filas.length) html+='<tr><td colspan="4" style="font-size:12px;color:var(--text-mute);padding:12px;">Sin oportunidades para este filtro.</td></tr>';
+  filas.slice(0,25).forEach(function(x){ var pct=x.n?Math.round(100*x.c/x.n):0; var sel=ganSel===x.v;
+    html+='<tr data-gval="'+encodeURIComponent(x.v)+'" style="cursor:pointer;'+(sel?'background:rgba(2,173,186,.08);':'')+'"><td style="'+(x.v==='(sin dato)'?'color:var(--text-mute);':'')+'word-break:break-word;">'+grEsc(x.v)+'</td><td style="text-align:center;">'+x.n+'</td><td style="text-align:center;font-weight:700;color:'+(x.c?'#62D175':'var(--text-mute)')+';">'+x.c+'</td><td style="text-align:center;">'+pct+'%</td></tr>';
+    if(sel){ html+='<tr><td colspan="4" style="padding:6px 12px 12px;">'+x.ds.slice().sort(function(a,b){return (ganLlegoACita(b)?1:0)-(ganLlegoACita(a)?1:0);}).map(function(d){ return '<div style="display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);"><a href="javascript:void(0)" onclick="abrirEditarDealGR(\''+String(d.id)+'\')" style="color:#02ADBA;text-decoration:none;">'+grEsc(d.cliente||d.name||'')+'</a><span style="color:var(--text-dim);white-space:nowrap;">'+grEsc(d.stageLabel||'')+(ganLlegoACita(d)?' · cita':'')+'</span></div>'; }).join('')+'</td></tr>'; }
+  });
+  if(filas.length>25) html+='<tr><td colspan="4" style="font-size:11px;color:var(--text-mute);padding:8px 12px;">'+(filas.length-25)+' valores más con menos oportunidades.</td></tr>';
+  html+='</tbody></table></div></div>';
+  var prev=document.getElementById('prosp-ganadores'); if(prev) prev.remove();
+  cont.insertAdjacentHTML('beforeend', html);
+  cont.querySelectorAll('[data-gdim]').forEach(function(b){ b.addEventListener('click',function(){ ganDim=b.dataset.gdim; ganSel=null; renderGanadoresGR(cont); }); });
+  cont.querySelectorAll('#prosp-ganadores [data-gval]').forEach(function(tr){ tr.addEventListener('click',function(){ var v=decodeURIComponent(tr.dataset.gval); ganSel=(ganSel===v)?null:v; renderGanadoresGR(cont); }); });
+}
 function renderProspeccion() {
   var deals = (DATA && DATA.deals) || [];
   var PEV = (PROSPECCION_DATA && Array.isArray(PROSPECCION_DATA.eventos)) ? PROSPECCION_DATA.eventos : null;
@@ -4820,6 +4905,7 @@ function renderProspeccion() {
   cont.innerHTML=GR_SYNC_BOX + '<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Fuente: tabla de eventos (los 3 tenants), no HubSpot. Los 30d incluyen 7d y hoy.</div>'+chips+'<div id="pipeline-metrics-gr" style="margin:14px 0 4px;"></div><div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado. Toca un número para ver el detalle.</div>'+t1+'<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto</div>'+t2+'<div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:18px 0 6px;">Open+3 por tipo de interés</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">La reapertura es la señal más fuerte: volvió solo, sin que le escribiéramos. Toca un número para ver el detalle.</div>'+t3+'<div style="border:none;border-top:1px solid #252d50;margin:14px 0"></div><div id="prosp-detalle" style="margin-top:16px;"></div></div>';
   cont.querySelectorAll('[data-pf]').forEach(function(btn){ btn.addEventListener('click',function(){ var f=btn.dataset.pf, v=decodeURIComponent(btn.dataset.pv); if(f==='grupo'){prospGrupo=v; prospProducto='ALL';} else if(f==='prod')prospProducto=v; else if(f==='canal')prospCanal=v; else if(f==='sem')prospSem=v; else if(f==='stage')prospStage=v; else if(f==='per'){ prospPer.fper=v; if(v==='rango'&&!prospPer.fdesde){ var _r=prospPerVista(); prospPer.fdesde=_r[0]; prospPer.fhasta=_r[1]; } } renderProspeccion(); }); });
   renderPipelineMetricsGR();
+  renderGanadoresGR(cont);
   cont.querySelectorAll('.pcell').forEach(function(td){ td.addEventListener('click',function(){
     try {
       renderProspDetalle(td.dataset.ptype,decodeURIComponent(td.dataset.pval),td.dataset.pwin);
@@ -5460,6 +5546,8 @@ function openProspModal(i){
   var pool=window.__pv4pool||[];
   var e=(typeof i==='number')?pool[i]:pool.find(function(x){return String(x.event_key)===String(i);});
   if(!e) return;
+  // 22oct2026 (Mike): si el prospecto ya es oportunidad de GR, se abre la misma ficha que en Pipeline, en Origen y campana.
+  if(e.deal_id && (e.tenant==='GR'||e.tenant==='GR_PT'||!e.tenant) && ((DATA&&DATA.deals)||[]).some(function(d){ return String(d.id)===String(e.deal_id); })){ abrirEditarDealGR(String(e.deal_id)); grmdTab('origen'); return; }
   var PORT={GR:'49671716',GR_PT:'49671716',STIL:'51496709',IMMMU:'51496709'};
   var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
   var portal=PORT[e.tenant]||'49671716';
@@ -5940,12 +6028,24 @@ if (document.readyState === 'loading') {
 #gr-modal-edit #grmd-c-gr_apoyo label{display:inline-flex;align-items:center;gap:6px;border:1px solid #2A3142;border-radius:999px;padding:5px 11px;cursor:pointer;font-size:13px;color:#cbd2e1;user-select:none;}
 #gr-modal-edit #grmd-c-gr_apoyo label:has(input:checked){background:#02ADBA1f;border-color:#02ADBA;color:#E6FBFC;}
 #gr-modal-edit #grmd-c-gr_apoyo input{accent-color:#02ADBA;margin:0;}
+#gr-modal-edit .md-tabs{display:flex;gap:4px;padding:0 22px;border-bottom:1px solid #222a3c;background:#121726;overflow-x:auto;scrollbar-width:none;flex:none;}
+#gr-modal-edit .md-tabs::-webkit-scrollbar{display:none;}
+#gr-modal-edit .md-tab{background:none;border:none;border-bottom:2px solid transparent;color:#8b93a7;font-size:13px;font-weight:700;padding:11px 12px 10px;cursor:pointer;white-space:nowrap;}
+#gr-modal-edit .md-tab.on{color:#E6FBFC;border-bottom-color:#02ADBA;}
+#gr-modal-edit .md-pane{display:none;}
+#gr-modal-edit .md-pane.on{display:block;}
+#gr-modal-edit .md-val{font-size:14px;color:#F3F4F6;padding:8px 0;line-height:1.4;word-break:break-word;}
+#gr-modal-edit .md-texto{font-size:13px;color:#D1D5DB;line-height:1.6;white-space:pre-wrap;word-break:break-word;max-height:320px;overflow:auto;}
+#gr-modal-edit .md-kv{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;font-size:13px;margin-bottom:8px;}
+#gr-modal-edit .md-kv .k{color:#8b93a7;}
+#gr-modal-edit .md-kv .v{color:#F3F4F6;word-break:break-word;}
+#gr-modal-edit .md-kv .v.falta{color:#FFCD00;}
 #gr-modal-edit .md-x{background:#1a2132;border:1px solid #2A3142;color:#9CA3AF;width:34px;height:34px;border-radius:10px;font-size:20px;cursor:pointer;line-height:1;flex:none;}
 @media (max-width:820px){
   #gr-modal-edit{padding:0;align-items:stretch;}
   #gr-modal-edit .md-box{max-height:100vh;height:100%;border-radius:0;border:none;}
   #gr-modal-edit .md-grid{grid-template-columns:minmax(0,1fr);}
-  #gr-modal-edit .md-head,#gr-modal-edit .md-body,#gr-modal-edit .md-foot{padding-left:16px;padding-right:16px;}
+  #gr-modal-edit .md-head,#gr-modal-edit .md-body,#gr-modal-edit .md-foot,#gr-modal-edit .md-tabs{padding-left:16px;padding-right:16px;}
 }
 @media (max-width:420px){ #gr-modal-edit .md-2{grid-template-columns:1fr;} }
 /* En celular una tabla ancha estiraba toda la pagina (y la ventana de editar quedaba cortada): ahora se desplaza dentro de su seccion. */
@@ -5961,60 +6061,108 @@ if (document.readyState === 'loading') {
       </div>
       <button class="md-x" onclick="cerrarModalGR()" title="Cerrar">×</button>
     </div>
+    <div class="md-tabs" role="tablist">
+      <button class="md-tab on" data-tab="resumen" onclick="grmdTab('resumen')">Resumen</button>
+      <button class="md-tab" data-tab="contacto" onclick="grmdTab('contacto')">Contacto y empresa</button>
+      <button class="md-tab" data-tab="origen" onclick="grmdTab('origen')">Origen y campaña</button>
+      <button class="md-tab" data-tab="tareas" onclick="grmdTab('tareas')">Tareas y notas</button>
+    </div>
     <div class="md-body">
-      <div class="md-grid">
-        <div class="md-col">
+      <div class="md-pane on" data-pane="resumen">
+        <div class="md-grid">
+          <div class="md-col">
           <div class="md-card">
-            <div class="md-h">Avance</div>
-            <label class="md-lbl" for="grmd-stage">Etapa</label>
-            <select id="grmd-stage" class="md-in" onchange="grmdAplicarBloqueo()"></select>
-            <div id="grmd-motivo-box" style="display:none;margin-top:12px;">
-              <label class="md-lbl" for="grmd-motivo" style="color:#FCA5A5;">Motivo de pérdida (obligatorio)</label>
-              <select id="grmd-motivo" class="md-in" style="border-color:#DB054080;"></select>
+              <div class="md-h">Avance</div>
+              <label class="md-lbl" for="grmd-stage">Etapa</label>
+              <select id="grmd-stage" class="md-in" onchange="grmdAplicarBloqueo()"></select>
+              <div id="grmd-motivo-box" style="display:none;margin-top:12px;">
+                <label class="md-lbl" for="grmd-motivo" style="color:#FCA5A5;">Motivo de pérdida (obligatorio)</label>
+                <select id="grmd-motivo" class="md-in" style="border-color:#DB054080;"></select>
+              </div>
+              <label class="md-lbl" for="grmd-close" style="margin-top:12px;">Fecha de cierre</label>
+              <input id="grmd-close" class="md-in" type="date" onfocus="try{this.showPicker&&this.showPicker()}catch(e){}" onclick="try{this.showPicker&&this.showPicker()}catch(e){}" oninput="grmdPretty()">
+              <div id="grmd-close-pretty" style="font-size:12px;color:#02ADBA;font-weight:700;margin-top:6px;min-height:15px;"></div>
+              <div id="grmd-close-nota" class="md-nota"></div>
             </div>
-            <label class="md-lbl" for="grmd-close" style="margin-top:12px;">Fecha de cierre</label>
-            <input id="grmd-close" class="md-in" type="date" onfocus="try{this.showPicker&&this.showPicker()}catch(e){}" onclick="try{this.showPicker&&this.showPicker()}catch(e){}" oninput="grmdPretty()">
-            <div id="grmd-close-pretty" style="font-size:12px;color:#02ADBA;font-weight:700;margin-top:6px;min-height:15px;"></div>
-            <div id="grmd-close-nota" class="md-nota"></div>
           </div>
+          <div class="md-col">
           <div class="md-card">
-            <div class="md-h">Contacto</div>
-            <div class="md-2">
-              <div><label class="md-lbl" for="grmd-contact">Persona</label><select id="grmd-contact" class="md-in" onchange="grmdSyncPhone()"></select></div>
-              <div><label class="md-lbl" for="grmd-phone">Teléfono</label><input id="grmd-phone" class="md-in" type="tel" placeholder="+52 ..."></div>
+              <div class="md-h"><span>Datos de la oportunidad <span id="grmd-faltan" style="color:#FFCD00;text-transform:none;letter-spacing:0;font-weight:600;"></span></span>
+                <button id="grmd-auto" class="md-btn" onclick="grmdCompletarAuto()" title="El motor llena solo lo que se puede saber (producto, ficha del portal, nota de origen) y nunca cambia lo que ya tiene valor" style="color:#02ADBA;border:1px solid #02ADBA80;text-transform:none;letter-spacing:0;">Completar solo</button>
+              </div>
+              <div style="margin-bottom:10px;"><label class="md-lbl" for="grmd-c-gr_producto">Producto</label><select id="grmd-c-gr_producto" class="md-in"></select></div>
+              <div class="md-2">
+                <div><label class="md-lbl" for="grmd-c-gr_responsable">Responsable</label><select id="grmd-c-gr_responsable" class="md-in"></select></div>
+                <div><label class="md-lbl" for="grmd-c-gr_tipo_oportunidad">Tipo</label><select id="grmd-c-gr_tipo_oportunidad" class="md-in"></select></div>
+                <div><label class="md-lbl" for="grmd-c-gr_partner">Partner</label><select id="grmd-c-gr_partner" class="md-in"></select></div>
+              </div>
+              <div class="md-lbl" style="margin-top:12px;">Apoyo · quién acompaña en reuniones</div>
+              <div id="grmd-c-gr_apoyo" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#cbd2e1;margin-top:12px;cursor:pointer;"><input id="grmd-c-gr_prueba" type="checkbox" style="accent-color:#DB0540;"> Es una oportunidad de prueba (queda fuera del tablero)</label>
+              <div id="grmd-auto-msg" class="md-msg"></div>
             </div>
-            <div id="grmd-tel-nota" class="md-nota" style="color:#FCA5A5;"></div>
-            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
-              <button id="grmd-am-gratis" class="md-btn" onclick="grmdAmplemarket('gratis')" title="Lee al contacto en la cuenta de Amplemarket de GR (si ya estuvo en una secuencia) y llena lo vacío: puesto, LinkedIn, ubicación y teléfonos que ya tenga. No gasta créditos." style="color:#62D175;border:1px solid #62D17580;">Actualizar sin créditos</button>
-              <button id="grmd-am-datos" class="md-btn" onclick="grmdAmplemarket('datos')" title="Busca al contacto en Amplemarket y llena lo vacío: puesto, LinkedIn, nivel, país, empresa, industria, empleados. Cuesta 0.5 créditos." style="color:#c4b5fd;border:1px solid #7C3AED;">LinkedIn y datos · 0.5 créditos</button>
-              <button id="grmd-am-tel" class="md-btn" onclick="grmdAmplemarket('telefono')" title="Busca el teléfono del contacto para WhatsApp. Cuesta 0.5 créditos más el costo del teléfono. Si ya tiene teléfono, no se consulta." style="color:#FFCD00;border:1px solid #FFCD0080;">Teléfono WhatsApp · con créditos</button>
-            </div>
-            <div id="grmd-am-msg" class="md-msg"></div>
           </div>
         </div>
-        <div class="md-col">
+      </div>
+      <div class="md-pane" data-pane="contacto">
+        <div class="md-grid">
+          <div class="md-col">
           <div class="md-card">
-            <div class="md-h"><span>Datos de la oportunidad <span id="grmd-faltan" style="color:#FFCD00;text-transform:none;letter-spacing:0;font-weight:600;"></span></span>
-              <button id="grmd-auto" class="md-btn" onclick="grmdCompletarAuto()" title="El motor llena solo lo que se puede saber (producto, ficha del portal, nota de origen) y nunca cambia lo que ya tiene valor" style="color:#02ADBA;border:1px solid #02ADBA80;text-transform:none;letter-spacing:0;">Completar solo</button>
+              <div class="md-h">Contacto</div>
+              <div class="md-2">
+                <div><label class="md-lbl" for="grmd-contact">Persona</label><select id="grmd-contact" class="md-in" onchange="grmdSyncPhone()"></select></div>
+                <div><label class="md-lbl" for="grmd-phone">Teléfono</label><input id="grmd-phone" class="md-in" type="tel" placeholder="+52 ..."></div>
+              </div>
+              <div id="grmd-tel-nota" class="md-nota" style="color:#FCA5A5;"></div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
+                <button id="grmd-am-gratis" class="md-btn" onclick="grmdAmplemarket('gratis')" title="Lee al contacto en la cuenta de Amplemarket de GR (si ya estuvo en una secuencia) y llena lo vacío: puesto, LinkedIn, ubicación y teléfonos que ya tenga. No gasta créditos." style="color:#62D175;border:1px solid #62D17580;">Actualizar sin créditos</button>
+                <button id="grmd-am-datos" class="md-btn" onclick="grmdAmplemarket('datos')" title="Busca al contacto en Amplemarket y llena lo vacío: puesto, LinkedIn, nivel, país, empresa, industria, empleados. Cuesta 0.5 créditos." style="color:#c4b5fd;border:1px solid #7C3AED;">LinkedIn y datos · 0.5 créditos</button>
+                <button id="grmd-am-tel" class="md-btn" onclick="grmdAmplemarket('telefono')" title="Busca el teléfono del contacto para WhatsApp. Cuesta 0.5 créditos más el costo del teléfono. Si ya tiene teléfono, no se consulta." style="color:#FFCD00;border:1px solid #FFCD0080;">Teléfono WhatsApp · con créditos</button>
+              </div>
+              <div id="grmd-am-msg" class="md-msg"></div>
             </div>
-            <div style="margin-bottom:10px;"><label class="md-lbl" for="grmd-c-gr_producto">Producto</label><select id="grmd-c-gr_producto" class="md-in"></select></div>
-            <div class="md-2">
-              <div><label class="md-lbl" for="grmd-c-gr_responsable">Responsable</label><select id="grmd-c-gr_responsable" class="md-in"></select></div>
-              <div><label class="md-lbl" for="grmd-c-gr_origen">Origen</label><select id="grmd-c-gr_origen" class="md-in"></select><div id="grmd-origen-detalle" class="md-nota" style="margin-top:4px;"></div></div>
-              <div><label class="md-lbl" for="grmd-c-gr_tipo_oportunidad">Tipo</label><select id="grmd-c-gr_tipo_oportunidad" class="md-in"></select></div>
-              <div><label class="md-lbl" for="grmd-c-gr_partner">Partner</label><select id="grmd-c-gr_partner" class="md-in"></select></div>
-            </div>
-            <div class="md-lbl" style="margin-top:12px;">Apoyo · quién acompaña en reuniones</div>
-            <div id="grmd-c-gr_apoyo" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#cbd2e1;margin-top:12px;cursor:pointer;"><input id="grmd-c-gr_prueba" type="checkbox" style="accent-color:#DB0540;"> Es una oportunidad de prueba (queda fuera del tablero)</label>
-            <div id="grmd-auto-msg" class="md-msg"></div>
           </div>
+          <div class="md-col">
+            <div class="md-card">
+              <div class="md-h">Perfil del prospecto (ICP) <span style="text-transform:none;letter-spacing:0;font-weight:600;color:#6B7280;">Etiquetas de Amplemarket</span></div>
+              <div id="grmd-icp" class="md-kv"><div class="md-nota">Cargando…</div></div>
+              <div class="md-nota">Se llenan solos con el puesto del contacto y la empresa. Si falta algo, usa Actualizar sin créditos.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="md-pane" data-pane="origen">
+        <div class="md-grid">
+          <div class="md-col">
+            <div class="md-card">
+              <div class="md-h">Cómo llegó</div>
+              <div class="md-2">
+                <div><label class="md-lbl" for="grmd-c-gr_origen">Camino de llegada</label><select id="grmd-c-gr_origen" class="md-in"></select></div>
+                <div><label class="md-lbl">Cómo llegó</label><div id="grmd-como" class="md-val">—</div></div>
+                <div><label class="md-lbl">Canal</label><div id="grmd-canal" class="md-val">—</div></div>
+                <div><label class="md-lbl">Campaña o señal</label><div id="grmd-campana" class="md-val">—</div></div>
+              </div>
+              <div id="grmd-origen-detalle" class="md-nota"></div>
+            </div>
+          </div>
+          <div class="md-col">
+            <div class="md-card">
+              <div class="md-h">Mensaje nuestro que contestó</div>
+              <div id="grmd-mensaje" class="md-texto">—</div>
+            </div>
+            <div class="md-card">
+              <div class="md-h">Respuesta del prospecto</div>
+              <div id="grmd-respuesta" class="md-texto">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="md-pane" data-pane="tareas">
           <div class="md-card">
-            <div class="md-h">Tareas y notas
-              <button class="md-btn" onclick="grmdNuevaTarea()" style="color:#c4b5fd;border:1px solid #7C3AED;text-transform:none;letter-spacing:0;">+ Agregar tarea</button>
-            </div>
-            <div id="grmd-acts" style="max-height:260px;overflow:auto;"></div>
+          <div class="md-h">Tareas y notas
+            <button class="md-btn" onclick="grmdNuevaTarea()" style="color:#c4b5fd;border:1px solid #7C3AED;text-transform:none;letter-spacing:0;">+ Agregar tarea</button>
           </div>
+          <div id="grmd-acts" style=""></div>
         </div>
       </div>
     </div>
