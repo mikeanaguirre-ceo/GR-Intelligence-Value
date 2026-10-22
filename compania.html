@@ -388,98 +388,283 @@
       });
     };
   }
-  // Productos: una ficha por producto. La leen los motores: monto con que nace la oportunidad, a quien se avisa,
+  // Productos: una ficha por producto. La leen los motores: precio y monto con que nace la oportunidad, a quien se avisa,
   // quien hace la tarea y manda la minuta, el llamado a la accion y la propuesta de valor e ICP vigentes.
+  // Precio (22oct2026, regla scripts/n8n_code/monto/calcular_monto.js): tipo 'licencias' = precio por licencia x max(personas, minimo);
+  // tipo 'cursos' = suma de precio del curso x participantes (catalogo productos_cursos, tarjeta 7.1); sin tipo = monto fijo.
+  // El guardado conserva lo que la pagina no muestra (campos_crm y cualquier otro campo de la ficha).
   function productosDe(c) { try { var l = JSON.parse((c.datos || {}).productos || '[]'); return Array.isArray(l) ? l : []; } catch (e) { return []; } }
   function familiasDe(c) { try { return JSON.parse((c.datos || {}).familias_cta || '{}') || {}; } catch (e) { return {}; } }
-  var PROD_CAMPOS = [
-    ['nombre', 'Nombre', 'txt'], ['monto', 'Monto con que nace la oportunidad', 'num'], ['activo', 'Activo', 'chk'],
-    ['prefijos', 'Prefijos de secuencia (separados por coma)', 'lista'],
-    ['lidera', 'Quién lo lidera', 'per'], ['responsable_tarea', 'Quién hace la tarea', 'per'], ['minuta_de', 'Quién manda la minuta', 'per'], ['apoyo', 'Quién acompaña en las reuniones', 'perl'], ['partner', 'Partner', 'txt'],
-    ['avisar_a', 'A quién se avisa', 'perl'], ['copia_a', 'Con copia a', 'perl'],
-    ['cta_primario', 'Qué se le ofrece al prospecto', 'txt'], ['cta_familia', 'Forma del llamado a la acción', 'fam'],
-    ['propuesta_nombre', 'Propuesta de valor vigente', 'txt'], ['propuesta_url', 'Liga a la propuesta', 'url'],
-    ['icp_nombre', 'ICP vigente', 'txt'], ['icp_url', 'Liga al ICP', 'url'],
-    ['template_nombre', 'Template de propuesta vigente', 'txt'], ['template_url', 'Liga al template', 'url'],
-    ['presentacion_nombre', 'Presentación de Discovery vigente', 'txt'], ['presentacion_url', 'Liga a la presentación', 'url'], ['kb_nombre', 'Base de conocimiento vigente (una sola por producto)', 'txt'], ['kb_url', 'Liga a la base de conocimiento', 'url'], ['motor_usa', 'Lo que usa hoy el motor al escribir', 'ro'], ['pendiente', 'Pendiente', 'txt'],
-    ['por_revisar', 'Por revisar: versiones encontradas en Drive (quien revisa elige, corrige arriba y borra este texto)', 'rev']
+  function cursosDe(c) { try { var l = JSON.parse((c.datos || {}).productos_cursos || '[]'); return Array.isArray(l) ? l.filter(function (x) { return x && x.c; }) : []; } catch (e) { return []; } }
+  // Campos por grupo. El precio y el monto van aparte (bloque de precio) porque cambian segun el tipo de producto.
+  var PROD_GRUPOS = [
+    ['General', [['nombre', 'Nombre', 'txt'], ['activo', 'Activo', 'chk'], ['prefijos', 'Prefijos de secuencia (separados por coma)', 'lista'], ['partner', 'Partner', 'txt']]],
+    ['Personas', [['lidera', 'Quién lo lidera', 'per'], ['responsable_tarea', 'Quién hace la tarea', 'per'], ['minuta_de', 'Quién manda la minuta', 'per'], ['apoyo', 'Quién acompaña en las reuniones', 'perl'], ['avisar_a', 'A quién se avisa', 'perl'], ['copia_a', 'Con copia a', 'perl']]],
+    ['Llamado a la acción', [['cta_primario', 'Qué se le ofrece al prospecto', 'txt'], ['cta_familia', 'Forma del llamado a la acción', 'fam']]],
+    ['Documentos vigentes', [['propuesta_nombre', 'Propuesta de valor vigente', 'txt'], ['propuesta_url', 'Liga a la propuesta', 'url'], ['icp_nombre', 'ICP vigente', 'txt'], ['icp_url', 'Liga al ICP', 'url'],
+      ['template_nombre', 'Template de propuesta vigente', 'txt'], ['template_url', 'Liga al template', 'url'], ['presentacion_nombre', 'Presentación de Discovery vigente', 'txt'], ['presentacion_url', 'Liga a la presentación', 'url'],
+      ['kb_nombre', 'Base de conocimiento vigente (una sola por producto)', 'txt'], ['kb_url', 'Liga a la base de conocimiento', 'url']]],
+    ['Lo que usa el motor', [['motor_usa', 'Lo que usa hoy el motor al escribir', 'ro'], ['pendiente', 'Pendiente', 'txt'], ['por_revisar', 'Por revisar: versiones encontradas en Drive (quien revisa elige, corrige arriba y borra este texto)', 'rev']]]
   ];
+  var PROD_CAMPOS = [].concat.apply([], PROD_GRUPOS.map(function (g) { return g[1]; }));
+  var TIPOS_PROD = [['licencias', 'Licencias por persona'], ['cursos', 'Cursos (suma de cursos por participantes)'], ['', 'Monto fijo por oportunidad']];
   // Lo que la compania aun no define se ve como "Por definir", nunca vacio ni en cero.
   var PD = 'Por definir';
-  function montoTxt(m) { return Number(m) > 0 ? Number(m).toLocaleString('es-MX') : PD; }
+  function num(n) { return Number(n).toLocaleString('es-MX', { maximumFractionDigits: 2 }); }
+  function montoTxt(m) { return Number(m) > 0 ? num(m) : PD; }
+  // Texto del monto segun el tipo: "Monto mínimo: 480 x 21 = 10,080 USD".
+  function montoAyuda(tipo, unit, minimo, monto, mon) {
+    unit = Number(unit) || 0; minimo = Number(minimo) || 0; mon = mon || 'USD';
+    if (tipo === 'licencias') {
+      if (!unit) return 'Escribe el precio por licencia.';
+      return minimo ? 'Monto mínimo: ' + num(unit) + ' x ' + num(minimo) + ' = ' + num(Math.round(unit * minimo)) + ' ' + mon + '. Con más personas, el monto es ' + num(unit) + ' x el número de personas.' : 'Sin mínimo: el monto es ' + num(unit) + ' ' + mon + ' x el número de personas.';
+    }
+    if (tipo === 'cursos') return 'El monto es la suma de cada curso por sus participantes (precios en el catálogo de cursos, abajo). ' + (Number(monto) > 0 ? 'Si la oportunidad llega sin cursos ni participantes, nace con ' + num(monto) + ' ' + mon + ' provisional.' : 'Sin monto provisional: la oportunidad nace cuando se sabe curso y personas.');
+    return Number(monto) > 0 ? 'Cada oportunidad nace con ' + num(monto) + ' ' + mon + '.' : 'Monto por definir.';
+  }
+  function montoResumen(p) {
+    var mon = p.moneda || 'USD';
+    if (p.tipo === 'licencias' && Number(p.precio_unitario) > 0) return num(p.precio_unitario) + ' ' + mon + ' por licencia' + (Number(p.minimo) > 0 ? ' · mínimo ' + num(p.minimo) + ' = ' + num(Math.round(p.precio_unitario * p.minimo)) + ' ' + mon : '');
+    if (p.tipo === 'cursos') return 'Suma de cursos por participantes';
+    return Number(p.monto) > 0 ? num(p.monto) + ' ' + mon : PD;
+  }
   // Personas: se eligen del equipo dado de alta en el portal (quien administra y usuarios). Se guarda el correo.
   function equipoDe(c) { var d = c.datos || {}; var l = P.correos(d.portal_admins).concat(P.correos(d.portal_usuarios)).map(function (x) { return x.toLowerCase(); }); return l.filter(function (x, i) { return l.indexOf(x) === i; }); }
   function nombresDe(c) { try { return JSON.parse((c.datos || {}).equipo_nombres || '{}') || {}; } catch (e) { return {}; } }
   function quien(v, nm) { v = String(v || ''); if (!v || /^por definir$/i.test(v)) return PD; return nm[v.toLowerCase()] || v; }
   function valorCampo(p, k) { var v = p[k]; if (Array.isArray(v)) return v.join(', '); if (v === undefined || v === null) return ''; return String(v); }
+  // Bloque de precio de una ficha: tipo, precio por licencia, minimo, moneda y el monto que resulta.
+  function bloquePrecio(p, i, adm) {
+    var tipo = p.tipo === 'licencias' || p.tipo === 'cursos' ? p.tipo : '', mon = p.moneda || 'USD', esLic = tipo === 'licencias';
+    var campo = function (cls, etiqueta, ctrl, oculto, para) { return '<div class="pf ' + cls + '"' + (oculto ? ' hidden' : '') + '><label' + (para ? ' for="' + para + '"' : '') + '>' + etiqueta + '</label><div>' + ctrl + '</div></div>'; };
+    var lblMonto = tipo === 'cursos' ? 'Monto provisional (si llega sin cursos ni participantes)' : 'Monto con que nace la oportunidad';
+    var html;
+    if (!adm) {
+      html = campo('', 'Tipo de producto', h((TIPOS_PROD.filter(function (x) { return x[0] === tipo; })[0] || [])[1]))
+        + (esLic ? campo('', 'Precio por licencia', h(Number(p.precio_unitario) > 0 ? num(p.precio_unitario) + ' ' + mon : PD)) + campo('', 'Mínimo de licencias', h(Number(p.minimo) > 0 ? num(p.minimo) : 'Sin mínimo')) : '')
+        + campo('', 'Moneda', h(mon))
+        + (esLic ? '' : campo('', lblMonto, h(montoTxt(p.monto) + (Number(p.monto) > 0 ? ' ' + mon : ''))));
+    } else {
+      var id = function (k) { return 'pf-' + i + '-' + k; };
+      var monedas = ['USD', 'MXN'].concat(['USD', 'MXN'].indexOf(mon) < 0 ? [mon] : []);
+      html = campo('', 'Tipo de producto', '<select id="' + id('tipo') + '" data-precio="' + i + '" style="width:100%">' + TIPOS_PROD.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === tipo ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select>', false, id('tipo'))
+        + campo('solo-lic', 'Precio por licencia (por persona)', '<input id="' + id('precio_unitario') + '" data-precio="' + i + '" type="number" min="0" max="100000" step="0.01" value="' + h(Number(p.precio_unitario) > 0 ? p.precio_unitario : '') + '" placeholder="' + PD + '">', !esLic, id('precio_unitario'))
+        + campo('solo-lic', 'Mínimo de licencias', '<input id="' + id('minimo') + '" data-precio="' + i + '" type="number" min="0" max="100000" step="1" value="' + h(Number(p.minimo) > 0 ? p.minimo : '') + '" placeholder="Sin mínimo">', !esLic, id('minimo'))
+        + campo('', 'Moneda', '<select id="' + id('moneda') + '" data-precio="' + i + '" style="width:100%">' + monedas.map(function (m) { return '<option' + (m === mon ? ' selected' : '') + '>' + h(m) + '</option>'; }).join('') + '</select>', false, id('moneda'))
+        + campo('no-lic', '<span id="' + id('monto-l') + '">' + lblMonto + '</span>', '<input id="' + id('monto') + '" data-precio="' + i + '" type="number" min="0" step="100" value="' + h(Number(p.monto) > 0 ? p.monto : '') + '" placeholder="' + PD + '">', esLic, id('monto'));
+    }
+    return '<div class="pf-g"><h4>Precio y monto</h4><div class="pfs">' + html + '</div><p class="monto-ayuda" id="pf-' + i + '-ayuda">' + h(montoAyuda(tipo, p.precio_unitario, p.minimo, p.monto, mon)) + '</p></div>';
+  }
   function productos(c) {
     var l = productosDe(c), fam = familiasDe(c), adm = !!(c.info || {}).administra, eq = equipoDe(c), nm = nombresDe(c);
     if (!l.length) return tarjeta(7, 'Productos', '<p class="vacio">Tu compañía todavía no tiene productos configurados. Pídelo abajo y Great Revenue los carga: código, nombre, monto típico, responsables, a quién se avisa y qué se ofrece.</p>' + P.pedir('productos', 'Productos', 'Ej.: mis productos son Curso Excel (por alumno, 3,500) y Diplomado (por cohorte)') + P.solicitudes(c.solicitudes, 'Productos'));
     var famOpc = function (sel) { return '<option value="">—</option>' + ['A', 'B', 'C', 'D', 'E'].map(function (k) { return '<option value="' + k + '"' + (sel === k ? ' selected' : '') + '>' + k + (fam[k] ? ' · ' + h(fam[k]) : '') + '</option>'; }).join(''); };
+    var control = function (p, i, f) {
+      var k = f[0], v = valorCampo(p, k), id = 'pf-' + i + '-' + k;
+      if (f[2] === 'per' || f[2] === 'perl') {
+        var sel = f[2] === 'per' ? [String(p[k] || '')] : (Array.isArray(p[k]) ? p[k] : []);
+        if (!adm) return h(sel.filter(Boolean).map(function (x) { return quien(x, nm); }).join(', ') || PD);
+        if (f[2] === 'per') {
+          var cur = sel[0] && !/^por definir$/i.test(sel[0]) ? sel[0] : '';
+          var opts = '<option value="Por definir">' + PD + '</option>' + eq.map(function (e) { return '<option value="' + h(e) + '"' + (e === cur.toLowerCase() ? ' selected' : '') + '>' + h((nm[e] ? nm[e] + ' · ' : '') + e) + '</option>'; }).join('');
+          if (cur && eq.indexOf(cur.toLowerCase()) < 0) opts += '<option value="' + h(cur) + '" selected>' + h(cur) + ' (sin alta en el portal)</option>';
+          return '<select id="' + id + '" style="width:100%">' + opts + '</select>';
+        }
+        var marcados = sel.map(function (x) { return String(x).toLowerCase(); });
+        var todos = eq.concat(marcados.filter(function (x) { return eq.indexOf(x) < 0; }));
+        return '<div id="' + id + '" class="pers">' + (todos.length ? todos.map(function (e) { return '<label><input type="checkbox" value="' + h(e) + '"' + (marcados.indexOf(e) >= 0 ? ' checked' : '') + '> <span>' + h(nm[e] || e) + (eq.indexOf(e) < 0 ? ' (sin alta en el portal)' : '') + '</span></label>'; }).join('') : '<span class="vacio">Da de alta a tu equipo en la pestaña Equipo.</span>') + '</div>';
+      }
+      if (f[2] === 'rev') {
+        var ligas = (v.match(/https:\/\/[^\s)]+/g) || []).map(function (u, j) { return '<a href="' + h(u) + '" target="_blank" rel="noopener" style="font-size:12px;margin-right:10px">Abrir ' + (j + 1) + '</a>'; }).join('');
+        return (adm ? '<textarea id="' + id + '" rows="3" style="width:100%;box-sizing:border-box;font:inherit;font-size:13px" placeholder="Nada por revisar">' + h(v) + '</textarea>' : '<div style="white-space:pre-wrap;font-size:13px">' + h(v || 'Nada por revisar') + '</div>') + (ligas ? '<div style="margin-top:4px">' + ligas + '</div>' : '');
+      }
+      if (f[2] === 'ro') return h(v || PD) + (v && p.propuesta_nombre && v.indexOf(p.propuesta_nombre) === -1 ? ' <span class="prod-p">No es la vigente</span>' : '');
+      if (!adm) {
+        if (f[2] === 'url') return v ? '<a href="' + h(v) + '" target="_blank" rel="noopener">Abrir</a>' : PD;
+        if (f[2] === 'chk') return p.activo === false ? 'No' : 'Sí';
+        if (f[2] === 'fam') return v ? h(v + (fam[v] ? ' · ' + fam[v] : '')) : PD;
+        return h(v || PD);
+      }
+      if (f[2] === 'chk') return '<label class="se-usa"><input type="checkbox" id="' + id + '"' + (p.activo === false ? '' : ' checked') + '> Se ofrece hoy</label>';
+      if (f[2] === 'fam') return '<select id="' + id + '" style="width:100%">' + famOpc(v) + '</select>';
+      if (f[2] === 'url') return '<div class="url-c"><input id="' + id + '" type="text" value="' + h(v) + '" placeholder="https://...">' + (v ? '<a href="' + h(v) + '" target="_blank" rel="noopener">Abrir</a>' : '') + '</div>';
+      return '<input id="' + id + '" type="text" value="' + h(v) + '" placeholder="' + PD + '" style="width:100%">';
+    };
     var fichas = l.map(function (p, i) {
-      var cuerpo = PROD_CAMPOS.map(function (f) {
-        var k = f[0], v = valorCampo(p, k), id = 'pf-' + i + '-' + k, ctrl;
-        if (f[2] === 'per' || f[2] === 'perl') {
-          var sel = f[2] === 'per' ? [String(p[k] || '')] : (Array.isArray(p[k]) ? p[k] : []);
-          if (!adm) ctrl = h(sel.filter(Boolean).map(function (x) { return quien(x, nm); }).join(', ') || PD);
-          else if (f[2] === 'per') {
-            var cur = sel[0] && !/^por definir$/i.test(sel[0]) ? sel[0] : '';
-            var opts = '<option value="Por definir">' + PD + '</option>' + eq.map(function (e) { return '<option value="' + h(e) + '"' + (e === cur.toLowerCase() ? ' selected' : '') + '>' + h((nm[e] ? nm[e] + ' · ' : '') + e) + '</option>'; }).join('');
-            if (cur && eq.indexOf(cur.toLowerCase()) < 0) opts += '<option value="' + h(cur) + '" selected>' + h(cur) + ' (sin alta en el portal)</option>';
-            ctrl = '<select id="' + id + '" style="width:100%">' + opts + '</select>';
-          } else {
-            var todos = eq.concat(sel.map(function (x) { return String(x).toLowerCase(); }).filter(function (x) { return eq.indexOf(x) < 0; }));
-            ctrl = '<div id="' + id + '">' + todos.map(function (e) { return '<label style="display:block;font-size:13px"><input type="checkbox" value="' + h(e) + '"' + (sel.map(function (x) { return String(x).toLowerCase(); }).indexOf(e) >= 0 ? ' checked' : '') + '> ' + h(nm[e] || e) + (eq.indexOf(e) < 0 ? ' (sin alta en el portal)' : '') + '</label>'; }).join('') + '</div>';
-          }
-        }
-        else if (f[2] === 'rev') {
-          var ligas = (v.match(/https:\/\/[^\s)]+/g) || []).map(function (u, j) { return '<a href="' + h(u) + '" target="_blank" rel="noopener" style="font-size:12px;margin-right:10px">Abrir ' + (j + 1) + '</a>'; }).join('');
-          ctrl = (adm ? '<textarea id="' + id + '" rows="3" style="width:100%;box-sizing:border-box;font:inherit;font-size:13px" placeholder="Nada por revisar">' + h(v) + '</textarea>' : '<div style="white-space:pre-wrap;font-size:13px">' + h(v || 'Nada por revisar') + '</div>') + (ligas ? '<div style="margin-top:4px">' + ligas + '</div>' : '');
-        }
-        else if (f[2] === 'ro') ctrl = h(v || PD) + (v && p.propuesta_nombre && v.indexOf(p.propuesta_nombre) === -1 ? ' <span class="prod-p">No es la vigente</span>' : '');
-        else if (!adm) {
-          if (f[2] === 'url') ctrl = v ? '<a href="' + h(v) + '" target="_blank" rel="noopener">Abrir</a>' : PD;
-          else if (f[2] === 'chk') ctrl = p.activo === false ? 'No' : 'Sí';
-          else if (f[2] === 'num') ctrl = montoTxt(p.monto);
-          else if (f[2] === 'fam') ctrl = v ? h(v + (fam[v] ? ' · ' + fam[v] : '')) : PD;
-          else ctrl = h(v || PD);
-        } else if (f[2] === 'chk') ctrl = '<input type="checkbox" id="' + id + '"' + (p.activo === false ? '' : ' checked') + '>';
-        else if (f[2] === 'fam') ctrl = '<select id="' + id + '">' + famOpc(v) + '</select>';
-        else ctrl = '<input id="' + id + '" type="' + (f[2] === 'num' ? 'number" min="0" step="100' : 'text') + '" value="' + h(f[2] === 'num' && !(Number(v) > 0) ? '' : v) + '" placeholder="' + (f[2] === 'url' ? 'https://...' : PD) + '" style="width:100%">'
-          + (f[2] === 'url' && v ? ' <a href="' + h(v) + '" target="_blank" rel="noopener" style="font-size:12px">Abrir</a>' : '');
-        return '<div class="pf"' + (f[2] === 'rev' ? ' style="grid-column:1/-1;' + (v ? 'background:#fff8e6;border:1px solid #f3d27a;border-radius:8px;padding:8px 10px' : '') + '"' : '') + '><label for="' + id + '">' + h(f[1]) + '</label><div>' + ctrl + '</div></div>';
-      }).join('');
-      return '<details class="prod"' + (i === 0 ? ' open' : '') + '><summary><b>' + h(p.codigo) + '</b> · ' + h(p.nombre || '') + ' <span class="prod-m">' + montoTxt(p.monto) + '</span>' + (p.pendiente ? ' <span class="prod-p">Pendiente</span>' : '') + (p.por_revisar ? ' <span class="prod-p" style="background:#ffe1d6;color:#8a2c0d">Por revisar</span>' : '') + (p.activo === false ? ' <span class="prod-p">Inactivo</span>' : '') + '</summary><div class="pfs">' + cuerpo + '</div></details>';
+      var grupos = PROD_GRUPOS.map(function (g) {
+        return '<div class="pf-g"><h4>' + h(g[0]) + '</h4><div class="pfs">' + g[1].map(function (f) {
+          var ancho = f[2] === 'rev' || f[2] === 'perl';
+          var resalta = f[2] === 'rev' && valorCampo(p, f[0]);
+          return '<div class="pf' + (ancho ? ' pf-w' : '') + (resalta ? ' pf-rev' : '') + '"><label for="pf-' + i + '-' + f[0] + '">' + h(f[1]) + '</label><div>' + control(p, i, f) + '</div></div>';
+        }).join('') + '</div></div>';
+      });
+      grupos.splice(1, 0, bloquePrecio(p, i, adm));
+      return '<details class="prod"' + (i === 0 ? ' open' : '') + '><summary><span class="prod-t"><b>' + h(p.codigo) + '</b> · ' + h(p.nombre || '') + '</span> <span class="prod-m" id="pf-' + i + '-resumen">' + h(montoResumen(p)) + '</span>' + (p.pendiente ? ' <span class="prod-p">Pendiente</span>' : '') + (p.por_revisar ? ' <span class="prod-p" style="background:#ffe1d6;color:#8a2c0d">Por revisar</span>' : '') + (p.activo === false ? ' <span class="prod-p">Inactivo</span>' : '') + '</summary>' + grupos.join('') + '</details>';
     }).join('');
-    var estilo = '<style>.prod{border:1px solid #e5e5e5;border-radius:10px;margin:0 0 10px;padding:0 12px;background:#fff}.prod summary{cursor:pointer;padding:12px 0;font-size:15px}.prod-m{color:#5c5c5c;font-size:13px;margin-left:6px}.prod-p{font-size:11px;background:#fff4d6;color:#7a5600;border-radius:8px;padding:2px 8px;margin-left:6px}.pfs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px 16px;padding:0 0 14px}.pf label{display:block;font-size:12px;color:#5c5c5c;margin-bottom:3px}.pf input[type=text],.pf input[type=number],.pf select{width:100%;box-sizing:border-box}</style>';
-    var intro = '<p style="margin:0 0 10px">Una ficha por producto. De aquí salen el monto con que nace cada oportunidad, a quién se avisa, quién hace la tarea, quién manda la minuta, qué se le ofrece al prospecto y la propuesta de valor e ICP vigentes con los que se escriben los mensajes y se evalúan las campañas.</p>';
-    var leyenda = '<div class="nota" style="margin-top:12px"><b>Formas del llamado a la acción:</b><br>' + ['A', 'B', 'C', 'D', 'E'].filter(function (k) { return fam[k]; }).map(function (k) { return '<b>' + k + '</b> · ' + h(fam[k]); }).join('<br>') + '</div>';
-    return tarjeta(7, 'Productos', estilo + intro + fichas + leyenda
+    // Mismo estilo que la pestana Fases: fichas a todo el ancho, dos columnas desde 760 px y una en el celular.
+    var estilo = '<style>.prod{border:1px solid #e3e3e0;border-radius:10px;margin:0 0 12px;padding:0 14px 6px;background:#fff}.prod summary{cursor:pointer;padding:12px 0;font-size:15px;line-height:1.5}.prod-t{overflow-wrap:anywhere}.prod-m{color:#5c5c5c;font-size:13px;margin-left:4px}.prod-p{font-size:11px;background:#fff4d6;color:#7a5600;border-radius:8px;padding:2px 8px;margin-left:6px;white-space:nowrap}'
+      + '.pf-g{border-top:1px solid #eee;padding:10px 0 12px}.pf-g h4{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#5c5c5c}'
+      + '.pfs{display:grid;grid-template-columns:1fr;gap:10px 20px}.pf{min-width:0}.pf[hidden]{display:none}.pf-w{grid-column:1/-1}.pf-rev{background:#fff8e6;border:1px solid #f3d27a;border-radius:8px;padding:8px 10px}.pf>label{display:block;font-size:12px;color:#5c5c5c;margin-bottom:3px}'
+      + '.pf input[type=text],.pf input[type=number],.pf select{width:100%;box-sizing:border-box}.url-c{display:flex;gap:8px;align-items:center}.url-c input{flex:1}.url-c a{font-size:12px;flex:none}'
+      + '.pers{display:grid;grid-template-columns:1fr;gap:4px 16px}.pers label{display:flex;gap:6px;align-items:flex-start;font-size:13px;min-width:0}.pers input{margin-top:3px;flex:none}.pers span{overflow-wrap:anywhere}'
+      + '.monto-ayuda{margin:10px 0 0;padding:8px 12px;border-radius:8px;background:#f3f7f3;border:1px solid #d7e7d7;font-size:13px;color:#24502a}'
+      + '.se-usa{display:inline-flex;gap:6px;align-items:center;white-space:nowrap;font-size:13px}.sub-f{margin:18px 0 6px;font-size:15px}'
+      + '@media (min-width:760px){.pfs{grid-template-columns:1fr 1fr}.pers{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}}</style>';
+    var intro = '<p style="margin:0 0 10px">Una ficha por producto. De aquí salen el precio y el monto con que nace cada oportunidad, a quién se avisa, quién hace la tarea, quién manda la minuta, qué se le ofrece al prospecto y la propuesta de valor e ICP vigentes con los que se escriben los mensajes. Los precios se pueden cambiar cuando quieras: las oportunidades nuevas usan el precio vigente.</p>';
+    var leyenda = ['A', 'B', 'C', 'D', 'E'].some(function (k) { return fam[k]; }) ? '<div class="nota" style="margin-top:12px"><b>Formas del llamado a la acción:</b><br>' + ['A', 'B', 'C', 'D', 'E'].filter(function (k) { return fam[k]; }).map(function (k) { return '<b>' + k + '</b> · ' + h(fam[k]); }).join('<br>') + '</div>' : '';
+    var html = tarjeta(7, 'Productos', estilo + intro + fichas + leyenda
       + (adm ? '<div class="acciones" style="margin-top:12px"><button class="p" id="prod-guardar">Guardar productos</button><span class="msg" id="m-prod"></span></div>' : '<p class="vacio">Solo quien administra el portal puede cambiar los productos.</p>')
       + P.pedir('productos', 'Productos', 'Ej.: agrega el producto Synapsis') + P.solicitudes(c.solicitudes, 'Productos'));
+    var deCursos = l.filter(function (p) { return p.tipo === 'cursos'; });
+    if (deCursos.length || cursosDe(c).length) html += catalogoCursos(c, deCursos, adm);
+    return html;
+  }
+  // Catalogo de cursos y precios (productos_cursos): codigo, nombre, familia, precio por participante y si se usa.
+  // Un curso no se borra: se desmarca «Se usa» y el motor deja de cotizarlo. Se guarda completo con cursos_guardar.
+  var catEstado = { lista: [] };
+  function normal(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+  function familiasCursos() { var f = []; catEstado.lista.forEach(function (x) { if (x.f && f.indexOf(x.f) < 0) f.push(x.f); }); return f.sort(function (a, b) { return a.localeCompare(b, 'es'); }); }
+  function filaCurso(x, i, adm) {
+    if (!adm) return '<tr data-i="' + i + '"' + (x.a === false ? ' class="no"' : '') + '><td class="cc" data-l="Código"><b>' + h(x.c) + '</b></td><td class="cn" data-l="Curso">' + h(x.n) + '</td><td class="cf" data-l="Familia">' + h(x.f || '—') + '</td><td class="cp" data-l="Precio">' + h(num(x.p)) + '</td><td class="cu" data-l="Se usa"><span class="se-usa-t' + (x.a === false ? '' : ' si') + '">' + (x.a === false ? 'No se usa' : 'Se usa') + '</span></td></tr>';
+    return '<tr data-i="' + i + '"' + (x.a === false ? ' class="no"' : '') + '><td class="cc" data-l="Código"><b>' + h(x.c) + '</b></td>'
+      + '<td class="cn" data-l="Curso"><input type="text" data-k="n" maxlength="150" value="' + h(x.n) + '" aria-label="Nombre de ' + h(x.c) + '"></td>'
+      + '<td class="cf" data-l="Familia"><input type="text" data-k="f" maxlength="60" list="cat-fams" value="' + h(x.f) + '" aria-label="Familia de ' + h(x.c) + '"></td>'
+      + '<td class="cp" data-l="Precio"><input type="number" data-k="p" min="0" max="100000" step="0.01" value="' + h(x.p) + '" aria-label="Precio de ' + h(x.c) + '"></td>'
+      + '<td class="cu" data-l="Se usa"><label class="se-usa"><input type="checkbox" data-k="a"' + (x.a === false ? '' : ' checked') + '> <span>Se usa</span></label></td></tr>';
+  }
+  function catalogoCursos(c, deCursos, adm) {
+    catEstado.lista = cursosDe(c).map(function (x) { var o = { c: String(x.c), n: String(x.n || ''), f: String(x.f || ''), p: Number(x.p) || 0 }; if (x.a === false) o.a = false; return o; });
+    var mon = (deCursos[0] && deCursos[0].moneda) || 'USD';
+    var fams = familiasCursos();
+    var estilo = '<style>.cat-bar{display:grid;grid-template-columns:1fr;gap:10px}.cat-bar label{font-size:12px;color:#5c5c5c;display:block}.cat-bar input,.cat-bar select{width:100%;box-sizing:border-box;margin-top:3px}'
+      + '.cat-cuenta{font-size:13px;color:#5c5c5c;margin:4px 0 0}.cat-t{width:100%;border-collapse:collapse;table-layout:fixed}.cat-t th{text-align:left;font-size:12px;color:#5c5c5c;font-weight:600;padding:8px 6px;border-bottom:1px solid #e3e3e0}'
+      + '.cat-t td{padding:5px 6px;border-bottom:1px solid #f0f0ee;vertical-align:middle;min-width:0;overflow-wrap:anywhere;font-size:14px}.cat-t input[type=text],.cat-t input[type=number]{width:100%;box-sizing:border-box;padding:6px 8px}.cat-t tr.no td{color:#9aa0a6}.cat-t tr.no input[type=text],.cat-t tr.no input[type=number]{color:#9aa0a6;background:#fafaf8}'
+      + '.cat-t .cc{font-size:13px}.se-usa-t{font-size:12px;color:#5c5c5c;white-space:nowrap}.se-usa-t.si{color:#2e7d32;font-weight:600}.cat-t .cp input{text-align:right}.cat-nuevo{display:grid;grid-template-columns:1fr;gap:10px;align-items:end;border:1px dashed #d8d8d4;border-radius:8px;padding:12px;background:#fafaf8}.cat-nuevo label{font-size:12px;color:#5c5c5c;display:block}.cat-nuevo input{width:100%;box-sizing:border-box;margin-top:3px}'
+      + '@media (min-width:760px){.cat-bar{grid-template-columns:2fr 1fr}.cat-nuevo{grid-template-columns:140px 2fr 1fr 140px auto}.cat-t col.c1{width:150px}.cat-t col.c3{width:22%}.cat-t col.c4{width:150px}.cat-t col.c5{width:100px}}'
+      + '@media (max-width:759px){.cat-t thead{display:none}.cat-t,.cat-t tbody,.cat-t tr,.cat-t td{display:block;width:auto}.cat-t colgroup{display:none}'
+      + '.cat-t tr{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;border:1px solid #e3e3e0;border-radius:8px;padding:10px 12px;margin-top:10px;background:#fafaf8}.cat-t td{border:0;padding:0}'
+      + '.cat-t .cc{grid-column:1;grid-row:1;align-self:center}.cat-t .cu{grid-column:2;grid-row:1;justify-self:end;align-self:center}.cat-t .cn{grid-column:1/-1}.cat-t .cf{grid-column:1}.cat-t .cp{grid-column:2}'
+      + '.cat-t .cn::before,.cat-t .cf::before,.cat-t .cp::before{content:attr(data-l);display:block;font-size:11px;color:#5c5c5c;margin-bottom:2px}.cat-t .cp::before{content:"Precio ' + mon + '"}}</style>';
+    var usados = deCursos.length ? '<p style="margin:0">Precio por participante, sin IVA, de cada curso de ' + deCursos.map(function (p) { return '<b>' + h(p.nombre || p.codigo) + '</b>'; }).join(', ') + '. El monto de la oportunidad es la suma de cada curso por sus participantes (un alumno = precio del curso). Los cursos que no se usan no se cotizan; las oportunidades que ya los traen conservan su monto.</p>' : '<p style="margin:0">Precio por participante, sin IVA, de cada curso.</p>';
+    var barra = '<div class="cat-bar"><label>Buscar por nombre o código<input type="search" id="cat-buscar" placeholder="Ej.: ITIL, Scrum, CISSP"></label><label>Familia<select id="cat-fam"><option value="">Todas las familias</option>' + fams.map(function (f) { return '<option>' + h(f) + '</option>'; }).join('') + '</select></label></div><p class="cat-cuenta" id="cat-cuenta"></p>';
+    var tabla = '<div><table class="cat-t"><colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"></colgroup><thead><tr><th>Código</th><th>Curso</th><th>Familia</th><th>Precio ' + h(mon) + ' por participante</th><th>Se usa</th></tr></thead><tbody id="cat-filas">' + catEstado.lista.map(function (x, i) { return filaCurso(x, i, adm); }).join('') + '</tbody></table></div>';
+    var nuevo = adm ? '<h3 class="sub-f" style="margin:6px 0 0">Agregar un curso</h3><div class="cat-nuevo"><label>Código<input id="cat-n-c" maxlength="20" placeholder="Ej.: ITIL4F"></label><label>Nombre<input id="cat-n-n" maxlength="150" placeholder="Nombre del curso"></label><label>Familia<input id="cat-n-f" maxlength="60" list="cat-fams" placeholder="Ej.: ITIL"></label><label>Precio ' + h(mon) + '<input id="cat-n-p" type="number" min="0" max="100000" step="0.01"></label><button class="s" id="cat-agregar">Agregar</button></div>'
+      + '<datalist id="cat-fams">' + fams.map(function (f) { return '<option value="' + h(f) + '">'; }).join('') + '</datalist>'
+      + '<div class="acciones"><button class="p" id="cat-guardar">Guardar catálogo</button><span class="msg" id="m-cat"></span></div>' : '<p class="vacio">Solo quien administra el portal puede cambiar los cursos y sus precios.</p>';
+    return tarjeta('7.1', 'Catálogo de cursos y precios', estilo + usados + barra + tabla + nuevo + P.pedir('cursos', 'Catálogo de cursos y precios', 'Ej.: sube 10% los cursos de ITIL') + P.solicitudes(c.solicitudes, 'Catálogo de cursos y precios'));
+  }
+  function activarCatalogo(c) {
+    if (!$('cat-filas')) return;
+    var adm = !!(c.info || {}).administra, cuerpo = $('cat-filas');
+    var filtrar = function () {
+      var q = normal($('cat-buscar').value.trim()), fam = $('cat-fam').value, vistos = 0;
+      Array.prototype.forEach.call(cuerpo.querySelectorAll('tr[data-i]'), function (tr) {
+        var x = catEstado.lista[Number(tr.getAttribute('data-i'))];
+        var ve = (!fam || x.f === fam) && (!q || normal(x.c).indexOf(q) >= 0 || normal(x.n).indexOf(q) >= 0);
+        tr.style.display = ve ? '' : 'none'; if (ve) vistos++;
+      });
+      var enUso = catEstado.lista.filter(function (x) { return x.a !== false; }).length;
+      $('cat-cuenta').textContent = catEstado.lista.length + ' cursos · ' + enUso + ' se usan' + (vistos !== catEstado.lista.length ? ' · mostrando ' + vistos : '');
+    };
+    $('cat-buscar').oninput = filtrar; $('cat-fam').onchange = filtrar; filtrar();
+    if (!adm) return;
+    var cambios = function () { P.msg('m-cat', '', 'Tienes cambios sin guardar.'); };
+    var editar = function (ev) {
+      var el = ev.target, tr = el.closest('tr[data-i]'); if (!tr) return;
+      if ((el.getAttribute('data-k') === 'a') !== (ev.type === 'change')) return;
+      var x = catEstado.lista[Number(tr.getAttribute('data-i'))], k = el.getAttribute('data-k');
+      if (k === 'a') { if (el.checked) delete x.a; else x.a = false; tr.className = el.checked ? '' : 'no'; filtrar(); }
+      else if (k === 'p') x.p = el.value === '' ? '' : Number(el.value);
+      else if (k) x[k] = el.value;
+      cambios();
+    };
+    cuerpo.addEventListener('input', editar); cuerpo.addEventListener('change', editar);
+    var errorCurso = function (x) {
+      if (!/^[A-Z0-9]{2,20}$/.test(x.c)) return 'El código ' + (x.c || '(vacío)') + ' debe tener de 2 a 20 letras o números, sin espacios.';
+      if (!String(x.n).trim() || String(x.n).trim().length > 150) return 'El nombre de ' + x.c + ' debe tener de 1 a 150 caracteres.';
+      if (String(x.f).trim().length > 60) return 'La familia de ' + x.c + ' debe tener máximo 60 caracteres.';
+      var p = x.p === '' ? NaN : Number(x.p); if (!(isFinite(p) && p >= 0 && p <= 100000)) return 'El precio de ' + x.c + ' debe ir de 0 a 100,000.';
+      return '';
+    };
+    $('cat-agregar').onclick = function () {
+      var x = { c: $('cat-n-c').value.trim().toUpperCase(), n: $('cat-n-n').value.trim(), f: $('cat-n-f').value.trim(), p: $('cat-n-p').value === '' ? '' : Number($('cat-n-p').value) };
+      var e = errorCurso(x);
+      if (!e && catEstado.lista.some(function (y) { return y.c.toUpperCase() === x.c; })) e = 'Ya existe un curso con el código ' + x.c + '.';
+      if (e) { P.msg('m-cat', 'bad', e); return; }
+      catEstado.lista.push(x);
+      var tmp = document.createElement('tbody'); tmp.innerHTML = filaCurso(x, catEstado.lista.length - 1, true); cuerpo.appendChild(tmp.firstChild);
+      if (x.f && familiasCursos().indexOf(x.f) >= 0 && !Array.prototype.some.call($('cat-fam').options, function (o) { return o.value === x.f; })) { $('cat-fam').insertAdjacentHTML('beforeend', '<option>' + h(x.f) + '</option>'); $('cat-fams').insertAdjacentHTML('beforeend', '<option value="' + h(x.f) + '">'); }
+      ['cat-n-c', 'cat-n-n', 'cat-n-p'].forEach(function (k) { $(k).value = ''; });
+      $('cat-buscar').value = ''; $('cat-fam').value = ''; filtrar();
+      P.msg('m-cat', '', x.c + ' quedó agregado al final de la lista. Guarda el catálogo para que el motor lo use.');
+    };
+    $('cat-guardar').onclick = function () {
+      var btn = this, lista = catEstado.lista.map(function (x) { var o = { c: String(x.c).trim().toUpperCase(), n: String(x.n).trim(), f: String(x.f).trim(), p: x.p === '' ? '' : Number(x.p) }; if (x.a === false) o.a = false; return o; });
+      var vistos = {}, e = '';
+      lista.some(function (x) { e = errorCurso(x) || (vistos[x.c] ? 'El código ' + x.c + ' está repetido.' : ''); vistos[x.c] = 1; return !!e; });
+      if (!e && !lista.some(function (x) { return x.a !== false; })) e = 'Debe quedar al menos un curso en uso.';
+      if (e) { P.msg('m-cat', 'bad', e); return; }
+      btn.disabled = true; P.msg('m-cat', '', 'Guardando...');
+      P.api({ accion: 'cursos_guardar', sesion: ses(), tenant: c.tenant, cursos: lista }).then(function (x) {
+        btn.disabled = false;
+        if (x._codigo === 401) { salir(x.error); return; }
+        if (!x.ok) { P.msg('m-cat', 'bad', x.error || 'No se pudo guardar.'); return; }
+        c.datos.productos_cursos = JSON.stringify(lista);
+        P.msg('m-cat', 'ok', 'Guardado: ' + lista.length + ' cursos. Las oportunidades nuevas ya usan estos precios.');
+      });
+    };
   }
   function activarProductos(c) {
+    activarCatalogo(c);
     if (!$('prod-guardar')) return;
+    var l = productosDe(c);
+    // Al cambiar tipo, precio, minimo o moneda: se muestran los campos que aplican y se recalcula el texto del monto.
+    var repintar = function (i) {
+      var v = function (k) { var el = $('pf-' + i + '-' + k); return el ? el.value : ''; };
+      var tipo = v('tipo'), esLic = tipo === 'licencias', ficha = $('pf-' + i + '-tipo').closest('.pf-g');
+      Array.prototype.forEach.call(ficha.querySelectorAll('.solo-lic'), function (x) { x.hidden = !esLic; });
+      Array.prototype.forEach.call(ficha.querySelectorAll('.no-lic'), function (x) { x.hidden = esLic; });
+      $('pf-' + i + '-monto-l').textContent = tipo === 'cursos' ? 'Monto provisional (si llega sin cursos ni participantes)' : 'Monto con que nace la oportunidad';
+      $('pf-' + i + '-ayuda').textContent = montoAyuda(tipo, v('precio_unitario'), v('minimo'), v('monto'), v('moneda'));
+      $('pf-' + i + '-resumen').textContent = montoResumen({ tipo: tipo, precio_unitario: Number(v('precio_unitario')), minimo: Number(v('minimo')), monto: Number(v('monto')), moneda: v('moneda') });
+    };
+    Array.prototype.forEach.call(document.querySelectorAll('[data-precio]'), function (el) { el.oninput = el.onchange = function () { repintar(Number(el.getAttribute('data-precio'))); }; });
     $('prod-guardar').onclick = function () {
-      var l = productosDe(c), btn = this;
+      var btn = this, mal = '';
       var nuevos = l.map(function (p, i) {
+        // Solo se mandan los campos que se ven; el motor conserva el resto de la ficha (campos del CRM y otros).
         var o = { codigo: p.codigo };
         PROD_CAMPOS.forEach(function (f) {
-          var el = $('pf-' + i + '-' + f[0]); if (!el) { o[f[0]] = p[f[0]]; return; }
+          var el = $('pf-' + i + '-' + f[0]); if (!el || f[2] === 'ro') return;
           if (f[2] === 'chk') o[f[0]] = el.checked;
           else if (f[2] === 'perl') o[f[0]] = Array.prototype.map.call(el.querySelectorAll('input:checked'), function (x) { return x.value; });
           else if (f[2] === 'lista') o[f[0]] = el.value.split(',').map(function (x) { return x.trim(); }).filter(Boolean);
-          else if (f[2] === 'num') o[f[0]] = el.value === '' ? 0 : Number(el.value);
           else o[f[0]] = el.value.trim();
         });
+        var v = function (k) { var el = $('pf-' + i + '-' + k); return el ? el.value.trim() : ''; };
+        o.tipo = v('tipo'); o.moneda = v('moneda');
+        if (o.tipo === 'licencias') {
+          o.precio_unitario = v('precio_unitario') === '' ? '' : Number(v('precio_unitario'));
+          o.minimo = v('minimo') === '' ? '' : Number(v('minimo'));
+          if (!(o.precio_unitario > 0 && o.precio_unitario <= 100000)) mal = mal || 'Escribe el precio por licencia de ' + p.codigo + ' (de 0 a 100,000).';
+          if (o.minimo !== '' && !(Number.isInteger(o.minimo) && o.minimo >= 0 && o.minimo <= 100000)) mal = mal || 'El mínimo de licencias de ' + p.codigo + ' debe ser un número entero de 0 a 100,000.';
+          o.monto = o.precio_unitario > 0 && o.minimo > 0 ? Math.round(o.precio_unitario * o.minimo) : 0;
+        } else {
+          o.precio_unitario = ''; o.minimo = '';
+          o.monto = v('monto') === '' ? 0 : Number(v('monto'));
+          if (!(o.monto >= 0)) mal = mal || 'El monto de ' + p.codigo + ' debe ser un número de 0 en adelante.';
+        }
         return o;
       });
-      $('m-prod').textContent = 'Guardando...'; btn.disabled = true;
+      if (mal) { P.msg('m-prod', 'bad', mal); return; }
+      P.msg('m-prod', '', 'Guardando...'); btn.disabled = true;
       P.api({ accion: 'productos_guardar', sesion: ses(), tenant: c.tenant, productos: nuevos }).then(function (x) {
         btn.disabled = false;
         if (x._codigo === 401) { salir(x.error); return; }
-        if (!x.ok) { $('m-prod').textContent = x.error || 'No se pudo guardar.'; return; }
-        c.datos.productos = JSON.stringify(nuevos); $('m-prod').textContent = 'Guardado. Los motores usan estos datos desde ahora.';
+        if (!x.ok) { P.msg('m-prod', 'bad', x.error || 'No se pudo guardar.'); return; }
+        // Copia local: la ficha guardada mas lo cambiado (igual que hace el motor); lo vacio se quita.
+        c.datos.productos = JSON.stringify(l.map(function (p, i) { var o = Object.assign({}, p, nuevos[i]); ['tipo', 'precio_unitario', 'minimo', 'moneda'].forEach(function (k) { if (o[k] === '') delete o[k]; }); return o; }));
+        P.msg('m-prod', 'ok', 'Guardado. Los motores usan estos datos y precios desde ahora.');
       });
     };
   }
