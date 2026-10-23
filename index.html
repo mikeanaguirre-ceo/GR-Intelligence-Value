@@ -873,32 +873,31 @@ function personaFromSubject(subj){ if(esFirma(subj)) return "Martha"; var m=Stri
 // Responsable de una tarea: prospeccion siempre a Martha, lo demas se queda como venga del motor.
 function responsableTarea(titulo, personaMotor){ return esFirma(titulo) ? "Martha" : (personaMotor || "Sin asignar"); }
 function persResp(x,map){ var r=personaFromSubject((x.metadata||{}).subject); if(r) return r; var oid=String((x.engagement||{}).ownerId||""); return map[oid]||(oid?("Owner "+oid):"Sin asignar"); }
+// 23oct2026 (Mike): las tareas viven en Estado (pendientes primero) y TODAS las notas, completas, en su pestana.
+function grNotaTexto(x){ var m=x.metadata||{}, e=x.engagement||{}; var h=String(m.body||e.bodyPreview||''); return h.replace(/<br\s*\/?>/gi,'\n').replace(/<\/(p|div|li|tr|h\d)>/gi,'\n').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/[ \t]+/g,' ').replace(/\n\s*\n+/g,'\n').trim(); }
 async function cargarActividadesGR(dealId,containerId){
   var box=document.getElementById(containerId); if(!box) return;
-  box.innerHTML='<div style="color:#6B7280;font-size:11px">Cargando tareas…</div>';
+  var nbox=document.getElementById('grmd-notas'), nn=document.getElementById('grmd-notas-n');
+  box.innerHTML='<div style="color:#6B7280;font-size:11px">Cargando tareas…</div>'; if(nbox) nbox.innerHTML='<div class="md-nota">Cargando…</div>'; if(nn) nn.textContent='';
   try{
     var r=await fetch('https://mikea.app.n8n.cloud/webhook/gr-act?dealId='+encodeURIComponent(dealId));
     var data=await r.json();
+    if(String(window.__grEditId||'')!==String(dealId)) return;
     var tasks=((data&&data.results)||[]).filter(function(x){return (x.engagement&&x.engagement.type)==='TASK';});
     var notas=((data&&data.results)||[]).filter(function(x){return (x.engagement&&x.engagement.type)==='NOTE';}).sort(function(a,b){return ((b.engagement||{}).timestamp||0)-((a.engagement||{}).timestamp||0);});
-    var notasHtml='';
-    if(notas.length){
-      notasHtml='<div style="font-weight:800;color:#F3F4F6;font-size:13px;margin:12px 0 4px">Notas <span style="color:#9CA3AF;font-weight:600;font-size:12px">· '+notas.length+'</span></div>';
-      notas.slice(0,5).forEach(function(x){ var e=x.engagement||{}; var t=String(e.bodyPreview||(x.metadata||{}).body||'').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim(); var dd=e.timestamp?new Date(e.timestamp).toISOString().slice(0,10):''; notasHtml+='<div style="font-size:12px;padding:6px 0;line-height:1.45;border-bottom:1px solid rgba(255,255,255,.05);color:#D1D5DB"><span style="color:#9CA3AF;font-size:11px">'+dd+'</span> · '+grEsc(t.slice(0,220))+(t.length>220?'…':'')+'</div>'; });
-      if(notas.length>5) notasHtml+='<div style="color:#6B7280;font-size:11px;margin-top:4px">'+(notas.length-5)+' notas más en HubSpot.</div>';
+    if(nbox){
+      if(nn) nn.textContent=notas.length?('· '+notas.length):'';
+      nbox.innerHTML=notas.length?notas.map(function(x){ var e=x.engagement||{}; var dd=e.timestamp?fmtFecha(new Date(e.timestamp).toISOString()):''; return '<div class="gn-nota"><div class="gn-f">'+grEsc(dd||'')+'</div><div class="gn-t">'+grEsc(grNotaTexto(x))+'</div></div>'; }).join(''):'<div class="md-nota">Esta oportunidad no tiene notas.</div>';
     }
-    if(!tasks.length){ box.innerHTML='<div style="color:#6B7280;font-size:11px">Sin tareas asociadas a esta oportunidad.</div>'+notasHtml; return; }
-    var byOwner={};
-    tasks.forEach(function(x){ var r=persResp(x,GR_OWNERS); (byOwner[r]=byOwner[r]||[]).push(x); });
-    var html='';
-    Object.keys(byOwner).forEach(function(oid){
-      var nm=oid;
-      var ts=byOwner[oid].sort(function(a,b){return (b.engagement.timestamp||0)-(a.engagement.timestamp||0);});
-      html+='<div style="font-weight:800;color:#F3F4F6;font-size:13px;margin:9px 0 4px">'+grEsc(nm)+' <span style="color:#9CA3AF;font-weight:600;font-size:12px">· '+ts.length+' tarea'+(ts.length!==1?'s':'')+'</span></div>';
-      ts.forEach(function(x){ var e=x.engagement||{}; var m=x.metadata||{}; var done=String(m.status||'').toUpperCase()==='COMPLETED'; var dts=e.timestamp||0; var now=Date.now(); var col=done?'#6B7280':(dts&&dts<now?'#DB0540':(dts&&(dts-now)<3*86400000?'#FFCD00':'#62D175')); var subj=String(m.subject||m.body||'Tarea').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').trim().slice(0,90); var dd=dts?new Date(dts).toISOString().slice(0,10):''; html+='<div style="display:flex;align-items:center;gap:9px;font-size:13px;padding:5px 0;line-height:1.4;border-bottom:1px solid rgba(255,255,255,.05)"><span style="width:10px;height:10px;border-radius:50%;background:'+col+';flex:none"></span><span style="flex:1;color:'+(done?'#6B7280':'#E5E7EB')+';'+(done?'text-decoration:line-through':'')+'">'+grEsc(subj)+'</span><span style="color:#9CA3AF;font-size:11px;flex:none">'+dd+'</span></div>'; });
-    });
-    box.innerHTML=html+notasHtml;
-  }catch(err){ box.innerHTML='<div style="color:#DB0540;font-size:12px">No se pudieron cargar las actividades.</div>'; }
+    if(!tasks.length){ box.innerHTML='<div style="color:#6B7280;font-size:11px">Sin tareas asociadas a esta oportunidad.</div>'; return; }
+    var hecho=function(x){ return String((x.metadata||{}).status||'').toUpperCase()==='COMPLETED'; };
+    var fila=function(x){ var e=x.engagement||{}; var m=x.metadata||{}; var done=hecho(x); var dts=e.timestamp||0; var now=Date.now(); var col=done?'#6B7280':(dts&&dts<now?'#DB0540':(dts&&(dts-now)<3*86400000?'#FFCD00':'#62D175')); var subj=String(m.subject||m.body||'Tarea').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').trim().slice(0,120); var dd=dts?new Date(dts).toISOString().slice(0,10):''; var quien=persResp(x,GR_OWNERS);
+      return '<div style="display:flex;align-items:center;gap:9px;font-size:13px;padding:6px 0;line-height:1.4;border-bottom:1px solid rgba(255,255,255,.05)"><span style="width:10px;height:10px;border-radius:50%;background:'+col+';flex:none"></span><span style="flex:1;color:'+(done?'#6B7280':'#E5E7EB')+';'+(done?'text-decoration:line-through':'')+'">'+grEsc(subj)+'<span style="color:#8b93a7;font-size:11px"> · '+grEsc(quien)+'</span></span><span style="color:#9CA3AF;font-size:11px;flex:none">'+dd+'</span></div>'; };
+    var pend=tasks.filter(function(x){ return !hecho(x); }).sort(function(a,b){ return ((a.engagement||{}).timestamp||0)-((b.engagement||{}).timestamp||0); });
+    var cerr=tasks.filter(hecho).sort(function(a,b){ return ((b.engagement||{}).timestamp||0)-((a.engagement||{}).timestamp||0); });
+    box.innerHTML=(pend.length?pend.map(fila).join(''):'<div style="color:#6B7280;font-size:12px;padding:4px 0">Sin tareas pendientes.</div>')
+      +(cerr.length?('<details style="margin-top:8px"><summary style="cursor:pointer;color:#9CA3AF;font-size:12px">'+cerr.length+(cerr.length===1?' tarea cerrada':' tareas cerradas')+'</summary>'+cerr.map(fila).join('')+'</details>'):'');
+  }catch(err){ box.innerHTML='<div style="color:#DB0540;font-size:12px">No se pudieron cargar las actividades.</div>'; if(nbox) nbox.innerHTML='<div style="color:#DB0540;font-size:12px">No se pudieron cargar las notas.</div>'; }
 }
 function abrirEditarDealGR(dealId){
   var d=null; (DATA.deals||[]).forEach(function(x){ if(String(x.id)===String(dealId)) d=x; });
@@ -910,7 +909,11 @@ function abrirEditarDealGR(dealId){
     +(d.stageLabel?('<span class="md-pill">'+grEsc(d.stageLabel)+'</span>'):'')
     +(String((d.campos||{}).gr_sin_telefono)==='true'?'<span class="md-pill" style="color:#FCA5A5;border-color:#DB054055;">Sin teléfono · seguir por correo o LinkedIn</span>':'')
     +(_url?('<a class="md-pill" href="'+grEsc(_url)+'" target="_blank" rel="noopener" style="color:#02ADBA;font-weight:700;text-decoration:none;border-color:#02ADBA55;">Abrir en HubSpot ↗</a>'):'');
-  grmdTab('resumen'); grmdPintarOrigen(null);
+  grmdTab('resumen');
+  // 23oct2026: el origen se pinta al instante con los datos del tablero; lo largo (mensaje, respuesta, empresa) llega despues.
+  var _c=d.campos||{}; window.__grSecuencia=null;
+  grmdPintarOrigen({_parcial:true, camino:_c.gr_origen||'', como_llego:_c.gr_como_llego||'', campana:_c.gr_secuencia_origen||'', canal:_c.gr_canal_respuesta||'', sector:_c.gr_sector||'', area:_c.gr_area||'', nivel:_c.gr_nivel||'', tamano:_c.gr_tamano||'', pais:_c.gr_pais||'', tipo_senal:_c.gr_tipo_senal||'', tipo_interes:_c.gr_tipo_interes||'', aperturas:_c.gr_aperturas||'', fecha_senal:_c.gr_fecha_senal||'', remitente:_c.gr_remitente||''});
+  var _sb=document.getElementById('grmd-secuencia'); if(_sb) _sb.innerHTML='<div class="md-nota">Se carga al abrir esta pestaña (sin costo, de la cuenta de Amplemarket de GR).</div>'; var _sr=document.getElementById('grmd-sec-res'); if(_sr) _sr.textContent='';
   var _mot=(pipeCfg()||{}).motivos||[];
   document.getElementById('grmd-motivo').innerHTML='<option value="">Elige el motivo…</option>'+_mot.map(function(m){return '<option value="'+grEsc(m.valor)+'">'+grEsc(m.label)+'</option>';}).join('');
   var stgs=grStagesForSelect(); var curId=''; stgs.forEach(function(x){ if(x.id===d.stage) curId=x.id; });
@@ -928,7 +931,30 @@ function abrirEditarDealGR(dealId){
   cargarActividadesGR(dealId, 'grmd-acts');
 }
 // 22oct2026 — Ventana por pestanas (aprobada por Mike): Resumen, Contacto y empresa, Origen y campana, Tareas y notas.
+// 23oct2026 (Mike): toda la secuencia de la persona, de la cuenta de Amplemarket de GR (sin costo), al abrir Origen.
+async function grmdCargarSecuencia(){
+  var id=window.__grEditId, box=document.getElementById('grmd-secuencia'), rs=document.getElementById('grmd-sec-res'); if(!id||!box) return;
+  if(window.__grSecuencia && window.__grSecuencia.id===id) return;
+  var sel=document.getElementById('grmd-contact');
+  var ct=(window.__grContactos||[]).filter(function(x){return String(x.id)===String(sel&&sel.value);})[0]||(window.__grContactos||[])[0]||{};
+  if(!ct.email){ box.innerHTML='<div class="md-nota">'+((window.__grContactos||[]).length?'El contacto no tiene correo; no se puede buscar su secuencia.':'Cargando contacto…')+'</div>'; if((window.__grContactos||[]).length) window.__grSecuencia={id:id}; return; }
+  window.__grSecuencia={id:id}; box.innerHTML='<div class="md-nota">Leyendo la secuencia en Amplemarket…</div>';
+  try{
+    var r=await fetch('https://mikea.app.n8n.cloud/webhook/gr-historial-secuencia',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:ct.email})});
+    var d=await r.json(); if(String(window.__grEditId||'')!==String(id)) return;
+    if(!d.encontrado){ box.innerHTML='<div class="md-nota">'+grEsc(d.mensaje||'No está en la cuenta de Amplemarket de GR.')+'</div>'; return; }
+    var rr=d.resumen||{}; if(rs) rs.textContent='· '+(rr.enviados||0)+' enviados · '+(rr.aperturas||0)+' aperturas · '+(rr.respuestas||0)+' respuestas';
+    var ultSec='';
+    box.innerHTML=(d.eventos||[]).slice().reverse().map(function(e){
+      var cls=e.tipo==='respuesta'?' r':(e.tipo==='apertura'?' a':((e.tipo==='inicio'||e.tipo==='fin'||e.tipo==='omitido')?' m':''));
+      var sub=[e.paso?('Paso '+e.paso):'', e.asunto?('Asunto: '+e.asunto):'', (e.etiquetas||[]).join(', ')].filter(Boolean).join(' · ');
+      var sec=(e.secuencia&&e.secuencia!==ultSec)?('<div class="gs-s">'+grEsc((e.camino?e.camino+' · ':'')+e.secuencia)+'</div>'):''; if(e.secuencia) ultSec=e.secuencia;
+      return '<div class="gs-ev"><div class="gs-f">'+grEsc(fmtFecha(e.fecha)||String(e.fecha).slice(0,10))+'</div><div><div class="gs-h'+cls+'">'+grEsc(e.titulo)+'</div>'+(sub?'<div class="gs-s">'+grEsc(sub)+'</div>':'')+(e.texto?'<div class="gs-x">'+grEsc(e.texto)+'</div>':'')+sec+'</div></div>';
+    }).join('')+'<div class="md-nota">'+grEsc(d.nota||'')+'</div>';
+  }catch(e){ window.__grSecuencia=null; box.innerHTML='<div style="color:#DB0540;font-size:12px">No se pudo leer la secuencia.</div>'; }
+}
 function grmdTab(t){
+  if(t==='origen') setTimeout(grmdCargarSecuencia,0);
   [].slice.call(document.querySelectorAll('#gr-modal-edit .md-tab')).forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-tab')===t); });
   [].slice.call(document.querySelectorAll('#gr-modal-edit .md-pane')).forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-pane')===t); });
 }
@@ -939,6 +965,7 @@ function grmdPintarOrigen(op, emp){
   // 23oct2026 (aprobado por Mike): el origen son dos datos, camino (Sequence/DUO) y tipo de senal (Reply/Open+3).
   // Reply lleva "Como llego" (etiqueta de Amplemarket); Open+3 lleva su tipo de interes y aperturas.
   window.__grOrigen=op||null; window.__grEmpresa=emp||null; window.__grEmpresaFull=null; op=op||{};
+  var parcial=!!op._parcial;
   var CANAL={correo:'Correo',linkedin:'LinkedIn',whatsapp:'WhatsApp',llamada:'Llamada',otro:'Otro'};
   var cargando=!window.__grOrigen;
   var put=function(id,v,vacio){ var el=document.getElementById(id); if(!el) return; if(!v && vacio==='\u0001'){ el.innerHTML='<a href="#" onclick="grmdTab(\'contacto\');return false;" style="color:#FFCD00;text-decoration:none;">Falta · ver qué falta</a>'; el.style.color=''; return; } el.textContent=v||vacio||'—'; el.style.color=v?'':'#6B7280'; };
@@ -955,8 +982,8 @@ function grmdPintarOrigen(op, emp){
   var fs=String(op.fecha_senal||''); var dias=''; if(fs){ var t=new Date(fs+'T12:00:00'); if(!isNaN(t)){ var dd=Math.floor((Date.now()-t)/86400000); dias=dd<=0?'hoy':(dd===1?'hace 1 día':'hace '+dd+' días'); } }
   put('grmd-fecha-senal', fs?((fmtFecha(fs+'T12:00:00Z')||fs)+(dias?' · '+dias:'')):'', faltan);
   var mh=document.getElementById('grmd-mensaje-h'); if(mh) mh.textContent=esOpen?'Correo nuestro que abrió':'Mensaje nuestro que contestó';
-  put('grmd-mensaje', op.mensaje||'', cargando?'Cargando…':'\u0001');
-  put('grmd-respuesta', op.respuesta||'', cargando?'Cargando…':(esOpen?'No contestó: abrió los correos sin responder.':'Sin respuesta registrada.'));
+  put('grmd-mensaje', op.mensaje||'', (cargando||parcial)?'Cargando…':'\u0001');
+  put('grmd-respuesta', op.respuesta||'', (cargando||parcial)?'Cargando…':(esOpen?'No contestó: abrió los correos sin responder.':'Sin respuesta registrada.'));
   var camino=op.camino==='senal'?'DUO':(op.camino==='respuesta'?'Sequence':(op.camino?grmdEtiqueta('origen',op.camino):''));
   var _od=document.getElementById('grmd-origen-detalle'); if(_od){ _od.textContent=op.camino==='senal'?'DUO: Amplemarket detectó una señal de la persona (publicación, cambio de puesto, contratación) y le escribió.':(op.camino==='respuesta'?'Sequence: la persona venía en una secuencia de Amplemarket.':''); }
   // Linea de origen en el encabezado: "DUO · Reply · Interested · hace 3 dias"
@@ -1003,7 +1030,7 @@ function grmdPintarFalta(){
   var box=document.getElementById('grmd-falta'); if(!box) return;
   var n=document.getElementById('grmd-falta-n'), lnk=document.getElementById('grmd-falta-link'), b1=document.getElementById('grmd-am-datos'), nota=document.getElementById('grmd-falta-nota');
   var op=window.__grOrigen, id=window.__grEditId;
-  if(!op){ box.innerHTML='<div class="md-nota">Cargando…</div>'; if(n) n.textContent=''; if(lnk) lnk.textContent=''; if(b1) b1.style.display='none'; return; }
+  if(!op || op._parcial){ box.innerHTML='<div class="md-nota">Cargando…</div>'; if(n) n.textContent=''; if(lnk) lnk.textContent=''; if(b1) b1.style.display='none'; return; }
   var d=((DATA&&DATA.deals)||[]).concat((DATA&&DATA.won)||[]).filter(function(x){ return String(x.id)===String(id); })[0]||{}, c=d.campos||{};
   var v=function(k){ return String(op[k]||c['gr_'+k]||'').trim(); };
   var sel=document.getElementById('grmd-contact');
@@ -1031,11 +1058,12 @@ function grmdPintarFalta(){
   if(n) n.textContent=cuantos?('· '+cuantos+(cuantos===1?' dato':' datos')):'';
   if(lnk) lnk.textContent=cuantos?('Faltan '+cuantos+(cuantos===1?' dato':' datos')+' · ver'):'';
   var hayPago=filas.some(function(f){ return f.pago; });
-  if(b1) b1.style.display=hayPago?'':'none';
+  if(b1){ b1.style.display=''; b1.disabled=!hayPago; b1.style.opacity=hayPago?'1':'.45'; b1.style.cursor=hayPago?'pointer':'not-allowed';
+    b1.title=hayPago?'Busca a la persona y su empresa en Amplemarket y llena lo vacío: puesto, LinkedIn, nivel, sector, tamaño. Cuesta 0.5 créditos.':(ct.datos_amplemarket==='no_encontrado'?'Amplemarket ya buscó a esta persona con créditos y no la encontró; no se vuelve a cobrar.':'No hace falta: lo que falta no se consigue pagando.'); }
   if(nota && ct.datos_amplemarket==='no_encontrado') nota.textContent='Amplemarket ya buscó a esta persona con créditos el '+(ct.datos_amplemarket_fecha||'')+' y no la encontró; no se vuelve a cobrar.';
-  if(!cuantos){ box.innerHTML='<div class="md-nota" style="color:#62D175;font-size:13px;">No falta nada: la oportunidad tiene todos sus datos.</div>'; if(nota) nota.textContent=''; return; }
+  if(!cuantos){ box.innerHTML='<div class="md-nota" style="color:#62D175;font-size:13px;">No falta nada: la oportunidad tiene todos sus datos.</div>'; if(nota) nota.textContent='No hace falta gastar créditos.'; return; }
   var hayMano=filas.some(function(f){ return f.in; });
-  if(nota) nota.textContent=[ct.datos_amplemarket==='no_encontrado'?('Amplemarket ya buscó a esta persona con créditos el '+(ct.datos_amplemarket_fecha||'')+' y no la encontró; no se vuelve a cobrar.'):'', hayMano?'Lo que elijas a mano se guarda con «Confirmar y guardar».':''].filter(Boolean).join(' ');
+  if(nota) nota.textContent=[!hayPago&&ct.datos_amplemarket!=='no_encontrado'?'El botón de 0.5 créditos está apagado: lo que falta no se consigue pagando.':'', ct.datos_amplemarket==='no_encontrado'?('Amplemarket ya buscó a esta persona con créditos el '+(ct.datos_amplemarket_fecha||'')+' y no la encontró; no se vuelve a cobrar.'):'', hayMano?'Lo que elijas a mano se guarda con «Confirmar y guardar».':''].filter(Boolean).join(' ');
   var guardado=window.__grFaltaMano||{};
   box.innerHTML=filas.map(function(f){
     var inp='';
@@ -1217,11 +1245,19 @@ async function grmdCargarContactos(dealId, empresa){
   if(!dealId && !empresa){ sel.innerHTML='<option value="">(sin empresa)</option>'; return; }
   try{
     var r=await fetch('https://mikea.app.n8n.cloud/webhook/gr-company',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:dealId||'',empresa:empresa||''})});
-    var data=await r.json(); var cts=(data&&data.contactos)||[]; window.__grContactos=cts;
+    var data=await r.json(); var cts=(data&&data.contactos)||[];
+    // 23oct2026: la ficha abre con el contacto de la oportunidad, no con el primero de la empresa (DP World mostraba a otra persona).
+    var _dd=((DATA&&DATA.deals)||[]).concat((DATA&&DATA.won)||[]).filter(function(x){ return String(x.id)===String(dealId); })[0]||{};
+    var _nm=function(x){ return String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]+/g,' ').trim(); };
+    var _cn=_nm((_dd.contacto||{}).nombre), _cl=String((_dd.contacto||{}).linkedin||'').toLowerCase();
+    var _i=cts.findIndex(function(c){ return (_cl && String(c.linkedin||'').toLowerCase()===_cl) || (_cn && _nm(c.nombre)===_cn); });
+    if(_i>0){ cts=[cts[_i]].concat(cts.slice(0,_i), cts.slice(_i+1)); }
+    window.__grContactos=cts;
     if(String(window.__grEditId||'')===String(dealId||'')) grmdPintarOrigen((data&&data.oportunidad)||{}, (data&&data.empresa_ficha)||{});
     if(!cts.length){ sel.innerHTML='<option value="">(sin contactos)</option>'; return; }
     sel.innerHTML=cts.map(function(c){ return '<option value="'+c.id+'">'+grEsc(c.nombre)+(c.puesto?(' \u00b7 '+grEsc(c.puesto)):'')+'</option>'; }).join('');
     grmdSyncPhone();
+    var _po=document.querySelector('#gr-modal-edit .md-pane[data-pane="origen"]'); if(_po&&_po.classList.contains('on')){ window.__grSecuencia=null; grmdCargarSecuencia(); }
   }catch(e){ sel.innerHTML='<option value="">(error al cargar)</option>'; }
 }
 async function guardarDealGR(){
@@ -6122,7 +6158,7 @@ if (document.readyState === 'loading') {
 </script>
 <style>
 #gr-modal-edit{display:none;position:fixed;inset:0;background:rgba(4,6,12,.72);backdrop-filter:blur(3px);z-index:1000;align-items:center;justify-content:center;padding:20px;}
-#gr-modal-edit .md-box{background:#121726;border:1px solid #262e42;border-radius:18px;width:100%;max-width:1040px;max-height:calc(100vh - 40px);display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.55);overflow:hidden;}
+#gr-modal-edit .md-box{background:#121726;border:1px solid #262e42;border-radius:18px;width:100%;max-width:1040px;height:min(860px,calc(100vh - 40px));max-height:calc(100vh - 40px);display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.55);overflow:hidden;}
 #gr-modal-edit .md-head{padding:18px 22px 14px;border-bottom:1px solid #222a3c;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
 #gr-modal-edit .md-body{padding:18px 22px;overflow:auto;flex:1;}
 #gr-modal-edit .md-foot{padding:12px 22px;border-top:1px solid #222a3c;background:#0f1421;display:flex;align-items:center;gap:12px;}
@@ -6155,6 +6191,15 @@ if (document.readyState === 'loading') {
 #gr-modal-edit .md-kv .k{color:#8b93a7;}
 #gr-modal-edit .md-kv .v{color:#F3F4F6;word-break:break-word;}
 #gr-modal-edit .md-kv .v.falta{color:#FFCD00;}
+#gr-modal-edit .gn-nota{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);}
+#gr-modal-edit .gn-nota .gn-f{color:#9CA3AF;font-size:11px;margin-bottom:4px;}
+#gr-modal-edit .gn-nota .gn-t{color:#D1D5DB;font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;}
+#gr-modal-edit .gs-ev{display:grid;grid-template-columns:92px 1fr;gap:4px 12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px;}
+#gr-modal-edit .gs-ev .gs-f{color:#8b93a7;font-size:11px;padding-top:2px;}
+#gr-modal-edit .gs-ev .gs-h{font-weight:700;color:#F3F4F6;}
+#gr-modal-edit .gs-ev .gs-h.r{color:#62D175;} #gr-modal-edit .gs-ev .gs-h.a{color:#FFCD00;font-weight:600;} #gr-modal-edit .gs-ev .gs-h.m{color:#6B7280;font-weight:600;}
+#gr-modal-edit .gs-ev .gs-x{color:#D1D5DB;white-space:pre-wrap;line-height:1.5;margin-top:3px;word-break:break-word;}
+#gr-modal-edit .gs-ev .gs-s{color:#9CA3AF;font-size:12px;}
 #gr-modal-edit .gf-row{display:grid;grid-template-columns:150px 1fr minmax(170px,240px);gap:6px 14px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px;}
 #gr-modal-edit .gf-row .gf-k{color:#F3F4F6;font-weight:700;}
 #gr-modal-edit .gf-row .gf-c{color:#8b93a7;font-size:12px;line-height:1.45;}
@@ -6185,10 +6230,10 @@ if (document.readyState === 'loading') {
       <button class="md-x" onclick="cerrarModalGR()" title="Cerrar">×</button>
     </div>
     <div class="md-tabs" role="tablist">
-      <button class="md-tab on" data-tab="resumen" onclick="grmdTab('resumen')">Resumen</button>
+      <button class="md-tab on" data-tab="resumen" onclick="grmdTab('resumen')">Estado</button>
       <button class="md-tab" data-tab="contacto" onclick="grmdTab('contacto')">Contacto y empresa</button>
-      <button class="md-tab" data-tab="origen" onclick="grmdTab('origen')">Origen y campaña</button>
-      <button class="md-tab" data-tab="tareas" onclick="grmdTab('tareas')">Tareas y notas</button>
+      <button class="md-tab" data-tab="origen" onclick="grmdTab('origen')">Origen y secuencia</button>
+      <button class="md-tab" data-tab="tareas" onclick="grmdTab('tareas')">Notas <span id="grmd-notas-n" style="color:#9CA3AF;font-weight:600;"></span></button>
     </div>
     <div class="md-body">
       <div class="md-pane on" data-pane="resumen">
@@ -6206,6 +6251,10 @@ if (document.readyState === 'loading') {
               <input id="grmd-close" class="md-in" type="date" onfocus="try{this.showPicker&&this.showPicker()}catch(e){}" onclick="try{this.showPicker&&this.showPicker()}catch(e){}" oninput="grmdPretty()">
               <div id="grmd-close-pretty" style="font-size:12px;color:#02ADBA;font-weight:700;margin-top:6px;min-height:15px;"></div>
               <div id="grmd-close-nota" class="md-nota"></div>
+            </div>
+            <div class="md-card">
+              <div class="md-h">Tareas <button class="md-btn" onclick="grmdNuevaTarea()" style="color:#c4b5fd;border:1px solid #7C3AED;text-transform:none;letter-spacing:0;">+ Agregar tarea</button></div>
+              <div id="grmd-acts"></div>
             </div>
           </div>
           <div class="md-col">
@@ -6294,13 +6343,15 @@ if (document.readyState === 'loading') {
             </div>
           </div>
         </div>
+        <div class="md-card" style="margin-top:14px;">
+          <div class="md-h"><span>Toda la secuencia <span id="grmd-sec-res" style="text-transform:none;letter-spacing:0;font-weight:600;color:#9CA3AF;"></span></span></div>
+          <div id="grmd-secuencia"><div class="md-nota">Se carga al abrir esta pestaña (sin costo, de la cuenta de Amplemarket de GR).</div></div>
+        </div>
       </div>
       <div class="md-pane" data-pane="tareas">
           <div class="md-card">
-          <div class="md-h">Tareas y notas
-            <button class="md-btn" onclick="grmdNuevaTarea()" style="color:#c4b5fd;border:1px solid #7C3AED;text-transform:none;letter-spacing:0;">+ Agregar tarea</button>
-          </div>
-          <div id="grmd-acts" style=""></div>
+          <div class="md-h">Notas de la oportunidad <span style="text-transform:none;letter-spacing:0;font-weight:600;color:#6B7280;">Todas, de la más nueva a la más antigua</span></div>
+          <div id="grmd-notas"><div class="md-nota">Cargando…</div></div>
         </div>
       </div>
     </div>
