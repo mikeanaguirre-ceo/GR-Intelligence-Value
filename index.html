@@ -923,6 +923,14 @@ function abrirEditarDealGR(dealId){
   window.__grEditDias=(d.diasEnEtapa===undefined?null:d.diasEnEtapa);
   grmdPretty();
   grmdAplicarBloqueo();
+  // 23oct2026 (D8): fecha y hora de la cita y su estado; lo escribe el motor desde el calendario, la grabacion o el seguimiento.
+  (function(){ var el=document.getElementById('grmd-cita'); if(!el) return; var c=d.campos||{}; var PR={grabacion:'grabación de la reunión',seguimiento:'envío de siguientes pasos',confirmada:'confirmada por el equipo'};
+    var fh=c.gr_cita_fecha?new Date(c.gr_cita_fecha):null; var fhT=(fh&&!isNaN(fh))?fh.toLocaleString('es-MX',{weekday:'short',day:'numeric',month:'short',hour:'numeric',minute:'2-digit',timeZone:'America/Mexico_City'}):'';
+    var t='', col='';
+    if(c.gr_cita_realizada){ t='Realizada el '+fmtFecha(c.gr_cita_realizada+'T12:00:00Z')+(PR[c.gr_cita_prueba]?(' · '+PR[c.gr_cita_prueba]):''); col='#62D175'; }
+    else if(c.gr_cita_estado==='no_realizada'){ t='No se realizó · pendiente de reagendar'+(fhT?(' (era '+fhT+')'):''); col='#FCA5A5'; }
+    else if(fhT){ t='Agendada · '+fhT; col='#FFCD00'; }
+    el.textContent=t||'Sin cita'; el.style.color=col||'#6B7280'; })();
   document.getElementById('grmd-auto-msg').textContent=''; document.getElementById('grmd-am-msg').textContent=''; var _tm=document.getElementById('grmd-tel-msg'); if(_tm) _tm.textContent=''; window.__grFaltaMano={};
   grmdPintarCampos(d);
   grmdCargarContactos(dealId, d.cliente||d.name||'');
@@ -2401,6 +2409,34 @@ function metaNuevas(goal){
   var pacing=expected>0?Math.round(eduPlus/expected*100):0;
   return {goal:goal,eduPlus:eduPlus,week:week,expected:expected,pacing:pacing,onPace:eduPlus>=expected};
 }
+// 23oct2026 (bloque 2, D6 del documento de Martha): una cita cuenta cuando hay prueba de asistencia (grabacion, envio de
+// siguientes pasos o confirmacion del equipo) y se cuenta en la fecha de la reunion, aunque despues la oportunidad avance o se pierda.
+// Obedece el periodo y los filtros de grupo y producto del Pipeline. Las agendadas son las que aun no ocurren.
+function grCitas(){
+  var r=periodoRango(FILT.pipeline), hoy=new Date(), vistos={}, real=[], agen=[];
+  var _ss=FILT.pipeline.stage,_sm=FILT.pipeline.sem,_sn=FILT.pipeline.nueva; FILT.pipeline.stage='ALL'; FILT.pipeline.sem='ALL'; FILT.pipeline.nueva='ALL';
+  ((DATA&&DATA.deals)||[]).concat((DATA&&DATA.won)||[],(DATA&&DATA.perdidas)||[]).forEach(function(d){
+    if(vistos[d.id]) return; vistos[d.id]=1; var c=d.campos||{};
+    if(String(c.gr_prueba)==='true') return;
+    if(FILT.pipeline.excludeP&&d.name&&d.name.startsWith('P_')) return;
+    if(!pasaFiltro('pipeline',d,'deal')) return;
+    var f=String(c.gr_cita_realizada||'').slice(0,10);
+    if(f){ if(!r[0]||(f>=r[0]&&f<=r[1])) real.push(d); return; }
+    var fa=c.gr_cita_fecha?new Date(c.gr_cita_fecha):null;
+    if(c.gr_cita_estado==='agendada'&&fa&&!isNaN(fa)&&fa>=hoy) agen.push(d);
+  });
+  FILT.pipeline.stage=_ss; FILT.pipeline.sem=_sm; FILT.pipeline.nueva=_sn;
+  return {real:real, agen:agen};
+}
+function grCitasLista(){ var el=document.getElementById('gr-citas-lista'); if(!el) return; if(el.style.display==='block'){ el.style.display='none'; return; }
+  var x=grCitas(), fmt=function(d){ var c=d.campos||{}; return '<div style="display:flex;gap:10px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px;"><span style="color:#9CA3AF;min-width:86px;">'+grEsc(fmtFecha((c.gr_cita_realizada||String(c.gr_cita_fecha||'').slice(0,10))+'T12:00:00Z'))+'</span><span style="flex:1;color:#E5E7EB;">'+grEsc(d.cliente||d.name)+'</span><span style="color:#C4A5F0;">'+grEsc(d.prod||'')+'</span></div>'; };
+  var porProd={}; x.real.forEach(function(d){ var k=d.prod||'Sin producto'; porProd[k]=(porProd[k]||0)+1; });
+  el.innerHTML='<div style="font-weight:800;color:#F3F4F6;font-size:13px;margin-bottom:4px;">Citas realizadas · '+x.real.length+'</div>'
+    +'<div style="color:#9CA3AF;font-size:12px;margin-bottom:6px;">'+Object.keys(porProd).sort(function(a,b){return porProd[b]-porProd[a];}).map(function(k){return grEsc(k)+' '+porProd[k];}).join(' · ')+'</div>'
+    +x.real.slice().sort(function(a,b){ return String((b.campos||{}).gr_cita_realizada).localeCompare(String((a.campos||{}).gr_cita_realizada)); }).map(fmt).join('')
+    +(x.agen.length?('<div style="font-weight:800;color:#F3F4F6;font-size:13px;margin:10px 0 4px;">Agendadas, aún no ocurren · '+x.agen.length+'</div>'+x.agen.slice().sort(function(a,b){ return String((a.campos||{}).gr_cita_fecha).localeCompare(String((b.campos||{}).gr_cita_fecha)); }).map(fmt).join('')):'');
+  el.style.display='block';
+}
 function nuevaCol(d){ var f=grFechaObj(d.createdate); if(isNaN(f)) return 'transparent'; var age=Math.floor((new Date()-f)/86400000); return age<=7?'#10B981':age<=15?'#34d399':age<=30?'#FFCD00':age<=45?'#F59E0B':age<=90?'#F97316':'#6B7280'; }
 function _dealAgeMap(){ var m={}; (DATA.deals||[]).forEach(function(d){ if(d.createdate) m[String(d.id)]=d.createdate; }); return m; }
 function nuevaPasaTask(t,val,am){ if(val==='ALL') return true; var ids=t.matchedDealIds||[]; if(!ids.length) return false; return ids.some(function(id){ var c=am[String(id)]; return c!==undefined && nuevaMatch(c,val); }); }
@@ -2641,9 +2677,11 @@ function renderPipelineMetricsPipeline(){
         '</div>';
     });
   }
-  var _mn=metaNuevas(20); var _mnC=_mn.onPace?'#62D175':(_mn.pacing>=70?'#FFCD00':'#DB0540');
-  h+='<div title="Educación+ este mes ÷ meta de la semana ('+_mn.expected+')" style="margin-left:auto;display:flex;flex-direction:column;align-items:center;gap:2px;background:'+_mnC+'1f;border:1px solid '+_mnC+'66;border-radius:14px;padding:10px 16px;min-width:88px;"><div style="font-size:22px;font-weight:800;color:'+_mnC+';line-height:1;">'+_mn.eduPlus+'</div><div style="font-size:10px;font-weight:700;color:#F3F4F6;text-align:center;line-height:1.3;">Nuevas</div><div style="font-size:13px;font-weight:700;color:'+_mnC+'cc;margin-top:2px;">'+_mn.pacing+'%</div></div>';
-  h+='</div>';
+  var _ct=grCitas(), _pp=FILT.pipeline.fper||'todo', _ctC='#7C3AED';
+  var _pr={}; _ct.real.forEach(function(d){ var k=d.prod||'Sin producto'; _pr[k]=(_pr[k]||0)+1; });
+  var _tt='Citas realizadas (con prueba de asistencia) en el periodo: '+Object.keys(_pr).map(function(k){return k+' '+_pr[k];}).join(', ')+(_ct.agen.length?('. Agendadas que aún no ocurren: '+_ct.agen.length):'')+'. Toca para ver la lista.';
+  h+='<div onclick="grCitasLista()" title="'+grEsc(_tt)+'" style="cursor:pointer;margin-left:auto;display:flex;flex-direction:column;align-items:center;gap:2px;background:'+_ctC+'1f;border:1px solid '+_ctC+'66;border-radius:14px;padding:10px 16px;min-width:88px;"><div style="font-size:22px;font-weight:800;color:#C4A5F0;line-height:1;">'+_ct.real.length+'</div><div style="font-size:10px;font-weight:700;color:#F3F4F6;text-align:center;line-height:1.3;">Citas</div><div style="font-size:11px;font-weight:700;color:#9CA3AF;margin-top:2px;">'+(_ct.agen.length?('+'+_ct.agen.length+' agendadas'):(_pp==='todo'?'todas':'en el periodo'))+'</div></div>';
+  h+='</div><div id="gr-citas-lista" style="display:none;margin-top:10px;padding:12px 14px;border:1px solid #2A3142;border-radius:12px;background:#0d111a;max-height:320px;overflow:auto;"></div>';
   box.innerHTML=h;
 }
 
@@ -6257,6 +6295,7 @@ if (document.readyState === 'loading') {
               <input id="grmd-close" class="md-in" type="date" onfocus="try{this.showPicker&&this.showPicker()}catch(e){}" onclick="try{this.showPicker&&this.showPicker()}catch(e){}" oninput="grmdPretty()">
               <div id="grmd-close-pretty" style="font-size:12px;color:#02ADBA;font-weight:700;margin-top:6px;min-height:15px;"></div>
               <div id="grmd-close-nota" class="md-nota"></div>
+              <label class="md-lbl" style="margin-top:12px;">Cita</label><div id="grmd-cita" class="md-val">—</div>
             </div>
             <div class="md-card">
               <div class="md-h">Tareas <button class="md-btn" onclick="grmdNuevaTarea()" style="color:#c4b5fd;border:1px solid #7C3AED;text-transform:none;letter-spacing:0;">+ Agregar tarea</button></div>
