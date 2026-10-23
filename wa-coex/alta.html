@@ -38,7 +38,7 @@
     <ol>
       <li>Ten a la mano el celular con la app <b>WhatsApp Business</b> de este número, actualizada.</li>
       <li>Oprime <b>Conectar WhatsApp</b>, entra con tu cuenta de Facebook y elige el portafolio.</li>
-      <li>Cuando te lo pida, escanea el código QR desde la app: <i>Configuración → Dispositivos vinculados</i> o el aviso que te muestre.</li>
+      <li>Cuando Facebook muestre el código QR, escanéalo desde el <b>aviso que aparece dentro de la app WhatsApp Business</b> del celular. <b>No</b> uses «Dispositivos vinculados».</li>
       <li>Acepta compartir el historial de chats si quieres verlo en el portal.</li>
       <li>No cierres esta página hasta que diga <b>Conectado</b>.</li>
     </ol>
@@ -120,9 +120,12 @@
     try { host = new URL(ev.origin).hostname; } catch (e) { return; }
     if (!(host === 'facebook.com' || host.slice(-13) === '.facebook.com')) return;
     var d = ev.data;
+    // Diagnóstico (23 oct): se anota en crudo todo lo que llega de *.facebook.com, no solo WA_EMBEDDED_SIGNUP.
+    var crudo = '';
+    try { crudo = typeof d === 'string' ? d : JSON.stringify(d); } catch (e) { crudo = String(d); }
+    anotar({ de: ev.origin, crudo: String(crudo).slice(0, 1500) });
     if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { return; } }
     if (!d || d.type !== 'WA_EMBEDDED_SIGNUP') return;
-    anotar(d);
     if (d.event === 'CANCEL') {
       var paso = (d.data && d.data.current_step) || '';
       pintarEstado('Se canceló el alta', 'aviso', paso ? 'Se quedó en el paso: ' + paso : '');
@@ -134,7 +137,7 @@
   });
 
   window.fbAsyncInit = function () {
-    FB.init({ appId: APP_ID, autoLogAppEvents: true, xfbml: true, version: 'v23.0' });
+    FB.init({ appId: APP_ID, autoLogAppEvents: true, xfbml: true, version: 'v26.0' });
     $('conectar').disabled = !LLAVE;
     pintarEstado(LLAVE ? 'Listo para conectar' : 'Falta la llave en la liga (?k=...)', LLAVE ? '' : 'mal');
   };
