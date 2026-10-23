@@ -237,7 +237,7 @@
   var pendiente = null;
   var sel = null, filtro = 'todas', plantillas = {}, ocupado = false, syncTimer = null;
   var conf = null, confTipo = '', linea = '', etapaF = '';
-  var opor = null, oporF = { fase: '', linea: '', persona: '', wa: '', pend: false, sem: '', origen: '', monto: '', cierre: '', nuevas: '', tipo: '', q: '' };
+  var opor = null, oporF = { fase: '', linea: '', persona: '', wa: '', pend: false, sem: '', origen: '', senal: '', monto: '', cierre: '', nuevas: '', tipo: '', q: '' };
   var $ = function(id){ return document.getElementById(id); };
 
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -372,9 +372,9 @@
     return { k: 'falta', t: 'Falta celular' };
   }
   // Pendiente de Open+3: la oportunidad esta en Senal Detectada (asi nace el Open+3) y nadie le ha escrito por WhatsApp.
-  // Pendiente de Open+3: llego por Open+3 (gr_origen, como el tablero), sigue en Senal Detectada y nadie le ha escrito por WhatsApp.
+  // Pendiente de Open+3: su senal es Open+3 (gr_tipo_senal, como el tablero), sigue en Senal Detectada y nadie le ha escrito por WhatsApp.
   // Las de DUO o Sequence no llevan la plantilla Open+3.
-  function pendienteOpen3(o){ return o.etapa.id === '1332596061' && o.origen === 'Open+3' && !o.contactos.some(function(ct){ var e = estadoContacto(ct).k; return e === 'conversa' || e === 'enviada'; }); }
+  function pendienteOpen3(o){ return o.etapa.id === '1332596061' && (o.senal === 'Open+3' || o.origen === 'Open+3') && !o.contactos.some(function(ct){ var e = estadoContacto(ct).k; return e === 'conversa' || e === 'enviada'; }); }
   // Estado de la oportunidad en WhatsApp: el mas avanzado de sus contactos.
   function estadoOp(o){ var orden = ['falta', 'listo', 'enviada', 'conversa'], m = 0; o.contactos.forEach(function(ct){ m = Math.max(m, orden.indexOf(estadoContacto(ct).k)); }); return orden[m]; }
   function personasOp(o){ return [o.responsable, o.apoyo, o.dueno_corto].filter(Boolean); }
@@ -422,6 +422,7 @@
       wa: function(o, v){ return estadoOp(o) === v; },
       sem: function(o, v){ return v === 'sin' ? !o.semaforo : o.semaforo === v; },
       origen: function(o, v){ return v === 'sin' ? !o.origen : o.origen === v; },
+      senal: function(o, v){ return v === 'sin' ? !o.senal : o.senal === v; },
       monto: function(o, v){ return (o.monto || 0) >= Number(v); },
       cierre: function(o, v){
         if (v === 'sin') return !o.cierre;
@@ -459,16 +460,17 @@
       fila('wa', 'WhatsApp:', [['falta', 'Falta celular'], ['listo', 'Con celular, sin escribir'], ['enviada', 'Plantilla enviada'], ['conversa', 'Ya conversa']]) +
       fila('sem', 'Semáforo:', [['rojo', '<span class="sem rojo"></span>Vencidas'], ['amarillo', '<span class="sem amarillo"></span>Próximas'], ['verde', '<span class="sem verde"></span>Al día'], ['aparcada', '<span class="sem aparcada"></span>Aparcadas'], ['sin', 'Sin semáforo']]) +
       fila('fase', 'Fase:', [['prospeccion', 'Prospección'], ['venta', 'Venta']]);
-    var mas = fila('origen', 'Llegó por:', [['Open+3', 'Open+3'], ['Sequence', 'Sequence'], ['DUO', 'DUO (señal)'], ['Referido', 'Referido'], ['sin', 'Sin dato']], 'Todos') +
+    var mas = fila('origen', 'Llegó por:', [['Sequence', 'Sequence'], ['DUO', 'DUO'], ['Referido', 'Referido'], ['sin', 'Sin dato']], 'Todos') +
+      fila('senal', 'Señal:', [['Reply', 'Reply (contestó)'], ['Open+3', 'Open+3 (abrió 3 o más veces)'], ['sin', 'Sin dato']], 'Todas') +
       fila('monto', 'Monto:', [['10000', '≥ $10K'], ['50000', '≥ $50K'], ['100000', '≥ $100K']], 'Todos') +
       fila('cierre', 'Cierre:', [['vencida', 'Vencidas'], ['mes', 'Este mes'], ['prox', 'Próximo mes'], ['trim', 'Este trimestre'], ['sin', 'Sin fecha']], 'Todas') +
       fila('nuevas', 'Nuevas:', [['7', 'Últimos 7 días'], ['30', 'Últimos 30 días']], 'Todas') +
       fila('tipo', 'Tipo:', [['p', 'Prospección (P_)'], ['np', 'Sin P_']], 'Todas');
-    var nMas = ['origen', 'monto', 'cierre', 'nuevas', 'tipo'].filter(function(k){ return f[k]; }).length;
+    var nMas = ['origen', 'senal', 'monto', 'cierre', 'nuevas', 'tipo'].filter(function(k){ return f[k]; }).length;
     var h = '<div class="card"><div class="card-h"><h2><span class="n">1</span>Oportunidades abiertas en HubSpot</h2><span class="tenue">' + todas.length + ' oportunidades · contactos con celular: ' + cts.filter(function(ct){ return ct.c10; }).length + ' de ' + cts.length + '</span></div>' +
       '<p class="nota">Salen de HubSpot cada vez que abres esta pestaña. La línea sale del nombre de la oportunidad; la persona es la responsable, el apoyo o la dueña en HubSpot (los mismos nombres del tablero). El semáforo, el camino de llegada y los días en la etapa son los del tablero. El celular es el WhatsApp de la persona: si falta, escríbelo en la tarjeta y se guarda en HubSpot para todo el equipo. No se revela nada en Amplemarket.</p>' +
       '<div class="filters"><span class="flabel">Open+3:</span><button class="chip pend' + (f.pend ? ' on' : '') + '" data-k="pend" data-v="1">Pendientes de Open+3 · ' + pend.length + ' (' + pend.filter(function(o){ return o.contactos.some(function(ct){ return ct.c10; }); }).length + ' con celular)</button>' +
-      '<span class="tenue">Llegaron por Open+3, siguen en Señal Detectada y nadie les ha escrito por WhatsApp</span></div>' +
+      '<span class="tenue">Su señal es Open+3 (abrieron el correo 3 o más veces), siguen en Señal Detectada y nadie les ha escrito por WhatsApp</span></div>' +
       '<div class="ffila">' + principales + '</div>' +
       '<details class="masf"' + (nMas ? ' open' : '') + '><summary>Más filtros del tablero' + (nMas ? ' · ' + nMas + ' activo' + (nMas === 1 ? '' : 's') : '') + '</summary><div class="ffila">' + mas + '</div></details>' +
       '<div class="filters"><input id="o-q" type="search" placeholder="Buscar empresa, oportunidad o contacto" value="' + esc(f.q) + '"><span class="tenue">' + ls.length + ' de ' + todas.length + '</span>' +
@@ -485,7 +487,7 @@
         h += '<div class="kcard' + (pendienteOpen3(o) ? ' pend' : '') + '"><div class="kcard-n">' + esc(empresaDe(o, cs[0]) || o.nombre) + (o.empresa && o.empresa.web ? ' <a class="web" href="' + esc(/^https?:/.test(o.empresa.web) ? o.empresa.web : 'https://' + o.empresa.web) + '" target="_blank" rel="noopener" title="Sitio web">🌐</a>' : '') + (o.empresa && o.empresa.linkedin ? ' <a class="li" href="' + esc(o.empresa.linkedin) + '" target="_blank" rel="noopener" title="LinkedIn de la empresa">in</a>' : '') + '</div>' + (o.empresa && o.empresa.industria ? '<div class="tenue">' + esc(o.empresa.industria) + '</div>' : '') +
           '<a class="kcard-s" href="' + esc(o.url) + '" target="_blank" rel="noopener">' + esc(o.nombre) + '</a>' +
           '<div class="kchips"><span class="etq producto">' + esc(o.linea.nombre) + '</span><span class="etq" title="Responsable' + (o.apoyo ? ' · apoyo: ' + esc(o.apoyo) : '') + ' · dueña en HubSpot: ' + esc(o.dueno) + '">' + (o.semaforo ? '<span class="sem ' + esc(o.semaforo) + '"></span>' : '') + esc(o.responsable || o.dueno_corto || o.dueno) + '</span>' +
-            (o.origen ? '<span class="etq origen">' + esc(o.origen) + '</span>' : '') + (o.dias_etapa !== null && o.dias_etapa !== undefined ? '<span class="etq dias" title="Días en esta etapa">' + o.dias_etapa + ' d</span>' : '') +
+            (o.origen ? '<span class="etq origen">' + esc(o.origen) + (o.senal ? ' · ' + esc(o.senal) + (o.aperturas ? ' (' + o.aperturas + ')' : '') : '') + '</span>' : '') + (o.dias_etapa !== null && o.dias_etapa !== undefined ? '<span class="etq dias" title="Días en esta etapa">' + o.dias_etapa + ' d</span>' : '') +
             (pendienteOpen3(o) ? '<span class="etq pendopen">Pendiente Open+3</span>' : '') + '</div>';
         if (!cs.length) h += '<div class="kct tenue">Sin contacto en HubSpot</div>';
         cs.forEach(function(ct){
