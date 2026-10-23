@@ -59,7 +59,13 @@
   .filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}
   .flabel{font-size:12px;color:var(--tenue);font-weight:650;min-width:58px}
   .chip{border:1px solid var(--borde);background:#fff;color:var(--marca);border-radius:16px;padding:5px 12px;font-size:12.5px;cursor:pointer}
-  .chip.on{background:var(--acento);border-color:var(--acento);color:#fff} .chip.pend{border-color:var(--acento)}
+  .pasos-apr{margin:6px 0 4px 18px;padding:0;font-size:12.5px;line-height:1.5} .pasos-apr li{margin-bottom:4px}
+  .estado-f.lt-esta{background:#e4f4ea;color:#166534} .estado-f.lt-otra{background:#fde2e1;color:#a3261f} .estado-f.lt-sin{background:#fdf3e1;color:#9a5300}
+  .ins-acc{display:flex;gap:6px;align-items:center;margin-top:6px} .ins-acc .btn{padding:3px 10px;font-size:12px} .insumo.ins-descartado{opacity:.55}
+  .chip.on{background:var(--acento);border-color:var(--acento);color:#fff} .chip.pend{border-color:var(--acento)} .chip.cero{opacity:.45}
+  .ffila{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:start} .ffila .filters{margin:0} .masf summary{cursor:pointer;font-size:12.5px;color:var(--azul);margin:6px 0}
+  .sem{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:middle} .sem.rojo{background:#dc2626} .sem.amarillo{background:#f59e0b} .sem.verde{background:#16a34a} .sem.aparcada{background:#9ca3af}
+  .etq.origen{background:#f3f4f6;color:#374151} .etq.dias{background:#fff;border:1px solid var(--borde)}
   #o-q{flex:1;min-width:0;max-width:420px;font:inherit;font-size:13px;padding:8px 12px;border:1px solid var(--borde);border-radius:9px}
   .kanban{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,1fr);gap:10px;overflow-x:auto;padding-bottom:10px}
   .kcol{background:#fff;border:1px solid var(--borde);border-radius:10px;display:flex;flex-direction:column;min-width:230px}
@@ -231,7 +237,7 @@
   var pendiente = null;
   var sel = null, filtro = 'todas', plantillas = {}, ocupado = false, syncTimer = null;
   var conf = null, confTipo = '', linea = '', etapaF = '';
-  var opor = null, oporF = { fase: '', linea: '', dueno: '', cel: '', pend: false, q: '' };
+  var opor = null, oporF = { fase: '', linea: '', persona: '', wa: '', pend: false, sem: '', origen: '', monto: '', cierre: '', nuevas: '', tipo: '', q: '' };
   var $ = function(id){ return document.getElementById(id); };
 
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -366,7 +372,12 @@
     return { k: 'falta', t: 'Falta celular' };
   }
   // Pendiente de Open+3: la oportunidad esta en Senal Detectada (asi nace el Open+3) y nadie le ha escrito por WhatsApp.
-  function pendienteOpen3(o){ return o.etapa.id === '1332596061' && !o.contactos.some(function(ct){ var e = estadoContacto(ct).k; return e === 'conversa' || e === 'enviada'; }); }
+  // Pendiente de Open+3: llego por Open+3 (gr_origen, como el tablero), sigue en Senal Detectada y nadie le ha escrito por WhatsApp.
+  // Las de DUO o Sequence no llevan la plantilla Open+3.
+  function pendienteOpen3(o){ return o.etapa.id === '1332596061' && o.origen === 'Open+3' && !o.contactos.some(function(ct){ var e = estadoContacto(ct).k; return e === 'conversa' || e === 'enviada'; }); }
+  // Estado de la oportunidad en WhatsApp: el mas avanzado de sus contactos.
+  function estadoOp(o){ var orden = ['falta', 'listo', 'enviada', 'conversa'], m = 0; o.contactos.forEach(function(ct){ m = Math.max(m, orden.indexOf(estadoContacto(ct).k)); }); return orden[m]; }
+  function personasOp(o){ return [o.responsable, o.apoyo, o.dueno_corto].filter(Boolean); }
   // Plantilla Open+3 vigente de cada linea (codigo del catalogo -> sufijo de gr_open3_*_v2).
   var SUFIJO = { TW: 'tw', HS: 'hs', AM: 'am', AEO: 'aeo', GenIA: 'genia', GENIARH: 'rh', GENIAVTA: 'vta', GENIACOB: 'cob', SYN: 'syn', ITS: 'its', LT: 'lt', BD: 'bd', '360': '360', WB: 'wb' };
   var elegidos = {};   // contact_id -> { o, ct }
@@ -400,29 +411,68 @@
     if (!opor) { $('opor').innerHTML = '<p class="tenue">Leyendo oportunidades de HubSpot…</p>'; return; }
     var f = oporF, q = f.q.trim().toLowerCase();
     var todas = opor.oportunidades;
-    var pasa = function(o){
-      if (f.pend && !pendienteOpen3(o)) return false;
-      if (f.fase && o.etapa.fase !== f.fase) return false;
-      if (f.linea && o.linea.codigo !== f.linea) return false;
-      if (f.dueno && o.dueno !== f.dueno) return false;
-      if (f.cel === 'con' && !o.contactos.some(function(ct){ return ct.c10; })) return false;
-      if (f.cel === 'sin' && o.contactos.some(function(ct){ return ct.c10; })) return false;
-      if (q && (o.nombre + ' ' + o.dueno + ' ' + o.contactos.map(function(ct){ return ct.nombre + ' ' + ct.empresa; }).join(' ')).toLowerCase().indexOf(q) < 0) return false;
+    // Mismos filtros del tablero de Great Revenue (persona, semaforo, producto, monto, fecha de cierre, nuevas, P_)
+    // mas los de WhatsApp (estado del contacto, pendientes de Open+3). Cada chip dice cuantas hay con los demas filtros.
+    var hoy = new Date(), ym = function(d){ return d.getFullYear() * 12 + d.getMonth(); }, hoyS = hoy.toISOString().slice(0, 10);
+    var PRUEBAS = {
+      pend: function(o){ return pendienteOpen3(o); },
+      fase: function(o, v){ return o.etapa.fase === v; },
+      linea: function(o, v){ return o.linea.codigo === v; },
+      persona: function(o, v){ return v === 'Sin' ? !o.responsable : personasOp(o).indexOf(v) >= 0; },
+      wa: function(o, v){ return estadoOp(o) === v; },
+      sem: function(o, v){ return v === 'sin' ? !o.semaforo : o.semaforo === v; },
+      origen: function(o, v){ return v === 'sin' ? !o.origen : o.origen === v; },
+      monto: function(o, v){ return (o.monto || 0) >= Number(v); },
+      cierre: function(o, v){
+        if (v === 'sin') return !o.cierre;
+        if (!o.cierre) return false;
+        var c = new Date(o.cierre + 'T12:00:00'), d = ym(c) - ym(hoy);
+        if (v === 'vencida') return o.cierre < hoyS;
+        if (v === 'mes') return d === 0 && o.cierre >= hoyS;
+        if (v === 'prox') return d === 1;
+        return o.cierre >= hoyS && Math.floor(c.getMonth() / 3) === Math.floor(hoy.getMonth() / 3) && c.getFullYear() === hoy.getFullYear();
+      },
+      nuevas: function(o, v){ return o.creada && (hoy - new Date(o.creada + 'T12:00:00')) / 864e5 <= Number(v); },
+      tipo: function(o, v){ return v === 'p' ? o.prospeccion : !o.prospeccion; }
+    };
+    var pasa = function(o, sin){
+      for (var k in PRUEBAS) { if (k === sin) continue; var v = k === 'pend' ? f.pend : f[k]; if (v && !PRUEBAS[k](o, v)) return false; }
+      if (q && (o.nombre + ' ' + o.dueno + ' ' + o.responsable + ' ' + (o.empresa ? o.empresa.nombre : '') + ' ' + o.contactos.map(function(ct){ return ct.nombre + ' ' + ct.empresa; }).join(' ')).toLowerCase().indexOf(q) < 0) return false;
       return true;
     };
-    var ls = todas.filter(pasa);
+    var ls = todas.filter(function(o){ return pasa(o); });
+    // Chips con su cuenta: cuantas quedarian al elegir ese valor, respetando los demas filtros (como el tablero).
+    var fila = function(k, titulo, opciones, todasTxt){
+      var base = todas.filter(function(o){ return pasa(o, k); });
+      return '<span class="flabel">' + titulo + '</span><div class="filters">' + '<button class="chip' + (f[k] ? '' : ' on') + '" data-k="' + k + '" data-v="">' + (todasTxt || 'Todas') + ' (' + base.length + ')</button>' +
+        opciones.map(function(op){
+          var n = base.filter(function(o){ return PRUEBAS[k](o, op[0]); }).length;
+          return '<button class="chip' + (String(f[k]) === String(op[0]) ? ' on' : '') + (n ? '' : ' cero') + '" data-k="' + k + '" data-v="' + esc(op[0]) + '">' + op[1] + ' (' + n + ')</button>';
+        }).join('') + '</div>';
+    };
     var pend = todas.filter(pendienteOpen3);
     var cts = [].concat.apply([], todas.map(function(o){ return o.contactos; }));
-    var duenos = todas.map(function(o){ return o.dueno; }).filter(function(x, i, l){ return x && l.indexOf(x) === i; }).sort();
-    var lineasUsadas = opor.lineas.filter(function(l){ return todas.some(function(o){ return o.linea.codigo === l.codigo; }); });
+    var lineasF = (opor.catalogo || opor.lineas).map(function(l){ return [l.codigo, esc(l.nombre)]; });
+    if (todas.some(function(o){ return o.linea.codigo === 'SIN'; })) lineasF.push(['SIN', 'Sin línea']);
+    var personasF = (opor.equipo || []).map(function(p){ return [p, esc(p)]; }).concat([['Sin', 'Sin responsable']]);
+    var principales = fila('linea', 'Línea:', lineasF) + fila('persona', 'Persona:', personasF, 'Todos') +
+      fila('wa', 'WhatsApp:', [['falta', 'Falta celular'], ['listo', 'Con celular, sin escribir'], ['enviada', 'Plantilla enviada'], ['conversa', 'Ya conversa']]) +
+      fila('sem', 'Semáforo:', [['rojo', '<span class="sem rojo"></span>Vencidas'], ['amarillo', '<span class="sem amarillo"></span>Próximas'], ['verde', '<span class="sem verde"></span>Al día'], ['aparcada', '<span class="sem aparcada"></span>Aparcadas'], ['sin', 'Sin semáforo']]) +
+      fila('fase', 'Fase:', [['prospeccion', 'Prospección'], ['venta', 'Venta']]);
+    var mas = fila('origen', 'Llegó por:', [['Open+3', 'Open+3'], ['Sequence', 'Sequence'], ['DUO', 'DUO (señal)'], ['Referido', 'Referido'], ['sin', 'Sin dato']], 'Todos') +
+      fila('monto', 'Monto:', [['10000', '≥ $10K'], ['50000', '≥ $50K'], ['100000', '≥ $100K']], 'Todos') +
+      fila('cierre', 'Cierre:', [['vencida', 'Vencidas'], ['mes', 'Este mes'], ['prox', 'Próximo mes'], ['trim', 'Este trimestre'], ['sin', 'Sin fecha']], 'Todas') +
+      fila('nuevas', 'Nuevas:', [['7', 'Últimos 7 días'], ['30', 'Últimos 30 días']], 'Todas') +
+      fila('tipo', 'Tipo:', [['p', 'Prospección (P_)'], ['np', 'Sin P_']], 'Todas');
+    var nMas = ['origen', 'monto', 'cierre', 'nuevas', 'tipo'].filter(function(k){ return f[k]; }).length;
     var h = '<div class="card"><div class="card-h"><h2><span class="n">1</span>Oportunidades abiertas en HubSpot</h2><span class="tenue">' + todas.length + ' oportunidades · contactos con celular: ' + cts.filter(function(ct){ return ct.c10; }).length + ' de ' + cts.length + '</span></div>' +
-      '<p class="nota">Salen de HubSpot cada vez que abres esta pestaña. La línea sale del nombre de la oportunidad. El celular es el WhatsApp de la persona: si falta, escríbelo en la tarjeta y se guarda en HubSpot para todo el equipo. No se revela nada en Amplemarket.</p>' +
-      '<div class="filters"><span class="flabel">Open+3:</span><button class="chip pend' + (f.pend ? ' on' : '') + '" data-k="pend" data-v="1">Pendientes de Open+3 · ' + pend.length + ' (' + pend.filter(function(o){ return o.contactos.some(function(ct){ return ct.c10; }); }).length + ' con celular)</button></div>' +
-      '<div class="filters"><span class="flabel">Fase:</span>' + chips('fase', [['', 'Todas'], ['prospeccion', 'Prospección'], ['venta', 'Venta']], f.fase) + '</div>' +
-      '<div class="filters"><span class="flabel">Línea:</span>' + chips('linea', [['', 'Todas']].concat(lineasUsadas.map(function(l){ return [l.codigo, l.nombre]; })), f.linea) + '</div>' +
-      '<div class="filters"><span class="flabel">Dueño:</span>' + chips('dueno', [['', 'Todos']].concat(duenos.map(function(d){ return [d, d]; })), f.dueno) +
-      '<span class="flabel" style="margin-left:10px">Celular:</span>' + chips('cel', [['', 'Todos'], ['con', 'Con celular'], ['sin', 'Sin celular']], f.cel) + '</div>' +
-      '<div class="filters"><input id="o-q" type="search" placeholder="Buscar empresa, oportunidad o contacto" value="' + esc(f.q) + '"><span class="tenue">' + ls.length + ' de ' + todas.length + '</span></div></div>';
+      '<p class="nota">Salen de HubSpot cada vez que abres esta pestaña. La línea sale del nombre de la oportunidad; la persona es la responsable, el apoyo o la dueña en HubSpot (los mismos nombres del tablero). El semáforo, el camino de llegada y los días en la etapa son los del tablero. El celular es el WhatsApp de la persona: si falta, escríbelo en la tarjeta y se guarda en HubSpot para todo el equipo. No se revela nada en Amplemarket.</p>' +
+      '<div class="filters"><span class="flabel">Open+3:</span><button class="chip pend' + (f.pend ? ' on' : '') + '" data-k="pend" data-v="1">Pendientes de Open+3 · ' + pend.length + ' (' + pend.filter(function(o){ return o.contactos.some(function(ct){ return ct.c10; }); }).length + ' con celular)</button>' +
+      '<span class="tenue">Llegaron por Open+3, siguen en Señal Detectada y nadie les ha escrito por WhatsApp</span></div>' +
+      '<div class="ffila">' + principales + '</div>' +
+      '<details class="masf"' + (nMas ? ' open' : '') + '><summary>Más filtros del tablero' + (nMas ? ' · ' + nMas + ' activo' + (nMas === 1 ? '' : 's') : '') + '</summary><div class="ffila">' + mas + '</div></details>' +
+      '<div class="filters"><input id="o-q" type="search" placeholder="Buscar empresa, oportunidad o contacto" value="' + esc(f.q) + '"><span class="tenue">' + ls.length + ' de ' + todas.length + '</span>' +
+      ((Object.keys(f).some(function(k){ return k !== 'q' && f[k]; }) || f.q) ? '<button class="enlace" id="o-borrar">Quitar filtros</button>' : '') + '</div></div>';
     var etapas = (opor.etapas || []).filter(function(e){ return !f.fase || e.fase === f.fase; });
     h += '<div class="kanban">';
     etapas.forEach(function(e){
@@ -434,7 +484,9 @@
         var cs = o.contactos;
         h += '<div class="kcard' + (pendienteOpen3(o) ? ' pend' : '') + '"><div class="kcard-n">' + esc(empresaDe(o, cs[0]) || o.nombre) + (o.empresa && o.empresa.web ? ' <a class="web" href="' + esc(/^https?:/.test(o.empresa.web) ? o.empresa.web : 'https://' + o.empresa.web) + '" target="_blank" rel="noopener" title="Sitio web">🌐</a>' : '') + (o.empresa && o.empresa.linkedin ? ' <a class="li" href="' + esc(o.empresa.linkedin) + '" target="_blank" rel="noopener" title="LinkedIn de la empresa">in</a>' : '') + '</div>' + (o.empresa && o.empresa.industria ? '<div class="tenue">' + esc(o.empresa.industria) + '</div>' : '') +
           '<a class="kcard-s" href="' + esc(o.url) + '" target="_blank" rel="noopener">' + esc(o.nombre) + '</a>' +
-          '<div class="kchips"><span class="etq producto">' + esc(o.linea.nombre) + '</span><span class="etq">' + esc(o.dueno) + '</span>' + (pendienteOpen3(o) ? '<span class="etq pendopen">Pendiente Open+3</span>' : '') + '</div>';
+          '<div class="kchips"><span class="etq producto">' + esc(o.linea.nombre) + '</span><span class="etq" title="Responsable' + (o.apoyo ? ' · apoyo: ' + esc(o.apoyo) : '') + ' · dueña en HubSpot: ' + esc(o.dueno) + '">' + (o.semaforo ? '<span class="sem ' + esc(o.semaforo) + '"></span>' : '') + esc(o.responsable || o.dueno_corto || o.dueno) + '</span>' +
+            (o.origen ? '<span class="etq origen">' + esc(o.origen) + '</span>' : '') + (o.dias_etapa !== null && o.dias_etapa !== undefined ? '<span class="etq dias" title="Días en esta etapa">' + o.dias_etapa + ' d</span>' : '') +
+            (pendienteOpen3(o) ? '<span class="etq pendopen">Pendiente Open+3</span>' : '') + '</div>';
         if (!cs.length) h += '<div class="kct tenue">Sin contacto en HubSpot</div>';
         cs.forEach(function(ct){
           var est = estadoContacto(ct), puede = est.k === 'listo';
@@ -465,6 +517,7 @@
       if (b.classList.contains('celok')) { var inp = document.querySelector('.celin[data-c="' + b.getAttribute('data-c') + '"]'); guardarCel(b.getAttribute('data-c'), inp.value, b); }
       if (b.classList.contains('verconv')) { document.querySelector('#tabs [data-t="conv"]').click(); abrir(b.getAttribute('data-w')); }
       if (b.id === 'o-limpiar') { elegidos = {}; pintarOpor(); }
+      if (b.id === 'o-borrar') { Object.keys(f).forEach(function(k){ f[k] = k === 'pend' ? false : ''; }); pintarOpor(); }
       if (b.id === 'o-enviar') enviarOpen3();
     };
   }
@@ -489,7 +542,7 @@
       var aprob = {}; ls.filter(function(t){ return t.soportada; }).forEach(function(t){ aprob[t.nombre] = t; });
       var filas = sel.map(function(x){
         var nom = 'gr_open3_' + (SUFIJO[x.o.linea.codigo] || '') + '_v2', t = aprob[nom];
-        var vars = [String(x.ct.nombre || '').split(' ')[0], empresaDe(x.o, x.ct), String(x.o.dueno || '').split(' ')[0]].slice(0, t ? t.variables : 0);
+        var vars = [String(x.ct.nombre || '').split(' ')[0], empresaDe(x.o, x.ct), (x.o.responsable || String(x.o.dueno || '').split(' ')[0])].slice(0, t ? t.variables : 0);
         var vista = t ? t.texto.replace(/\{\{(\d+)\}\}/g, function(m, i){ return vars[i - 1] || m; }) : '';
         return { x: x, t: t, nom: nom, vars: vars, vista: vista, ok: !!t && vars.every(Boolean) };
       });
@@ -884,6 +937,18 @@
       if (b.id === 'aprCola') { cambiarCola('en_cola'); return; }
       if (b.id === 'aprDesc') { cambiarCola('descartada'); return; }
       if (b.id === 'aprAhora') { procesarAhora(); return; }
+      if (b.hasAttribute('data-lt')) { aprLt = b.getAttribute('data-lt'); pintarConf(); return; }
+      if (b.hasAttribute('data-if')) { insF = b.getAttribute('data-if'); pintarConf(); return; }
+      if (b.getAttribute('data-ia')) {
+        var ia = b.getAttribute('data-ia'), iid = b.getAttribute('data-i'), ins = (apr[aprLinea].insumos || []).filter(function(x){ return x.id === iid; })[0];
+        if (!ins) return;
+        if (ia !== 'editar') { revisarInsumo(iid, ia, ins.texto); return; }
+        modal('<h2>Editar insumo</h2><p class="tenue" style="margin:0">' + esc(TIPO_INS[ins.tipo] || ins.tipo) + ' · ' + esc(ins.fecha) + '. Al guardar queda aprobado y así entra a la ficha.</p>' + (ins.cita ? '<div class="tenue">“' + esc(ins.cita) + '”</div>' : '') +
+          '<textarea id="insTxt" rows="5" style="width:100%;font:inherit">' + esc(ins.texto) + '</textarea><div class="pieModal"><button class="btn sec" id="cancelar">Cancelar</button><button class="btn" id="insOk">Guardar y aprobar</button></div>');
+        $('cancelar').onclick = cerrar;
+        $('insOk').onclick = function(){ var t = $('insTxt').value.trim(); if (!t) return; cerrar(); revisarInsumo(iid, 'editar', t); };
+        return;
+      }
     };
     $('conf').onchange = function(e){
       var x = e.target; if (!x.classList.contains('aprchk')) return;
@@ -928,7 +993,31 @@
   var FRESCURA = { reciente: 'Reciente (90 días)', media: 'Media (3 a 6 meses)', antigua: 'Antigua (más de 6 meses)' };
   var ESTADO_APR = { procesada: 'Ya aportó', por_procesar: 'Por procesar', en_cola: 'En cola', sin_transcript: 'Sin transcript', descartada: 'Descartada', error: 'Error' };
   var TIPO_INS = { dolor: 'Dolores', pregunta: 'Preguntas', objecion: 'Objeciones', frase_cliente: 'Frases del cliente', caso_o_cifra: 'Casos y cifras', oferta: 'Qué se ofreció', siguiente_paso: 'Siguientes pasos', dato_tecnico: 'Datos técnicos', senal_interes: 'Señales de interés' };
-  var aprSel = {}, aprVer = 'reuniones', aprFiltro = '';
+  var aprSel = {}, aprVer = 'reuniones', aprFiltro = '', aprLt = 'propia', insF = 'nuevo';
+  // Linea de cada reunion segun su nombre (formato REA: "Discovery | Cliente & GR / ITS"; o codigos y nombres sueltos:
+  // "TW_Grupo Saesa", "Legacy Systems Takeover_..."). La reunion se encontro por la oportunidad de la linea, pero si su
+  // nombre dice otra linea es de otra conversacion con la misma persona y no debe alimentar esta ficha.
+  var ALIAS_LINEA = { TW: ['talkwalker', 'tw'], HS: ['hootsuite', 'hs'], AM: ['amplemarket', 'am'], AEO: ['aeo', 'seo'], GenIA: ['genia', 'dwf', 'digital workforce'],
+    GENIARH: ['genia rh', 'geniarh'], GENIAVTA: ['genia ventas', 'geniavta'], GENIACOB: ['genia cobranza', 'geniacob'], SYN: ['synapsis', 'syn'],
+    ITS: ['its', 'it support', 'it', 'helpdesk', 'mesa de ayuda'], LT: ['legacy systems takeover', 'legacy', 'lt'], BD: ['blindaje digital', 'blindaje', 'bd'],
+    '360': ['360', 'marketing 3v', '3v'], WB: ['web development', 'wb', 'sitio web'], PT: ['pintaando'] };
+  function lineasTitulo(t){
+    var n = ' ' + String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[_|\/&+—│:,.()\[\]-]+/g, ' ').replace(/\s+/g, ' ') + ' ';
+    var ls = Object.keys(ALIAS_LINEA).filter(function(c){ return ALIAS_LINEA[c].some(function(a){ return n.indexOf(' ' + a + ' ') >= 0; }); });
+    if (ls.some(function(c){ return /^GENIA.+/.test(c); })) ls = ls.filter(function(c){ return c !== 'GenIA'; });
+    return ls;
+  }
+  function claseLinea(r){ var ls = lineasTitulo(r.titulo); return !ls.length ? 'sin' : ls.indexOf(aprLinea) >= 0 ? 'esta' : 'otra'; }
+  function nombreLinea(c){ var p = ((conf && conf.productos) || []).filter(function(x){ return x.codigo === c; })[0]; return p ? p.nombre.replace(/ \(.*\)$/, '') : c; }
+  var ESTADO_INS = { nuevo: 'Sin revisar', aprobado: 'Aprobado: va a la ficha', descartado: 'Descartado' };
+  function revisarInsumo(id, accion, texto){
+    var ins = (apr[aprLinea].insumos || []).filter(function(x){ return x.id === id; })[0] || {};
+    postJson('gr-portal-insumo', { insumo_id: id, accion: accion, texto: texto, aplicado: !!ins.aplicado }).then(function(j){
+      (apr[aprLinea].insumos || []).forEach(function(x){ if (x.id === id) { x.estado = j.estado; x.texto = texto; if (accion === 'editar' || accion === 'descartar') x.aplicado = false; } });
+      toast(accion === 'descartar' ? 'Insumo descartado' : accion === 'reabrir' ? 'Insumo regresado a sin revisar' : 'Insumo aprobado: entra a la ficha en la siguiente actualización');
+      pintarConf();
+    }).catch(function(e){ toast(e.message); });
+  }
   function postJson(ruta, cuerpo){
     return fetch(BASE + ruta, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(Object.assign({ k: K }, cuerpo)) })
       .then(function(r){ return r.text().then(function(t){ var j = null; try { j = JSON.parse(t); } catch(e) {} if (!r.ok || !j || j.ok === false) throw new Error((j && (j.error || j.message)) || 'Error ' + r.status); return j; }); });
@@ -950,6 +1039,10 @@
   }
   function cambiarCola(estado){
     var ids = Object.keys(aprSel); if (!ids.length) return;
+    if (estado === 'en_cola') {
+      var otras = (apr[aprLinea].reuniones || []).filter(function(r){ return aprSel[r.event_id] && claseLinea(r) === 'otra'; });
+      if (otras.length) { toast(otras.length + ' de las elegidas son de otra línea por su nombre. Quítalas o descártalas: aportarían a la ficha equivocada.'); return; }
+    }
     postJson('gr-portal-aprendizaje-cola', { event_ids: ids, estado: estado }).then(function(j){
       toast(estado === 'en_cola' ? j.cambiadas + ' en cola. Claude las procesa en la siguiente hora, o pulsa "Procesar ahora".' : j.cambiadas + ' marcadas como ' + (ESTADO_APR[estado] || estado).toLowerCase());
       aprSel = {}; return postJson('gr-portal-aprendizaje', { linea: aprLinea }).then(function(x){ apr[aprLinea] = x; pintarConf(); });
@@ -965,7 +1058,14 @@
   function confAprendizaje(){
     var lineas = (conf.productos || []).map(function(p){ return [p.codigo, p.nombre.replace(/ \(.*\)$/, '')]; });
     var d = apr[aprLinea];
-    var cab = '<p class="nota">Las reuniones de las oportunidades de cada línea (abiertas y cerradas) se guardan; "Buscar lo nuevo" revisa la agenda solo desde la última búsqueda. <b>Elige las que deben aportar al conocimiento</b> y ponlas en cola: Claude lee el transcript, saca preguntas, objeciones, dolores y lenguaje del cliente, y los compara con la ficha del bot. <b>Primero las recientes:</b> la propuesta se va afinando; lo antiguo sirve sobre todo para objeciones y lenguaje.</p>' +
+    var cab = '<details class="masf"><summary>Cómo funciona y dónde se modifica</summary><ol class="pasos-apr">' +
+      '<li><b>Buscar.</b> Para la línea elegida se toman sus oportunidades de HubSpot (abiertas y cerradas), sus contactos y, con su correo, las reuniones que ya pasaron en la agenda de Mike. Se guardan; "Buscar lo nuevo" solo revisa desde la última vez.</li>' +
+      '<li><b>Revisar la línea.</b> Una persona puede tener reuniones de varias líneas. Cada reunión dice qué línea trae en su nombre: <span class="estado-f lt-esta">De esta línea</span>, <span class="estado-f lt-otra">Es de otra línea</span> (no se puede poner en cola; descártala) o <span class="estado-f lt-sin">Sin línea en el nombre</span> (se ligó por la oportunidad; revisa antes de usarla). El nombre correcto es el formato REA: <i>Discovery | Cliente & GR / Producto</i>.</li>' +
+      '<li><b>Elegir.</b> Marca las que tienen transcript y deben aportar, y pulsa "Poner en cola". Las demás, "Descartar".</li>' +
+      '<li><b>Claude.</b> Cada hora (o con "Procesar ahora") lee hasta 3 transcripts de la cola y saca insumos: dolores, preguntas, objeciones, frases del cliente, casos y cifras, qué se ofreció, siguientes pasos. Los compara con la ficha del bot de la línea.</li>' +
+      '<li><b>Revisar insumos (aquí se modifica).</b> En "Insumos" cada uno se <b>aprueba</b>, se <b>edita</b> (el texto corregido queda aprobado) o se <b>descarta</b>. Solo lo aprobado pasa a la ficha.</li>' +
+      '<li><b>Ficha y bot.</b> Lo aprobado se integra a la ficha maestra de la línea (<code>docs/whatsapp/bot/conocimiento/productos/</code>) y se sube a la base de conocimiento del bot; con eso cambian sus respuestas, los mensajes por etapa y las campañas. Hoy esa integración la hace Claude cuando se le pide ("lleva los insumos aprobados de ITS a la ficha"). Lo que el bot responde mal se corrige en la pestaña Mejoras.</li></ol>' +
+      '<p class="tenue">Primero las recientes: la propuesta se va afinando; lo antiguo sirve sobre todo para objeciones y lenguaje.</p></details>' +
       '<div class="filters"><span class="flabel">Línea:</span>' + lineas.map(function(x){ return '<button class="chip' + (aprLinea === x[0] ? ' on' : '') + '" data-al="' + esc(x[0]) + '">' + esc(x[1]) + '</button>'; }).join('') + '</div>';
     if (!d || (d.buscando && !d.reuniones)) return tarjeta(4, 'Aprendizaje continuo', cab + '<p class="tenue">' + (d && d.buscando ? 'Buscando en la agenda por primera vez (unos segundos)…' : 'Cargando…') + '</p>');
     if (d.error) return tarjeta(4, 'Aprendizaje continuo', cab + '<p class="error">' + esc(d.error) + '</p>');
@@ -976,18 +1076,27 @@
       '<div><b>' + (d.insumos || []).length + '</b><span>insumos</span></div></div>';
     var acc = '<div class="filters"><button class="chip' + (aprVer === 'reuniones' ? ' on' : '') + '" data-av="reuniones">Reuniones</button><button class="chip' + (aprVer === 'insumos' ? ' on' : '') + '" data-av="insumos">Insumos (' + (d.insumos || []).length + ')</button>' +
       '<span class="flabel" style="margin-left:10px">Ver:</span>' + [['', 'Todas'], ['por_procesar', 'Por procesar'], ['en_cola', 'En cola'], ['procesada', 'Ya aportaron'], ['sin_transcript', 'Sin transcript'], ['error', 'Error']].map(function(x){ return '<button class="chip' + (aprFiltro === x[0] ? ' on' : '') + '" data-af="' + x[0] + '">' + x[1] + '</button>'; }).join('') +
-      '<span class="tenue" style="margin-left:auto">Última búsqueda: ' + esc(ult) + '</span></div>';
+      '<span class="tenue" style="margin-left:auto">Última búsqueda: ' + esc(ult) + '</span></div>' +
+      (aprVer === 'reuniones' ? '<div class="filters"><span class="flabel">Por su nombre:</span>' + [['propia', 'De esta línea o sin línea'], ['esta', 'De esta línea'], ['sin', 'Sin línea en el nombre'], ['otra', 'De otra línea'], ['', 'Todas']].map(function(x){
+        var n = d.reuniones.filter(function(r){ var c = claseLinea(r); return !x[0] || (x[0] === 'propia' ? c !== 'otra' : c === x[0]); }).length;
+        return '<button class="chip' + (aprLt === x[0] ? ' on' : '') + (n ? '' : ' cero') + '" data-lt="' + x[0] + '">' + x[1] + ' (' + n + ')</button>'; }).join('') + '</div>'
+      : '<div class="filters"><span class="flabel">Revisión:</span>' + [['nuevo', 'Sin revisar'], ['aprobado', 'Aprobados'], ['descartado', 'Descartados'], ['', 'Todos']].map(function(x){
+        var n = (d.insumos || []).filter(function(i){ return !x[0] || i.estado === x[0]; }).length;
+        return '<button class="chip' + (insF === x[0] ? ' on' : '') + '" data-if="' + x[0] + '">' + x[1] + ' (' + n + ')</button>'; }).join('') + '</div>');
     var cuerpo;
     if (aprVer === 'insumos') {
-      var grupos = {}; (d.insumos || []).forEach(function(x){ (grupos[x.tipo] = grupos[x.tipo] || []).push(x); });
+      var grupos = {}; (d.insumos || []).filter(function(x){ return !insF || x.estado === insF; }).forEach(function(x){ (grupos[x.tipo] = grupos[x.tipo] || []).push(x); });
       cuerpo = Object.keys(TIPO_INS).filter(function(t){ return grupos[t]; }).map(function(t){
         return '<h3 class="apr-h3">' + esc(TIPO_INS[t]) + ' (' + grupos[t].length + ')</h3>' + grupos[t].map(function(x){
-          return '<div class="insumo"><div>' + esc(x.texto) + '</div>' + (x.cita ? '<div class="tenue">“' + esc(x.cita) + '”</div>' : '') +
-            '<div class="kchips"><span class="etq">' + esc(x.fecha) + '</span><span class="etq ' + (x.citable ? 'respondio' : 'sinresp') + '">' + (x.citable ? 'Se puede usar en público' : 'Solo interno') + '</span><span class="etq">' + esc(x.vigencia || '') + '</span>' + (x.aplicado ? '<span class="etq respondio">Ya está en la ficha</span>' : '<span class="etq pendopen">Por llevar a la ficha</span>') + '</div></div>';
+          return '<div class="insumo ins-' + esc(x.estado) + '"><div class="ins-texto" data-i="' + esc(x.id) + '">' + esc(x.texto) + '</div>' + (x.cita ? '<div class="tenue">“' + esc(x.cita) + '”</div>' : '') +
+            '<div class="kchips"><span class="etq">' + esc(x.fecha) + '</span><span class="etq ' + (x.citable ? 'respondio' : 'sinresp') + '">' + (x.citable ? 'Se puede usar en público' : 'Solo interno') + '</span><span class="etq">' + esc(x.vigencia || '') + '</span>' +
+            '<span class="etq ' + (x.estado === 'aprobado' ? 'respondio' : x.estado === 'descartado' ? 'nocontactar' : 'pendopen') + '">' + esc(ESTADO_INS[x.estado] || x.estado) + '</span>' + (x.aplicado ? '<span class="etq respondio">Ya está en la ficha</span>' : '') + '</div>' +
+            '<div class="ins-acc">' + (x.estado !== 'aprobado' ? '<button class="btn sec" data-ia="aprobar" data-i="' + esc(x.id) + '">Aprobar</button>' : '') + '<button class="btn sec" data-ia="editar" data-i="' + esc(x.id) + '">Editar</button>' +
+            (x.estado !== 'descartado' ? '<button class="btn sec" data-ia="descartar" data-i="' + esc(x.id) + '">Descartar</button>' : '') + (x.estado !== 'nuevo' ? '<button class="enlace" data-ia="reabrir" data-i="' + esc(x.id) + '">Regresar a sin revisar</button>' : '') + '</div></div>';
         }).join('');
       }).join('') || '<p class="tenue">Todavía no hay insumos procesados por Claude en esta línea. Elige reuniones en "Reuniones" y ponlas en cola.</p>';
     } else {
-      var ls = d.reuniones.filter(function(r){ return !aprFiltro || r.estado === aprFiltro; });
+      var ls = d.reuniones.filter(function(r){ var c = claseLinea(r); return (!aprFiltro || r.estado === aprFiltro) && (!aprLt || (aprLt === 'propia' ? c !== 'otra' : c === aprLt)); });
       var nSel = Object.keys(aprSel).length;
       cuerpo = '<div class="barra-apr"><b>' + nSel + ' seleccionada' + (nSel === 1 ? '' : 's') + '</b><button class="btn" id="aprCola"' + (nSel ? '' : ' disabled') + '>Poner en cola para aprender</button><button class="btn sec" id="aprDesc"' + (nSel ? '' : ' disabled') + '>Descartar</button><button class="btn sec" id="aprAhora">Procesar ahora (' + d.en_cola + ' en cola)</button></div>' +
         '<table class="tabla"><thead><tr><th></th><th>Fecha</th><th>Reunión</th><th>Personas</th><th>Oportunidad</th><th>Transcript</th><th>Conocimiento</th></tr></thead><tbody>' +
@@ -995,7 +1104,9 @@
           var elegible = r.transcript && (r.estado === 'por_procesar' || r.estado === 'error' || r.estado === 'descartada');
           return '<tr><td>' + (elegible ? '<input type="checkbox" class="aprchk" data-e="' + esc(r.event_id) + '"' + (aprSel[r.event_id] ? ' checked' : '') + '>' : '') + '</td>' +
             '<td>' + esc(r.fecha) + '<div><span class="estado-f fr-' + r.frescura + '">' + esc(FRESCURA[r.frescura]) + '</span></div></td>' +
-            '<td>' + (r.liga ? '<a href="' + esc(r.liga) + '" target="_blank" rel="noopener">' + esc(r.titulo || '(sin título)') + '</a>' : esc(r.titulo)) + (r.formato_ok ? '' : '<div><span class="estado-f falta" title="Formato: Discovery | Cliente & GR / Producto">Nombre fuera de formato</span></div>') + '</td>' +
+            '<td>' + (r.liga ? '<a href="' + esc(r.liga) + '" target="_blank" rel="noopener">' + esc(r.titulo || '(sin título)') + '</a>' : esc(r.titulo)) + (function(){ var c = claseLinea(r), ls2 = lineasTitulo(r.titulo);
+              return '<div><span class="estado-f lt-' + c + '">' + (c === 'esta' ? 'De esta línea' + (ls2.length > 1 ? ' (también ' + esc(ls2.filter(function(x){ return x !== aprLinea; }).map(nombreLinea).join(', ')) + ')' : '') : c === 'otra' ? 'Es de ' + esc(ls2.map(nombreLinea).join(', ')) : 'Sin línea en el nombre') + '</span>' +
+                (r.formato_ok ? '' : ' <span class="estado-f falta" title="Formato: Discovery | Cliente & GR / Producto">Nombre fuera de formato</span>') + '</div>'; })() + '</td>' +
             '<td>' + r.contactos.map(personaFicha).join('') + '</td>' +
             '<td>' + r.oportunidades.map(function(o){ return '<a href="' + esc(o.url) + '" target="_blank" rel="noopener">' + esc(o.nombre) + '</a><div class="tenue">' + esc(o.etapa) + '</div>'; }).join('') + '</td>' +
             '<td>' + (r.transcript ? '<a href="' + esc(r.transcript.url) + '" target="_blank" rel="noopener">' + esc(r.transcript.titulo) + '</a>' : '<span class="tenue">No hay</span>') + '</td>' +
