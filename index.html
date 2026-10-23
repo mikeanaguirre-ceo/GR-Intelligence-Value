@@ -920,7 +920,7 @@ function abrirEditarDealGR(dealId){
   window.__grEditDias=(d.diasEnEtapa===undefined?null:d.diasEnEtapa);
   grmdPretty();
   grmdAplicarBloqueo();
-  document.getElementById('grmd-auto-msg').textContent=''; document.getElementById('grmd-am-msg').textContent='';
+  document.getElementById('grmd-auto-msg').textContent=''; document.getElementById('grmd-am-msg').textContent=''; var _tm=document.getElementById('grmd-tel-msg'); if(_tm) _tm.textContent=''; window.__grFaltaMano={};
   grmdPintarCampos(d);
   grmdCargarContactos(dealId, d.cliente||d.name||'');
   document.getElementById('grmd-status').textContent=''; document.getElementById('grmd-save').disabled=false;
@@ -941,8 +941,8 @@ function grmdPintarOrigen(op, emp){
   window.__grOrigen=op||null; window.__grEmpresa=emp||null; window.__grEmpresaFull=null; op=op||{};
   var CANAL={correo:'Correo',linkedin:'LinkedIn',whatsapp:'WhatsApp',llamada:'Llamada',otro:'Otro'};
   var cargando=!window.__grOrigen;
-  var put=function(id,v,vacio){ var el=document.getElementById(id); if(!el) return; el.textContent=v||vacio||'—'; el.style.color=v?'':'#6B7280'; };
-  var faltan=cargando?'Cargando…':'Sin dato';
+  var put=function(id,v,vacio){ var el=document.getElementById(id); if(!el) return; if(!v && vacio==='\u0001'){ el.innerHTML='<a href="#" onclick="grmdTab(\'contacto\');return false;" style="color:#FFCD00;text-decoration:none;">Falta · ver qué falta</a>'; el.style.color=''; return; } el.textContent=v||vacio||'—'; el.style.color=v?'':'#6B7280'; };
+  var faltan=cargando?'Cargando…':'\u0001';
   var esOpen=op.tipo_senal==='open3';
   var tipoTxt=op.tipo_senal?grmdEtiqueta('tipo_senal',op.tipo_senal):'';
   put('grmd-tipo-senal', tipoTxt, faltan);
@@ -955,14 +955,14 @@ function grmdPintarOrigen(op, emp){
   var fs=String(op.fecha_senal||''); var dias=''; if(fs){ var t=new Date(fs+'T12:00:00'); if(!isNaN(t)){ var dd=Math.floor((Date.now()-t)/86400000); dias=dd<=0?'hoy':(dd===1?'hace 1 día':'hace '+dd+' días'); } }
   put('grmd-fecha-senal', fs?((fmtFecha(fs+'T12:00:00Z')||fs)+(dias?' · '+dias:'')):'', faltan);
   var mh=document.getElementById('grmd-mensaje-h'); if(mh) mh.textContent=esOpen?'Correo nuestro que abrió':'Mensaje nuestro que contestó';
-  put('grmd-mensaje', op.mensaje||'', cargando?'Cargando…':'Todavía no se sabe. Usa Actualizar sin créditos (pestaña Contacto y empresa).');
+  put('grmd-mensaje', op.mensaje||'', cargando?'Cargando…':'\u0001');
   put('grmd-respuesta', op.respuesta||'', cargando?'Cargando…':(esOpen?'No contestó: abrió los correos sin responder.':'Sin respuesta registrada.'));
   var camino=op.camino==='senal'?'DUO':(op.camino==='respuesta'?'Sequence':(op.camino?grmdEtiqueta('origen',op.camino):''));
   var _od=document.getElementById('grmd-origen-detalle'); if(_od){ _od.textContent=op.camino==='senal'?'DUO: Amplemarket detectó una señal de la persona (publicación, cambio de puesto, contratación) y le escribió.':(op.camino==='respuesta'?'Sequence: la persona venía en una secuencia de Amplemarket.':''); }
   // Linea de origen en el encabezado: "DUO · Reply · Interested · hace 3 dias"
   var linea=[camino, tipoTxt, esOpen?(op.tipo_interes?grmdEtiqueta('tipo_interes',op.tipo_interes):''):(op.como_llego?grmdEtiqueta('como_llego',op.como_llego):''), dias].filter(Boolean).join(' · ');
   var ol=document.getElementById('grmd-origen-linea'); if(ol) ol.textContent=cargando?'':(linea?('Origen: '+linea):'');
-  grmdPintarIcp(); grmdPintarEmpresa(); grmdPintarLigas();
+  grmdPintarIcp(); grmdPintarEmpresa(); grmdPintarLigas(); grmdPintarFalta();
 }
 function grmdPintarIcp(){
   var box=document.getElementById('grmd-icp'); if(!box) return;
@@ -995,6 +995,58 @@ function grmdPintarEmpresa(){
   box.innerHTML=filas.map(function(f){ return '<div class="k">'+f[0]+'</div><div class="v'+(f[1]?'':' falta')+'">'+(f[1]||'Falta')+'</div>'; }).join('');
   if(ds){ ds.textContent=e.descripcion||''; ds.style.display=e.descripcion?'':'none'; }
 }
+// 23oct2026 (opcion 2 aprobada por Mike): un solo lugar para ver que falta, por que, y llenarlo. Primero lo gratis;
+// el boton de 0.5 creditos aparece solo si falta algo que Amplemarket puede traer pagando; lo demas se elige a mano
+// con las listas del portal (etiquetas de Amplemarket) y se guarda con "Confirmar y guardar".
+var GRMD_SIN_SENAL=/^(referido|otro|evento|cliente|sitio)/;
+function grmdPintarFalta(){
+  var box=document.getElementById('grmd-falta'); if(!box) return;
+  var n=document.getElementById('grmd-falta-n'), lnk=document.getElementById('grmd-falta-link'), b1=document.getElementById('grmd-am-datos'), nota=document.getElementById('grmd-falta-nota');
+  var op=window.__grOrigen, id=window.__grEditId;
+  if(!op){ box.innerHTML='<div class="md-nota">Cargando…</div>'; if(n) n.textContent=''; if(lnk) lnk.textContent=''; if(b1) b1.style.display='none'; return; }
+  var d=((DATA&&DATA.deals)||[]).concat((DATA&&DATA.won)||[]).filter(function(x){ return String(x.id)===String(id); })[0]||{}, c=d.campos||{};
+  var v=function(k){ return String(op[k]||c['gr_'+k]||'').trim(); };
+  var sel=document.getElementById('grmd-contact');
+  var ct=(window.__grContactos||[]).filter(function(x){return String(x.id)===String(sel&&sel.value);})[0]||{};
+  var ult=(window.__grFaltaRes||{})[id]||null;
+  var pagoSinExito=!!(ult && ult.nivel==='datos' && ult.resultado!=='actualizado');
+  var porque=function(lbl){ var f=((ult&&ult.faltan)||[]).filter(function(x){ return x.indexOf(lbl)===0; })[0]; var m=f&&f.match(/\((.*)\)\s*$/); return m?m[1]:''; };
+  var L=((pipeCfg()||{}).campos)||{};
+  var lista=function(k){ return (L[k]||[]).map(function(o){ return [o.valor,o.label]; }); };
+  var camino=v('camino')||String(c.gr_origen||''), conSenal=!GRMD_SIN_SENAL.test(camino), esOpen=v('tipo_senal')==='open3';
+  var PAGO='Con <b>0.5 créditos</b> Amplemarket puede traerlo; si no, elígelo a mano.';
+  var filas=[];
+  if(conSenal && !v('tipo_senal')) filas.push({k:'gr_tipo_senal',l:'Tipo de señal',c:porque('Tipo de señal')||'No hay respuesta registrada en la cuenta de Amplemarket de GR. Elige si contestó (Reply) o solo abrió (Open+3).',in:['sel',lista('tipo_senal')]});
+  if(conSenal && !op.mensaje) filas.push({k:'',l:esOpen?'Correo que abrió':'Mensaje que contestó',c:'La conversación no pasó por la cuenta de Amplemarket de GR; no hay de dónde traerlo.'});
+  if(conSenal && !v('remitente')) filas.push({k:'gr_remitente',l:'Quién la envió',c:'El envío no deja rastro de quién lo mandó. Elige a la persona del equipo.',in:['sel',((pipeCfg()||{}).equipo||[]).map(function(p){ return [String(p.email).toLowerCase(),p.nombre]; })]});
+  if(!ct.puesto) filas.push({k:'',l:'Puesto del contacto',c:pagoSinExito?'Amplemarket no encontró a esta persona. Corrígelo en HubSpot.':PAGO.replace('; si no, elígelo a mano.','.'),pago:!pagoSinExito,html:1});
+  if(!v('area')) filas.push({k:'gr_area',l:'Área',c:pagoSinExito?'Amplemarket no lo tiene; elígela.':(ct.puesto?('El puesto «'+grEsc(ct.puesto)+'» no dice el área; elígela.'):PAGO),in:['sel',lista('area')],pago:!ct.puesto&&!pagoSinExito,html:1});
+  if(!v('nivel')) filas.push({k:'gr_nivel',l:'Nivel',c:pagoSinExito?'Amplemarket no lo tiene; elígelo.':(ct.puesto?('El puesto «'+grEsc(ct.puesto)+'» no dice el nivel; elígelo.'):PAGO),in:['sel',lista('nivel')],pago:!ct.puesto&&!pagoSinExito,html:1});
+  if(!v('sector')) filas.push({k:'gr_sector',l:'Sector',c:pagoSinExito?'Amplemarket no tiene la industria de esta empresa; elígela.':PAGO,in:['lista',lista('sector')],pago:!pagoSinExito,html:1});
+  if(!v('tamano')) filas.push({k:'gr_tamano',l:'Tamaño de empresa',c:pagoSinExito?'Amplemarket no tiene los empleados de esta empresa; elígelo.':PAGO,in:['sel',lista('tamano')],pago:!pagoSinExito,html:1});
+  if(!v('pais')) filas.push({k:'gr_pais',l:'País',c:'Ni el contacto ni la empresa dicen el país. Escríbelo.',in:['txt']});
+  if(!ct.linkedin && !pagoSinExito) filas.push({k:'',l:'LinkedIn del contacto',c:PAGO.replace('; si no, elígelo a mano.','.'),pago:true,html:1});
+  var cuantos=filas.length;
+  if(n) n.textContent=cuantos?('· '+cuantos+(cuantos===1?' dato':' datos')):'';
+  if(lnk) lnk.textContent=cuantos?('Faltan '+cuantos+(cuantos===1?' dato':' datos')+' · ver'):'';
+  var hayPago=filas.some(function(f){ return f.pago; });
+  if(b1) b1.style.display=hayPago?'':'none';
+  if(!cuantos){ box.innerHTML='<div class="md-nota" style="color:#62D175;font-size:13px;">No falta nada: la oportunidad tiene todos sus datos.</div>'; if(nota) nota.textContent=''; return; }
+  var hayMano=filas.some(function(f){ return f.in; });
+  if(nota) nota.textContent=hayMano?'Lo que elijas a mano se guarda con «Confirmar y guardar».':'';
+  var guardado=window.__grFaltaMano||{};
+  box.innerHTML=filas.map(function(f){
+    var inp='';
+    if(f.in){
+      var idn='grmd-m-'+f.k, cur=guardado[f.k]||'';
+      if(f.in[0]==='sel') inp='<select id="'+idn+'" class="md-in" onchange="grmdFaltaMano(this)" data-k="'+f.k+'"><option value="">Elegir…</option>'+f.in[1].map(function(o){ return '<option value="'+grEsc(o[0])+'"'+(o[0]===cur?' selected':'')+'>'+grEsc(o[1])+'</option>'; }).join('')+'</select>';
+      else if(f.in[0]==='lista') inp='<input id="'+idn+'" class="md-in" list="'+idn+'-l" placeholder="Escribe y elige…" value="'+grEsc(cur)+'" oninput="grmdFaltaMano(this)" data-k="'+f.k+'"><datalist id="'+idn+'-l">'+f.in[1].map(function(o){ return '<option value="'+grEsc(o[0])+'">'; }).join('')+'</datalist>';
+      else inp='<input id="'+idn+'" class="md-in" placeholder="Ej. México" value="'+grEsc(cur)+'" oninput="grmdFaltaMano(this)" data-k="'+f.k+'">';
+    }
+    return '<div class="gf-row"><div class="gf-k">'+grEsc(f.l)+'</div><div class="gf-c">'+(f.html?f.c:grEsc(f.c))+'</div><div>'+inp+'</div></div>';
+  }).join('');
+}
+function grmdFaltaMano(el){ window.__grFaltaMano=window.__grFaltaMano||{}; window.__grFaltaMano[el.getAttribute('data-k')]=String(el.value||'').trim(); }
 function grmdPintarLigas(){
   var box=document.getElementById('grmd-ligas'); if(!box) return;
   var sel=document.getElementById('grmd-contact');
@@ -1060,7 +1112,7 @@ async function grmdAmplemarket(nivel){
   if(tel && ct.tel_amplemarket==='no_encontrado'){
     if(!confirm('Amplemarket ya buscó el teléfono de este contacto el '+(ct.tel_amplemarket_fecha||'')+' y no lo encontró. Volver a buscarlo gasta créditos otra vez. ¿Buscar de nuevo?')) return; forzar=true;
   } else if(nivel!=='gratis' && !confirm(tel?'Buscar el teléfono en Amplemarket cuesta 0.5 créditos más el costo del teléfono. Si el contacto ya tiene teléfono no se consulta. ¿Continuar?':'Actualizar con Amplemarket cuesta 0.5 créditos. Solo se llena lo vacío. ¿Continuar?')) return;
-  var m=document.getElementById('grmd-am-msg'), b0=document.getElementById('grmd-am-gratis'), b1=document.getElementById('grmd-am-datos'), b2=document.getElementById('grmd-am-tel');
+  var m=document.getElementById(tel?'grmd-tel-msg':'grmd-am-msg'), b0=document.getElementById('grmd-am-gratis'), b1=document.getElementById('grmd-am-datos'), b2=document.getElementById('grmd-am-tel');
   b0.disabled=b1.disabled=b2.disabled=true; m.style.color='#9CA3AF'; m.textContent='Consultando Amplemarket…';
   try{
     var r=await fetch(GR_AMPLE,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:id,nivel:nivel,contactId:(sel&&sel.value)||'',forzar:forzar})});
@@ -1077,12 +1129,14 @@ async function grmdAmplemarket(nivel){
     if(!res.consultado){ t=res.mensaje||'No se consultó.'; }
     else if(res.resultado==='otra_persona'){ t='Amplemarket regresó a otra persona; no se cambió nada.'; }
     else if(tel){ t=tels.length?('Teléfono encontrado: '+tels.join(', ')+'.'):'No se encontró teléfono ni WhatsApp. Quedó marcado para seguir por correo o LinkedIn.'; if(otros.length) t+=' También: '+otros.join(' · ')+'.'; }
-    else if(res.resultado==='no_encontrado'){ t=nivel==='gratis'?'No está en la cuenta de Amplemarket de GR. Usa LinkedIn y datos.':'Amplemarket no encontró a esta persona.'; }
+    else if(res.resultado==='no_encontrado'){ t=nivel==='gratis'?'No está en la cuenta de Amplemarket de GR.':'Amplemarket no encontró a esta persona; lo que falta se llena a mano.'; }
     else { var todo=(tels.length?['Teléfono: '+tels.join(', ')]:[]).concat(otros); t=todo.length?('Contacto y empresa: '+todo.join(' · ')+'.'):'El contacto ya estaba completo.'; }
     if(res.consultado && res.resultado!=='otra_persona') t+=opor.length?(' Oportunidad: '+opor.join(' · ')+'.'):' La oportunidad ya tenía todo lo que se puede llenar sin costo.';
+    // 23oct2026: lo que sigue faltando lo dice el recuadro "Que falta"; aqui solo que se lleno y el costo.
+    window.__grFaltaRes=window.__grFaltaRes||{}; if(!tel) window.__grFaltaRes[id]={nivel:nivel,resultado:res.resultado,faltan:res.faltan||[]};
     if(res.consultado) t+=' Costo: '+(nivel==='gratis'?'sin costo':(tel?'0.5 créditos de búsqueda (más el teléfono si Amplemarket lo cobra)':'0.5 créditos'))+'.';
     m.style.color=res.ok?((res.contacto||[]).length||(res.empresa||[]).length||(res.oportunidad||[]).length?'#62D175':'#9CA3AF'):'#DB0540';
-    m.textContent=t.trim();
+    m.textContent=t.replace(/\s*Sigue faltando:.*$/,'').trim();
     m.style.borderColor=res.ok?((res.contacto||[]).length||(res.empresa||[]).length||(res.oportunidad||[]).length?'#62D17580':'#2A3142'):'#DB054080';
     try{ taskToast(m.textContent, res.ok!==false); }catch(e){}
     var _dd=(DATA.deals||[]).filter(function(x){return String(x.id)===String(id);})[0];
@@ -1090,6 +1144,7 @@ async function grmdAmplemarket(nivel){
     if(res.telefono||tel||(res.oportunidad||[]).length){ var d=(DATA.deals||[]).filter(function(x){return String(x.id)===String(id);})[0]; grmdCargarContactos(id,(d&&(d.cliente||d.name))||''); }
   }catch(e){ m.style.color='#DB0540'; m.textContent='No se consultó: '+e.message; try{ taskToast(m.textContent, false); }catch(x){} }
   b0.disabled=b1.disabled=b2.disabled=false;
+  grmdPintarFalta();
 }
 // Boton "Completar datos de todas": corre el mismo motor sobre toda la base (sustituye la corrida diaria).
 async function pipeCompletarTodas(btn){
@@ -1111,6 +1166,7 @@ function grmdCamposCambiados(){
   var apo=String(o.gr_apoyo||'').toLowerCase().split(';').filter(Boolean).sort();
   if(ap.join(';')!==apo.join(';')) out.gr_apoyo=ap;
   var pr=document.getElementById('grmd-c-gr_prueba').checked; if(pr!==(String(o.gr_prueba)==='true')) out.gr_prueba=pr;
+  var mano=window.__grFaltaMano||{}; Object.keys(mano).forEach(function(k){ if(mano[k]) out[k]=mano[k]; });
   return out;
 }
 function cerrarModalGR(){ document.getElementById('gr-modal-edit').style.display='none'; window.__grEditId=null; }
@@ -1152,7 +1208,7 @@ function grmdAplicarBloqueo(){
 function grmdPretty(){ var el=document.getElementById('grmd-close'); var out=document.getElementById('grmd-close-pretty'); if(!el||!out) return; var v=el.value; if(!v){ out.textContent=''; return; } var pr=fmtFecha(v+'T00:00:00Z'); out.textContent=pr?('\u2192 '+pr):''; }
 function grmdSyncPhone(){ var sel=document.getElementById('grmd-contact'); var ph=document.getElementById('grmd-phone'); if(!sel||!ph) return; var c=(window.__grContactos||[]).filter(function(x){return String(x.id)===String(sel.value);})[0]; ph.value=c?(c.telefono||''):''; ph.setAttribute('data-orig', ph.value);
   var tn=document.getElementById('grmd-tel-nota'); if(tn) tn.textContent=(c&&c.tel_amplemarket==='no_encontrado'&&!c.telefono)?('Amplemarket no encontró teléfono de este contacto ('+(c.tel_amplemarket_fecha||'')+'). Volver a buscarlo gasta créditos.'):'';
-  grmdPintarIcp(); grmdPintarLigas(); }
+  grmdPintarIcp(); grmdPintarLigas(); grmdPintarFalta(); }
 async function grmdCargarContactos(dealId, empresa){
   var sel=document.getElementById('grmd-contact'); var ph=document.getElementById('grmd-phone');
   if(!sel) return; window.__grContactos=[]; sel.innerHTML='<option value="">Cargando…</option>'; if(ph) ph.value='';
@@ -6097,6 +6153,12 @@ if (document.readyState === 'loading') {
 #gr-modal-edit .md-kv .k{color:#8b93a7;}
 #gr-modal-edit .md-kv .v{color:#F3F4F6;word-break:break-word;}
 #gr-modal-edit .md-kv .v.falta{color:#FFCD00;}
+#gr-modal-edit .gf-row{display:grid;grid-template-columns:150px 1fr minmax(170px,240px);gap:6px 14px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px;}
+#gr-modal-edit .gf-row .gf-k{color:#F3F4F6;font-weight:700;}
+#gr-modal-edit .gf-row .gf-c{color:#8b93a7;font-size:12px;line-height:1.45;}
+#gr-modal-edit .gf-row .gf-c b{color:#c4b5fd;font-weight:600;}
+#gr-modal-edit .gf-row .md-in{padding:7px 9px;font-size:12px;}
+@media(max-width:700px){#gr-modal-edit .gf-row{grid-template-columns:1fr;}}
 #gr-modal-edit .md-x{background:#1a2132;border:1px solid #2A3142;color:#9CA3AF;width:34px;height:34px;border-radius:10px;font-size:20px;cursor:pointer;line-height:1;flex:none;}
 @media (max-width:820px){
   #gr-modal-edit{padding:0;align-items:stretch;}
@@ -6147,7 +6209,7 @@ if (document.readyState === 'loading') {
           <div class="md-col">
           <div class="md-card">
               <div class="md-h"><span>Datos de la oportunidad <span id="grmd-faltan" style="color:#FFCD00;text-transform:none;letter-spacing:0;font-weight:600;"></span></span>
-                <button id="grmd-auto" class="md-btn" onclick="grmdCompletarAuto()" title="El motor llena solo lo que se puede saber (producto, ficha del portal, nota de origen) y nunca cambia lo que ya tiene valor" style="color:#02ADBA;border:1px solid #02ADBA80;text-transform:none;letter-spacing:0;">Completar solo</button>
+                <a id="grmd-falta-link" href="#" onclick="grmdTab('contacto');return false;" style="color:#FFCD00;font-size:12px;font-weight:700;text-decoration:none;"></a>
               </div>
               <div style="margin-bottom:10px;"><label class="md-lbl" for="grmd-c-gr_producto">Producto</label><select id="grmd-c-gr_producto" class="md-in"></select></div>
               <div class="md-2">
@@ -6164,6 +6226,16 @@ if (document.readyState === 'loading') {
         </div>
       </div>
       <div class="md-pane" data-pane="contacto">
+        <div class="md-card" id="grmd-falta-card" style="margin-bottom:14px;border-color:#FFCD0055;">
+          <div class="md-h"><span>Qué falta <span id="grmd-falta-n" style="color:#FFCD00;text-transform:none;letter-spacing:0;font-weight:600;"></span></span></div>
+          <div id="grmd-falta"><div class="md-nota">Cargando…</div></div>
+          <div id="grmd-falta-btns" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
+            <button id="grmd-am-gratis" class="md-btn" onclick="grmdAmplemarket('gratis')" title="Llena todo lo que se puede saber sin costo: HubSpot, la nota de origen y la cuenta de Amplemarket de GR (mensaje, respuesta, quién la envió, puesto, país…). Nunca cambia lo que ya tiene valor." style="color:#62D175;border:1px solid #62D17580;">Completar gratis</button>
+            <button id="grmd-am-datos" class="md-btn" onclick="grmdAmplemarket('datos')" title="Busca a la persona y su empresa en Amplemarket y llena lo vacío: puesto, LinkedIn, nivel, sector, tamaño. Cuesta 0.5 créditos." style="color:#c4b5fd;border:1px solid #7C3AED;display:none;">Llenar lo que falta · 0.5 créditos</button>
+          </div>
+          <div id="grmd-am-msg" class="md-msg"></div>
+          <div class="md-nota" id="grmd-falta-nota"></div>
+        </div>
         <div class="md-grid">
           <div class="md-col">
             <div class="md-card">
@@ -6174,11 +6246,9 @@ if (document.readyState === 'loading') {
               </div>
               <div id="grmd-tel-nota" class="md-nota" style="color:#FCA5A5;"></div>
               <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
-                <button id="grmd-am-gratis" class="md-btn" onclick="grmdAmplemarket('gratis')" title="Lee al contacto en la cuenta de Amplemarket de GR (si ya estuvo en una secuencia) y llena lo vacío: puesto, LinkedIn, ubicación y teléfonos que ya tenga. No gasta créditos." style="color:#62D175;border:1px solid #62D17580;">Actualizar sin créditos</button>
-                <button id="grmd-am-datos" class="md-btn" onclick="grmdAmplemarket('datos')" title="Busca al contacto en Amplemarket y llena lo vacío: puesto, LinkedIn, nivel, país, empresa, industria, empleados. Cuesta 0.5 créditos." style="color:#c4b5fd;border:1px solid #7C3AED;">LinkedIn y datos · 0.5 créditos</button>
                 <button id="grmd-am-tel" class="md-btn" onclick="grmdAmplemarket('telefono')" title="Busca el teléfono del contacto para WhatsApp. Cuesta 0.5 créditos más el costo del teléfono. Si ya tiene teléfono, no se consulta." style="color:#FFCD00;border:1px solid #FFCD0080;">Teléfono WhatsApp · con créditos</button>
               </div>
-              <div id="grmd-am-msg" class="md-msg"></div>
+              <div id="grmd-tel-msg" class="md-msg"></div>
             </div>
             <div class="md-card">
               <div class="md-h">Persona <span style="text-transform:none;letter-spacing:0;font-weight:600;color:#6B7280;">Etiquetas de Amplemarket</span></div>
@@ -6190,7 +6260,6 @@ if (document.readyState === 'loading') {
               <div class="md-h">Empresa</div>
               <div id="grmd-emp" class="md-kv"><div class="md-nota">Cargando…</div></div>
               <div id="grmd-emp-desc" class="md-texto" style="margin-top:8px;max-height:160px;"></div>
-              <div class="md-nota">Si falta algo, usa Actualizar sin créditos.</div>
             </div>
           </div>
         </div>
