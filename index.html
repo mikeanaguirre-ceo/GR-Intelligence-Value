@@ -1009,7 +1009,8 @@ function grmdPintarFalta(){
   var sel=document.getElementById('grmd-contact');
   var ct=(window.__grContactos||[]).filter(function(x){return String(x.id)===String(sel&&sel.value);})[0]||{};
   var ult=(window.__grFaltaRes||{})[id]||null;
-  var pagoSinExito=!!(ult && ult.nivel==='datos' && ult.resultado!=='actualizado');
+  // 23oct2026: la marca queda en el contacto (gr_datos_amplemarket); vale aunque la busqueda haya sido otro dia.
+  var pagoSinExito=ct.datos_amplemarket==='no_encontrado' || !!(ult && ult.nivel==='datos' && ult.resultado!=='actualizado');
   var porque=function(lbl){ var f=((ult&&ult.faltan)||[]).filter(function(x){ return x.indexOf(lbl)===0; })[0]; var m=f&&f.match(/\((.*)\)\s*$/); return m?m[1]:''; };
   var L=((pipeCfg()||{}).campos)||{};
   var lista=function(k){ return (L[k]||[]).map(function(o){ return [o.valor,o.label]; }); };
@@ -1031,9 +1032,10 @@ function grmdPintarFalta(){
   if(lnk) lnk.textContent=cuantos?('Faltan '+cuantos+(cuantos===1?' dato':' datos')+' · ver'):'';
   var hayPago=filas.some(function(f){ return f.pago; });
   if(b1) b1.style.display=hayPago?'':'none';
+  if(nota && ct.datos_amplemarket==='no_encontrado') nota.textContent='Amplemarket ya buscó a esta persona con créditos el '+(ct.datos_amplemarket_fecha||'')+' y no la encontró; no se vuelve a cobrar.';
   if(!cuantos){ box.innerHTML='<div class="md-nota" style="color:#62D175;font-size:13px;">No falta nada: la oportunidad tiene todos sus datos.</div>'; if(nota) nota.textContent=''; return; }
   var hayMano=filas.some(function(f){ return f.in; });
-  if(nota) nota.textContent=hayMano?'Lo que elijas a mano se guarda con «Confirmar y guardar».':'';
+  if(nota) nota.textContent=[ct.datos_amplemarket==='no_encontrado'?('Amplemarket ya buscó a esta persona con créditos el '+(ct.datos_amplemarket_fecha||'')+' y no la encontró; no se vuelve a cobrar.'):'', hayMano?'Lo que elijas a mano se guarda con «Confirmar y guardar».':''].filter(Boolean).join(' ');
   var guardado=window.__grFaltaMano||{};
   box.innerHTML=filas.map(function(f){
     var inp='';
