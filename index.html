@@ -951,6 +951,7 @@ function grmdPintarOrigen(op, emp){
   else put('grmd-como', op.como_llego?grmdEtiqueta('como_llego',op.como_llego):'', faltan);
   put('grmd-canal', CANAL[op.canal]||op.canal||'', faltan);
   put('grmd-campana', String(op.campana||'').trim(), faltan);
+  put('grmd-remitente', grNombreEquipo(op.remitente), faltan);
   var fs=String(op.fecha_senal||''); var dias=''; if(fs){ var t=new Date(fs+'T12:00:00'); if(!isNaN(t)){ var dd=Math.floor((Date.now()-t)/86400000); dias=dd<=0?'hoy':(dd===1?'hace 1 día':'hace '+dd+' días'); } }
   put('grmd-fecha-senal', fs?((fmtFecha(fs+'T12:00:00Z')||fs)+(dias?' · '+dias:'')):'', faltan);
   var mh=document.getElementById('grmd-mensaje-h'); if(mh) mh.textContent=esOpen?'Correo nuestro que abrió':'Mensaje nuestro que contestó';
@@ -2201,6 +2202,8 @@ function renderOverview() {
 // Orden de stages para Kanban (columnas de izquierda a derecha)
 // Fases y su orden: las manda el portal (DATA.pipelineCfg.etapas). La etiqueta visible sigue saliendo
 // del catalogo para que filtros, colores y tarjetas hablen igual. Sin configuracion, el catalogo.
+// 23oct2026 (Mike): perfil de Amplemarket que envio la campana o la senal; el nombre sale del equipo del portal.
+function grNombreEquipo(email){ var e=String(email||'').trim().toLowerCase(); if(!e) return ''; var c=pipeCfg()||{}; var p=(c.equipo||[]).find(function(x){ return String(x.email||'').toLowerCase()===e; }); if(p) return p.nombre; var u=e.split('@'), dom=(u[1]||'').split('.')[0]; return u[0].split(/[._-]+/).map(function(w){ return w.charAt(0).toUpperCase()+w.slice(1); }).join(' ')+(dom?' ('+dom.charAt(0).toUpperCase()+dom.slice(1)+')':''); }
 function pipeCfg(){ return (typeof DATA!=='undefined' && DATA && DATA.pipelineCfg) ? DATA.pipelineCfg : null; }
 function _catStageById(id){ return (((CAT().stages)||CAT_FALLBACK.stages||[]).filter(function(s){return String(s.id)===String(id);})[0])||null; }
 function stageOrder(){
@@ -4753,7 +4756,7 @@ function grSyncListasLlamadas(){
    eventos: por campana o senal, camino, como llego, sector, area, nivel, tamano y pais, cuantas oportunidades hubo y cuantas
    llegaron a cita agendada (Atraccion). Respeta los filtros de grupo, producto y periodo de Prospeccion.
    Las etiquetas son las de Amplemarket, igual que en HubSpot. */
-var GAN_DIMS=[['campana','Campaña o señal'],['camino','Camino'],['tipo','Tipo de señal'],['como','Cómo llegó (Reply)'],['interes','Tipo de interés (Open+3)'],['sector','Sector'],['area','Área'],['nivel','Nivel'],['tamano','Tamaño de empresa'],['pais','País']];
+var GAN_DIMS=[['campana','Campaña o señal'],['camino','Camino'],['tipo','Tipo de señal'],['como','Cómo llegó (Reply)'],['interes','Tipo de interés (Open+3)'],['sector','Sector'],['area','Área'],['nivel','Nivel'],['tamano','Tamaño de empresa'],['pais','País'],['remitente','Quién la envió']];
 var ganDim='campana', ganSel=null;
 function ganValor(d,dim){ var c=d.campos||{};
   if(dim==='campana') return String(c.gr_secuencia_origen||'').trim();
@@ -4761,6 +4764,7 @@ function ganValor(d,dim){ var c=d.campos||{};
   if(dim==='como') return c.gr_como_llego?grmdEtiqueta('como_llego',c.gr_como_llego):'';
   if(dim==='tipo') return c.gr_tipo_senal?grmdEtiqueta('tipo_senal',c.gr_tipo_senal):'';
   if(dim==='interes') return c.gr_tipo_interes?grmdEtiqueta('tipo_interes',c.gr_tipo_interes):'';
+  if(dim==='remitente') return grNombreEquipo(c.gr_remitente);
   return String(c['gr_'+dim]||'').trim(); }
 function ganLlegoACita(d){
   if((d.campos||{}).gr_cita || String(d.stage)==='closedwon') return true;
@@ -6203,6 +6207,7 @@ if (document.readyState === 'loading') {
                 <div><label class="md-lbl">Canal</label><div id="grmd-canal" class="md-val">—</div></div>
               </div>
               <label class="md-lbl" style="margin-top:6px;">Campaña o señal</label><div id="grmd-campana" class="md-val">—</div>
+              <label class="md-lbl" style="margin-top:6px;">Quién la envió</label><div id="grmd-remitente" class="md-val">—</div>
               <label class="md-lbl" style="margin-top:6px;">Fecha de la señal</label><div id="grmd-fecha-senal" class="md-val">—</div>
               <div id="grmd-origen-detalle" class="md-nota"></div>
             </div>
