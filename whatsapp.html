@@ -59,6 +59,11 @@
   .filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}
   .flabel{font-size:12px;color:var(--tenue);font-weight:650;min-width:58px}
   .chip{border:1px solid var(--borde);background:#fff;color:var(--marca);border-radius:16px;padding:5px 12px;font-size:12.5px;cursor:pointer}
+  .kb-cab{font-size:12.5px;margin:4px 0 8px} .kb-ok{background:#e4f4ea;border-radius:8px;padding:8px 10px;font-size:12.5px;margin:6px 0}
+  .kb-antes,.kb-despues{border-radius:6px;padding:6px 8px;margin:4px 0;font-size:12.5px} .kb-antes{background:#fdf0ef;text-decoration:line-through;text-decoration-color:#d99} .kb-despues{background:#eef8f1}
+  .kb-antes span,.kb-despues span{display:block;font-size:10.5px;font-weight:700;color:var(--tenue);text-decoration:none;margin-bottom:2px}
+  .etq.cl-nuevo{background:#e4f4ea;color:#166534;font-weight:700} .etq.cl-corrige{background:#fff1d6;color:#8a5200;font-weight:700} .etq.cl-contradice{background:#fde2e1;color:#a3261f;font-weight:700} .etq.cl-refuerza{background:#e2f0ff;color:#174f98} .etq.cl-fuera,.etq.cl-sin{background:#eceaea;color:#555}
+  .kb-md{white-space:pre-wrap;font-size:11.5px;max-height:50vh;overflow:auto;background:#f6f6f4;padding:8px;border-radius:6px}
   .pasos-apr{margin:6px 0 4px 18px;padding:0;font-size:12.5px;line-height:1.5} .pasos-apr li{margin-bottom:4px}
   .estado-f.lt-esta{background:#e4f4ea;color:#166534} .estado-f.lt-otra{background:#fde2e1;color:#a3261f} .estado-f.lt-sin{background:#fdf3e1;color:#9a5300}
   .ins-acc{display:flex;gap:6px;align-items:center;margin-top:6px} .ins-acc .btn{padding:3px 10px;font-size:12px} .insumo.ins-descartado{opacity:.55}
@@ -934,11 +939,12 @@
       if (b.getAttribute('data-al')) { aprLinea = b.getAttribute('data-al'); aprSel = {}; pintarConf(); if (!apr[aprLinea]) cargarApr(); return; }
       if (b.id === 'aprBuscar') { buscarNuevo(false); return; }
       if (b.id === 'aprRecargar') { cargarApr(); return; }
-      if (b.getAttribute('data-av')) { aprVer = b.getAttribute('data-av'); pintarConf(); return; }
+      if (b.getAttribute('data-av')) { aprVer = b.getAttribute('data-av'); pintarConf(); if (aprVer === 'insumos' && !kbBorr[aprLinea]) leerBorrador(aprLinea).then(pintarConf).catch(function(){}); return; }
       if (b.getAttribute('data-af') !== null && b.classList.contains('chip') && b.hasAttribute('data-af')) { aprFiltro = b.getAttribute('data-af'); pintarConf(); return; }
       if (b.id === 'aprCola') { cambiarCola('en_cola'); return; }
       if (b.id === 'aprDesc') { cambiarCola('descartada'); return; }
       if (b.id === 'aprAhora') { procesarAhora(); return; }
+      if (b.id === 'kbVer') { verBorrador(); return; }
       if (b.hasAttribute('data-lt')) { aprLt = b.getAttribute('data-lt'); pintarConf(); return; }
       if (b.hasAttribute('data-if')) { insF = b.getAttribute('data-if'); pintarConf(); return; }
       if (b.getAttribute('data-ia')) {
@@ -1011,12 +1017,87 @@
   }
   function claseLinea(r){ var ls = lineasTitulo(r.titulo); return !ls.length ? 'sin' : ls.indexOf(aprLinea) >= 0 ? 'esta' : 'otra'; }
   function nombreLinea(c){ var p = ((conf && conf.productos) || []).filter(function(x){ return x.codigo === c; })[0]; return p ? p.nombre.replace(/ \(.*\)$/, '') : c; }
-  var ESTADO_INS = { nuevo: 'Sin revisar', aprobado: 'Aprobado: va a la ficha', descartado: 'Descartado' };
+  var ESTADO_INS = { nuevo: 'Sin revisar', aprobado: 'Aprobado: va a la base', descartado: 'No aprobado', confirmado: 'Ya está en la base' };
+  // Que cambia en la base: cada propuesta de Claude contra la base vigente de la linea (GR_KB_<linea>), por seccion,
+  // con lo que hoy dice y como quedaria. Lo aprobado se lleva a una version nueva de la base con "Ver como quedaria".
+  var CLASE = { nuevo: ['Nuevo', 'La base no lo tiene'], corrige: ['Corrige', 'La base dice otra cosa'], contradice: ['Contradice', 'El cliente dijo lo contrario: decide el equipo'],
+    refuerza: ['Confirma', 'Ya está en la base; la reunión lo confirma'], fuera: ['Fuera de la base', 'No es para la base'], '': ['Sin comparar', 'Procesada antes de comparar contra la base'] };
+  var ORDEN_SEC = ['1. Qué es y para quién', '2. Dolores del prospecto', '3. Cómo lo resolvemos', '4. Diferenciales', '5. Pruebas que se pueden citar', '6. Preguntas frecuentes', '7. Objeciones', '8. Qué se ofrece', '9. Qué no decir', '10. Lenguaje del cliente y glosario', 'Pendiente de verificar', 'Fuera de la base'];
+  var kbBorr = {};   // linea -> ultimo borrador (preparando, listo, confirmado o error)
+  function baseDe(l){ var p = ((conf && conf.productos) || []).filter(function(x){ return x.codigo === l; })[0]; return p && p.kb && p.kb.url ? p.kb : null; }
+  function vistaCambios(d){
+    var kb = baseDe(aprLinea), ins = d.insumos || [];
+    var ver = ins.filter(function(x){ return !insF || x.estado === insF; });
+    var n = function(f){ return ins.filter(f).length; };
+    var porAplicar = ins.filter(function(x){ return x.estado === 'aprobado' && !x.aplicado && x.clase && x.clase !== 'fuera' && x.clase !== 'refuerza'; });
+    var h = '<div class="kb-cab">' + (kb ? 'Base vigente: <a href="' + esc(kb.url) + '" target="_blank" rel="noopener"><b>' + esc(kb.nombre) + '</b></a>. Cada propuesta compara la reunión contra este documento.'
+        : '<b>Esta línea todavía no tiene base de conocimiento</b> (hoy solo IT Support). Las propuestas se comparan contra la ficha del bot y lo que apruebes queda guardado para cuando exista su base.') + '</div>' +
+      '<div class="apr-res"><div class="ok"><b>' + n(function(x){ return x.clase === 'nuevo'; }) + '</b><span>nuevos</span></div><div class="pend"><b>' + n(function(x){ return x.clase === 'corrige'; }) + '</b><span>corrigen</span></div>' +
+      '<div class="mal"><b>' + n(function(x){ return x.clase === 'contradice'; }) + '</b><span>contradicen</span></div><div><b>' + n(function(x){ return x.clase === 'refuerza'; }) + '</b><span>confirman lo que ya está</span></div>' +
+      '<div><b>' + n(function(x){ return x.clase === 'fuera'; }) + '</b><span>fuera de la base</span></div><div><b>' + porAplicar.length + '</b><span>aprobados por llevar a la base</span></div></div>';
+    var b = kbBorr[aprLinea];
+    if (b && b.estado === 'confirmado') h += '<div class="kb-ok">Última versión creada: <a href="' + esc(b.url) + '" target="_blank" rel="noopener"><b>' + esc(b.nombre) + '</b></a> (antes ' + esc(b.anterior || '') + '). ' + esc(b.resumen || '') + '</div>';
+    if (kb) h += '<div class="barra-apr"><b>' + porAplicar.length + ' aprobado' + (porAplicar.length === 1 ? '' : 's') + ' por llevar a la base</b><button class="btn" id="kbVer"' + (porAplicar.length || (b && b.estado === 'listo') ? '' : ' disabled') + '>' +
+      (b && b.estado === 'listo' && (b.ids || []).slice().sort().join(',') === porAplicar.map(function(x){ return x.id; }).sort().join(',') ? 'Ver el borrador listo' : b && b.estado === 'preparando' ? 'Preparando borrador…' : 'Ver cómo quedaría la base') + '</button></div>';
+    if (!ver.length) return h + '<p class="tenue">' + (ins.length ? 'Nada en este filtro.' : 'Todavía no hay propuestas en esta línea. Elige reuniones en "Reuniones" y ponlas en cola.') + '</p>';
+    var grupos = {}; ver.forEach(function(x){ var k = x.seccion || 'Sin sección'; (grupos[k] = grupos[k] || []).push(x); });
+    var secs = Object.keys(grupos).sort(function(a, z){ var ia = ORDEN_SEC.indexOf(a), iz = ORDEN_SEC.indexOf(z); return (ia < 0 ? 99 : ia) - (iz < 0 ? 99 : iz); });
+    return h + secs.map(function(sec){
+      return '<h3 class="apr-h3">' + esc(sec) + ' (' + grupos[sec].length + ')</h3>' + grupos[sec].map(function(x){
+        var c = CLASE[x.clase || ''] || CLASE[''];
+        return '<div class="insumo ins-' + esc(x.estado) + '"><div class="kchips"><span class="etq cl-' + esc(x.clase || 'sin') + '" title="' + esc(c[1]) + '">' + esc(c[0]) + '</span><span class="etq">' + esc(TIPO_INS[x.tipo] || x.tipo || '') + '</span><span class="etq">Reunión del ' + esc(x.fecha) + '</span>' +
+            '<span class="etq ' + (x.citable ? 'respondio' : 'sinresp') + '">' + (x.citable ? 'Se puede usar en público' : 'Solo interno') + '</span>' + (x.aplicado ? '<span class="etq respondio">Ya está en ' + esc(x.kb_version || 'la base') + '</span>' : '') + '</div>' +
+          (x.actual ? '<div class="kb-antes"><span>Hoy dice</span>' + esc(x.actual) + '</div>' : '') +
+          '<div class="kb-despues"><span>' + (x.clase === 'refuerza' ? 'La reunión lo confirma' : x.clase === 'contradice' ? 'El cliente dijo' : x.clase === 'fuera' ? 'Lo que salió' : x.actual ? 'Quedaría' : 'Se agrega') + '</span>' + esc(x.texto) + '</div>' +
+          (x.motivo ? '<div class="tenue">' + esc(x.motivo) + '</div>' : '') + (x.cita ? '<div class="tenue">Evidencia: “' + esc(x.cita) + '”</div>' : '') +
+          '<div class="ins-acc"><span class="etq ' + (x.estado === 'aprobado' ? 'respondio' : x.estado === 'descartado' ? 'nocontactar' : x.estado === 'confirmado' ? '' : 'pendopen') + '">' + esc(ESTADO_INS[x.estado] || x.estado) + '</span>' +
+            (x.estado !== 'aprobado' && x.clase !== 'refuerza' ? '<button class="btn sec" data-ia="aprobar" data-i="' + esc(x.id) + '">Aprobar</button>' : '') + (x.clase !== 'refuerza' ? '<button class="btn sec" data-ia="editar" data-i="' + esc(x.id) + '">Editar</button>' : '') +
+            (x.estado !== 'descartado' && x.clase !== 'refuerza' ? '<button class="btn sec" data-ia="descartar" data-i="' + esc(x.id) + '">No aprobar</button>' : '') + (x.estado === 'aprobado' || x.estado === 'descartado' ? '<button class="enlace" data-ia="reabrir" data-i="' + esc(x.id) + '">Regresar a sin revisar</button>' : '') + '</div></div>';
+      }).join('');
+    }).join('');
+  }
+  function leerBorrador(l){ return postJson('gr-portal-kb-borrador', { linea: l }).then(function(j){ kbBorr[l] = j.borrador || {}; return kbBorr[l]; }); }
+  var kbEspera = null;
+  function verBorrador(){
+    var l = aprLinea, b = kbBorr[l];
+    // El borrador sirve solo si se armo con exactamente lo que hoy esta aprobado; si cambio algo, se prepara de nuevo.
+    var hoy = ((apr[l] || {}).insumos || []).filter(function(x){ return x.estado === 'aprobado' && !x.aplicado && x.clase && x.clase !== 'fuera' && x.clase !== 'refuerza'; }).map(function(x){ return x.id; }).sort().join(',');
+    if (b && b.estado === 'listo' && (b.ids || []).slice().sort().join(',') === hoy) return modalBorrador(b);
+    postJson('gr-portal-kb-preparar', { linea: l }).then(function(){
+      kbBorr[l] = { estado: 'preparando' }; pintarConf();
+      modal('<h2>Preparando la versión nueva</h2><p class="tenue" id="kbMsg">Claude está integrando lo aprobado en la base. Tarda de 1 a 3 minutos; puedes cerrar esta ventana y volver.</p><div class="pieModal"><button class="btn sec" id="cancelar">Cerrar</button></div>');
+      $('cancelar').onclick = cerrar;
+      clearInterval(kbEspera); var vueltas = 0;
+      kbEspera = setInterval(function(){
+        if (++vueltas > 40) { clearInterval(kbEspera); return; }
+        leerBorrador(l).then(function(x){
+          if (x.estado === 'listo') { clearInterval(kbEspera); pintarConf(); if ($('kbMsg')) modalBorrador(x); }
+          if (x.estado === 'error') { clearInterval(kbEspera); pintarConf(); if ($('kbMsg')) $('kbMsg').textContent = 'No se pudo preparar: ' + x.error; }
+        }).catch(function(){});
+      }, 8000);
+    }).catch(function(e){ toast(e.message); });
+  }
+  function modalBorrador(b){
+    modal('<h2>Así quedaría ' + esc(b.siguiente) + '</h2><p class="tenue" style="margin:0">Se crea un documento nuevo junto a ' + esc(b.kb_nombre) + ' (que se conserva) y la ficha del portal apunta a él. De ahí salen el bot, el motor y las campañas.</p>' +
+      '<div class="kb-ok">' + esc(b.resumen || '') + '</div>' +
+      '<div class="envlista">' + (b.cambios || []).map(function(c){ return '<div class="envfila' + (c.aplicado ? '' : ' mal') + '"><b>' + (c.aplicado ? 'Entra' : 'No entra') + '</b> · ' + esc(c.seccion) + '<div class="tenue">' + esc(c.como) + '</div></div>'; }).join('') + '</div>' +
+      '<details><summary class="tenue" style="cursor:pointer">Ver el documento completo</summary><pre class="kb-md">' + esc(b.markdown || '') + '</pre></details>' +
+      '<div class="error" id="kbErr"></div><div class="pieModal"><button class="btn sec" id="cancelar">Todavía no</button><button class="btn sec" id="kbRehacer">Volver a preparar</button><button class="btn" id="kbOk">Confirmar y crear ' + esc(b.siguiente) + '</button></div>');
+    $('cancelar').onclick = cerrar;
+    $('kbRehacer').onclick = function(){ kbBorr[aprLinea] = {}; cerrar(); verBorrador(); };
+    $('kbOk').onclick = function(){
+      var btn = this; btn.disabled = true; btn.textContent = 'Creando…';
+      postJson('gr-portal-kb-confirmar', { linea: aprLinea }).then(function(j){
+        cerrar(); toast('Listo: ' + j.nombre + ' creada y ligada en la ficha del portal');
+        return leerBorrador(aprLinea).then(function(){ return Promise.all([cargarConf(), postJson('gr-portal-aprendizaje', { linea: aprLinea }).then(function(x){ apr[aprLinea] = x; })]); }).then(pintarConf);
+      }).catch(function(e){ btn.disabled = false; btn.textContent = 'Confirmar y crear ' + b.siguiente; $('kbErr').textContent = e.message; });
+    };
+  }
   function revisarInsumo(id, accion, texto){
     var ins = (apr[aprLinea].insumos || []).filter(function(x){ return x.id === id; })[0] || {};
     postJson('gr-portal-insumo', { insumo_id: id, accion: accion, texto: texto, aplicado: !!ins.aplicado }).then(function(j){
       (apr[aprLinea].insumos || []).forEach(function(x){ if (x.id === id) { x.estado = j.estado; x.texto = texto; if (accion === 'editar' || accion === 'descartar') x.aplicado = false; } });
-      toast(accion === 'descartar' ? 'Insumo descartado' : accion === 'reabrir' ? 'Insumo regresado a sin revisar' : 'Insumo aprobado: entra a la ficha en la siguiente actualización');
+      toast(accion === 'descartar' ? 'No aprobado' : accion === 'reabrir' ? 'Regresado a sin revisar' : 'Aprobado: entra a la base cuando pulses "Ver cómo quedaría la base"');
       pintarConf();
     }).catch(function(e){ toast(e.message); });
   }
@@ -1045,7 +1126,7 @@
       var otras = (apr[aprLinea].reuniones || []).filter(function(r){ return aprSel[r.event_id] && claseLinea(r) === 'otra'; });
       if (otras.length) { toast(otras.length + ' de las elegidas son de otra línea por su nombre. Quítalas o descártalas: aportarían a la ficha equivocada.'); return; }
     }
-    postJson('gr-portal-aprendizaje-cola', { event_ids: ids, estado: estado }).then(function(j){
+    postJson('gr-portal-aprendizaje-cola', { event_ids: ids, estado: estado, linea: aprLinea }).then(function(j){
       toast(estado === 'en_cola' ? j.cambiadas + ' en cola. Claude las procesa en la siguiente hora, o pulsa "Procesar ahora".' : j.cambiadas + ' marcadas como ' + (ESTADO_APR[estado] || estado).toLowerCase());
       aprSel = {}; return postJson('gr-portal-aprendizaje', { linea: aprLinea }).then(function(x){ apr[aprLinea] = x; pintarConf(); });
     }).catch(function(e){ toast(e.message); });
@@ -1064,9 +1145,9 @@
       '<li><b>Buscar.</b> Para la línea elegida se toman sus oportunidades de HubSpot (abiertas y cerradas), sus contactos y, con su correo, las reuniones que ya pasaron en la agenda de Mike. Se guardan; "Buscar lo nuevo" solo revisa desde la última vez.</li>' +
       '<li><b>Revisar la línea.</b> Una persona puede tener reuniones de varias líneas. Cada reunión dice qué línea trae en su nombre: <span class="estado-f lt-esta">De esta línea</span>, <span class="estado-f lt-otra">Es de otra línea</span> (no se puede poner en cola; descártala) o <span class="estado-f lt-sin">Sin línea en el nombre</span> (se ligó por la oportunidad; revisa antes de usarla). El nombre correcto es el formato REA: <i>Discovery | Cliente & GR / Producto</i>.</li>' +
       '<li><b>Elegir.</b> Marca las que tienen transcript y deben aportar, y pulsa "Poner en cola". Las demás, "Descartar".</li>' +
-      '<li><b>Claude.</b> Cada hora (o con "Procesar ahora") lee hasta 3 transcripts de la cola y saca insumos: dolores, preguntas, objeciones, frases del cliente, casos y cifras, qué se ofreció, siguientes pasos. Los compara con la ficha del bot de la línea.</li>' +
-      '<li><b>Revisar insumos (aquí se modifica).</b> En "Insumos" cada uno se <b>aprueba</b>, se <b>edita</b> (el texto corregido queda aprobado) o se <b>descarta</b>. Solo lo aprobado pasa a la ficha.</li>' +
-      '<li><b>Ficha y bot.</b> Lo aprobado se integra a la ficha maestra de la línea (<code>docs/whatsapp/bot/conocimiento/productos/</code>) y se sube a la base de conocimiento del bot; con eso cambian sus respuestas, los mensajes por etapa y las campañas. Hoy esa integración la hace Claude cuando se le pide ("lleva los insumos aprobados de ITS a la ficha"). Lo que el bot responde mal se corrige en la pestaña Mejoras.</li></ol>' +
+      '<li><b>Claude compara contra la base.</b> Cada hora (o con "Procesar ahora") lee hasta 3 transcripts de la cola junto con la <b>base de conocimiento</b> de la línea (GR_KB_…, el documento del REA del que salen el bot, el motor y las campañas) y dice qué cambiaría: <b>nuevo</b> (la base no lo tiene), <b>corrige</b> (dice otra cosa), <b>contradice</b> (el cliente dijo lo contrario), <b>confirma</b> (ya está) o <b>fuera de la base</b> (socios, tareas internas, cifras sin fuente).</li>' +
+      '<li><b>Revisar (aquí se modifica).</b> En "Qué cambia en la base" cada propuesta muestra la sección, lo que <b>hoy dice</b> y cómo <b>quedaría</b>, con su evidencia. La <b>apruebas</b>, la <b>editas</b> (queda aprobada) o <b>no la apruebas</b>.</li>' +
+      '<li><b>Llevar a la base.</b> "Ver cómo quedaría la base" arma con Claude la versión siguiente (por ejemplo, de vB a vC) con solo lo aprobado y te enseña qué entra y qué no. Al confirmar se crea el documento nuevo en Drive junto al anterior (que se conserva) y la ficha del portal apunta a él. Lo que el bot responde mal se corrige en la pestaña Mejoras.</li></ol>' +
       '<p class="tenue">Primero las recientes: la propuesta se va afinando; lo antiguo sirve sobre todo para objeciones y lenguaje.</p></details>' +
       '<div class="filters"><span class="flabel">Línea:</span>' + lineas.map(function(x){ return '<button class="chip' + (aprLinea === x[0] ? ' on' : '') + '" data-al="' + esc(x[0]) + '">' + esc(x[1]) + '</button>'; }).join('') + '</div>';
     if (!d || (d.buscando && !d.reuniones)) return tarjeta(4, 'Aprendizaje continuo', cab + '<p class="tenue">' + (d && d.buscando ? 'Buscando en la agenda por primera vez (unos segundos)…' : 'Cargando…') + '</p>');
@@ -1076,28 +1157,18 @@
       '<div class="ok"><b>' + d.procesadas + '</b><span>ya aportaron</span></div><div class="pend"><b>' + (d.por_procesar + d.en_cola) + '</b><span>por procesar' + (d.en_cola ? ' (' + d.en_cola + ' en cola)' : '') + '</span></div>' +
       '<div><b>' + d.sin_transcript + '</b><span>sin transcript</span></div><div class="mal"><b>' + d.fuera_de_formato + '</b><span>nombre fuera de formato</span></div>' +
       '<div><b>' + (d.insumos || []).length + '</b><span>insumos</span></div></div>';
-    var acc = '<div class="filters"><button class="chip' + (aprVer === 'reuniones' ? ' on' : '') + '" data-av="reuniones">Reuniones</button><button class="chip' + (aprVer === 'insumos' ? ' on' : '') + '" data-av="insumos">Insumos (' + (d.insumos || []).length + ')</button>' +
-      '<span class="flabel" style="margin-left:10px">Ver:</span>' + [['', 'Todas'], ['por_procesar', 'Por procesar'], ['en_cola', 'En cola'], ['procesada', 'Ya aportaron'], ['sin_transcript', 'Sin transcript'], ['error', 'Error']].map(function(x){ return '<button class="chip' + (aprFiltro === x[0] ? ' on' : '') + '" data-af="' + x[0] + '">' + x[1] + '</button>'; }).join('') +
+    var acc = '<div class="filters"><button class="chip' + (aprVer === 'reuniones' ? ' on' : '') + '" data-av="reuniones">Reuniones</button><button class="chip' + (aprVer === 'insumos' ? ' on' : '') + '" data-av="insumos">Qué cambia en la base (' + (d.insumos || []).filter(function(x){ return x.estado === 'nuevo'; }).length + ' por revisar)</button>' +
+      (aprVer === 'reuniones' ? '<span class="flabel" style="margin-left:10px">Ver:</span>' + [['', 'Todas'], ['por_procesar', 'Por procesar'], ['en_cola', 'En cola'], ['procesada', 'Ya aportaron'], ['sin_transcript', 'Sin transcript'], ['error', 'Error']].map(function(x){ return '<button class="chip' + (aprFiltro === x[0] ? ' on' : '') + '" data-af="' + x[0] + '">' + x[1] + '</button>'; }).join('') : '') +
       '<span class="tenue" style="margin-left:auto">Última búsqueda: ' + esc(ult) + '</span></div>' +
       (aprVer === 'reuniones' ? '<div class="filters"><span class="flabel">Por su nombre:</span>' + [['propia', 'De esta línea o sin línea'], ['esta', 'De esta línea'], ['sin', 'Sin línea en el nombre'], ['otra', 'De otra línea'], ['', 'Todas']].map(function(x){
         var n = d.reuniones.filter(function(r){ var c = claseLinea(r); return !x[0] || (x[0] === 'propia' ? c !== 'otra' : c === x[0]); }).length;
         return '<button class="chip' + (aprLt === x[0] ? ' on' : '') + (n ? '' : ' cero') + '" data-lt="' + x[0] + '">' + x[1] + ' (' + n + ')</button>'; }).join('') + '</div>'
-      : '<div class="filters"><span class="flabel">Revisión:</span>' + [['nuevo', 'Sin revisar'], ['aprobado', 'Aprobados'], ['descartado', 'Descartados'], ['', 'Todos']].map(function(x){
+      : '<div class="filters"><span class="flabel">Revisión:</span>' + [['nuevo', 'Sin revisar'], ['aprobado', 'Aprobados'], ['descartado', 'No aprobados'], ['confirmado', 'Ya están en la base'], ['', 'Todos']].map(function(x){
         var n = (d.insumos || []).filter(function(i){ return !x[0] || i.estado === x[0]; }).length;
         return '<button class="chip' + (insF === x[0] ? ' on' : '') + '" data-if="' + x[0] + '">' + x[1] + ' (' + n + ')</button>'; }).join('') + '</div>');
     var cuerpo;
-    if (aprVer === 'insumos') {
-      var grupos = {}; (d.insumos || []).filter(function(x){ return !insF || x.estado === insF; }).forEach(function(x){ (grupos[x.tipo] = grupos[x.tipo] || []).push(x); });
-      cuerpo = Object.keys(TIPO_INS).filter(function(t){ return grupos[t]; }).map(function(t){
-        return '<h3 class="apr-h3">' + esc(TIPO_INS[t]) + ' (' + grupos[t].length + ')</h3>' + grupos[t].map(function(x){
-          return '<div class="insumo ins-' + esc(x.estado) + '"><div class="ins-texto" data-i="' + esc(x.id) + '">' + esc(x.texto) + '</div>' + (x.cita ? '<div class="tenue">“' + esc(x.cita) + '”</div>' : '') +
-            '<div class="kchips"><span class="etq">' + esc(x.fecha) + '</span><span class="etq ' + (x.citable ? 'respondio' : 'sinresp') + '">' + (x.citable ? 'Se puede usar en público' : 'Solo interno') + '</span><span class="etq">' + esc(x.vigencia || '') + '</span>' +
-            '<span class="etq ' + (x.estado === 'aprobado' ? 'respondio' : x.estado === 'descartado' ? 'nocontactar' : 'pendopen') + '">' + esc(ESTADO_INS[x.estado] || x.estado) + '</span>' + (x.aplicado ? '<span class="etq respondio">Ya está en la ficha</span>' : '') + '</div>' +
-            '<div class="ins-acc">' + (x.estado !== 'aprobado' ? '<button class="btn sec" data-ia="aprobar" data-i="' + esc(x.id) + '">Aprobar</button>' : '') + '<button class="btn sec" data-ia="editar" data-i="' + esc(x.id) + '">Editar</button>' +
-            (x.estado !== 'descartado' ? '<button class="btn sec" data-ia="descartar" data-i="' + esc(x.id) + '">Descartar</button>' : '') + (x.estado !== 'nuevo' ? '<button class="enlace" data-ia="reabrir" data-i="' + esc(x.id) + '">Regresar a sin revisar</button>' : '') + '</div></div>';
-        }).join('');
-      }).join('') || '<p class="tenue">Todavía no hay insumos procesados por Claude en esta línea. Elige reuniones en "Reuniones" y ponlas en cola.</p>';
-    } else {
+    if (aprVer === 'insumos') cuerpo = vistaCambios(d);
+    else {
       var ls = d.reuniones.filter(function(r){ var c = claseLinea(r); return (!aprFiltro || r.estado === aprFiltro) && (!aprLt || (aprLt === 'propia' ? c !== 'otra' : c === aprLt)); });
       var nSel = Object.keys(aprSel).length;
       cuerpo = '<div class="barra-apr"><b>' + nSel + ' seleccionada' + (nSel === 1 ? '' : 's') + '</b><button class="btn" id="aprCola"' + (nSel ? '' : ' disabled') + '>Poner en cola para aprender</button><button class="btn sec" id="aprDesc"' + (nSel ? '' : ' disabled') + '>Descartar</button><button class="btn sec" id="aprAhora">Procesar ahora (' + d.en_cola + ' en cola)</button></div>' +
