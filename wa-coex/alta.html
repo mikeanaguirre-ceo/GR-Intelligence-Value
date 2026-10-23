@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conectar WhatsApp · Great Revenue Seguimiento</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root { --marca:#111827; --acento:#6d28d9; --ok:#047857; --mal:#b91c1c; --aviso:#b45309; --fondo:#f5f3ff; --borde:#e5e7eb; --suave:#6b7280; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: Poppins, system-ui, sans-serif; background: var(--fondo); color: var(--marca); }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 26px; margin: 0 0 4px; font-weight: 800; }
+  .sub { color: var(--suave); margin: 0 0 24px; }
+  .tarjeta { background:#fff; border:1px solid var(--borde); border-radius:14px; padding:20px; margin-bottom:16px; }
+  ol { margin: 8px 0 0; padding-left: 20px; line-height: 1.6; }
+  button { font: inherit; font-weight:600; border:0; border-radius:10px; padding:12px 18px; cursor:pointer; }
+  .primario { background: var(--acento); color:#fff; font-size: 17px; }
+  .primario:disabled { opacity:.5; cursor:not-allowed; }
+  .secundario { background:#ede9fe; color: var(--acento); margin: 6px 6px 0 0; }
+  #estado { font-size: 20px; font-weight: 800; margin: 0 0 8px; }
+  .ok { color: var(--ok); } .mal { color: var(--mal); } .aviso { color: var(--aviso); }
+  table { width:100%; border-collapse: collapse; font-size: 14px; }
+  td { border-top:1px solid var(--borde); padding:8px 6px; vertical-align: top; word-break: break-word; }
+  td:first-child { width: 34px; text-align:center; }
+  .det { color: var(--suave); font-size: 12px; }
+  code { background:#f3f4f6; padding:1px 5px; border-radius:5px; font-size: 13px; }
+  #eventos { white-space: pre-wrap; font-size: 12px; color: var(--suave); max-height: 180px; overflow:auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Conectar WhatsApp Business</h1>
+  <p class="sub">Número <b>Great Revenue Seguimiento</b> en coexistencia: sigue en la app del celular y además entra al bot y al portal.</p>
+
+  <div class="tarjeta">
+    <b>Antes de empezar</b>
+    <ol>
+      <li>Ten a la mano el celular con la app <b>WhatsApp Business</b> de este número, actualizada.</li>
+      <li>Oprime <b>Conectar WhatsApp</b>, entra con tu cuenta de Facebook y elige el portafolio.</li>
+      <li>Cuando te lo pida, escanea el código QR desde la app: <i>Configuración → Dispositivos vinculados</i> o el aviso que te muestre.</li>
+      <li>Acepta compartir el historial de chats si quieres verlo en el portal.</li>
+      <li>No cierres esta página hasta que diga <b>Conectado</b>.</li>
+    </ol>
+  </div>
+
+  <div class="tarjeta">
+    <p id="estado">Cargando el SDK de Facebook…</p>
+    <p id="detalle" class="det"></p>
+    <button id="conectar" class="primario" disabled>Conectar WhatsApp</button>
+    <div style="margin-top:10px">
+      <button id="verEstado" class="secundario">Ver cómo quedó el número</button>
+      <button id="reintentar" class="secundario">Reintentar sincronización (antes de 24 h)</button>
+    </div>
+  </div>
+
+  <div class="tarjeta" id="cajaPasos" hidden>
+    <b>Pasos del alta</b>
+    <table id="pasos"></table>
+  </div>
+
+  <div class="tarjeta">
+    <b>Avisos de Meta en esta página</b>
+    <div id="eventos">(todavía ninguno)</div>
+  </div>
+</main>
+
+<script>
+  var LLAVE = new URLSearchParams(location.search).get('k') || '';
+  var API = 'https://mikea.app.n8n.cloud/webhook/wa-coex-alta-api';
+  var APP_ID = '2178039979444955';
+  var CONFIG_ID = '2172938969973319';
+  var signup = null;
+  var listado = [];
+  var $ = function (id) { return document.getElementById(id); };
+
+  function pintarEstado(texto, clase, detalle) {
+    $('estado').textContent = texto;
+    $('estado').className = clase || '';
+    $('detalle').textContent = detalle || '';
+  }
+  function anotar(obj) {
+    listado.push(new Date().toLocaleTimeString('es-MX') + '  ' + JSON.stringify(obj));
+    $('eventos').textContent = listado.join('\n');
+  }
+  function pintarPasos(pasos) {
+    var t = $('pasos');
+    t.innerHTML = '';
+    (pasos || []).forEach(function (p) {
+      var tr = document.createElement('tr');
+      var a = document.createElement('td'); a.textContent = p.ok ? '✅' : '❌';
+      var b = document.createElement('td');
+      var n = document.createElement('div'); n.textContent = p.paso;
+      var d = document.createElement('div'); d.className = 'det'; d.textContent = p.detalle || '';
+      b.appendChild(n); b.appendChild(d);
+      tr.appendChild(a); tr.appendChild(b); t.appendChild(tr);
+    });
+    $('cajaPasos').hidden = !(pasos && pasos.length);
+  }
+
+  // Avisos del popup de Embedded Signup: solo de *.facebook.com.
+  window.addEventListener('message', function (ev) {
+    var host = '';
+    try { host = new URL(ev.origin).hostname; } catch (e) { return; }
+    if (!(host === 'facebook.com' || host.slice(-13) === '.facebook.com')) return;
+    var d = ev.data;
+    if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { return; } }
+    if (!d || d.type !== 'WA_EMBEDDED_SIGNUP') return;
+    anotar(d);
+    if (d.event === 'CANCEL') {
+      var paso = (d.data && d.data.current_step) || '';
+      pintarEstado('Se canceló el alta', 'aviso', paso ? 'Se quedó en el paso: ' + paso : '');
+    } else if (d.event === 'ERROR') {
+      pintarEstado('Meta devolvió un error', 'mal', (d.data && (d.data.error_message || d.data.error_code)) || JSON.stringify(d.data || {}));
+    } else {
+      signup = d;
+    }
+  });
+
+  window.fbAsyncInit = function () {
+    FB.init({ appId: APP_ID, autoLogAppEvents: true, xfbml: true, version: 'v23.0' });
+    $('conectar').disabled = !LLAVE;
+    pintarEstado(LLAVE ? 'Listo para conectar' : 'Falta la llave en la liga (?k=...)', LLAVE ? '' : 'mal');
+  };
+
+  function esperarFinal(ms) {
+    return new Promise(function (ok) {
+      var t0 = Date.now();
+      (function vuelta() {
+        if ((signup && /^FINISH/.test(signup.event || '')) || Date.now() - t0 >= ms) return ok();
+        setTimeout(vuelta, 100);
+      })();
+    });
+  }
+  function llamar(cuerpo) {
+    return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) })
+      .then(function (r) { return r.text().then(function (t) { var j; try { j = JSON.parse(t); } catch (e) { j = { ok: false, error: t || ('HTTP ' + r.status) }; } return j; }); });
+  }
+  function terminarAlta(code) {
+    pintarEstado('Registrando el número…', '', 'No cierres la página.');
+    // El code caduca en unos 30 s: se espera hasta 3 s el aviso FINISH y se manda de inmediato.
+    esperarFinal(3000).then(function () {
+      return llamar({ k: LLAVE, code: code, signup: signup });
+    }).then(function (r) {
+      pintarPasos(r.pasos);
+      if (r.ok) {
+        var n = r.numero || {};
+        pintarEstado('Conectado', 'ok', (n.verified_name || '') + ' ' + (n.display_phone_number || '') + ' · phone_number_id ' + (n.phone_number_id || '') + ' · en la app: ' + n.is_on_biz_app + ' · ' + (n.platform_type || ''));
+      } else {
+        pintarEstado(r.estado === 'conectado, falta sincronizar' ? 'Conectado, falta sincronizar' : 'No se completó el alta', r.estado === 'conectado, falta sincronizar' ? 'aviso' : 'mal', r.pendiente || r.error || '');
+      }
+    }).catch(function (e) { pintarEstado('No se pudo hablar con n8n', 'mal', String(e)); });
+  }
+
+  // El callback de FB.login no puede ser async.
+  function alVolver(response) {
+    anotar({ authResponse: response && response.authResponse ? 'con code' : 'sin code', status: response && response.status });
+    if (response && response.authResponse && response.authResponse.code) terminarAlta(response.authResponse.code);
+    else if (!/cancel/i.test($('estado').textContent)) pintarEstado('No llegó la autorización', 'aviso', 'Se cerró la ventana o no se dio permiso.');
+  }
+
+  $('conectar').onclick = function () {
+    signup = null;
+    pintarEstado('Sigue los pasos en la ventana de Facebook…', '', '');
+    FB.login(alVolver, {
+      config_id: CONFIG_ID,
+      response_type: 'code',
+      override_default_response_type: true,
+      extras: { setup: {}, featureType: 'whatsapp_business_app_onboarding', sessionInfoVersion: '3' }
+    });
+  };
+  $('verEstado').onclick = function () {
+    llamar({ k: LLAVE, accion: 'estado' }).then(function (r) {
+      var n = (r.numeros || [])[0];
+      if (n) pintarEstado(n.estado === 'conectado' ? 'Conectado' : n.estado, n.estado === 'conectado' ? 'ok' : 'aviso', (n.verified_name || '') + ' ' + (n.display_phone_number || '') + ' · ' + (n.detalle || ''));
+      else pintarEstado(r.ok ? 'Todavía no hay número dado de alta' : (r.error || 'Error'), r.ok ? 'aviso' : 'mal');
+      pintarPasos((r.registro || []).filter(function (x) { return x.origen === 'alta' || x.origen === 'reintento'; }).slice(0, 12));
+    });
+  };
+  $('reintentar').onclick = function () {
+    pintarEstado('Pidiendo contactos e historial otra vez…', '', '');
+    llamar({ k: LLAVE, accion: 'reintentar' }).then(function (r) {
+      pintarPasos(r.pasos);
+      pintarEstado(r.ok ? 'Sincronización pedida' : 'La sincronización falló', r.ok ? 'ok' : 'mal', r.error || '');
+    });
+  };
+</script>
+<script async defer crossorigin="anonymous" src="https://connect.facebook.net/es_LA/sdk.js"></script>
+</body>
+</html>
