@@ -1237,6 +1237,7 @@ function grmdAplicarBloqueo(){
 }
 function grmdPretty(){ var el=document.getElementById('grmd-close'); var out=document.getElementById('grmd-close-pretty'); if(!el||!out) return; var v=el.value; if(!v){ out.textContent=''; return; } var pr=fmtFecha(v+'T00:00:00Z'); out.textContent=pr?('\u2192 '+pr):''; }
 function grmdSyncPhone(){ var sel=document.getElementById('grmd-contact'); var ph=document.getElementById('grmd-phone'); if(!sel||!ph) return; var c=(window.__grContactos||[]).filter(function(x){return String(x.id)===String(sel.value);})[0]; ph.value=c?(c.telefono||''):''; ph.setAttribute('data-orig', ph.value);
+  var em=document.getElementById('grmd-email'); if(em){ var e=c?String(c.email||'').trim():''; em.innerHTML=e?('<a href="mailto:'+grEsc(e)+'" style="color:#06B6D4;text-decoration:none;">'+grEsc(e)+'</a>'):'<span style="color:#FFCD00">Falta</span>'; }
   var tn=document.getElementById('grmd-tel-nota'); if(tn) tn.textContent=(c&&c.tel_amplemarket==='no_encontrado'&&!c.telefono)?('Amplemarket no encontró teléfono de este contacto ('+(c.tel_amplemarket_fecha||'')+'). Volver a buscarlo gasta créditos.'):'';
   grmdPintarIcp(); grmdPintarLigas(); grmdPintarFalta(); }
 async function grmdCargarContactos(dealId, empresa){
@@ -2330,7 +2331,7 @@ function pipeBuscar(v){
 }
 // Columnas abiertas completas ("Ver todas"). Se reinicia al recargar la pagina.
 var PIPE_ABIERTAS={};
-function nuevaMatch(createdate,val){ if(val==='ALL') return true; var f=new Date(createdate); if(isNaN(f)) return false; var now=new Date(); var sameMonth=f.getMonth()===now.getMonth()&&f.getFullYear()===now.getFullYear(); var age=Math.floor((now-f)/86400000); var dom=f.getDate(); if(val==='mes')return sameMonth; if(val==='s1')return sameMonth&&dom<=7; if(val==='s2')return sameMonth&&dom>=8&&dom<=14; if(val==='s3')return sameMonth&&dom>=15&&dom<=21; if(val==='s4')return sameMonth&&dom>=22; if(val==='g30')return age>30; if(val==='g45')return age>45; if(val==='g90')return age>90; return true; }
+function nuevaMatch(createdate,val){ if(val==='ALL') return true; var f=grFechaObj(createdate); if(isNaN(f)) return false; var now=new Date(); var sameMonth=f.getMonth()===now.getMonth()&&f.getFullYear()===now.getFullYear(); var age=Math.floor((now-f)/86400000); var dom=f.getDate(); if(val==='mes')return sameMonth; if(val==='s1')return sameMonth&&dom<=7; if(val==='s2')return sameMonth&&dom>=8&&dom<=14; if(val==='s3')return sameMonth&&dom>=15&&dom<=21; if(val==='s4')return sameMonth&&dom>=22; if(val==='g30')return age>30; if(val==='g45')return age>45; if(val==='g90')return age>90; return true; }
 function nuevaPasa(d,val){ return nuevaMatch(d.createdate,val); }
 // Fecha de cierre: vencidas, este mes, proximo mes, este trimestre o sin fecha (dia calendario local).
 var CIERRE_OPC=[['ALL','Todas'],['vencida','Vencidas'],['mes','Este mes'],['prox','Próximo mes'],['trim','Este trimestre'],['sin','Sin fecha']];
@@ -2352,6 +2353,10 @@ function cierrePasa(d,val){
 // Se aplica a la fecha que se elija: creacion de la oportunidad o fecha de cierre. Dia calendario local.
 var PERIODO_OPC=[['hoy','Hoy','Solo el día de hoy'],['ayer','Ayer','El día de ayer'],['7','7 días','Los últimos 7 días, incluido hoy'],['30','30 días','Los últimos 30 días, incluido hoy'],['mes','Este mes','Del día 1 de este mes a hoy'],['mesant','Mes pasado','El mes anterior completo'],['todo','Todo','Sin filtro de fecha'],['rango','Rango','Elige las fechas de inicio y fin']];
 function _diaLocal(dt){ return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); }
+// 23oct2026 (D4 del documento de Martha): una fecha sin hora ("2026-10-22") ya es el dia; convertirla con new Date() la
+// leia como medianoche de Londres = dia anterior en Mexico, y "Hoy" no mostraba lo creado hoy.
+function grDiaDe(v){ var s=String(v||''); if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s; var t=new Date(s); return isNaN(t)?'':_diaLocal(t); }
+function grFechaObj(v){ var s=String(v||''); return /^\d{4}-\d{2}-\d{2}$/.test(s)?new Date(s+'T12:00:00'):new Date(s); }
 function _diaMas(s,n){ var d=new Date(s+'T00:00:00'); d.setDate(d.getDate()+n); return _diaLocal(d); }
 function periodoRango(f){
   var h=_diaLocal(new Date()), p=(f&&f.fper)||'todo';
@@ -2368,7 +2373,7 @@ function periodoPasa(d,f){
   if(!f||!f.fper||f.fper==='todo') return true;
   var r=periodoRango(f); var v=f.fcampo==='cierre'?d.closedate:d.createdate;
   var s=(v&&v!=='null')?String(v).slice(0,10):''; if(!s) return false;
-  if(f.fcampo!=='cierre'){ var t=new Date(v); if(!isNaN(t)) s=_diaLocal(t); }
+  if(f.fcampo!=='cierre'){ s=grDiaDe(v)||s; }
   return s>=r[0] && s<=r[1];
 }
 // Lo que se ve en los calendarios: el periodo elegido con sus fechas reales. En "Todo" se ve de la primera fecha
@@ -2376,7 +2381,7 @@ function periodoPasa(d,f){
 function periodoVista(f){
   var r=periodoRango(f); if(r[0]) return r;
   var cierre=f.fcampo==='cierre', hoy=_diaLocal(new Date()), mn='', mx='';
-  ((typeof DATA!=='undefined'&&DATA&&DATA.deals)||[]).forEach(function(d){ var v=cierre?d.closedate:d.createdate; if(!v||v==='null') return; var s=String(v).slice(0,10); if(!cierre){ var t=new Date(v); if(!isNaN(t)) s=_diaLocal(t); } if(!mn||s<mn) mn=s; if(!mx||s>mx) mx=s; });
+  ((typeof DATA!=='undefined'&&DATA&&DATA.deals)||[]).forEach(function(d){ var v=cierre?d.closedate:d.createdate; if(!v||v==='null') return; var s=String(v).slice(0,10); if(!cierre){ s=grDiaDe(v)||s; } if(!mn||s<mn) mn=s; if(!mx||s>mx) mx=s; });
   return [mn||hoy, cierre?(mx&&mx>hoy?mx:hoy):hoy];
 }
 // Al mover cualquiera de los dos calendarios el periodo pasa a Rango con las dos fechas que se ven.
@@ -2389,14 +2394,14 @@ function metaNuevas(goal){
   var prioMap={}; ((typeof CAT==='function'?CAT().stages:null)||CAT_FALLBACK.stages||[]).forEach(function(s){prioMap[s.id]=s.prioridad;});
   var now=new Date();
   var _ss=FILT.pipeline.stage,_sm=FILT.pipeline.sem,_sn=FILT.pipeline.nueva; FILT.pipeline.stage='ALL'; FILT.pipeline.sem='ALL'; FILT.pipeline.nueva='ALL';
-  var eduPlus=(DATA.deals||[]).filter(function(d){ var p=prioMap[d.stage]; if(p===undefined||p<6||p>10) return false; var f=new Date(d.createdate); if(isNaN(f)||f.getMonth()!==now.getMonth()||f.getFullYear()!==now.getFullYear()) return false; if(FILT.pipeline.excludeP&&d.name&&d.name.startsWith('P_')) return false; return pasaFiltro('pipeline',d,'deal'); }).length;
+  var eduPlus=(DATA.deals||[]).filter(function(d){ var p=prioMap[d.stage]; if(p===undefined||p<6||p>10) return false; var f=grFechaObj(d.createdate); if(isNaN(f)||f.getMonth()!==now.getMonth()||f.getFullYear()!==now.getFullYear()) return false; if(FILT.pipeline.excludeP&&d.name&&d.name.startsWith('P_')) return false; return pasaFiltro('pipeline',d,'deal'); }).length;
   FILT.pipeline.stage=_ss; FILT.pipeline.sem=_sm; FILT.pipeline.nueva=_sn;
   var week=Math.min(4,Math.max(1,Math.ceil(now.getDate()/7)));
   var expected=Math.round(goal*week/4);
   var pacing=expected>0?Math.round(eduPlus/expected*100):0;
   return {goal:goal,eduPlus:eduPlus,week:week,expected:expected,pacing:pacing,onPace:eduPlus>=expected};
 }
-function nuevaCol(d){ var f=new Date(d.createdate); if(isNaN(f)) return 'transparent'; var age=Math.floor((new Date()-f)/86400000); return age<=7?'#10B981':age<=15?'#34d399':age<=30?'#FFCD00':age<=45?'#F59E0B':age<=90?'#F97316':'#6B7280'; }
+function nuevaCol(d){ var f=grFechaObj(d.createdate); if(isNaN(f)) return 'transparent'; var age=Math.floor((new Date()-f)/86400000); return age<=7?'#10B981':age<=15?'#34d399':age<=30?'#FFCD00':age<=45?'#F59E0B':age<=90?'#F97316':'#6B7280'; }
 function _dealAgeMap(){ var m={}; (DATA.deals||[]).forEach(function(d){ if(d.createdate) m[String(d.id)]=d.createdate; }); return m; }
 function nuevaPasaTask(t,val,am){ if(val==='ALL') return true; var ids=t.matchedDealIds||[]; if(!ids.length) return false; return ids.some(function(id){ var c=am[String(id)]; return c!==undefined && nuevaMatch(c,val); }); }
 
@@ -2596,8 +2601,9 @@ function renderPipelineMetricsPipeline(){
   // Solo incluir deals con stage reconocido en el Kanban activo
   var dbs={};
   filtered.forEach(function(d){
-    var et=stageMap[d.stage]; // undefined para Renovación, Perdida, etc.
-    if(!et) return;
+    // 23oct2026 (D7): las fases fuera del pipeline configurado (Renovacion) tambien cuentan, con su nombre; asi el recuadro
+    // y la lista dicen el mismo total.
+    var et=stageMap[d.stage]||d.stageLabel||'Otra fase';
     if(!dbs[et]) dbs[et]=[];
     dbs[et].push(d);
   });
@@ -4874,7 +4880,7 @@ function renderGanadoresGR(cont){
     var p=String(c.gr_producto||d.prod||'');
     if(prospGrupo!=='ALL' && grupoDeProd(p)!==prospGrupo) return false;
     if(prospProducto!=='ALL' && p!==prospProducto) return false;
-    if(r){ var t=new Date(d.createdate); if(isNaN(t)) return false; var s=_diaLocal(t); if(s<r[0]||s>r[1]) return false; }
+    if(r){ var s=grDiaDe(d.createdate); if(!s) return false; if(s<r[0]||s>r[1]) return false; }
     return true; });
   var g={}; deals.forEach(function(d){ var v=ganValor(d,ganDim)||'(sin dato)'; var x=g[v]=g[v]||{v:v,n:0,c:0,ds:[]}; x.n++; if(ganLlegoACita(d)) x.c++; x.ds.push(d); });
   var filas=Object.keys(g).map(function(k){return g[k];}).sort(function(a,b){ if((a.v==='(sin dato)')!==(b.v==='(sin dato)')) return a.v==='(sin dato)'?1:-1; return (b.c-a.c)||(b.n-a.n); });
@@ -6295,6 +6301,7 @@ if (document.readyState === 'loading') {
                 <div><label class="md-lbl" for="grmd-contact">Persona</label><select id="grmd-contact" class="md-in" onchange="grmdSyncPhone()"></select></div>
                 <div><label class="md-lbl" for="grmd-phone">Teléfono</label><input id="grmd-phone" class="md-in" type="tel" placeholder="+52 ..."></div>
               </div>
+              <label class="md-lbl" style="margin-top:8px;">Correo</label><div id="grmd-email" class="md-val">—</div>
               <div id="grmd-tel-nota" class="md-nota" style="color:#FCA5A5;"></div>
               <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
                 <button id="grmd-am-tel" class="md-btn" onclick="grmdAmplemarket('telefono')" title="Busca el teléfono del contacto para WhatsApp. Cuesta 0.5 créditos más el costo del teléfono. Si ya tiene teléfono, no se consulta." style="color:#FFCD00;border:1px solid #FFCD0080;">Teléfono WhatsApp · con créditos</button>
