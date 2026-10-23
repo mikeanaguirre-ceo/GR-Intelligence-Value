@@ -1011,8 +1011,9 @@
   function nombreLinea(c){ var p = ((conf && conf.productos) || []).filter(function(x){ return x.codigo === c; })[0]; return p ? p.nombre.replace(/ \(.*\)$/, '') : c; }
   var ESTADO_INS = { nuevo: 'Sin revisar', aprobado: 'Aprobado: va a la ficha', descartado: 'Descartado' };
   function revisarInsumo(id, accion, texto){
-    postJson('gr-portal-insumo', { insumo_id: id, accion: accion, texto: texto }).then(function(j){
-      (apr[aprLinea].insumos || []).forEach(function(x){ if (x.id === id) { x.estado = j.estado; x.texto = texto; } });
+    var ins = (apr[aprLinea].insumos || []).filter(function(x){ return x.id === id; })[0] || {};
+    postJson('gr-portal-insumo', { insumo_id: id, accion: accion, texto: texto, aplicado: !!ins.aplicado }).then(function(j){
+      (apr[aprLinea].insumos || []).forEach(function(x){ if (x.id === id) { x.estado = j.estado; x.texto = texto; if (accion === 'editar' || accion === 'descartar') x.aplicado = false; } });
       toast(accion === 'descartar' ? 'Insumo descartado' : accion === 'reabrir' ? 'Insumo regresado a sin revisar' : 'Insumo aprobado: entra a la ficha en la siguiente actualización');
       pintarConf();
     }).catch(function(e){ toast(e.message); });
