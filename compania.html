@@ -480,7 +480,9 @@
       }
       if (f[2] === 'ro') return h(v || PD) + (v && p.propuesta_nombre && v.indexOf(p.propuesta_nombre) === -1 ? ' <span class="prod-p">No es la vigente</span>' : '');
       if (!adm) {
-        if (f[2] === 'url') return v ? '<a href="' + h(v) + '" target="_blank" rel="noopener">Abrir</a>' : PD;
+        if (f[2] === 'url') return v ? '<a href="' + h(v) + '" target="_blank" rel="noopener">Abrir</a>' +
+          // GR: los pendientes y propuestas de la base se deciden en la pestana Conocimiento del tablero (25 oct 2026).
+          (f[0] === 'kb_url' && /^\/gr\//.test(location.pathname) ? ' · <a href="/?tab=conocimiento" target="_blank" rel="noopener">Revisar pendientes</a>' : '') : PD;
         if (f[2] === 'chk') return p.activo === false ? 'No' : 'Sí';
         if (f[2] === 'fam') return v ? h(v + (fam[v] ? ' · ' + fam[v] : '')) : PD;
         return h(v || PD);
