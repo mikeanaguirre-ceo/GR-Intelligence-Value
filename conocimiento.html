@@ -118,7 +118,7 @@
     var ls = datos.lineas.filter(function(l){ return vista === 'todas' || l.lidera === quien || quien === 'Mike' || quien === 'Martha'; });
     var tot = ls.reduce(function(a, l){ a.p += l.cuentas.pendientes; a.r += l.cuentas.propuestas; return a; }, { p: 0, r: 0 });
     var h = '<h1>' + (vista === 'mias' ? (quien === 'Mike' || quien === 'Martha' ? 'Todas las líneas' : 'Tus líneas, ' + esc(quien)) : 'Todas las líneas') + '</h1>' +
-      '<p class="nota">' + tot.p + ' pendientes de las bases por decidir y ' + tot.r + ' propuestas de reuniones por revisar. Abre una línea para verlos.</p><div class="grid">';
+      '<p class="nota">' + tot.p + ' pendientes de las bases por decidir y ' + tot.r + ' propuestas por revisar. Abre una línea para verlos.</p><div class="grid">';
     h += ls.map(function(l){
       if (!l.kb) return '<div class="linea sin"><div class="t">' + esc(l.nombre) + '</div><div class="l">Lidera ' + esc(l.lidera) + '</div><span class="c">Sin base de conocimiento todavía</span></div>';
       var mios = l.pendientes.filter(function(x){ return !x.decision && puede(x.decide); }).length + l.propuestas.filter(function(x){ return x.estado === 'nuevo' && puede(x.decide); }).length;
@@ -149,12 +149,12 @@
         (x.decision ? '<div class="decidido"><b>Decidido por ' + esc(x.decision.por) + '</b> · ' + esc(fecha(x.decision.ts)) + (x.decision.aplicado ? ' · ya está en la base' : ' · entra en la siguiente versión') + '<br>' + esc(x.decision.texto) + '</div>' : '') +
         (ok && !(x.decision && x.decision.aplicado) ? '<div class="acc"><button class="btn sec" data-ok="' + esc(x.id) + '">De acuerdo con lo que se tomó</button><button class="btn sec" data-otra="' + esc(x.id) + '">Decidir otra cosa</button></div><div id="otra-' + esc(x.id) + '" hidden><textarea placeholder="Qué se decide y por qué"></textarea><div class="acc"><button class="btn" data-guarda="' + esc(x.id) + '">Guardar decisión</button></div></div>' : '') + '</div>';
     }).join('') : '<p class="vacio">Nada en este filtro.</p>';
-    h += '<h2>Propuestas de reuniones (' + l.propuestas.length + ')</h2><p class="nota">Lo que Claude sacó de las reuniones con transcript y comparó contra la base. Solo lo aprobado entra a la versión nueva.</p>' +
+    h += '<h2>Propuestas (' + l.propuestas.length + ')</h2><p class="nota">Lo que Claude sacó de las reuniones con transcript y, cada lunes, de los replies, las respuestas a Open+3, WhatsApp y las correcciones de la semana, comparado contra la base. Solo lo aprobado entra a la versión nueva.</p>' +
       '<div class="filtros">' + [['nuevo', 'Sin revisar'], ['aprobado', 'Aprobadas'], ['descartado', 'No aprobadas'], ['todas', 'Todas']].map(function(f){ return '<button class="chip' + (fProp === f[0] ? ' on' : '') + '" data-fr="' + f[0] + '">' + f[1] + '</button>'; }).join('') + '</div>';
     var CL = { nuevo: 'Nuevo', corrige: 'Corrige', contradice: 'Contradice', refuerza: 'Confirma' };
     h += prop.length ? prop.map(function(x){
       var ok = puede(x.decide) && !x.aplicado;
-      return '<div class="card' + (x.estado !== 'nuevo' ? ' hecho' : '') + '"><div class="cab"><span><span class="etq ' + esc(x.clase) + '">' + esc(CL[x.clase] || x.clase) + '</span> <span class="etq">' + esc(x.seccion || 'Sin sección') + '</span> <span class="etq">Reunión del ' + esc(x.fecha) + '</span></span><span class="etq ' + (x.decide === 'Mike' ? 'mike' : 'lider') + '">Lo decide ' + esc(x.decide) + '</span></div>' +
+      return '<div class="card' + (x.estado !== 'nuevo' ? ' hecho' : '') + '"><div class="cab"><span><span class="etq ' + esc(x.clase) + '">' + esc(CL[x.clase] || x.clase) + '</span> <span class="etq">' + esc(x.seccion || 'Sin sección') + '</span> <span class="etq">' + (/^lote-/.test(x.id) ? 'Lote semanal del ' : 'Reunión del ') + esc(x.fecha) + '</span></span><span class="etq ' + (x.decide === 'Mike' ? 'mike' : 'lider') + '">Lo decide ' + esc(x.decide) + '</span></div>' +
         (x.actual ? '<div class="bloque antes"><span>Hoy dice</span>' + esc(x.actual) + '</div>' : '') +
         '<div class="bloque despues"><span>' + (x.actual ? 'Quedaría' : 'Se agrega') + '</span><span id="txt-' + esc(x.id) + '" style="display:inline;font-size:13px;text-transform:none;letter-spacing:0;font-weight:400;color:inherit">' + esc(x.texto) + '</span></div>' +
         (x.motivo ? '<div class="nota" style="margin:6px 0 0">' + esc(x.motivo) + '</div>' : '') + (x.cita ? '<div class="nota" style="margin:4px 0 0">Evidencia: “' + esc(x.cita) + '” · ' + (x.citable ? 'se puede usar en público' : 'solo interno') + '</div>' : '') +
