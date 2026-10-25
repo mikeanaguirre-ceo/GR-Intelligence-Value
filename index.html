@@ -720,6 +720,7 @@ body {
     <button class="tab" data-tab="forecast">Forecast</button>
     <button class="tab" data-tab="metricas">Métricas</button>
     <button class="tab" data-tab="reuniones">Reuniones <span class="badge-red" id="reu-count">—</span></button>
+    <button class="tab" data-tab="conocimiento">Conocimiento</button>
     <button class="tab" data-tab="chat">💬 Chat</button>
   </nav>
 
@@ -737,6 +738,7 @@ body {
     <section class="panel" id="p-forecast"></section>
     <section class="panel" id="p-metricas"></section>
     <section class="panel" id="p-reuniones"></section>
+    <section class="panel" id="p-conocimiento"></section>
     <section class="panel" id="p-chat"></section>
   </main>
 
@@ -1792,6 +1794,13 @@ function renderCurrentTab() {
   // Metricas no depende de los datos principales del dashboard: tiene su propio
   // origen. Se atiende antes del guard de DATA para que un fallo del endpoint
   // principal no deje la pestana en blanco.
+  // Conocimiento (25 oct 2026): pagina de equipo de las bases GR_KB por linea. Vive en /conocimiento.html y se carga
+  // aqui en un marco la primera vez que se abre la pestana; no depende de los datos del tablero.
+  if (currentTab === 'conocimiento') {
+    var pc = document.getElementById('p-conocimiento');
+    if (pc && !pc.firstChild) pc.innerHTML = '<iframe src="/conocimiento.html" title="Conocimiento" style="width:100%;height:calc(100vh - 150px);min-height:600px;border:0;border-radius:12px;background:#f6f6f4"></iframe>';
+    return;
+  }
   if (currentTab === 'calidad') {
     try { renderCalidad(); } catch(e) {
       var ec = document.getElementById('p-calidad');
@@ -6190,6 +6199,8 @@ function init() {
   });
   $('#btn-refresh').addEventListener('click', loadDataFresco);
   loadData();
+  // Liga directa a la pestana de conocimiento (?tab=conocimiento).
+  if (/[?&]tab=conocimiento\b/.test(location.search)) switchTab('conocimiento');
   // Auto-refresh DESACTIVADO — solo manual via botón "Actualizar" para conservar ejecuciones de n8n
 }
 

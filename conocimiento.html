@@ -64,6 +64,7 @@
   .error{color:var(--mal);font-size:13px;margin-top:6px}
   ol.pasos{font-size:13.5px;line-height:1.55;padding-left:20px} ol.pasos li{margin-bottom:6px}
   .yo-movil{display:none;font-size:13px;color:var(--tenue);margin-bottom:10px}
+  .en-tablero .tabs .logo{display:none} .en-tablero .tabs{position:static}
   @media (max-width:640px){ .tabs .logo b{display:none} .tabs .yo{display:none} .yo-movil{display:block} main{padding:14px 12px 80px} }
 </style>
 </head>
@@ -75,6 +76,7 @@
 <main id="main"><p class="vacio">Cargando…</p></main>
 <script>
 (function(){
+  // Sin clave, como el tablero (decision de Mike, 25 oct). Si una liga vieja trae ?k=, se manda igual.
   var K = new URLSearchParams(location.search).get('k') || '';
   var BASE = 'https://mikea.app.n8n.cloud/webhook/';
   var datos = null, vista = 'mias', abierta = '', quien = '', fPend = 'por', fProp = 'nuevo', borr = {}, espera = null;
@@ -84,7 +86,7 @@
   function fecha(ts){ return ts ? new Date(ts * 1000).toLocaleString('es-MX', { timeZone: 'America/Mexico_City', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''; }
   function guardado(k, v){ try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v); } catch (e) { return ''; } }
   function post(ruta, cuerpo){
-    return fetch(BASE + ruta, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ k: K }, cuerpo || {})) })
+    return fetch(BASE + ruta, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign(K ? { k: K } : {}, cuerpo || {})) })
       .then(function(r){ return r.text().then(function(t){
         var j = null; try { j = JSON.parse(t); } catch (e) {}
         if (!r.ok || !j) throw new Error((j && (j.error || j.message)) || (r.status === 500 ? 'No se pudo guardar: revisa que te toque decidirlo' : 'Error ' + r.status));
@@ -105,7 +107,7 @@
 
   function cargar(){
     return post('gr-conocimiento').then(function(j){ datos = j; quien = guardado('gr_conocimiento_quien'); if (datos.personas.indexOf(quien) < 0) quien = ''; pintar(); if (!quien) elegirPersona(); })
-      .catch(function(e){ $('main').innerHTML = '<p class="error">No se pudo cargar: ' + esc(e.message) + '. Abre la página con la liga completa que incluye la clave.</p>'; });
+      .catch(function(e){ $('main').innerHTML = '<p class="error">No se pudo cargar: ' + esc(e.message) + '. Vuelve a intentar con Actualizar.</p>'; });
   }
 
   function pintar(){
@@ -240,7 +242,8 @@
       t.disabled = true; return revisar(i, a);
     }
   };
-  if (!K) { $('main').innerHTML = '<p class="error">Falta la clave en la liga (?k=…). Abre la página con la liga completa que te enviaron.</p>'; return; }
+  // Dentro del tablero (?tab=conocimiento) la pagina va en un marco: sin logo propio, el tablero ya lo tiene.
+  if (window.self !== window.top) document.documentElement.classList.add('en-tablero');
   cargar();
 })();
 </script>
