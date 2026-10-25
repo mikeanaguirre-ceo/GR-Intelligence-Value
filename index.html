@@ -932,6 +932,8 @@ function abrirEditarDealGR(dealId){
     if(c.gr_cita_realizada){ t='Realizada el '+fmtFecha(c.gr_cita_realizada+'T12:00:00Z')+(PR[c.gr_cita_prueba]?(' · '+PR[c.gr_cita_prueba]):''); col='#62D175'; }
     else if(c.gr_cita_estado==='no_realizada'){ t='No se realizó · pendiente de reagendar'+(fhT?(' (era '+fhT+')'):''); col='#FCA5A5'; }
     else if(fhT){ t='Agendada · '+fhT; col='#FFCD00'; }
+    else if(grCitaDe(d)==='realizada'){ t='Realizada (antes del registro de citas)'; col='#62D175'; }
+    else if(grCitaDe(d)==='agendada'){ t='Agendada · sin fecha registrada'; col='#FFCD00'; }
     el.textContent=t||'Sin cita'; el.style.color=col||'#6B7280'; })();
   document.getElementById('grmd-auto-msg').textContent=''; document.getElementById('grmd-am-msg').textContent=''; var _tm=document.getElementById('grmd-tel-msg'); if(_tm) _tm.textContent=''; window.__grFaltaMano={};
   grmdPintarCampos(d);
@@ -1265,6 +1267,7 @@ async function grmdCargarContactos(dealId, empresa){
     if(_i>0){ cts=[cts[_i]].concat(cts.slice(0,_i), cts.slice(_i+1)); }
     window.__grContactos=cts;
     if(String(window.__grEditId||'')===String(dealId||'')) grmdPintarOrigen((data&&data.oportunidad)||{}, (data&&data.empresa_ficha)||{});
+    if(String(window.__grEditId||'')===String(dealId||'')) grmdPintarReuniones(dealId);
     if(!cts.length){ sel.innerHTML='<option value="">(sin contactos)</option>'; return; }
     sel.innerHTML=cts.map(function(c){ return '<option value="'+c.id+'">'+grEsc(c.nombre)+(c.puesto?(' \u00b7 '+grEsc(c.puesto)):'')+'</option>'; }).join('');
     grmdSyncPhone();
@@ -1508,7 +1511,7 @@ let recapFilters = {
 };
 // ===== Estado unificado de filtros (homologado) =====
 var FILT = {
-  pipeline:   { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, excludeP:false, nueva:'ALL', cierre:'ALL', fcampo:'creacion', fper:'todo', fdesde:'', fhasta:'', faltan:false },
+  pipeline:   { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, excludeP:false, nueva:'ALL', cierre:'ALL', fcampo:'creacion', fper:'todo', fdesde:'', fhasta:'', faltan:false, cita:'ALL' },
   pendientes: { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', sort:'urgency', nueva:'ALL' },
   alertas:    { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, categoria:'ALL', accion:'ALL', sort:'monto_desc' },
   recap:      { persona:'Todos', grupo:'ALL', prod:'ALL' }
@@ -2450,6 +2453,105 @@ function nuevaCol(d){ var f=grFechaObj(d.createdate); if(isNaN(f)) return 'trans
 function _dealAgeMap(){ var m={}; (DATA.deals||[]).forEach(function(d){ if(d.createdate) m[String(d.id)]=d.createdate; }); return m; }
 function nuevaPasaTask(t,val,am){ if(val==='ALL') return true; var ids=t.matchedDealIds||[]; if(!ids.length) return false; return ids.some(function(id){ var c=am[String(id)]; return c!==undefined && nuevaMatch(c,val); }); }
 
+// 25oct2026 (Mike, ciclo 4): las citas viven en Pipeline, en las mismas tarjetas. Estado de la cita desde los campos
+// que escribe el motor (gr_cita_*): agendada, realizada, no se realizo o sin cita.
+var GR_CITA_OPC = [['ALL','Todas'],['agendada','Agendada'],['realizada','Realizada'],['no_realizada','No se realizó'],['sin','Sin cita']];
+// Oportunidades anteriores al registro de citas (23oct2026) no tienen fecha: la etapa lo dice (REA vF: Atraccion = cita
+// agendada; Educacion o posterior = cita realizada).
+var GR_ETAPAS_CITA_REALIZADA=['qualifiedtobuy','presentationscheduled','decisionmakerboughtin','contractsent'];
+function grCitaDe(d){ var c=(d&&d.campos)||{}; if(c.gr_cita_realizada) return 'realizada'; if(c.gr_cita_estado==='no_realizada') return 'no_realizada'; if(c.gr_cita_fecha) return 'agendada';
+  if(d&&d.stage==='appointmentscheduled') return 'agendada'; if(d&&GR_ETAPAS_CITA_REALIZADA.indexOf(d.stage)>=0) return 'realizada'; return 'sin'; }
+function grCitaPasa(d){ var f=FILT.pipeline.cita||'ALL'; return f==='ALL' || grCitaDe(d)===f; }
+function grCitaLinea(d){
+  var c=(d&&d.campos)||{}, e=grCitaDe(d); if(e==='sin') return '';
+  var fh=c.gr_cita_fecha?new Date(c.gr_cita_fecha):null, ok=fh&&!isNaN(fh);
+  var corto=ok?fh.toLocaleString('es-MX',{day:'numeric',month:'short',timeZone:'America/Mexico_City'}):'';
+  var hora=ok?fh.toLocaleString('es-MX',{hour:'numeric',minute:'2-digit',timeZone:'America/Mexico_City'}):'';
+  var t='', col='#FFCD00';
+  if(e==='realizada'){ t=c.gr_cita_realizada?('Cita realizada '+fmtFecha(c.gr_cita_realizada+'T12:00:00Z')):'Cita realizada'; col='#62D175'; }
+  else if(e==='no_realizada'){ t='Cita no se realizó'+(corto?(' · era '+corto):'')+' · reagendar'; col='#FCA5A5'; }
+  else if(!ok){ t='Cita agendada · sin fecha registrada'; }
+  else { var pasada=ok&&fh<new Date(); t=(pasada?'Cita '+corto+' · sin confirmar':'Cita '+corto+(hora?(' · '+hora):'')); col=pasada?'#F59E0B':'#FFCD00'; }
+  return '<div style="margin-top:5px;font-size:10.5px;font-weight:700;color:'+col+';">'+grEsc(t)+'</div>';
+}
+// Reuniones de la bitacora ligadas a la oportunidad por el correo o el dominio de sus contactos.
+var GR_DOM_PERSONAL=['gmail.com','hotmail.com','outlook.com','yahoo.com','yahoo.com.mx','live.com','icloud.com','prodigy.net.mx','hotmail.es','outlook.es','msn.com','me.com','protonmail.com'];
+function grReuCargar(){ if(window.__grReuProm) return window.__grReuProm; window.__grReuProm=fetch(BITACORA_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(r){ return r.json(); }).then(function(d){ REU_DATA=d&&d.reuniones?d.reuniones:[]; return REU_DATA; }).catch(function(){ window.__grReuProm=null; return null; }); return window.__grReuProm; }
+// Mismo nombre de dominio aunque cambie el pais (bancolombia.com y bancolombia.com.co).
+function grDomBase(dm){ dm=String(dm||'').toLowerCase().replace(/^www\./,''); if(!dm||GR_DOM_PERSONAL.indexOf(dm)>=0) return ''; var b=dm.split('.')[0]; return b.length>=4?b:dm; }
+function grReuDeContactos(cts, todas){
+  var ems={}, doms={};
+  (cts||[]).forEach(function(c){ var e=String(c.email||'').trim().toLowerCase(); if(!e||e.indexOf('@')<0) return; ems[e]=1; var b=grDomBase(e.split('@')[1]); if(b) doms[b]=1; });
+  return (todas||[]).filter(function(r){
+    if(r.estado==='No aplica') return false;
+    return String(r.externos||'').toLowerCase().split(',').some(function(x){ x=x.trim(); if(!x) return false; var b=grDomBase(x.split('@')[1]); return ems[x] || (b && doms[b]); });
+  }).sort(function(a,b){ return String(b.inicio||b.fecha||'').localeCompare(String(a.inicio||a.fecha||'')); });
+}
+function grmdPintarReuniones(dealId){
+  var el=document.getElementById('grmd-reuniones'); if(!el) return;
+  el.innerHTML='<div class="md-nota">Buscando reuniones…</div>';
+  grReuCargar().then(function(todas){
+    if(String(window.__grEditId||'')!==String(dealId||'')) return;
+    if(!todas){ el.innerHTML='<div class="md-nota">No se pudo leer la bitácora de reuniones.</div>'; return; }
+    var cts=window.__grContactos||[];
+    if(!cts.some(function(c){ return c.email; })){ el.innerHTML='<div class="md-nota">Los contactos no tienen correo: no se pueden ligar sus reuniones.</div>'; return; }
+    var rs=grReuDeContactos(cts, todas);
+    if(!rs.length){ el.innerHTML='<div class="md-nota">Sin reuniones en el calendario con esta empresa.</div>'; return; }
+    var mk=function(v,t){ return '<span style="font-size:10.5px;color:'+(v?'#62D175':'#6B7280')+';margin-right:8px;">'+(v?'✓ ':'· ')+t+'</span>'; };
+    el.innerHTML=rs.slice(0,6).map(function(r){
+      return '<div style="padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);">'
+        +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><span style="color:#9CA3AF;font-size:12px;min-width:74px;">'+reuDia(r.fecha)+'</span>'+reuBadge(r.estado,r.dias,r.cerrado_por)+'</div>'
+        +'<div style="font-size:12.5px;color:#E5E7EB;margin:3px 0;">'+grEsc(r.titulo||'Reunión')+'</div>'
+        +'<div>'+mk(r.estado==='Analizada','Grabación')+mk(r.correo,'Siguientes pasos')+mk(r.minuta,'Minuta')+mk(r.whatsapp,'WhatsApp')+'<span style="font-size:10.5px;color:#9CA3AF;">'+(r.tareas?(r.tareas+' tarea'+(r.tareas!==1?'s':'')):'Sin tareas')+'</span></div>'
+        +'</div>';
+    }).join('')+(rs.length>6?'<div class="md-nota">Y '+(rs.length-6)+' más.</div>':'');
+  });
+}
+// Reuniones con cliente que piden una accion (sin grabacion, o sin siguientes pasos o minuta). Viven en Pendientes.
+function grReuPorCerrar(todas){
+  return (todas||[]).filter(function(r){
+    if(!String(r.externos||'').trim()) return false;
+    if(r.estado==='Sin grabacion') return !r.cerrado_por;
+    if(r.estado==='Pendiente') return true;
+    if(r.estado==='Analizada') return !(r.correo && r.minuta);
+    return false;
+  }).sort(function(a,b){ return String(b.fecha||'').localeCompare(String(a.fecha||'')); });
+}
+function grPintarReuPendientes(){
+  var box=document.getElementById('pend-reuniones'); if(!box) return;
+  grReuCargar().then(function(todas){
+    var box=document.getElementById('pend-reuniones'); if(!box) return;
+    if(!todas){ box.innerHTML='<div style="font-size:12px;color:var(--text-dim);">No se pudo leer la bitácora de reuniones.</div>'; return; }
+    var base=grReuPorCerrar(todas);
+    var falta=function(r){ return r.estado==='Sin grabacion'?['grabacion']:[!r.correo?'pasos':'',!r.minuta?'minuta':''].filter(Boolean); };
+    var FO=[['ALL','Todas'],['grabacion','Sin grabación'],['pasos','Sin siguientes pasos'],['minuta','Sin minuta']];
+    var fsel=window.__grReuFalta||'ALL';
+    var rs=fsel==='ALL'?base:base.filter(function(r){ return falta(r).indexOf(fsel)>=0; });
+    var h='<div class="section-title">Reuniones con cliente por cerrar <span class="section-count">'+rs.length+'</span></div>'
+      +'<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Sin grabación, o grabadas sin siguientes pasos o sin minuta. Marca a mano solo lo que el motor no puede saber.</div>'
+      +'<div class="filters"><span class="filter-label">Falta:</span>'+FO.map(function(o){ var n=o[0]==='ALL'?base.length:base.filter(function(r){ return falta(r).indexOf(o[0])>=0; }).length; return '<button class="chip '+(fsel===o[0]?'active':'')+'" onclick="window.__grReuFalta=\''+o[0]+'\';grPintarReuPendientes()">'+o[1]+' '+n+'</button>'; }).join('')+'</div>';
+    if(!rs.length){ box.innerHTML=h+'<div class="empty">Nada pendiente.</div>'; return; }
+    var muestra=window.__grReuTodas?rs:rs.slice(0,15);
+    h+='<div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>Día</th><th>Reunión</th><th>Empresa</th><th>Estado</th><th>Falta</th><th>Marcar</th></tr></thead><tbody>';
+    muestra.forEach(function(r){
+      var falta=r.estado==='Sin grabacion'?'Grabación':[!r.correo?'Siguientes pasos':'',!r.minuta?'Minuta':''].filter(Boolean).join(' y ');
+      h+='<tr><td style="white-space:nowrap;color:#9ca3af;">'+reuDia(r.fecha)+'</td><td>'+grEsc(r.titulo||'')+'</td><td>'+grEsc(r.cliente||'')+'</td><td>'+reuBadge(r.estado,r.dias,r.cerrado_por)+(r.estado==='Sin grabacion'&&r.dias>0?'<div style="font-size:10px;color:#6b7280;">'+r.dias+'d abierto</div>':'')+'</td><td style="color:#FFCD00;font-size:12px;">'+grEsc(falta)+'</td>'
+        +'<td><select data-pend-reu="'+reuEsc(r.clave)+'" style="font-size:10.5px;background:transparent;color:#9ca3af;border:1px solid #374151;border-radius:5px;padding:3px 6px;"><option value="">— elegir —</option>'+REU_MANUALES.map(function(e){ return '<option value="'+e+'">'+e+'</option>'; }).join('')+'</select></td></tr>';
+    });
+    h+='</tbody></table></div>';
+    if(rs.length>15) h+='<button class="chip" style="margin-top:6px;" onclick="window.__grReuTodas=!window.__grReuTodas;grPintarReuPendientes()">'+(window.__grReuTodas?'Ver menos':'Ver todas (+'+(rs.length-15)+')')+'</button>';
+    box.innerHTML=h;
+    box.querySelectorAll('[data-pend-reu]').forEach(function(sel){
+      sel.addEventListener('change', function(){
+        if(!sel.value) return; sel.disabled=true;
+        fetch(BITACORA_CERRAR_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clave:sel.getAttribute('data-pend-reu'),estado:sel.value,quien:'dashboard'})})
+          .then(function(){ window.__grReuProm=null; REU_DATA=null; grPintarReuPendientes(); })
+          .catch(function(){ sel.disabled=false; });
+      });
+    });
+  });
+}
+
 function renderPipeline() {
   // Normaliza producto desde el nombre para categorias que el backend deja en Otro (BD, AEO+SEO)
   (DATA.deals||[]).forEach(function(d){
@@ -2474,6 +2576,7 @@ function renderPipeline() {
     if (!periodoPasa(d, FILT.pipeline)) return false;
     if (!faltanPasa(d)) return false;
     if (!pipeQPasa(d)) return false;
+    if (!grCitaPasa(d)) return false;
     return pasaFiltro('pipeline', d, 'deal');
   });
 
@@ -2512,6 +2615,10 @@ function renderPipeline() {
       <div class="filters">
         <span class="filter-label">Nuevas oportunidades:</span>
         ${[['ALL','Todas'],['mes','Mes'],['s1','Sem 1'],['s2','Sem 2'],['s3','Sem 3'],['s4','Sem 4'],['g30','>30d'],['g45','>45d'],['g90','>90d']].map(o => { const col = ({s1:'#10B981',s2:'#34d399',s3:'#A3E635',s4:'#FFCD00',g30:'#F59E0B',g45:'#F97316',g90:'#EF4444'})[o[0]]||''; return `<button class="chip ${FILT.pipeline.nueva===o[0]?'active':''}" data-f="pipeline" data-k="nueva" data-v="${o[0]}" ${col?`style="border-color:${col}80;"`:''}>${o[1]}</button>`; }).join('')}
+      </div>
+      <div class="filters">
+        <span class="filter-label">Cita:</span>
+        ${GR_CITA_OPC.map(o => { const n = o[0]==='ALL' ? '' : ` ${poolPipe.filter(d => grCitaDe(d)===o[0]).length}`; return `<button class="chip ${(FILT.pipeline.cita||'ALL')===o[0]?'active':''}" data-f="pipeline" data-k="cita" data-v="${o[0]}">${o[1]}${n}</button>`; }).join('')}
       </div>
       <div class="filters">
         <span class="filter-label">Otros:</span>
@@ -2576,6 +2683,7 @@ function renderPipeline() {
               <span title="Antigüedad de creación" style="width:8px;height:8px;border-radius:50%;background:${nuevaCol(d)};display:inline-block;margin-left:auto;"></span>
             </div>
             ${_perChips}
+            ${grCitaLinea(d)}
             ${(d.campos&&String(d.campos.gr_sin_telefono)==='true') ? `<div title="Se buscó en Amplemarket y no se encontró número de teléfono ni WhatsApp. Seguir por correo o LinkedIn." style="display:inline-block;margin-top:5px;font-size:10px;font-weight:700;color:#62D175;background:#62D1751f;border:1px solid #62D17566;border-radius:999px;padding:2px 8px;">Sin teléfono · seguir por correo o LinkedIn</div>` : ''}
             ${_contactoHtml}
             ${d.closedate ? `<div class="kanban-card-date ${dateClass}">${fmtFecha(d.closedate)}</div>` : ''}
@@ -3142,7 +3250,9 @@ function renderPendientes() {
   </div>`;
   html += `</div>`;
 
+  html += `<div class="section" id="pend-reuniones" style="margin-top:14px;"><div style="font-size:12px;color:var(--text-dim);">Cargando reuniones…</div></div>`;
   $('#p-pendientes').innerHTML = html;
+  grPintarReuPendientes();
 
   $$('[data-pendfilter]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -6307,6 +6417,7 @@ if (document.readyState === 'loading') {
               <div id="grmd-close-pretty" style="font-size:12px;color:#02ADBA;font-weight:700;margin-top:6px;min-height:15px;"></div>
               <div id="grmd-close-nota" class="md-nota"></div>
               <label class="md-lbl" style="margin-top:12px;">Cita</label><div id="grmd-cita" class="md-val">—</div>
+              <label class="md-lbl" style="margin-top:12px;">Reuniones con esta empresa</label><div id="grmd-reuniones"><div class="md-nota">—</div></div>
             </div>
             <div class="md-card">
               <div class="md-h">Tareas <button class="md-btn" onclick="grmdNuevaTarea()" style="color:#c4b5fd;border:1px solid #7C3AED;text-transform:none;letter-spacing:0;">+ Agregar tarea</button></div>
