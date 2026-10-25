@@ -916,7 +916,7 @@ function abrirEditarDealGR(dealId){
   // 23oct2026: el origen se pinta al instante con los datos del tablero; lo largo (mensaje, respuesta, empresa) llega despues.
   var _c=d.campos||{}; window.__grSecuencia=null;
   grmdPintarOrigen({_parcial:true, camino:_c.gr_origen||'', como_llego:_c.gr_como_llego||'', campana:_c.gr_secuencia_origen||'', canal:_c.gr_canal_respuesta||'', sector:_c.gr_sector||'', area:_c.gr_area||'', nivel:_c.gr_nivel||'', tamano:_c.gr_tamano||'', pais:_c.gr_pais||'', tipo_senal:_c.gr_tipo_senal||'', tipo_interes:_c.gr_tipo_interes||'', aperturas:_c.gr_aperturas||'', fecha_senal:_c.gr_fecha_senal||'', remitente:_c.gr_remitente||''});
-  var _sb=document.getElementById('grmd-secuencia'); if(_sb) _sb.innerHTML='<div class="md-nota">Se carga al abrir esta pestaña (sin costo, de la cuenta de Amplemarket de GR).</div>'; var _sr=document.getElementById('grmd-sec-res'); if(_sr) _sr.textContent='';
+  var _sb=document.getElementById('grmd-secuencia'); if(_sb) _sb.innerHTML='<div class="md-nota">Toda la secuencia de la persona, de la cuenta de Amplemarket de GR (sin costo).</div><button class="md-btn" onclick="window.__grSecuencia=null;grmdCargarSecuencia()" style="margin-top:8px;color:#06B6D4;border:1px solid #06B6D480;">Ver la secuencia completa</button>'; var _sr=document.getElementById('grmd-sec-res'); if(_sr) _sr.textContent='';
   var _mot=(pipeCfg()||{}).motivos||[];
   document.getElementById('grmd-motivo').innerHTML='<option value="">Elige el motivo…</option>'+_mot.map(function(m){return '<option value="'+grEsc(m.valor)+'">'+grEsc(m.label)+'</option>';}).join('');
   var stgs=grStagesForSelect(); var curId=''; stgs.forEach(function(x){ if(x.id===d.stage) curId=x.id; });
@@ -966,7 +966,7 @@ async function grmdCargarSecuencia(){
   }catch(e){ window.__grSecuencia=null; box.innerHTML='<div style="color:#DB0540;font-size:12px">No se pudo leer la secuencia.</div>'; }
 }
 function grmdTab(t){
-  if(t==='origen') setTimeout(grmdCargarSecuencia,0);
+  // 25oct2026 (ciclo 3, ahorro): la secuencia se pide con el boton, no cada vez que se abre la pestana.
   [].slice.call(document.querySelectorAll('#gr-modal-edit .md-tab')).forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-tab')===t); });
   [].slice.call(document.querySelectorAll('#gr-modal-edit .md-pane')).forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-pane')===t); });
 }
@@ -1272,7 +1272,6 @@ async function grmdCargarContactos(dealId, empresa){
     if(!cts.length){ sel.innerHTML='<option value="">(sin contactos)</option>'; return; }
     sel.innerHTML=cts.map(function(c){ return '<option value="'+c.id+'">'+grEsc(c.nombre)+(c.puesto?(' \u00b7 '+grEsc(c.puesto)):'')+'</option>'; }).join('');
     grmdSyncPhone();
-    var _po=document.querySelector('#gr-modal-edit .md-pane[data-pane="origen"]'); if(_po&&_po.classList.contains('on')){ window.__grSecuencia=null; grmdCargarSecuencia(); }
   }catch(e){ sel.innerHTML='<option value="">(error al cargar)</option>'; if(dealId && String(window.__grEditId||'')===String(dealId)) cargarActividadesGR(dealId,'grmd-acts'); }
 }
 async function guardarDealGR(){
@@ -6526,7 +6525,7 @@ if (document.readyState === 'loading') {
         </div>
         <div class="md-card" style="margin-top:14px;">
           <div class="md-h"><span>Toda la secuencia <span id="grmd-sec-res" style="text-transform:none;letter-spacing:0;font-weight:600;color:#9CA3AF;"></span></span></div>
-          <div id="grmd-secuencia"><div class="md-nota">Se carga al abrir esta pestaña (sin costo, de la cuenta de Amplemarket de GR).</div></div>
+          <div id="grmd-secuencia"><div class="md-nota">Toda la secuencia de la persona, de la cuenta de Amplemarket de GR (sin costo).</div><button class="md-btn" onclick="window.__grSecuencia=null;grmdCargarSecuencia()" style="margin-top:8px;color:#06B6D4;border:1px solid #06B6D480;">Ver la secuencia completa</button></div>
         </div>
       </div>
       <div class="md-pane" data-pane="tareas">
