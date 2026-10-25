@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Conocimiento Great Revenue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  /* Pagina de equipo del conocimiento de Great Revenue (capa viva, 24 oct 2026). Mismo formato que /gr/whatsapp. */
+  :root{ --marca:#111827; --acento:#7c3aed; --fondo:#f6f6f4; --panel:#fff; --borde:#e4e4df; --texto:#111827; --tenue:#5f5f5a;
+    --ok:#2e7d32; --alerta:#9a5300; --mal:#b3261e; --azul:#1f6fd1; --disp:"Poppins","Segoe UI",Arial,sans-serif; }
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.45 "Segoe UI",-apple-system,BlinkMacSystemFont,Calibri,Arial,sans-serif;color:var(--texto);background:var(--fondo)}
+  button,textarea{font:inherit}
+  a{color:var(--azul);text-decoration:none} a:hover{text-decoration:underline}
+  .tabs{height:56px;background:#fff;border-bottom:1px solid var(--borde);display:flex;align-items:stretch;gap:2px;padding:0 14px;overflow-x:auto;position:sticky;top:0;z-index:5}
+  .tabs .logo{display:flex;align-items:center;gap:10px;margin-right:18px;flex:0 0 auto}
+  .tabs .logo img{height:30px;display:block} .tabs .logo b{font:700 14px var(--disp);color:var(--marca);white-space:nowrap}
+  .tabs button{background:transparent;border:0;border-bottom:3px solid transparent;color:var(--tenue);padding:0 14px;font:700 14px var(--disp);cursor:pointer;white-space:nowrap}
+  .tabs button.on{color:var(--marca);border-bottom-color:var(--acento)}
+  .tabs .yo{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tenue);white-space:nowrap;padding-left:12px}
+  .tabs .yo b{color:var(--marca)}
+  main{max-width:1180px;margin:0 auto;padding:20px 16px 80px}
+  h1{font:700 20px var(--disp);margin:0 0 4px} h2{font:700 15px var(--disp);text-transform:uppercase;letter-spacing:.05em;margin:24px 0 8px}
+  .nota{font-size:13px;color:var(--tenue);margin:0 0 14px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+  .linea{background:#fff;border:1px solid var(--borde);border-radius:12px;padding:14px;cursor:pointer;text-align:left;border-top:3px solid var(--acento)}
+  .linea:hover{box-shadow:0 2px 10px rgba(17,24,39,.08)} .linea.sin{border-top-color:#d1d5db;cursor:default;opacity:.75}
+  .linea .t{font:700 14px var(--disp)} .linea .l{font-size:12.5px;color:var(--tenue);margin:2px 0 8px}
+  .cuentas{display:flex;gap:6px;flex-wrap:wrap}
+  .c{font-size:11.5px;font-weight:650;padding:2px 9px;border-radius:10px;background:#f3f4f6;color:#374151}
+  .c.pend{background:#ffeccc;color:var(--alerta)} .c.prop{background:#f1eafe;color:#5b21b6} .c.apl{background:#e4f4ea;color:var(--ok)}
+  .card{background:#fff;border:1px solid var(--borde);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+  .card.hecho{background:#fafaf8}
+  .cab{display:flex;gap:8px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+  .cab .tema{font-weight:700}
+  .etq{font-size:11px;font-weight:650;padding:1px 8px;border-radius:10px;background:#f3f4f6;color:#374151;white-space:nowrap}
+  .etq.mike{background:#fde2e1;color:#a3261f} .etq.lider{background:#e2f0ff;color:#174f98} .etq.ok{background:#e4f4ea;color:var(--ok)}
+  .etq.nuevo{background:#e4f4ea;color:#166534} .etq.corrige{background:#fff1d6;color:#8a5200} .etq.contradice{background:#fde2e1;color:#a3261f} .etq.refuerza{background:#e2f0ff;color:#174f98}
+  .bloque{font-size:13px;margin-top:8px} .bloque span{display:block;font-size:10.5px;font-weight:700;color:var(--tenue);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+  .antes{background:#fdf0ef;border-radius:6px;padding:6px 8px} .despues{background:#eef8f1;border-radius:6px;padding:6px 8px}
+  .acc{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px}
+  .btn{background:var(--acento);color:#fff;border:0;border-radius:8px;padding:6px 14px;font-weight:650;font-size:13px;cursor:pointer}
+  .btn.sec{background:#fff;color:var(--marca);border:1px solid var(--borde)} .btn:disabled{opacity:.5;cursor:default}
+  .enlace{background:none;border:0;color:var(--azul);cursor:pointer;font-size:12.5px;padding:0}
+  textarea{width:100%;min-height:70px;border:1px solid var(--borde);border-radius:8px;padding:8px;font-size:13px;margin-top:6px}
+  .filtros{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 12px}
+  .chip{border:1px solid var(--borde);background:#fff;border-radius:16px;padding:5px 12px;font-size:12.5px;cursor:pointer}
+  .chip.on{background:var(--acento);border-color:var(--acento);color:#fff}
+  .decidido{background:#e4f4ea;border-radius:8px;padding:8px 10px;font-size:12.5px;margin-top:8px}
+  .barra{position:sticky;bottom:12px;background:#111827;color:#fff;border-radius:12px;padding:10px 14px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:16px}
+  .barra .btn{background:#fff;color:#111827}
+  .volver{background:none;border:0;color:var(--azul);cursor:pointer;padding:0;font-size:13px;margin-bottom:8px}
+  .vacio{color:var(--tenue);font-size:13px;padding:10px 0}
+  .fondo{position:fixed;inset:0;background:rgba(17,24,39,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
+  .modal{background:#fff;border-radius:14px;padding:18px 20px;max-width:720px;width:100%;max-height:88vh;overflow:auto}
+  .modal h3{font:700 16px var(--disp);margin:0 0 8px}
+  .personas{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+  .kb-md{white-space:pre-wrap;font-size:11.5px;max-height:45vh;overflow:auto;background:#f6f6f4;padding:8px;border-radius:6px}
+  .fila{border-bottom:1px solid var(--borde);padding:6px 0;font-size:13px} .fila.mal b{color:var(--mal)}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 16px;border-radius:9px;font-size:13px;z-index:30}
+  .error{color:var(--mal);font-size:13px;margin-top:6px}
+  ol.pasos{font-size:13.5px;line-height:1.55;padding-left:20px} ol.pasos li{margin-bottom:6px}
+  .yo-movil{display:none;font-size:13px;color:var(--tenue);margin-bottom:10px}
+  @media (max-width:640px){ .tabs .logo b{display:none} .tabs .yo{display:none} .yo-movil{display:block} main{padding:14px 12px 80px} }
+</style>
+</head>
+<body>
+<nav class="tabs" id="tabs"><span class="logo"><img src="https://intelligence.greatrevenue.com/logos/gr.png" alt="Great Revenue"><b>Conocimiento</b></span>
+  <button data-t="mias" class="on">Mis líneas</button><button data-t="todas">Todas las líneas</button><button data-t="como">Cómo funciona</button>
+  <span class="yo" id="yo"></span></nav>
+<div id="yoMovil" class="yo-movil" style="max-width:1180px;margin:12px auto 0;padding:0 12px"></div>
+<main id="main"><p class="vacio">Cargando…</p></main>
+<script>
+(function(){
+  var K = new URLSearchParams(location.search).get('k') || '';
+  var BASE = 'https://mikea.app.n8n.cloud/webhook/';
+  var datos = null, vista = 'mias', abierta = '', quien = '', fPend = 'por', fProp = 'nuevo', borr = {}, espera = null;
+  var $ = function(id){ return document.getElementById(id); };
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function toast(t){ var d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(function(){ d.remove(); }, 3200); }
+  function fecha(ts){ return ts ? new Date(ts * 1000).toLocaleString('es-MX', { timeZone: 'America/Mexico_City', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''; }
+  function guardado(k, v){ try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v); } catch (e) { return ''; } }
+  function post(ruta, cuerpo){
+    return fetch(BASE + ruta, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ k: K }, cuerpo || {})) })
+      .then(function(r){ return r.text().then(function(t){
+        var j = null; try { j = JSON.parse(t); } catch (e) {}
+        if (!r.ok || !j) throw new Error((j && (j.error || j.message)) || (r.status === 500 ? 'No se pudo guardar: revisa que te toque decidirlo' : 'Error ' + r.status));
+        return j;
+      }); });
+  }
+  function puede(decide){ return quien === 'Mike' || quien === decide; }
+  function modal(h){ cerrar(); var f = document.createElement('div'); f.className = 'fondo'; f.id = 'fondo'; f.innerHTML = '<div class="modal">' + h + '</div>'; document.body.appendChild(f); }
+  function cerrar(){ var f = $('fondo'); if (f) f.remove(); }
+
+  function elegirPersona(){
+    var ps = (datos && datos.personas) || [];
+    modal('<h3>¿Quién eres?</h3><p class="nota">Lo que apruebes o decidas queda con tu nombre y la hora. Cada quien ve primero sus líneas.</p><div class="personas">' +
+      ps.map(function(p){ return '<button class="btn' + (p === quien ? '' : ' sec') + '" data-p="' + esc(p) + '">' + esc(p) + '</button>'; }).join('') + '</div>');
+    $('fondo').onclick = function(e){ var p = e.target.getAttribute('data-p'); if (p) { quien = p; guardado('gr_conocimiento_quien', p); cerrar(); pintar(); } };
+  }
+  function pintarYo(){ $('yoMovil').innerHTML = quien ? 'Eres <b>' + esc(quien) + '</b> · <button class="enlace" data-cambiar="1">cambiar</button>' : ''; $('yo').innerHTML = quien ? 'Eres <b>' + esc(quien) + '</b> <button class="enlace" data-cambiar="1">cambiar</button>' : ''; }
+
+  function cargar(){
+    return post('gr-conocimiento').then(function(j){ datos = j; quien = guardado('gr_conocimiento_quien'); if (datos.personas.indexOf(quien) < 0) quien = ''; pintar(); if (!quien) elegirPersona(); })
+      .catch(function(e){ $('main').innerHTML = '<p class="error">No se pudo cargar: ' + esc(e.message) + '. Abre la página con la liga completa que incluye la clave.</p>'; });
+  }
+
+  function pintar(){
+    pintarYo();
+    document.querySelectorAll('#tabs button[data-t]').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-t') === vista); });
+    if (vista === 'como') return pintarComo();
+    if (abierta) return pintarLinea();
+    var ls = datos.lineas.filter(function(l){ return vista === 'todas' || l.lidera === quien || quien === 'Mike' || quien === 'Martha'; });
+    var tot = ls.reduce(function(a, l){ a.p += l.cuentas.pendientes; a.r += l.cuentas.propuestas; return a; }, { p: 0, r: 0 });
+    var h = '<h1>' + (vista === 'mias' ? (quien === 'Mike' || quien === 'Martha' ? 'Todas las líneas' : 'Tus líneas, ' + esc(quien)) : 'Todas las líneas') + '</h1>' +
+      '<p class="nota">' + tot.p + ' pendientes de las bases por decidir y ' + tot.r + ' propuestas de reuniones por revisar. Abre una línea para verlos.</p><div class="grid">';
+    h += ls.map(function(l){
+      if (!l.kb) return '<div class="linea sin"><div class="t">' + esc(l.nombre) + '</div><div class="l">Lidera ' + esc(l.lidera) + '</div><span class="c">Sin base de conocimiento todavía</span></div>';
+      var mios = l.pendientes.filter(function(x){ return !x.decision && puede(x.decide); }).length + l.propuestas.filter(function(x){ return x.estado === 'nuevo' && puede(x.decide); }).length;
+      return '<button class="linea" data-l="' + esc(l.codigo) + '"><div class="t">' + esc(l.nombre) + '</div><div class="l">Lidera ' + esc(l.lidera) + ' · ' + esc(l.kb.nombre) + '</div><div class="cuentas">' +
+        (l.cuentas.pendientes ? '<span class="c pend">' + l.cuentas.pendientes + ' pendientes</span>' : '') +
+        (l.cuentas.propuestas ? '<span class="c prop">' + l.cuentas.propuestas + ' propuestas</span>' : '') +
+        (l.cuentas.por_aplicar ? '<span class="c apl">' + l.cuentas.por_aplicar + ' por llevar a la base</span>' : '') +
+        (mios ? '<span class="c">' + mios + ' te tocan</span>' : '') + (!l.cuentas.pendientes && !l.cuentas.propuestas && !l.cuentas.por_aplicar ? '<span class="c">Al día</span>' : '') + '</div></button>';
+    }).join('') + '</div>';
+    if (!ls.length) h += '<p class="vacio">No lideras ninguna línea en el catálogo. Mira "Todas las líneas".</p>';
+    $('main').innerHTML = h;
+  }
+
+  function linea(){ return datos.lineas.filter(function(l){ return l.codigo === abierta; })[0]; }
+  function pintarLinea(){
+    var l = linea(); if (!l) { abierta = ''; return pintar(); }
+    var pend = l.pendientes.filter(function(x){ return fPend === 'todos' || (fPend === 'por' ? !x.decision : fPend === 'mios' ? !x.decision && puede(x.decide) : !!x.decision); });
+    var prop = l.propuestas.filter(function(x){ return fProp === 'todas' || x.estado === fProp; });
+    var h = '<button class="volver" id="volver">← Todas mis líneas</button><h1>' + esc(l.nombre) + '</h1>' +
+      '<p class="nota">Lidera <b>' + esc(l.lidera) + '</b> (catálogo del portal). Base vigente: <a href="' + esc(l.kb.url) + '" target="_blank" rel="noopener">' + esc(l.kb.nombre) + '</a>' +
+      (l.propuesta ? ' · ' + esc(l.propuesta) : '') + (l.icp ? ' · ' + esc(l.icp) : '') + '.</p>';
+    h += '<h2>Pendientes de la base (' + l.pendientes.length + ')</h2><p class="nota">Choques entre fuentes que quedaron en "Pendiente de verificar". Lo que cambia la promesa (qué se ofrece, cifras, casos con nombre, precios, plazos, países) lo decide Mike; lo demás, quien lidera la línea.</p>' +
+      '<div class="filtros">' + [['por', 'Por decidir'], ['mios', 'Me tocan'], ['hechos', 'Decididos'], ['todos', 'Todos']].map(function(f){ return '<button class="chip' + (fPend === f[0] ? ' on' : '') + '" data-fp="' + f[0] + '">' + f[1] + '</button>'; }).join('') + '</div>';
+    h += pend.length ? pend.map(function(x){
+      var ok = puede(x.decide);
+      return '<div class="card' + (x.decision ? ' hecho' : '') + '"><div class="cab"><span class="tema">' + esc(x.tema) + '</span><span class="etq ' + (x.decide === 'Mike' ? 'mike' : 'lider') + '">Lo decide ' + esc(x.decide) + '</span></div>' +
+        '<div class="bloque"><span>Qué dicen las fuentes</span>' + esc(x.choque) + '</div><div class="bloque"><span>Qué se tomó en la base</span>' + esc(x.tomado) + '</div>' +
+        (x.decision ? '<div class="decidido"><b>Decidido por ' + esc(x.decision.por) + '</b> · ' + esc(fecha(x.decision.ts)) + (x.decision.aplicado ? ' · ya está en la base' : ' · entra en la siguiente versión') + '<br>' + esc(x.decision.texto) + '</div>' : '') +
+        (ok && !(x.decision && x.decision.aplicado) ? '<div class="acc"><button class="btn sec" data-ok="' + esc(x.id) + '">De acuerdo con lo que se tomó</button><button class="btn sec" data-otra="' + esc(x.id) + '">Decidir otra cosa</button></div><div id="otra-' + esc(x.id) + '" hidden><textarea placeholder="Qué se decide y por qué"></textarea><div class="acc"><button class="btn" data-guarda="' + esc(x.id) + '">Guardar decisión</button></div></div>' : '') + '</div>';
+    }).join('') : '<p class="vacio">Nada en este filtro.</p>';
+    h += '<h2>Propuestas de reuniones (' + l.propuestas.length + ')</h2><p class="nota">Lo que Claude sacó de las reuniones con transcript y comparó contra la base. Solo lo aprobado entra a la versión nueva.</p>' +
+      '<div class="filtros">' + [['nuevo', 'Sin revisar'], ['aprobado', 'Aprobadas'], ['descartado', 'No aprobadas'], ['todas', 'Todas']].map(function(f){ return '<button class="chip' + (fProp === f[0] ? ' on' : '') + '" data-fr="' + f[0] + '">' + f[1] + '</button>'; }).join('') + '</div>';
+    var CL = { nuevo: 'Nuevo', corrige: 'Corrige', contradice: 'Contradice', refuerza: 'Confirma' };
+    h += prop.length ? prop.map(function(x){
+      var ok = puede(x.decide) && !x.aplicado;
+      return '<div class="card' + (x.estado !== 'nuevo' ? ' hecho' : '') + '"><div class="cab"><span><span class="etq ' + esc(x.clase) + '">' + esc(CL[x.clase] || x.clase) + '</span> <span class="etq">' + esc(x.seccion || 'Sin sección') + '</span> <span class="etq">Reunión del ' + esc(x.fecha) + '</span></span><span class="etq ' + (x.decide === 'Mike' ? 'mike' : 'lider') + '">Lo decide ' + esc(x.decide) + '</span></div>' +
+        (x.actual ? '<div class="bloque antes"><span>Hoy dice</span>' + esc(x.actual) + '</div>' : '') +
+        '<div class="bloque despues"><span>' + (x.actual ? 'Quedaría' : 'Se agrega') + '</span><span id="txt-' + esc(x.id) + '" style="display:inline;font-size:13px;text-transform:none;letter-spacing:0;font-weight:400;color:inherit">' + esc(x.texto) + '</span></div>' +
+        (x.motivo ? '<div class="nota" style="margin:6px 0 0">' + esc(x.motivo) + '</div>' : '') + (x.cita ? '<div class="nota" style="margin:4px 0 0">Evidencia: “' + esc(x.cita) + '” · ' + (x.citable ? 'se puede usar en público' : 'solo interno') + '</div>' : '') +
+        (x.por ? '<div class="decidido">' + (x.estado === 'aprobado' ? 'Aprobada' : x.estado === 'descartado' ? 'No aprobada' : 'Regresada') + ' por <b>' + esc(x.por) + '</b> · ' + esc(fecha(x.ts)) + (x.aplicado ? ' · ya está en ' + esc(x.kb_version || 'la base') : '') + '</div>' : '') +
+        (ok ? '<div class="acc">' + (x.estado !== 'aprobado' ? '<button class="btn sec" data-ia="aprobar" data-i="' + esc(x.id) + '">Aprobar</button>' : '') + '<button class="btn sec" data-ia="editar" data-i="' + esc(x.id) + '">Editar</button>' +
+          (x.estado !== 'descartado' ? '<button class="btn sec" data-ia="descartar" data-i="' + esc(x.id) + '">No aprobar</button>' : '') + (x.estado !== 'nuevo' ? '<button class="enlace" data-ia="reabrir" data-i="' + esc(x.id) + '">Regresar a sin revisar</button>' : '') + '</div>' : '') + '</div>';
+    }).join('') : '<p class="vacio">' + (l.propuestas.length ? 'Nada en este filtro.' : 'Todavía no hay propuestas de reuniones en esta línea.') + '</p>';
+    var porAplicar = l.cuentas.por_aplicar, b = borr[l.codigo];
+    if (puede(l.lidera)) h += '<div class="barra"><span><b>' + porAplicar + '</b> aprobado' + (porAplicar === 1 ? '' : 's') + ' por llevar a la base</span><button class="btn" id="verBase"' + (porAplicar ? '' : ' disabled') + '>' +
+      (b && b.estado === 'preparando' ? 'Preparando…' : 'Ver cómo quedaría la base') + '</button></div>';
+    $('main').innerHTML = h;
+  }
+
+  function pintarComo(){
+    $('main').innerHTML = '<h1>Cómo funciona</h1><p class="nota">Cada línea tiene una sola base de conocimiento (GR_KB_&lt;línea&gt;). De ahí salen el bot de WhatsApp, los mensajes del motor y las campañas. Esta página es la capa viva: lo que se aprende todos los días.</p>' +
+      '<ol class="pasos"><li><b>Quién decide.</b> Quien lidera la línea según el catálogo del portal. Lo que cambia la promesa (qué se ofrece, cifras, casos con nombre, precios, plazos, países) lo decide Mike y aparece marcado «Lo decide Mike».</li>' +
+      '<li><b>Pendientes de la base.</b> Choques entre fuentes que se dejaron por escrito al armar la base. «De acuerdo» confirma lo que se tomó; «Decidir otra cosa» deja tu decisión. Las dos quedan con tu nombre y la hora.</li>' +
+      '<li><b>Propuestas de reuniones.</b> Claude lee cada reunión con transcript de la línea y propone qué agregar o corregir en la base. Se aprueban, se editan o no se aprueban.</li>' +
+      '<li><b>Llevar a la base.</b> «Ver cómo quedaría la base» arma con Claude la versión siguiente (por ejemplo, de vB a vC) con solo lo aprobado y las decisiones. Al confirmar se crea el documento nuevo en Drive y el catálogo apunta a él. La versión anterior se conserva.</li>' +
+      '<li><b>Lo que sigue.</b> Lote semanal de replies, Open+3 y WhatsApp como patrones, aviso los lunes a cada líder, y la ficha del bot generada desde la base.</li></ol>';
+  }
+
+  function verBase(){
+    var l = linea(), c = l.codigo;
+    post('gr-portal-kb-preparar', { linea: c }).then(function(){
+      borr[c] = { estado: 'preparando' }; pintarLinea();
+      modal('<h3>Preparando la versión nueva</h3><p class="nota" id="kbMsg">Claude está integrando lo aprobado y las decisiones en ' + esc(l.kb.nombre) + '. Tarda de 1 a 3 minutos; puedes cerrar esta ventana y volver.</p><div class="acc"><button class="btn sec" id="cerrar">Cerrar</button></div>');
+      $('cerrar').onclick = cerrar;
+      clearInterval(espera); var n = 0;
+      espera = setInterval(function(){
+        if (++n > 40) { clearInterval(espera); return; }
+        post('gr-portal-kb-borrador', { linea: c }).then(function(j){
+          var x = j.borrador || {}; borr[c] = x;
+          if (x.estado === 'listo') { clearInterval(espera); pintarLinea(); if ($('kbMsg')) verBorrador(l, x); }
+          if (x.estado === 'error') { clearInterval(espera); pintarLinea(); if ($('kbMsg')) $('kbMsg').textContent = 'No se pudo preparar: ' + (x.error || ''); }
+        }).catch(function(){});
+      }, 8000);
+    }).catch(function(e){ toast(e.message); });
+  }
+  function verBorrador(l, b){
+    modal('<h3>Así quedaría ' + esc(b.siguiente) + '</h3><p class="nota">Se crea un documento nuevo junto a ' + esc(b.kb_nombre) + ' (que se conserva) y el catálogo apunta a él.</p><div class="decidido">' + esc(b.resumen || '') + '</div>' +
+      (b.cambios || []).map(function(x){ return '<div class="fila' + (x.aplicado ? '' : ' mal') + '"><b>' + (x.aplicado ? 'Entra' : 'No entra') + '</b> · ' + esc(x.seccion) + '<div class="nota" style="margin:0">' + esc(x.como) + '</div></div>'; }).join('') +
+      '<details><summary class="nota" style="cursor:pointer;margin-top:8px">Ver el documento completo</summary><pre class="kb-md">' + esc(b.markdown || '') + '</pre></details><div class="error" id="kbErr"></div>' +
+      '<div class="acc"><button class="btn sec" id="cerrar">Todavía no</button><button class="btn" id="kbOk">Confirmar y crear ' + esc(b.siguiente) + '</button></div>');
+    $('cerrar').onclick = cerrar;
+    $('kbOk').onclick = function(){
+      var btn = this; btn.disabled = true; btn.textContent = 'Creando…';
+      post('gr-portal-kb-confirmar', { linea: l.codigo }).then(function(j){ cerrar(); toast('Listo: ' + j.nombre + ' creada y ligada en el catálogo'); borr[l.codigo] = null; return cargar(); })
+        .catch(function(e){ btn.disabled = false; btn.textContent = 'Confirmar y crear ' + b.siguiente; $('kbErr').textContent = e.message; });
+    };
+  }
+
+  function decidir(id, decision, texto){
+    var l = linea(), x = l.pendientes.filter(function(p){ return p.id === id; })[0];
+    post('gr-conocimiento-decidir', { por: quien, linea: l.codigo, id: id, tema: x.tema, choque: x.choque, tomado: x.tomado, decision: decision, texto: texto || '' })
+      .then(function(){ toast('Decisión guardada con tu nombre'); return cargar(); }).catch(function(e){ toast(e.message); });
+  }
+  function revisar(id, accion, texto){
+    post('gr-conocimiento-revisar', { por: quien, insumo_id: id, accion: accion, texto: texto || '' })
+      .then(function(){ toast(accion === 'descartar' ? 'No aprobada' : accion === 'reabrir' ? 'Regresada a sin revisar' : 'Aprobada: entra en la siguiente versión de la base'); return cargar(); })
+      .catch(function(e){ toast(e.message); });
+  }
+
+  document.addEventListener('click', function(e){ if (e.target.getAttribute && e.target.getAttribute('data-cambiar')) elegirPersona(); });
+  $('tabs').onclick = function(e){ var t = e.target.getAttribute('data-t'); if (t) { vista = t; abierta = ''; pintar(); } };
+  $('main').onclick = function(e){
+    var t = e.target.closest('[data-l],[data-fp],[data-fr],[data-ok],[data-otra],[data-guarda],[data-ia],#volver,#verBase'); if (!t) return;
+    if (!quien) return elegirPersona();
+    if (t.id === 'volver') { abierta = ''; return pintar(); }
+    if (t.id === 'verBase') return verBase();
+    if (t.hasAttribute('data-l')) { abierta = t.getAttribute('data-l'); fPend = 'por'; fProp = 'nuevo'; window.scrollTo(0, 0); return pintarLinea(); }
+    if (t.hasAttribute('data-fp')) { fPend = t.getAttribute('data-fp'); return pintarLinea(); }
+    if (t.hasAttribute('data-fr')) { fProp = t.getAttribute('data-fr'); return pintarLinea(); }
+    if (t.hasAttribute('data-ok')) { t.disabled = true; return decidir(t.getAttribute('data-ok'), 'confirmo'); }
+    if (t.hasAttribute('data-otra')) { var d = $('otra-' + t.getAttribute('data-otra')); d.hidden = !d.hidden; if (!d.hidden) d.querySelector('textarea').focus(); return; }
+    if (t.hasAttribute('data-guarda')) { var id = t.getAttribute('data-guarda'), v = $('otra-' + id).querySelector('textarea').value.trim(); if (!v) return toast('Escribe qué se decide'); t.disabled = true; return decidir(id, 'cambio', v); }
+    if (t.hasAttribute('data-ia')) {
+      var a = t.getAttribute('data-ia'), i = t.getAttribute('data-i');
+      if (a === 'editar') {
+        var actual = ($('txt-' + i) || {}).textContent || '';
+        modal('<h3>Editar la propuesta</h3><textarea id="edTxt" style="min-height:120px">' + esc(actual) + '</textarea><div class="acc"><button class="btn sec" id="cerrar">Cancelar</button><button class="btn" id="edOk">Guardar y aprobar</button></div>');
+        $('cerrar').onclick = cerrar; $('edOk').onclick = function(){ var v = $('edTxt').value.trim(); if (!v) return; cerrar(); revisar(i, 'editar', v); };
+        return;
+      }
+      t.disabled = true; return revisar(i, a);
+    }
+  };
+  if (!K) { $('main').innerHTML = '<p class="error">Falta la clave en la liga (?k=…). Abre la página con la liga completa que te enviaron.</p>'; return; }
+  cargar();
+})();
+</script>
+</body>
+</html>
