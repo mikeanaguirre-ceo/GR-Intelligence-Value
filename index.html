@@ -877,13 +877,14 @@ function responsableTarea(titulo, personaMotor){ return esFirma(titulo) ? "Marth
 function persResp(x,map){ var r=personaFromSubject((x.metadata||{}).subject); if(r) return r; var oid=String((x.engagement||{}).ownerId||""); return map[oid]||(oid?("Owner "+oid):"Sin asignar"); }
 // 23oct2026 (Mike): las tareas viven en Estado (pendientes primero) y TODAS las notas, completas, en su pestana.
 function grNotaTexto(x){ var m=x.metadata||{}, e=x.engagement||{}; var h=String(m.body||e.bodyPreview||''); return h.replace(/<br\s*\/?>/gi,'\n').replace(/<\/(p|div|li|tr|h\d)>/gi,'\n').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/[ \t]+/g,' ').replace(/\n\s*\n+/g,'\n').trim(); }
-async function cargarActividadesGR(dealId,containerId){
+// 25oct2026 (ciclo 2, ahorro): la ficha recibe tareas y notas con los datos de empresa (gr-company); gr-act queda para refrescar.
+async function cargarActividadesGR(dealId,containerId,pre){
   var box=document.getElementById(containerId); if(!box) return;
   var nbox=document.getElementById('grmd-notas'), nn=document.getElementById('grmd-notas-n');
   box.innerHTML='<div style="color:#6B7280;font-size:11px">Cargando tareas…</div>'; if(nbox) nbox.innerHTML='<div class="md-nota">Cargando…</div>'; if(nn) nn.textContent='';
   try{
-    var r=await fetch('https://mikea.app.n8n.cloud/webhook/gr-act?dealId='+encodeURIComponent(dealId));
-    var data=await r.json();
+    var data=pre;
+    if(!data){ var r=await fetch('https://mikea.app.n8n.cloud/webhook/gr-act?dealId='+encodeURIComponent(dealId)); data=await r.json(); }
     if(String(window.__grEditId||'')!==String(dealId)) return;
     var tasks=((data&&data.results)||[]).filter(function(x){return (x.engagement&&x.engagement.type)==='TASK';});
     var notas=((data&&data.results)||[]).filter(function(x){return (x.engagement&&x.engagement.type)==='NOTE';}).sort(function(a,b){return ((b.engagement||{}).timestamp||0)-((a.engagement||{}).timestamp||0);});
@@ -940,7 +941,6 @@ function abrirEditarDealGR(dealId){
   grmdCargarContactos(dealId, d.cliente||d.name||'');
   document.getElementById('grmd-status').textContent=''; document.getElementById('grmd-save').disabled=false;
   document.getElementById('gr-modal-edit').style.display='flex';
-  cargarActividadesGR(dealId, 'grmd-acts');
 }
 // 22oct2026 — Ventana por pestanas (aprobada por Mike): Resumen, Contacto y empresa, Origen y campana, Tareas y notas.
 // 23oct2026 (Mike): toda la secuencia de la persona, de la cuenta de Amplemarket de GR (sin costo), al abrir Origen.
@@ -1259,6 +1259,7 @@ async function grmdCargarContactos(dealId, empresa){
   try{
     var r=await fetch('https://mikea.app.n8n.cloud/webhook/gr-company',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dealId:dealId||'',empresa:empresa||''})});
     var data=await r.json(); var cts=(data&&data.contactos)||[];
+    if(dealId && String(window.__grEditId||'')===String(dealId)){ if(data&&Array.isArray(data.actividades)) cargarActividadesGR(dealId,'grmd-acts',{results:data.actividades}); else cargarActividadesGR(dealId,'grmd-acts'); }
     // 23oct2026: la ficha abre con el contacto de la oportunidad, no con el primero de la empresa (DP World mostraba a otra persona).
     var _dd=((DATA&&DATA.deals)||[]).concat((DATA&&DATA.won)||[]).filter(function(x){ return String(x.id)===String(dealId); })[0]||{};
     var _nm=function(x){ return String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]+/g,' ').trim(); };
@@ -1272,7 +1273,7 @@ async function grmdCargarContactos(dealId, empresa){
     sel.innerHTML=cts.map(function(c){ return '<option value="'+c.id+'">'+grEsc(c.nombre)+(c.puesto?(' \u00b7 '+grEsc(c.puesto)):'')+'</option>'; }).join('');
     grmdSyncPhone();
     var _po=document.querySelector('#gr-modal-edit .md-pane[data-pane="origen"]'); if(_po&&_po.classList.contains('on')){ window.__grSecuencia=null; grmdCargarSecuencia(); }
-  }catch(e){ sel.innerHTML='<option value="">(error al cargar)</option>'; }
+  }catch(e){ sel.innerHTML='<option value="">(error al cargar)</option>'; if(dealId && String(window.__grEditId||'')===String(dealId)) cargarActividadesGR(dealId,'grmd-acts'); }
 }
 async function guardarDealGR(){
   var dealId=window.__grEditId; if(!dealId) return;
@@ -1399,7 +1400,18 @@ function prodsPresentesDe(arr){
   return pres;
 }
 // Personas presentes (para conteo) en un arreglo, cada item con .personas (deals/alertas) o .persona (tareas)
-function personasDeItem(it){ if(it&&Array.isArray(it.personas)) return it.personas; if(it&&it.persona) return [it.persona]; return []; }
+// 25oct2026 (Mike, ciclo 2): las oportunidades se ven y se filtran por su Responsable de la cuenta (campo gr_responsable),
+// no por el dueno de HubSpot (solo hay dos licencias y no dice quien lleva la cuenta). Las alertas toman el Responsable de
+// su oportunidad. Las tareas siguen con la persona que las hace.
+function grEquipoNombre(email){ var e=String(email||'').toLowerCase().trim(); if(!e) return ''; var eq=((pipeCfg()||{}).equipo)||[]; for(var i=0;i<eq.length;i++){ if(String(eq[i].email||'').toLowerCase()===e) return eq[i].nombre; } var b=e.split('@')[0].split(/[._-]/)[0]; return b?b.charAt(0).toUpperCase()+b.slice(1):''; }
+function grRespDe(d){ var c=(d&&d.campos)||{}; return grEquipoNombre(c.gr_responsable); }
+function grApoyoDe(d){ var c=(d&&d.campos)||{}; var r=grRespDe(d); return String(c.gr_apoyo||'').split(';').map(grEquipoNombre).filter(function(n){ return n && n!==r; }); }
+function grRespNombre(d){ return grRespDe(d) || (d&&d.owner) || '—'; }
+function grDealPorId(id){ var g=(typeof DATA!=='undefined'&&DATA)?DATA.generadoEn:''; if(!window.__grDealIdx||window.__grDealIdxG!==g){ var m={}; ((DATA&&DATA.deals)||[]).concat((DATA&&DATA.won)||[],(DATA&&DATA.perdidas)||[]).forEach(function(x){ m[String(x.id)]=x; }); window.__grDealIdx=m; window.__grDealIdxG=g; } return window.__grDealIdx[String(id)]||null; }
+function personasDeItem(it){
+  if(it&&it.campos&&it.stage){ var r=grRespDe(it); return r?[r]:[]; }
+  if(it&&it.accion&&it.dealId){ var d=grDealPorId(it.dealId); if(d){ var r2=grRespDe(d); return r2?[r2]:[]; } }
+  if(it&&Array.isArray(it.personas)) return it.personas; if(it&&it.persona) return [it.persona]; return []; }
 // ===== Render de filtros unificado =====
 function _chip(menu,k,v,label,active,extra){ return '<button class="chip '+(active?'active':'')+'" data-f="'+menu+'" data-k="'+k+'" data-v="'+v+'"'+(extra||'')+'>'+label+'</button>'; }
 function _stagesPresentes(arr){
@@ -1414,9 +1426,9 @@ function filtrosHTML(menu, arr, kind){
   var pcount={}; var totalP=0;
   (arr||[]).forEach(function(it){ var ps=personasDeItem(it); if(ps.length===0){ pcount['Otro']=(pcount['Otro']||0)+1; } else { ps.forEach(function(p){ pcount[p]=(pcount[p]||0)+1; }); } totalP++; });
   var pids=catPersonaIds();
-  H+='<div class="filters"><span class="filter-label">Persona:</span>';
+  H+='<div class="filters"><span class="filter-label">'+((kind==='deal'||kind==='alerta')?'Responsable':'Persona')+':</span>';
   H+=_chip(menu,'persona','Todos','Todos ('+totalP+')', f.persona==='Todos');
-  pids.forEach(function(p){ if(pcount[p] || menu==='alertas') H+=_chip(menu,'persona',p, p+' ('+(pcount[p]||0)+')', f.persona===p); });
+  pids.forEach(function(p){ if(pcount[p] || (menu==='alertas' && kind!=='alerta')) H+=_chip(menu,'persona',p, p+' ('+(pcount[p]||0)+')', f.persona===p); });
   if(pcount['Otro']) H+=_chip(menu,'persona','Otro','Otro ('+pcount['Otro']+')', f.persona==='Otro');
   H+='</div>';
   // Semáforo (pipeline, pendientes, alertas — no recap)
@@ -2659,9 +2671,10 @@ function renderPipeline() {
           ? `<div class="kanban-card-sub" style="font-size:10px;color:var(--text-dim);margin-top:2px;">${d.name}</div>`
           : '';
         const _semCol = ({rojo:'#DB0540',amarillo:'#FFCD00',verde:'#62D175',gris:'#9CA3AF',aparcada:'#7C93B8'})[d.semaforo] || 'transparent';
-        const _perChips = (d.personas && d.personas.length)
-          ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;">${d.personas.slice(0,3).map(p=>`<span style="font-size:10px;padding:1px 7px;border-radius:8px;background:rgba(125,42,228,.16);color:#C4A5F0;">${p}</span>`).join('')}</div>`
-          : '';
+        const _resp = grRespDe(d), _apo = grApoyoDe(d);
+        const _perChips = (_resp || _apo.length)
+          ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;">${_resp?`<span title="Responsable de la cuenta" style="font-size:10px;padding:1px 7px;border-radius:8px;background:rgba(125,42,228,.16);color:#C4A5F0;">${_resp}</span>`:''}${_apo.slice(0,3).map(p=>`<span title="Apoyo" style="font-size:10px;padding:1px 7px;border-radius:8px;border:1px solid #374151;color:#9CA3AF;">${p}</span>`).join('')}</div>`
+          : `<div style="margin-top:5px;font-size:10px;color:#FFCD00;">Sin responsable</div>`;
         const _c = d.contacto;
         const _contactoHtml = (_c && (_c.nombre||_c.telefono||_c.puesto||_c.linkedin||_c.linkedin_empresa))
           ? `<div style="margin-top:6px;padding-top:5px;border-top:1px solid var(--border,#2a2d35);font-size:10px;color:var(--text-dim);line-height:1.5;">`
@@ -2704,12 +2717,12 @@ function renderPipeline() {
 
   if (otros.length > 0) {
     html += `<div class="section-title" style="margin-top:20px;">Otros stages <span class="section-count">${otros.length}</span></div>
-      <table class="tbl"><thead><tr><th>Deal</th><th>Stage</th><th>Owner</th><th>Close</th><th class="num">Monto</th></tr></thead><tbody>`;
+      <table class="tbl"><thead><tr><th>Deal</th><th>Stage</th><th>Responsable</th><th>Close</th><th class="num">Monto</th></tr></thead><tbody>`;
     (PIPE_ABIERTAS._otros ? otros : otros.slice(0, 20)).forEach(d => {
       html += `<tr>
         <td>${d.name}</td>
         <td>${tagForStage(d.stage, d.stageLabel)}</td>
-        <td>${d.owner || '—'}</td>
+        <td>${grRespNombre(d)}</td>
         <td>${d.closedate || '—'}</td>
         <td class="num">${fmt(d.amount)}</td>
       </tr>`;
@@ -2879,7 +2892,7 @@ function renderWon() {
         <div class="won-renewal-row">
           <div>
             <div class="won-deal-name">${d.name}</div>
-            <div class="won-deal-prod">${d.prod || ''} · ${d.owner || '—'} · Vence ${d.closedate || '—'}</div>
+            <div class="won-deal-prod">${d.prod || ''} · ${grRespNombre(d)} · Vence ${d.closedate || '—'}</div>
             <div class="urg-bar"><div class="urg-bar-fill ${d.urgencia}" style="width:${barPct}%"></div></div>
           </div>
           <div class="days-cell">
@@ -2943,7 +2956,7 @@ function renderWon() {
         <div class="won-recurring-row">
           <div>
             <div class="won-deal-name">${d.name}</div>
-            <div class="won-deal-prod">${d.prod || '3V'} · ${d.owner || '—'} · Contrato hasta ${d.closedate || '—'}</div>
+            <div class="won-deal-prod">${d.prod || '3V'} · ${grRespNombre(d)} · Contrato hasta ${d.closedate || '—'}</div>
           </div>
           <div style="text-align:center;">
             <span class="dia-corte">Día ${diaCorte}</span>
@@ -2979,14 +2992,14 @@ function renderWon() {
   if (historico.length === 0) {
     html += `<div class="won-empty-bucket">Sin proyectos one-shot cerrados</div>`;
   } else {
-    html += `<table class="tbl" style="border-radius:0 0 8px 8px;"><thead><tr><th>Deal</th><th>Producto</th><th>Owner</th><th>Cierre</th><th class="num">Monto</th></tr></thead><tbody>`;
+    html += `<table class="tbl" style="border-radius:0 0 8px 8px;"><thead><tr><th>Deal</th><th>Producto</th><th>Responsable</th><th>Cierre</th><th class="num">Monto</th></tr></thead><tbody>`;
     historico.forEach(d => {
       const dealId = d.id || '';
       const hsUrl = dealId ? `https://app.hubspot.com/contacts/49671716/record/0-3/${dealId}` : '#';
       html += `<tr>
         <td><strong>${d.cliente || d.name}</strong><br><small style="color:var(--text-dim);">${d.name}</small></td>
         <td>${d.prod || '—'}</td>
-        <td>${d.owner || '—'}</td>
+        <td>${grRespNombre(d)}</td>
         <td>${d.closedate || '—'}</td>
         <td class="num">${fmt(d.amount)}</td>
       </tr>`;
@@ -3010,7 +3023,7 @@ function renderWonLegacy() {
         <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">Total: <strong style="color:var(--text);">${fmtK(total)}</strong></span>
       </div>
       <table class="tbl">
-        <thead><tr><th></th><th>Deal</th><th>Owner</th><th>Close</th><th class="num">Monto</th></tr></thead>
+        <thead><tr><th></th><th>Deal</th><th>Responsable</th><th>Close</th><th class="num">Monto</th></tr></thead>
         <tbody>
   `;
   if (won.length === 0) {
@@ -3029,7 +3042,7 @@ function renderWonLegacy() {
     html += `<tr class="${cls}">
       <td><strong>${urg}</strong></td>
       <td>${clienteDisplay}</td>
-      <td>${d.owner || '—'}</td>
+      <td>${grRespNombre(d)}</td>
       <td>${d.closedate || '—'}</td>
       <td class="num">${fmt(d.amount)}</td>
     </tr>`;
