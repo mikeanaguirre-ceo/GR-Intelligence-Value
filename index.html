@@ -1402,7 +1402,7 @@ function prodsPresentesDe(arr){
 // su oportunidad. Las tareas siguen con la persona que las hace.
 function grEquipoNombre(email){ var e=String(email||'').toLowerCase().trim(); if(!e) return ''; var eq=((pipeCfg()||{}).equipo)||[]; for(var i=0;i<eq.length;i++){ if(String(eq[i].email||'').toLowerCase()===e) return eq[i].nombre; } var b=e.split('@')[0].split(/[._-]/)[0]; return b?b.charAt(0).toUpperCase()+b.slice(1):''; }
 function grRespDe(d){ var c=(d&&d.campos)||{}; return grEquipoNombre(c.gr_responsable); }
-function grApoyoDe(d){ var c=(d&&d.campos)||{}; var r=grRespDe(d); return String(c.gr_apoyo||'').split(';').map(grEquipoNombre).filter(function(n){ return n && n!==r; }); }
+function grApoyoDe(d){ var c=(d&&d.campos)||{}; return String(c.gr_apoyo||'').split(';').map(grEquipoNombre).filter(function(n){ return !!n; }); }
 function grRespNombre(d){ return grRespDe(d) || (d&&d.owner) || '—'; }
 function grDealPorId(id){ var g=(typeof DATA!=='undefined'&&DATA)?DATA.generadoEn:''; if(!window.__grDealIdx||window.__grDealIdxG!==g){ var m={}; ((DATA&&DATA.deals)||[]).concat((DATA&&DATA.won)||[],(DATA&&DATA.perdidas)||[]).forEach(function(x){ m[String(x.id)]=x; }); window.__grDealIdx=m; window.__grDealIdxG=g; } return window.__grDealIdx[String(id)]||null; }
 function personasDeItem(it){
@@ -2619,7 +2619,8 @@ function grPipeFiltrosHTML(pool){
   var nombresL={}; pool.forEach(function(d){ var l=grLiderDe(d); if(l) nombresL[l]=1; });
   Object.keys(nombresL).sort().forEach(function(n){ lid+=chip('lider',n,n,cuenta('lider',function(d){ return grLiderDe(d)===n; })); });
   var apo=chip('apoyo','ALL','Todos',cuenta('apoyo',function(){return true;}));
-  var nombresA={}; pool.forEach(function(d){ grApoyoDe(d).forEach(function(n){ nombresA[n]=1; }); });
+  // 25oct2026 (Mike): todo el equipo del portal aparece en Apoyo, aunque hoy no acompane en ninguna.
+  var nombresA={}; (((pipeCfg()||{}).equipo)||[]).forEach(function(p){ if(p&&p.nombre) nombresA[p.nombre]=1; }); pool.forEach(function(d){ grApoyoDe(d).forEach(function(n){ nombresA[n]=1; }); });
   Object.keys(nombresA).sort().forEach(function(n){ apo+=chip('apoyo',n,n,cuenta('apoyo',function(d){ return grApoyoDe(d).indexOf(n)>=0; })); });
   apo+=chip('apoyo','SIN','Sin apoyo',cuenta('apoyo',function(d){ return !grApoyoDe(d).length; }));
   H_APOYO=fila('Apoyo','Quien acompaña en las reuniones de la oportunidad. No es fijo por producto: se marca en cada oportunidad, en la ficha.',apo);
@@ -2721,7 +2722,7 @@ function renderPipeline() {
           ? `<div class="kanban-card-sub" style="font-size:10px;color:var(--text-dim);margin-top:2px;">${d.name}</div>`
           : '';
         const _semCol = ({rojo:'#DB0540',amarillo:'#FFCD00',verde:'#62D175',gris:'#9CA3AF',aparcada:'#7C93B8'})[d.semaforo] || 'transparent';
-        const _resp = grRespDe(d), _apo = grApoyoDe(d);
+        const _resp = grRespDe(d), _apo = grApoyoDe(d).filter(p => p !== _resp);
         const _perChips = (_resp || _apo.length)
           ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;">${_resp?`<span title="Responsable de la cuenta" style="font-size:10px;padding:1px 7px;border-radius:8px;background:rgba(125,42,228,.16);color:#C4A5F0;">${_resp}</span>`:''}${_apo.slice(0,3).map(p=>`<span title="Apoyo" style="font-size:10px;padding:1px 7px;border-radius:8px;border:1px solid #374151;color:#9CA3AF;">${p}</span>`).join('')}</div>`
           : `<div style="margin-top:5px;font-size:10px;color:#FFCD00;">Sin responsable</div>`;
