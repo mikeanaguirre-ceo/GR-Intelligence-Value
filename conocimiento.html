@@ -247,7 +247,8 @@
     var COL = { 'al día': 'ok', 'atrasada': 'corrige', 'sin registro': '' };
     h += '<h2>Registro de salidas</h2><p class="nota">Qué versión de la base usa cada salida. «Atrasada» = todavía no sale de la base vigente. Las de Marketing las regenera esta sesión; las del Motor, la sesión del Motor.</p><div class="card tabla"><table class="t2"><tr><th>Línea</th><th>Base vigente</th>' + nombres.map(function(n){ return '<th>' + esc(n) + '</th>'; }).join('') + '<th>Por llevar a la base</th><th></th></tr>' + ls.map(function(l){
       return '<tr><td>' + esc(l.nombre) + '<div class="sub">Lidera ' + esc(l.lidera) + '</div></td><td><a href="' + esc(l.kb.url) + '" target="_blank" rel="noopener">' + esc(l.kb.nombre) + '</a></td>' + nombres.map(function(n){
-        var x = sal.filter(function(y){ return y.linea === l.codigo && y.salida === n; })[0];
+        // La fila mas reciente manda (el registro conserva el historial).
+        var x = sal.filter(function(y){ return y.linea === l.codigo && y.salida === n; }).sort(function(p, q){ return String(p.fecha).localeCompare(String(q.fecha)); }).pop();
         return '<td>' + (x ? '<span class="etq ' + (COL[x.estado] || '') + '" title="' + esc(x.donde + ' · ' + x.nota) + '">' + esc(x.estado) + '</span><div class="sub">' + esc(x.duenio) + (x.version_base ? ' · ' + esc(x.version_base) : '') + '</div>' : '—') + '</td>'; }).join('') +
         '<td>' + l.por_aplicar + '</td><td>' + (puede(l.lidera) ? '<button class="btn sec" data-base="' + esc(l.codigo) + '"' + (l.por_aplicar ? '' : ' disabled') + '>Ver cómo quedaría</button>' : '') + '</td></tr>';
     }).join('') + '</table></div>';
