@@ -235,24 +235,31 @@
 
   // ---------- Ronda (Verificar y Actuar) ----------
   function pintarRonda(){
-    var lote = datos.lote, ls = datos.lineas.filter(function(l){ return l.kb; });
-    var h = '<h1>Ronda</h1><p class="nota">Qué versión de la base usa cada línea, qué falta llevar a la base y qué dejó el último lote. Al cierre de cada ronda se mide lo que está en prueba contra la línea base y se publica la versión nueva.</p>';
+    var lote = datos.lote, ls = datos.lineas.filter(function(l){ return l.kb; }), ro = datos.ronda, sal = datos.salidas || [];
+    var h = '<h1>Ronda' + (ro ? ' ' + ro.numero : '') + '</h1>' + (ro ? '<p class="nota">Del <b>' + esc(ro.inicio) + '</b> al <b>' + esc(ro.cierre) + '</b>. ' + esc(ro.linea_base) + '. ' + esc(ro.verificar) + '</p>' : '');
     if (lote) h += '<div class="kpis"><div class="kpi"><div class="v">' + lote.propuestas + '</div><div class="t">propuestas del último lote</div></div><div class="kpi"><div class="v">' + lote.lineas.reduce(function(a, l){ return a + l.revisar; }, 0) + '</div><div class="t">para decidir</div></div><div class="kpi"><div class="v">' + lote.lineas.reduce(function(a, l){ return a + l.confirman; }, 0) + '</div><div class="t">confirman la base</div></div><div class="kpi"><div class="v">' + esc(String(lote.desde).slice(5, 10)) + ' a ' + esc(String(lote.hasta).slice(5, 10)) + '</div><div class="t">semana analizada</div></div></div>';
-    h += '<div class="card tabla"><table class="t2"><tr><th>Línea</th><th>Lidera</th><th>Base vigente</th><th>Por llevar a la base</th><th>Último lote</th><th></th></tr>' + ls.map(function(l){
-      var lt = lote ? lote.lineas.filter(function(x){ return x.linea === l.codigo; })[0] : null;
-      return '<tr><td>' + esc(l.nombre) + '</td><td>' + esc(l.lidera) + '</td><td><a href="' + esc(l.kb.url) + '" target="_blank" rel="noopener">' + esc(l.kb.nombre) + '</a></td><td>' + l.por_aplicar + '</td><td class="sub">' + (lt ? esc(lt.cuentas.replies + ' replies · ' + lt.revisar + ' para decidir · ' + lt.confirman + ' confirman') : '—') + '</td>' +
-        '<td>' + (puede(l.lidera) ? '<button class="btn sec" data-base="' + esc(l.codigo) + '"' + (l.por_aplicar ? '' : ' disabled') + '>Ver cómo quedaría</button>' : '') + '</td></tr>';
+    // En prueba: hipotesis aprobadas que se estan midiendo en una salida.
+    var prueba = []; datos.lineas.forEach(function(l){ l.propuestas.forEach(function(x){ if (x.madurez === 'en_prueba') prueba.push({ l: l, x: x }); }); });
+    h += '<h2>En prueba (' + prueba.length + ')</h2>' + (prueba.length ? prueba.map(function(o){ return '<div class="card"><div class="cab"><span class="t">' + esc(o.l.nombre) + '</span><span class="etq">Aprobada por ' + esc(o.x.por) + ' · ' + esc(fecha(o.x.ts)) + '</span></div><div class="bloque">' + esc(o.x.texto) + '</div></div>'; }).join('')
+      : '<p class="vacio">Todavía no hay hipótesis en prueba. Cuando un líder aprueba una «Hipótesis por probar», pasa aquí y se mide al cierre de la ronda.</p>');
+    // Registro de salidas: que version de la base usa cada salida.
+    var nombres = ['Bot de WhatsApp', 'Plantilla Open+3', 'Secuencias', 'Respuestas a replies y DUO', 'Configuración de señales', 'Minuta y coaching'];
+    var COL = { 'al día': 'ok', 'atrasada': 'corrige', 'sin registro': '' };
+    h += '<h2>Registro de salidas</h2><p class="nota">Qué versión de la base usa cada salida. «Atrasada» = todavía no sale de la base vigente. Las de Marketing las regenera esta sesión; las del Motor, la sesión del Motor.</p><div class="card tabla"><table class="t2"><tr><th>Línea</th><th>Base vigente</th>' + nombres.map(function(n){ return '<th>' + esc(n) + '</th>'; }).join('') + '<th>Por llevar a la base</th><th></th></tr>' + ls.map(function(l){
+      return '<tr><td>' + esc(l.nombre) + '<div class="sub">Lidera ' + esc(l.lidera) + '</div></td><td><a href="' + esc(l.kb.url) + '" target="_blank" rel="noopener">' + esc(l.kb.nombre) + '</a></td>' + nombres.map(function(n){
+        var x = sal.filter(function(y){ return y.linea === l.codigo && y.salida === n; })[0];
+        return '<td>' + (x ? '<span class="etq ' + (COL[x.estado] || '') + '" title="' + esc(x.donde + ' · ' + x.nota) + '">' + esc(x.estado) + '</span><div class="sub">' + esc(x.duenio) + (x.version_base ? ' · ' + esc(x.version_base) : '') + '</div>' : '—') + '</td>'; }).join('') +
+        '<td>' + l.por_aplicar + '</td><td>' + (puede(l.lidera) ? '<button class="btn sec" data-base="' + esc(l.codigo) + '"' + (l.por_aplicar ? '' : ' disabled') + '>Ver cómo quedaría</button>' : '') + '</td></tr>';
     }).join('') + '</table></div>';
-    h += '<div class="aviso"><b>En prueba:</b> todavía no hay piezas en prueba. Se llenan con el paso 2 del plan B (madurez: hipótesis → en prueba → comprobada → núcleo, y refutada o vencida).</div>';
     $('main').innerHTML = h;
   }
   // ---------- Rezago ----------
   function pintarRezago(){
-    var rz = datos.rezago || [], ls = datos.lineas.filter(function(l){ return l.kb && (fSem === 'todas' || mia(l)); });
+    var rz = (datos.rezago || []).filter(function(c){ return c.propuestas > 0; }), ls = datos.lineas.filter(function(l){ return l.kb && (fSem === 'todas' || mia(l)); });
     var tot = rz.reduce(function(a, c){ a.p += c.propuestas; c.lineas.forEach(function(l){ a.r += l.revisar; a.rep += l.cuentas.replies; }); return a; }, { p: 0, r: 0, rep: 0 });
-    var h = '<h1>Rezago</h1><p class="nota">Lo que ya pasó y no se había recolectado, procesado por ciclos de 30 días, de lo más reciente a lo más viejo. Lo viejo pesa menos: sirve sobre todo para confirmar, marcar como "ya no funciona" lo que la base afirma y los datos desmienten, o encontrar huecos. Revisa una ventana por semana.</p>';
+    var h = '<h1>Rezago</h1><p class="nota">Lo que ya pasó y no se había recolectado, procesado por ciclos de 30 días, de lo más reciente a lo más viejo. Lo viejo pesa menos: sirve sobre todo para confirmar, marcar como "ya no funciona" lo que la base afirma y los datos desmienten, o encontrar huecos. Revisa una ventana por semana. En lo de hace más de 90 días solo te llega lo que contradice, corrige, ya no funciona o es un hueco; lo demás se archiva como «vencida».</p>';
     h += '<div class="kpis"><div class="kpi"><div class="v">' + rz.length + '</div><div class="t">ventanas procesadas</div></div><div class="kpi"><div class="v">' + tot.rep + '</div><div class="t">replies leídos (sin fuera de oficina)</div></div><div class="kpi"><div class="v">' + tot.p + '</div><div class="t">propuestas</div></div><div class="kpi"><div class="v">' + tot.r + '</div><div class="t">para decidir</div></div></div>';
-    h += '<div class="aviso"><b>Reuniones del rezago:</b> las de los últimos 90 días con transcript ya están en cola (66 el 26-oct: AM 34, AEO 16, TW 6, LT 4, GenIA 3, BD 2, ITS 1). Se procesan de lunes a viernes a las 9, 13 y 17, hasta 6 por vez, y sus propuestas aparecen aquí. Lo de más de 90 días va en la fase 2.</div>';
+    h += '<div class="aviso"><b>Reuniones del rezago:</b> las de los últimos 90 días con transcript ya están en cola (66 el 26-oct: AM 34, AEO 16, TW 6, LT 4, GenIA 3, BD 2, ITS 1). También están en cola las de más de 90 días (199 más). Se procesan de lunes a viernes a las 19:30, hasta 10 por vez, las más recientes primero. Desde el 26-oct, cada reunión nueva entra sola a la cola desde el Post-Reunión.</div>';
     h += '<div class="filtros"><button class="chip' + (fSem === 'mias' ? ' on' : '') + '" data-fs="mias">Mis líneas</button><button class="chip' + (fSem === 'todas' ? ' on' : '') + '" data-fs="todas">Todas</button></div>';
     if (rz.length) h += '<div class="card tabla"><table class="t2"><tr><th>Línea</th>' + rz.map(function(c){ return '<th>' + esc(String(c.desde).slice(5, 10)) + ' a ' + esc(String(c.hasta).slice(5, 10)) + '</th>'; }).join('') + '<th>Por decidir</th><th></th></tr>' +
       ls.map(function(l){
