@@ -1522,7 +1522,7 @@ let recapFilters = {
 };
 // ===== Estado unificado de filtros (homologado) =====
 var FILT = {
-  pipeline:   { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, excludeP:false, nueva:'ALL', cierre:'ALL', fcampo:'creacion', fper:'todo', fdesde:'', fhasta:'', faltan:false, cita:'ALL' },
+  pipeline:   { persona:'Todos', lider:'ALL', tiempo:'ALL', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, excludeP:false, nueva:'ALL', cierre:'ALL', fcampo:'creacion', fper:'todo', fdesde:'', fhasta:'', faltan:false, cita:'ALL' },
   pendientes: { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', sort:'urgency', nueva:'ALL' },
   alertas:    { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, categoria:'ALL', accion:'ALL', sort:'monto_desc' },
   recap:      { persona:'Todos', grupo:'ALL', prod:'ALL' }
@@ -1530,8 +1530,11 @@ var FILT = {
 // El pipeline recuerda sus filtros en este navegador: al volver, se ve como se dejo.
 var FILT_PIPELINE_BASE = JSON.parse(JSON.stringify(Object.assign({ q:'' }, FILT.pipeline)));
 FILT.pipeline.q = '';
-try { var _fp = JSON.parse(localStorage.getItem('gr_filt_pipeline') || 'null'); if (_fp && typeof _fp === 'object') Object.keys(FILT_PIPELINE_BASE).forEach(function(k){ if (_fp[k] !== undefined) FILT.pipeline[k] = _fp[k]; }); } catch (e) {}
-function guardarFiltrosPipeline(){ try { localStorage.setItem('gr_filt_pipeline', JSON.stringify(FILT.pipeline)); } catch (e) {} }
+try { var _fp = JSON.parse(localStorage.getItem('gr_filt_pipeline_v2') || 'null'); if (_fp && typeof _fp === 'object') Object.keys(FILT_PIPELINE_BASE).forEach(function(k){ if (_fp[k] !== undefined) FILT.pipeline[k] = _fp[k]; }); } catch (e) {}
+// 25oct2026 (Mike): Semaforo, Grupo, Monto, Nuevas, Fecha de cierre por rango y Excluir P_ ya no existen en Pipeline.
+['sem','grupo','nueva','cierre'].forEach(function(k){ FILT.pipeline[k]='ALL'; }); FILT.pipeline.monto=0; FILT.pipeline.excludeP=false; FILT.pipeline.fcampo='creacion';
+if(['todo','u30','u7','ayer','hoy','p7','p30','rango'].indexOf(FILT.pipeline.fper)<0) FILT.pipeline.fper='todo';
+function guardarFiltrosPipeline(){ try { localStorage.setItem('gr_filt_pipeline_v2', JSON.stringify(FILT.pipeline)); } catch (e) {} }
 function hayFiltrosPipeline(){ return Object.keys(FILT_PIPELINE_BASE).some(function(k){ if((k==='fdesde'||k==='fhasta')&&FILT.pipeline.fper!=='rango') return false; if(k==='fcampo'&&(FILT.pipeline.fper||'todo')==='todo') return false; return String(FILT.pipeline[k]) !== String(FILT_PIPELINE_BASE[k]); }); }
 function quitarFiltrosPipeline(){ Object.keys(FILT_PIPELINE_BASE).forEach(function(k){ FILT.pipeline[k] = FILT_PIPELINE_BASE[k]; }); PIPE_ABIERTAS = {}; guardarFiltrosPipeline(); if (typeof renderCurrentTab === 'function') renderCurrentTab(); }
 var MONTO_OPC=[ {id:0,label:'Todos'},{id:10000,label:'≥10k'},{id:50000,label:'≥50k'},{id:100000,label:'≥100k'} ];
@@ -2436,19 +2439,17 @@ function metaNuevas(goal){
 // siguientes pasos o confirmacion del equipo) y se cuenta en la fecha de la reunion, aunque despues la oportunidad avance o se pierda.
 // Obedece el periodo y los filtros de grupo y producto del Pipeline. Las agendadas son las que aun no ocurren.
 function grCitas(){
-  var r=periodoRango(FILT.pipeline), hoy=new Date(), vistos={}, real=[], agen=[];
-  var _ss=FILT.pipeline.stage,_sm=FILT.pipeline.sem,_sn=FILT.pipeline.nueva; FILT.pipeline.stage='ALL'; FILT.pipeline.sem='ALL'; FILT.pipeline.nueva='ALL';
+  var r=grFechaRango(FILT.pipeline), hoy=_diaLocal(new Date()), vistos={}, real=[], agen=[];
   ((DATA&&DATA.deals)||[]).concat((DATA&&DATA.won)||[],(DATA&&DATA.perdidas)||[]).forEach(function(d){
     if(vistos[d.id]) return; vistos[d.id]=1; var c=d.campos||{};
-    if(String(c.gr_prueba)==='true') return;
-    if(FILT.pipeline.excludeP&&d.name&&d.name.startsWith('P_')) return;
-    if(!pasaFiltro('pipeline',d,'deal')) return;
+    if(String(c.gr_prueba)==='true'||grEsInterna(d)) return;
+    if(!grPipePasa(d,['etapa','fecha','cita'])) return;
     var f=String(c.gr_cita_realizada||'').slice(0,10);
     if(f){ if(!r[0]||(f>=r[0]&&f<=r[1])) real.push(d); return; }
-    var fa=c.gr_cita_fecha?new Date(c.gr_cita_fecha):null;
-    if(c.gr_cita_estado==='agendada'&&fa&&!isNaN(fa)&&fa>=hoy) agen.push(d);
+    if(c.gr_cita_estado==='no_realizada') return;
+    var fa=c.gr_cita_fecha?grDiaDe(c.gr_cita_fecha):'';
+    if(fa && (r[0] ? (fa>=r[0]&&fa<=r[1]) : fa>=hoy)) agen.push(d);
   });
-  FILT.pipeline.stage=_ss; FILT.pipeline.sem=_sm; FILT.pipeline.nueva=_sn;
   return {real:real, agen:agen};
 }
 function grCitasLista(){ var el=document.getElementById('gr-citas-lista'); if(!el) return; if(el.style.display==='block'){ el.style.display='none'; return; }
@@ -2563,6 +2564,93 @@ function grPintarReuPendientes(){
   });
 }
 
+// 25oct2026 (Mike) — Filtros de Pipeline aprobados uno por uno: Etapa (Prospeccion / Ventas), Responsable, Lider,
+// Semaforo de tiempos, Producto, Fecha (una sola, cronologica), Cita (solo citas registradas, igual que el recuadro),
+// Faltan datos y Buscar. Las oportunidades internas no aparecen en Pipeline.
+var GR_ETAPAS_PROSP=['1332596061','1332596062','1332596063','1332596064'];
+var GR_ETAPAS_VENTAS=['appointmentscheduled','qualifiedtobuy','presentationscheduled','decisionmakerboughtin','contractsent'];
+var GR_FECHA_OPC=[['todo','Todo'],['u30','Últimos 30 días'],['u7','Últimos 7 días'],['ayer','Ayer'],['hoy','Hoy'],['p7','Próximos 7 días'],['p30','Próximos 30 días'],['rango','Rango']];
+var GR_TIEMPO_OPC=[['ALL','Todos',''],['fuera','Fuera de plazo','Etapa'],['porvencer','Por vencer','Etapa'],['enplazo','En plazo','Etapa'],['cierrevencido','Cierre vencido','Cierre'],['sincierre','Sin fecha de cierre','Cierre']];
+var GR_CITA_REG_OPC=[['ALL','Todas'],['agendada','Agendada'],['realizada','Realizada'],['no_realizada','No se realizó'],['sin','Sin cita registrada']];
+function grI(t){ return '<span class="gr-i" role="button" tabindex="0" title="'+grEsc(t)+'" onclick="event.stopPropagation();grIVer(this)">i</span>'; }
+function grIVer(el){ var f=el.closest('.filters')||el.parentNode; var b=f.querySelector('.gr-i-txt'); if(b&&b.getAttribute('data-src')===el.title){ b.remove(); return; } if(b) b.remove(); b=document.createElement('div'); b.className='gr-i-txt'; b.setAttribute('data-src',el.title); b.textContent=el.title; f.appendChild(b); }
+function grEsInterna(d){ var n=String((d&&d.name)||'').toUpperCase(); return /^(GR|PT)_INTERNO/.test(n) || grupoDeProd(d&&d.prod)==='INTERNO' || String(((d&&d.campos)||{}).gr_interno)==='true'; }
+function grStageLabel(d){ var m={}; stageOrderK().forEach(function(x){ m[x.id]=x.label; }); if(m[d.stage]) return m[d.stage]; if(d.stageLabel) return d.stageLabel; var o=((typeof DATA!=='undefined'&&DATA&&DATA.deals)||[]).filter(function(x){ return String(x.stage)===String(d.stage) && x.stageLabel; })[0]; return o?o.stageLabel:d.stage; }
+function grLiderDe(d){ var pr=((pipeCfg()||{}).productos)||[], k=String((d&&d.prod)||'').toUpperCase(); for(var i=0;i<pr.length;i++){ if(String(pr[i].codigo||'').toUpperCase()===k) return grEquipoNombre(pr[i].lidera); } return ''; }
+function grCitaReg(d){ var c=(d&&d.campos)||{}; if(c.gr_cita_realizada) return 'realizada'; if(c.gr_cita_estado==='no_realizada') return 'no_realizada'; if(c.gr_cita_fecha) return 'agendada'; return 'sin'; }
+function grTiempoDe(d, v){ if(v==='fuera') return d.semaforo==='rojo'; if(v==='porvencer') return d.semaforo==='amarillo'; if(v==='enplazo') return d.semaforo==='verde';
+  var cd=(d.closedate&&d.closedate!=='null')?String(d.closedate).slice(0,10):''; if(v==='sincierre') return !cd; if(v==='cierrevencido') return !!cd && cd<_diaLocal(new Date()); return true; }
+function grFechaRango(f){ var h=_diaLocal(new Date()), p=(f&&f.fper)||'todo';
+  if(p==='hoy') return [h,h]; if(p==='ayer') return [_diaMas(h,-1),_diaMas(h,-1)];
+  if(p==='u7') return [_diaMas(h,-6),h]; if(p==='u30') return [_diaMas(h,-29),h];
+  if(p==='p7') return [h,_diaMas(h,6)]; if(p==='p30') return [h,_diaMas(h,29)];
+  if(p==='rango'){ var a=f.fdesde||_diaMas(h,-6), b=f.fhasta||h; return a<=b?[a,b]:[b,a]; } return ['','']; }
+// La fecha la decide lo que se mira: la oportunidad por su creacion; con el filtro Cita, la cita por su dia.
+function grFechaDe(d){ var c=d.campos||{}, ci=FILT.pipeline.cita||'ALL';
+  if(ci==='realizada') return String(c.gr_cita_realizada||'').slice(0,10);
+  if(ci==='agendada'||ci==='no_realizada') return c.gr_cita_fecha?grDiaDe(c.gr_cita_fecha):'';
+  return grDiaDe(d.createdate); }
+function grPipePasa(d, excepto){ var f=FILT.pipeline, ex=function(k){ return excepto && excepto.indexOf(k)>=0; };
+  if(!ex('etapa')){ var st=f.stage||'ALL'; if(st==='G:prosp'){ if(GR_ETAPAS_PROSP.indexOf(String(d.stage))<0) return false; } else if(st==='G:ventas'){ if(GR_ETAPAS_VENTAS.indexOf(String(d.stage))<0) return false; } else if(st!=='ALL' && grStageLabel(d)!==st) return false; }
+  if(!ex('persona') && f.persona && f.persona!=='Todos'){ var ps=personasDeItem(d); if(f.persona==='Otro'){ if(ps.length) return false; } else if(ps.indexOf(f.persona)<0) return false; }
+  if(!ex('lider') && f.lider && f.lider!=='ALL' && grLiderDe(d)!==f.lider) return false;
+  if(!ex('tiempo') && f.tiempo && f.tiempo!=='ALL' && !grTiempoDe(d,f.tiempo)) return false;
+  if(!ex('prod') && f.prod && f.prod!=='ALL' && d.prod!==f.prod) return false;
+  if(!ex('cita') && f.cita && f.cita!=='ALL' && grCitaReg(d)!==f.cita) return false;
+  if(!ex('fecha') && f.fper && f.fper!=='todo'){ var r=grFechaRango(f), v=grFechaDe(d); if(!v||v<r[0]||v>r[1]) return false; }
+  if(!ex('faltan') && !faltanPasa(d)) return false;
+  if(!ex('q') && !pipeQPasa(d)) return false;
+  return true; }
+function grPipeFiltrosHTML(pool){
+  var f=FILT.pipeline;
+  var cuenta=function(k, prueba){ return pool.filter(function(d){ return grPipePasa(d,[k]) && prueba(d); }).length; };
+  var chip=function(k,v,label,n,extra){ var on=String(f[k]||'')===String(v); return '<button class="chip '+(on?'active':'')+'" data-f="pipeline" data-k="'+k+'" data-v="'+grEsc(v)+'"'+(extra||'')+'>'+grEsc(label)+(n===null||n===undefined?'':' '+n)+'</button>'; };
+  var fila=function(titulo, info, cuerpo){ return '<div class="filters"><span class="filter-label">'+titulo+' '+grI(info)+'</span>'+cuerpo+'</div>'; };
+  var H='';
+  // Etapa
+  var et=chip('stage','ALL','Todos',cuenta('etapa',function(){return true;}));
+  et+=chip('stage','G:prosp','Prospección',cuenta('etapa',function(d){ return GR_ETAPAS_PROSP.indexOf(String(d.stage))>=0; }),' style="border-color:#DB054080;"');
+  stageOrder().filter(function(x){ return GR_ETAPAS_PROSP.indexOf(String(x.id))>=0; }).forEach(function(x){ var n=cuenta('etapa',function(d){ return String(d.stage)===String(x.id); }); if(n||f.stage===x.label) et+=chip('stage',x.label,x.label,n); });
+  et+=chip('stage','G:ventas','Ventas',cuenta('etapa',function(d){ return GR_ETAPAS_VENTAS.indexOf(String(d.stage))>=0; }),' style="border-color:#62D17580;"');
+  stageOrder().filter(function(x){ return GR_ETAPAS_VENTAS.indexOf(String(x.id))>=0; }).forEach(function(x){ var n=cuenta('etapa',function(d){ return String(d.stage)===String(x.id); }); if(n||f.stage===x.label) et+=chip('stage',x.label,x.label,n); });
+  stageOrderK().filter(function(x){ return GR_ETAPAS_PROSP.indexOf(String(x.id))<0 && GR_ETAPAS_VENTAS.indexOf(String(x.id))<0; }).forEach(function(x){ var n=cuenta('etapa',function(d){ return String(d.stage)===String(x.id); }); if(n) et+=chip('stage',x.label,x.label,n); });
+  var _ren=pool.filter(function(d){ return String(d.stage)==='1355589932'; }).length; if(_ren && et.indexOf('data-v="Renovación"')<0) et+=chip('stage',grStageLabel({stage:'1355589932'}),grStageLabel({stage:'1355589932'}),cuenta('etapa',function(d){ return String(d.stage)==='1355589932'; }));
+  H+=fila('Etapa','Prospección: Señal, Reply, Contactado y En Conversación (aún sin cita). Ventas: Atracción, Educación, Propuesta y Aprobación (ya hay o hubo cita). Elige el grupo o una etapa.',et);
+  // Responsable
+  var resp=chip('persona','Todos','Todos',cuenta('persona',function(){return true;}));
+  var nombresR={}; pool.forEach(function(d){ var r=grRespDe(d); if(r) nombresR[r]=1; });
+  Object.keys(nombresR).sort().forEach(function(n){ resp+=chip('persona',n,n,cuenta('persona',function(d){ return grRespDe(d)===n; })); });
+  var sinR=cuenta('persona',function(d){ return !grRespDe(d); }); if(sinR) resp+=chip('persona','Otro','Sin responsable',sinR);
+  H+=fila('Responsable','Quien lleva la cuenta. Es un campo de cada oportunidad: nace igual al líder del producto y se puede cambiar en la ficha.',resp);
+  // Lider
+  var lid=chip('lider','ALL','Todos',cuenta('lider',function(){return true;}));
+  var nombresL={}; pool.forEach(function(d){ var l=grLiderDe(d); if(l) nombresL[l]=1; });
+  Object.keys(nombresL).sort().forEach(function(n){ lid+=chip('lider',n,n,cuenta('lider',function(d){ return grLiderDe(d)===n; })); });
+  H+=fila('Líder','Quien lidera el producto según la ficha de productos del portal. No se edita en la oportunidad: cambia si cambias el líder en el portal.',lid);
+  // Semaforo de tiempos
+  var ti='', grupoAnt='';
+  GR_TIEMPO_OPC.forEach(function(o){ if(o[2] && o[2]!==grupoAnt){ ti+='<span style="font-size:11px;color:#6B7280;margin-left:6px;">'+o[2]+':</span>'; grupoAnt=o[2]; } ti+=chip('tiempo',o[0],o[1],o[0]==='ALL'?cuenta('tiempo',function(){return true;}):cuenta('tiempo',function(d){ return grTiempoDe(d,o[0]); })); });
+  H+=fila('Semáforo de tiempos','Etapa: días que lleva en su etapa contra el plazo que el portal le da a esa etapa (fuera de plazo, por vencer, en plazo). Cierre: la fecha en que esperamos firmar ya pasó, o no tiene fecha.',ti);
+  // Producto
+  var pr=chip('prod','ALL','Todos',cuenta('prod',function(){return true;}));
+  var orden=((CAT().productos)||CAT_FALLBACK.productos||[]).map(function(x){return x.id;});
+  var prods={}; pool.forEach(function(d){ if(d.prod) prods[d.prod]=1; });
+  Object.keys(prods).filter(function(p){ return ['PT','IMMMU','Interno','Otro','P-Otro'].indexOf(p)<0; }).sort(function(a,b){ var ia=orden.indexOf(a), ib=orden.indexOf(b); return (ia<0?99:ia)-(ib<0?99:ib); }).forEach(function(p){ var n=cuenta('prod',function(d){ return d.prod===p; }); if(n) pr+=chip('prod',p,p,n); });
+  H+=fila('Producto','Producto de la oportunidad. Solo aparecen los productos que tienen oportunidades con los demás filtros.',pr);
+  // Fecha
+  var fe=GR_FECHA_OPC.map(function(o){ return chip('fper',o[0],o[1],null); }).join('');
+  if(f.fper==='rango'){ var rr=grFechaRango(f), est='background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;padding:7px 10px;border-radius:8px;font:inherit;font-size:13px;color-scheme:dark;'; fe+='<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><span style="color:var(--text-dim);font-size:12px;">del</span><input type="date" id="pipe-desde" value="'+rr[0]+'" onchange="pipePeriodoFecha()" style="'+est+'"><span style="color:var(--text-dim);font-size:12px;">al</span><input type="date" id="pipe-hasta" value="'+rr[1]+'" onchange="pipePeriodoFecha()" style="'+est+'"></span>'; }
+  H+=fila('Fecha','Del pasado al futuro. Se aplica al día en que se creó la oportunidad; si eliges una Cita, se aplica al día de la cita. Próximos 7 y 30 días sirven para las citas agendadas.',fe);
+  // Cita
+  var ci=GR_CITA_REG_OPC.map(function(o){ return chip('cita',o[0],o[1],o[0]==='ALL'?null:cuenta('cita',function(d){ return grCitaReg(d)===o[0]; })); }).join('');
+  H+=fila('Cita','Solo las citas que el motor registró con su fecha (desde el 23 de octubre): agendada, realizada con prueba (grabación, siguientes pasos o confirmación) o no realizada. Cuenta igual que el recuadro Citas.',ci);
+  // Faltan datos
+  H+=fila('Faltan datos','Oportunidades a las que les falta Responsable, origen, tipo o partner.','<button class="chip '+(f.faltan?'active':'')+'" data-f="pipeline" data-k="faltan" data-v="toggle">Solo las que les faltan datos '+cuenta('faltan',function(d){ return camposFaltan(d).length>0; })+'</button>');
+  // Acciones
+  H+='<div class="filters" style="border-top:1px solid #2A3142;padding-top:8px;"><span class="filter-label">Acciones:</span><button class="chip" onclick="pipeCompletarTodas(this)" title="El motor llena lo vacío de todas las oportunidades; nunca cambia lo que ya tiene valor" style="border-color:#02ADBA80;color:#02ADBA;">Completar datos de todas</button>'+(hayFiltrosPipeline()?'<button class="chip" onclick="quitarFiltrosPipeline()" style="border-color:#DB054080;">Quitar filtros</button>':'')+'</div>';
+  return H;
+}
+
 function renderPipeline() {
   // Normaliza producto desde el nombre para categorias que el backend deja en Otro (BD, AEO+SEO)
   (DATA.deals||[]).forEach(function(d){
@@ -2579,17 +2667,8 @@ function renderPipeline() {
   const prods = ['ALL', ..._grp];
   const owners = ['ALL', ...new Set(DATA.deals.map(d => d.owner).filter(Boolean))];
 
-  const poolPipe = DATA.deals.filter(d => d.stage !== 'closedwon');
-  const filtered = poolPipe.filter(d => {
-    if (FILT.pipeline.excludeP && d.name && d.name.startsWith('P_')) return false;
-    if (!nuevaPasa(d, FILT.pipeline.nueva)) return false;
-    if (!cierrePasa(d, FILT.pipeline.cierre)) return false;
-    if (!periodoPasa(d, FILT.pipeline)) return false;
-    if (!faltanPasa(d)) return false;
-    if (!pipeQPasa(d)) return false;
-    if (!grCitaPasa(d)) return false;
-    return pasaFiltro('pipeline', d, 'deal');
-  });
+  const poolPipe = DATA.deals.filter(d => d.stage !== 'closedwon' && !grEsInterna(d));
+  const filtered = poolPipe.filter(d => grPipePasa(d));
 
   const activos = filtered.filter(d => d.stage !== '1092009814');
   const total = activos.reduce((s, d) => s + (d.amount || 0), 0);
@@ -2611,33 +2690,7 @@ function renderPipeline() {
   let html = `
     <div class="section">
       <div id="pipeline-metrics-gr-pip" style="margin:0 0 12px"></div>
-      ${filtrosHTML('pipeline', poolPipe, 'deal')}
-      <div class="filters">
-        <span class="filter-label">Fecha de cierre:</span>
-        ${CIERRE_OPC.map(o => `<button class="chip ${(FILT.pipeline.cierre||'ALL')===o[0]?'active':''}" data-f="pipeline" data-k="cierre" data-v="${o[0]}">${o[1]}</button>`).join('')}
-      </div>
-      <div class="filters">
-        <span class="filter-label">Periodo:</span>
-        ${[['creacion','Creación'],['cierre','Cierre']].map(o => `<button class="chip ${(FILT.pipeline.fcampo||'creacion')===o[0]?'active':''}" data-f="pipeline" data-k="fcampo" data-v="${o[0]}" title="La fecha a la que se aplica el periodo">${o[1]}</button>`).join('')}
-        <span style="width:1px;height:20px;background:#2A3142;margin:0 4px;"></span>
-        ${PERIODO_OPC.map(o => `<button class="chip ${(FILT.pipeline.fper||'todo')===o[0]?'active':''}" data-f="pipeline" data-k="fper" data-v="${o[0]}" title="${o[2]}">${o[1]}</button>`).join('')}
-        ${(() => { const r = periodoVista(FILT.pipeline); const mx = (FILT.pipeline.fcampo === 'cierre') ? '' : ` max="${_diaLocal(new Date())}"`; const est = 'background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;padding:7px 10px;border-radius:8px;font:inherit;font-size:13px;color-scheme:dark;cursor:pointer;'; const abrir = `onclick="try{this.showPicker&&this.showPicker()}catch(e){}"`; return `<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><span style="color:var(--text-dim);font-size:12px;">del</span><input type="date" id="pipe-desde" value="${r[0]}"${mx} ${abrir} onchange="pipePeriodoFecha()" title="Fecha de inicio del rango" style="${est}"><span style="color:var(--text-dim);font-size:12px;">al</span><input type="date" id="pipe-hasta" value="${r[1]}"${mx} ${abrir} onchange="pipePeriodoFecha()" title="Fecha de fin del rango (incluida)" style="${est}"></span>`; })()}
-      </div>
-      <div class="filters">
-        <span class="filter-label">Nuevas oportunidades:</span>
-        ${[['ALL','Todas'],['mes','Mes'],['s1','Sem 1'],['s2','Sem 2'],['s3','Sem 3'],['s4','Sem 4'],['g30','>30d'],['g45','>45d'],['g90','>90d']].map(o => { const col = ({s1:'#10B981',s2:'#34d399',s3:'#A3E635',s4:'#FFCD00',g30:'#F59E0B',g45:'#F97316',g90:'#EF4444'})[o[0]]||''; return `<button class="chip ${FILT.pipeline.nueva===o[0]?'active':''}" data-f="pipeline" data-k="nueva" data-v="${o[0]}" ${col?`style="border-color:${col}80;"`:''}>${o[1]}</button>`; }).join('')}
-      </div>
-      <div class="filters">
-        <span class="filter-label">Cita:</span>
-        ${GR_CITA_OPC.map(o => { const n = o[0]==='ALL' ? '' : ` ${poolPipe.filter(d => grCitaDe(d)===o[0]).length}`; return `<button class="chip ${(FILT.pipeline.cita||'ALL')===o[0]?'active':''}" data-f="pipeline" data-k="cita" data-v="${o[0]}">${o[1]}${n}</button>`; }).join('')}
-      </div>
-      <div class="filters">
-        <span class="filter-label">Otros:</span>
-        <button class="chip ${FILT.pipeline.excludeP ? 'active' : ''}" data-f="pipeline" data-k="excludeP" data-v="toggle">Excluir P_</button>
-        <button class="chip ${FILT.pipeline.faltan ? 'active' : ''}" data-f="pipeline" data-k="faltan" data-v="toggle" title="Oportunidades sin responsable, origen, tipo o partner">Faltan datos</button>
-        <button class="chip" onclick="pipeCompletarTodas(this)" title="El motor llena lo vacío de todas las oportunidades; nunca cambia lo que ya tiene valor" style="border-color:#02ADBA80;color:#02ADBA;">Completar datos de todas</button>
-        ${hayFiltrosPipeline() ? `<button class="chip" onclick="quitarFiltrosPipeline()" style="border-color:#DB054080;">Quitar filtros</button>` : ''}
-      </div>
+      ${grPipeFiltrosHTML(poolPipe)}
       <div class="filters">
         <input id="pipe-q" type="search" placeholder="Buscar cliente, oportunidad o contacto" value="${grEsc(FILT.pipeline.q||'')}" oninput="pipeBuscar(this.value)" style="flex:1;min-width:0;max-width:420px;padding:8px 12px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:13px;">
       </div>
@@ -2748,18 +2801,11 @@ function renderPipeline() {
 function renderPipelineMetricsPipeline(){
   var box=document.getElementById('pipeline-metrics-gr-pip'); if(!box) return;
   var allDeals=(DATA&&DATA.deals)||[];
-  var _stSel=FILT.pipeline.stage||'ALL'; FILT.pipeline.stage='ALL';
+  var _stSel=FILT.pipeline.stage||'ALL';
   var filtered=allDeals.filter(function(d){
-    if(d.stage==='closedwon'||esStagePerdida(d.stage)) return false;
-    if(FILT.pipeline.excludeP&&d.name&&d.name.startsWith('P_')) return false;
-    if(!nuevaPasa(d, FILT.pipeline.nueva)) return false;
-    if(!cierrePasa(d, FILT.pipeline.cierre)) return false;
-    if(!periodoPasa(d, FILT.pipeline)) return false;
-    if(!faltanPasa(d)) return false;
-    if(!pipeQPasa(d)) return false;
-    return pasaFiltro('pipeline', d, 'deal');
+    if(d.stage==='closedwon'||esStagePerdida(d.stage)||grEsInterna(d)) return false;
+    return grPipePasa(d,['etapa']);
   });
-  FILT.pipeline.stage=_stSel;
   // stageMap usa el label EXACTO de cada stage en STAGE_ORDER del Kanban
   var stageMap={};
   stageOrder().forEach(function(s){stageMap[s.id]=s.label;});
@@ -2783,7 +2829,7 @@ function renderPipelineMetricsPipeline(){
   var totalPerdida=perd.reduce(function(s,k){return s+(dbs[k]||[]).length;},0);
   var total=totalActivos+totalPerdida;
   if(!total){box.innerHTML='';return;}
-  var h='<div style="margin-bottom:10px;font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.06em">Pipeline GR &middot; <span style="color:#F3F4F6">'+total+'</span> deals &middot; <span style="color:#62D175">'+totalActivos+'</span> activos</div>';
+  var h='<div style="margin-bottom:10px;font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.06em">Resultados &middot; <span style="color:#F3F4F6">'+total+'</span> oportunidades con los filtros de abajo '+grI('Cuántas oportunidades hay en cada etapa con los filtros de abajo aplicados. Toca un recuadro para ver solo esa etapa; tócalo otra vez para quitarlo.')+'</div>';
   h+='<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;">';
   main.forEach(function(k){
     var deals=dbs[k]||[]; if(!deals.length) return;
@@ -2806,10 +2852,11 @@ function renderPipelineMetricsPipeline(){
         '</div>';
     });
   }
-  var _ct=grCitas(), _pp=FILT.pipeline.fper||'todo', _ctC='#7C3AED';
+  var _ct=grCitas(), _ctC='#7C3AED';
   var _pr={}; _ct.real.forEach(function(d){ var k=d.prod||'Sin producto'; _pr[k]=(_pr[k]||0)+1; });
-  var _tt='Citas realizadas (con prueba de asistencia) en el periodo: '+Object.keys(_pr).map(function(k){return k+' '+_pr[k];}).join(', ')+(_ct.agen.length?('. Agendadas que aún no ocurren: '+_ct.agen.length):'')+'. Toca para ver la lista.';
-  h+='<div onclick="grCitasLista()" title="'+grEsc(_tt)+'" style="cursor:pointer;margin-left:auto;display:flex;flex-direction:column;align-items:center;gap:2px;background:'+_ctC+'1f;border:1px solid '+_ctC+'66;border-radius:14px;padding:10px 16px;min-width:88px;"><div style="font-size:22px;font-weight:800;color:#C4A5F0;line-height:1;">'+_ct.real.length+'</div><div style="font-size:10px;font-weight:700;color:#F3F4F6;text-align:center;line-height:1.3;">Citas</div><div style="font-size:11px;font-weight:700;color:#9CA3AF;margin-top:2px;">'+(_ct.agen.length?('+'+_ct.agen.length+' agendadas'):(_pp==='todo'?'todas':'en el periodo'))+'</div></div>';
+  var _abiertas={}; ((DATA&&DATA.deals)||[]).forEach(function(d){ if(d.stage!=='closedwon') _abiertas[d.id]=1; }); var _cerr=_ct.real.filter(function(d){ return !_abiertas[d.id]; }).length;
+  var _tt='Citas que el motor registró con su fecha, con los filtros y la fecha de abajo'+(_cerr?(' (incluye '+_cerr+' de oportunidades ya ganadas o perdidas, que el filtro Cita no muestra porque ya no están en Pipeline)'):'')+'. Realizadas: '+(Object.keys(_pr).map(function(k){return k+' '+_pr[k];}).join(', ')||'ninguna')+'. Agendadas: '+_ct.agen.length+'. Toca para ver la lista.';
+  h+='<div onclick="grCitasLista()" title="'+grEsc(_tt)+'" style="cursor:pointer;margin-left:auto;display:flex;flex-direction:column;align-items:center;gap:2px;background:'+_ctC+'1f;border:1px solid '+_ctC+'66;border-radius:14px;padding:10px 16px;min-width:96px;"><div style="font-size:22px;font-weight:800;color:#C4A5F0;line-height:1;">'+_ct.real.length+'</div><div style="font-size:10px;font-weight:700;color:#F3F4F6;text-align:center;line-height:1.3;">Citas realizadas</div>'+(_cerr?'<div style="font-size:10px;color:#9CA3AF;">'+_cerr+' ya cerrada'+(_cerr!==1?'s':'')+'</div>':'')+'<div style="font-size:11px;font-weight:700;color:#FFCD00;margin-top:2px;">'+_ct.agen.length+' agendadas</div></div>';
   h+='</div><div id="gr-citas-lista" style="display:none;margin-top:10px;padding:12px 14px;border:1px solid #2A3142;border-radius:12px;background:#0d111a;max-height:320px;overflow:auto;"></div>';
   box.innerHTML=h;
 }
@@ -6347,6 +6394,8 @@ if (document.readyState === 'loading') {
 #gr-modal-edit .md-in{width:100%;box-sizing:border-box;padding:9px 11px;border-radius:10px;background:#0a0e17;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;color-scheme:dark;}
 #gr-modal-edit .md-in:focus{outline:none;border-color:#02ADBA;}
 #gr-modal-edit .md-2{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;}
+.gr-i{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid #6B7280;color:#9CA3AF;font-size:10px;font-weight:700;font-style:italic;cursor:pointer;margin-left:3px;text-transform:none;letter-spacing:0;vertical-align:middle;}
+.gr-i-txt{flex-basis:100%;font-size:12px;color:#cbd2e1;background:#121726;border:1px solid #2A3142;border-radius:8px;padding:8px 10px;margin-top:4px;text-transform:none;letter-spacing:0;font-weight:400;}
 #gr-modal-edit .md-nota{font-size:11px;color:#8b93a7;line-height:1.5;margin-top:6px;}
 #gr-modal-edit .md-msg{font-size:13px;color:#9CA3AF;margin-top:10px;line-height:1.5;padding:10px 12px;border-radius:10px;background:#0a0e17;border:1px solid #2A3142;font-weight:600;}
 #gr-modal-edit .md-msg:empty{display:none;}
