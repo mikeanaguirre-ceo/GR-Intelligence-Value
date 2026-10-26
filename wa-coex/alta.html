@@ -66,13 +66,16 @@
 </main>
 
 <script>
-  var LLAVE = new URLSearchParams(location.search).get('k') || '';
+  var PARAMS = new URLSearchParams(location.search);
+  var LLAVE = PARAMS.get('k') || '';
+  // Plan B del 26 oct: se puede probar otra configuración de Embedded Signup sin republicar (&cfg=<config_id>).
+  var CFG = /^\d{6,20}$/.test(PARAMS.get('cfg') || '') ? PARAMS.get('cfg') : '';
   // Se quita la llave de la barra: Facebook amarra el code a la dirección de la página (error 36008 al canjear) y así
   // esa dirección es siempre .../wa-coex/alta.html, sin parámetros. Si se recarga la página hay que volver a abrir la liga.
   try { if (LLAVE) history.replaceState(null, '', location.pathname); } catch (e) {}
   var API = 'https://mikea.app.n8n.cloud/webhook/wa-coex-alta-api';
   var APP_ID = '2178039979444955';
-  var CONFIG_ID = '2172938969973319';
+  var CONFIG_ID = CFG || '2172938969973319';
   var signup = null;
   var listado = [];
   // El code del SDK queda atado al redirect_uri interno de Facebook (error 36008 al canjearlo sin él).
@@ -139,7 +142,7 @@
   window.fbAsyncInit = function () {
     FB.init({ appId: APP_ID, autoLogAppEvents: true, xfbml: true, version: 'v26.0' });
     $('conectar').disabled = !LLAVE;
-    pintarEstado(LLAVE ? 'Listo para conectar' : 'Falta la llave en la liga (?k=...)', LLAVE ? '' : 'mal');
+    pintarEstado(LLAVE ? 'Listo para conectar' : 'Falta la llave en la liga (?k=...)', LLAVE ? '' : 'mal', LLAVE ? 'Configuración de Facebook: ' + CONFIG_ID + (CFG ? ' (de la liga)' : '') : '');
   };
 
   function esperarFinal(ms) {
@@ -180,6 +183,7 @@
 
   $('conectar').onclick = function () {
     signup = null;
+    anotar({ config_id: CONFIG_ID, sdk: 'v26.0' });
     pintarEstado('Sigue los pasos en la ventana de Facebook…', '', '');
     FB.login(alVolver, {
       config_id: CONFIG_ID,
