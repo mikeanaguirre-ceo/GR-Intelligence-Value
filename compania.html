@@ -455,6 +455,27 @@
     }
     return '<div class="pf-g"><h4>Precio y monto</h4><div class="pfs">' + html + '</div><p class="monto-ayuda" id="pf-' + i + '-ayuda">' + h(montoAyuda(tipo, p.precio_unitario, p.minimo, p.monto, mon)) + '</p></div>';
   }
+  // GR: la Voz de la marca (entradas fijas E1-E9 del sistema de conocimiento, 26 oct 2026). Cuantos productos activos tienen
+  // cada una y donde se cambia. Sus choques con la Voz del mercado se deciden en la pestana Conocimiento del tablero.
+  function vozMarca(l) {
+    var act = l.filter(function (p) { return p.activo !== false && ['PT', 'EX'].indexOf(p.codigo) < 0; });
+    var con = function (f) { return act.filter(f).length; };
+    var lleno = function (k) { return function (p) { var v = String(p[k] || '').trim(); return v && !/^por definir$/i.test(v); }; };
+    var E = [
+      ['E1', 'Propuesta de valor', con(lleno('propuesta_nombre')), 'Productos · Documentos vigentes'],
+      ['E2', 'ICP', con(lleno('icp_nombre')), 'Productos · Documentos vigentes'],
+      ['E3', 'Llamado a la acción', con(function (p) { return lleno('cta_primario')(p) && lleno('cta_familia')(p); }), 'Productos · Llamado a la acción'],
+      ['E4', 'Presentación del Discovery y template', con(function (p) { return lleno('presentacion_nombre')(p) && lleno('template_nombre')(p); }), 'Productos · Documentos vigentes'],
+      ['E5', 'Catálogo: monto, responsables y partner', con(function (p) { return lleno('lidera')(p) && Number(p.monto) > 0; }), 'Productos · General y Personas'],
+      ['E6', 'Reglas del REA', null, 'Objetivos, reuniones y proceso'],
+      ['E7', 'Configuración de señales', null, 'Amplemarket (DUO) · la sesión del Motor la compara contra cada base'],
+      ['E8', 'Casos citables', null, 'Sección 5 de cada base de conocimiento'],
+      ['E9', 'Directorio de partners', con(lleno('partner')), 'Productos · General (campo Partner)']
+    ];
+    var filas = E.map(function (e) { return '<tr><td><b>' + e[0] + '</b></td><td>' + h(e[1]) + '</td><td>' + (e[2] == null ? '—' : e[2] + ' de ' + act.length) + '</td><td>' + h(e[3]) + '</td></tr>'; }).join('');
+    return tarjeta('7.2', 'Voz de la marca', '<p style="margin:0 0 10px">Las entradas fijas del conocimiento: lo que Great Revenue decide de cada producto. Cambian poco y las decide Mike. Cada base de conocimiento (GR_KB_&lt;línea&gt;) parte de ellas; lo que llega cada día (la Voz del mercado: secuencias, DUO, Open+3, WhatsApp, reuniones, coaching, correcciones y resultados) se compara contra la base en la pestaña <a href="/?tab=conocimiento" target="_blank" rel="noopener">Conocimiento</a> del tablero, donde también se deciden sus choques.</p>' +
+      '<div style="overflow-x:auto"><table class="cat-t" style="width:100%"><thead><tr><th>Entrada</th><th>Qué es</th><th>Productos que la tienen</th><th>Dónde se cambia</th></tr></thead><tbody>' + filas + '</tbody></table></div>');
+  }
   function productos(c) {
     var l = productosDe(c), fam = familiasDe(c), adm = !!(c.info || {}).administra, eq = equipoDe(c), nm = nombresDe(c);
     if (!l.length) return tarjeta(7, 'Productos', '<p class="vacio">Tu compañía todavía no tiene productos configurados. Pídelo abajo y Great Revenue los carga: código, nombre, monto típico, responsables, a quién se avisa y qué se ofrece.</p>' + P.pedir('productos', 'Productos', 'Ej.: mis productos son Curso Excel (por alumno, 3,500) y Diplomado (por cohorte)') + P.solicitudes(c.solicitudes, 'Productos'));
@@ -519,6 +540,7 @@
       + P.pedir('productos', 'Productos', 'Ej.: agrega el producto Synapsis') + P.solicitudes(c.solicitudes, 'Productos'));
     var deCursos = l.filter(function (p) { return p.tipo === 'cursos'; });
     if (deCursos.length || cursosDe(c).length) html += catalogoCursos(c, deCursos, adm);
+    if (c.tenant === 'GR') html += vozMarca(l);
     return html;
   }
   // Catalogo de cursos y precios (productos_cursos): codigo, nombre, familia, precio por participante y si se usa.
