@@ -5,81 +5,94 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Conocimiento Great Revenue</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
-  /* Pagina de equipo del conocimiento de Great Revenue (capa viva, 24 oct 2026). Mismo formato que /gr/whatsapp. */
-  :root{ --marca:#111827; --acento:#7c3aed; --fondo:#f6f6f4; --panel:#fff; --borde:#e4e4df; --texto:#111827; --tenue:#5f5f5a;
-    --ok:#2e7d32; --alerta:#9a5300; --mal:#b3261e; --azul:#1f6fd1; --disp:"Poppins","Segoe UI",Arial,sans-serif; }
-  *{box-sizing:border-box}
-  body{margin:0;font:15px/1.45 "Segoe UI",-apple-system,BlinkMacSystemFont,Calibri,Arial,sans-serif;color:var(--texto);background:var(--fondo)}
+  /* Conocimiento (plan B, 25 oct 2026): pestana del tablero (?tab=conocimiento), con el formato del tablero. Sin clave. */
+  :root{ --purple:#7C3AED; --pink:#EC4899; --cyan:#06B6D4; --mint:#10B981; --yellow:#F59E0B; --red:#EF4444;
+    --bg:#0B0F19; --bg-2:#141827; --bg-3:#1E2433; --border:#2A3142; --text:#F3F4F6; --text-dim:#9CA3AF; --text-mute:#6B7280; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh}
   button,textarea{font:inherit}
-  a{color:var(--azul);text-decoration:none} a:hover{text-decoration:underline}
-  .tabs{height:56px;background:#fff;border-bottom:1px solid var(--borde);display:flex;align-items:stretch;gap:2px;padding:0 14px;overflow-x:auto;position:sticky;top:0;z-index:5}
-  .tabs .logo{display:flex;align-items:center;gap:10px;margin-right:18px;flex:0 0 auto}
-  .tabs .logo img{height:30px;display:block} .tabs .logo b{font:700 14px var(--disp);color:var(--marca);white-space:nowrap}
-  .tabs button{background:transparent;border:0;border-bottom:3px solid transparent;color:var(--tenue);padding:0 14px;font:700 14px var(--disp);cursor:pointer;white-space:nowrap}
-  .tabs button.on{color:var(--marca);border-bottom-color:var(--acento)}
-  .tabs .yo{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tenue);white-space:nowrap;padding-left:12px}
-  .tabs .yo b{color:var(--marca)}
-  main{max-width:1180px;margin:0 auto;padding:20px 16px 80px}
-  h1{font:700 20px var(--disp);margin:0 0 4px} h2{font:700 15px var(--disp);text-transform:uppercase;letter-spacing:.05em;margin:24px 0 8px}
-  .nota{font-size:13px;color:var(--tenue);margin:0 0 14px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-  .linea{background:#fff;border:1px solid var(--borde);border-radius:12px;padding:14px;cursor:pointer;text-align:left;border-top:3px solid var(--acento)}
-  .linea:hover{box-shadow:0 2px 10px rgba(17,24,39,.08)} .linea.sin{border-top-color:#d1d5db;cursor:default;opacity:.75}
-  .linea .t{font:700 14px var(--disp)} .linea .l{font-size:12.5px;color:var(--tenue);margin:2px 0 8px}
-  .cuentas{display:flex;gap:6px;flex-wrap:wrap}
-  .c{font-size:11.5px;font-weight:650;padding:2px 9px;border-radius:10px;background:#f3f4f6;color:#374151}
-  .c.pend{background:#ffeccc;color:var(--alerta)} .c.prop{background:#f1eafe;color:#5b21b6} .c.apl{background:#e4f4ea;color:var(--ok)}
-  .card{background:#fff;border:1px solid var(--borde);border-radius:12px;padding:14px 16px;margin-bottom:10px}
-  .card.hecho{background:#fafaf8}
+  a{color:var(--cyan);text-decoration:none} a:hover{text-decoration:underline}
+  #app{max-width:1400px;margin:0 auto;padding:16px}
+  .hdr{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:linear-gradient(135deg,var(--purple),var(--pink));border-radius:12px;margin-bottom:14px}
+  .hdr b{font-size:17px;font-weight:800;letter-spacing:.5px} .hdr span{font-size:11px;opacity:.85;letter-spacing:1px;text-transform:uppercase}
+  .en-tablero .hdr{display:none}
+  .barra-sup{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .tabs{display:flex;gap:4px;background:var(--bg-2);padding:6px;border-radius:10px;overflow-x:auto}
+  .tab{background:transparent;border:0;color:var(--text-dim);padding:9px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap}
+  .tab:hover{background:var(--bg-3);color:var(--text)}
+  .tab.on{background:linear-gradient(135deg,var(--purple),var(--pink));color:#fff}
+  .tab .n{background:rgba(0,0,0,.3);border-radius:9px;padding:0 7px;margin-left:6px;font-size:11px}
+  .tab .n:empty{display:none}
+  .yo{font-size:13px;color:var(--text-dim)} .yo b{color:var(--text)}
+  h1{font-size:18px;font-weight:800;margin-bottom:4px} h2{font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin:22px 0 10px}
+  .nota{font-size:13px;color:var(--text-dim);margin-bottom:12px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+  .card{background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+  .card.clic{cursor:pointer;text-align:left;color:inherit;width:100%} .card.clic:hover{border-color:var(--purple)}
+  .card.hecho{opacity:.72}
+  .kpi{background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+  .kpi .v{font-size:22px;font-weight:800} .kpi .t{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.8px}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:14px}
+  .t{font-weight:700} .sub{font-size:12px;color:var(--text-dim)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .etq{font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;background:var(--bg-3);color:var(--text-dim);white-space:nowrap}
+  .etq.mike{background:rgba(239,68,68,.18);color:#fca5a5} .etq.lider{background:rgba(6,182,212,.16);color:#67e8f9}
+  .etq.nuevo{background:rgba(16,185,129,.16);color:#6ee7b7} .etq.corrige{background:rgba(245,158,11,.16);color:#fcd34d}
+  .etq.contradice{background:rgba(239,68,68,.18);color:#fca5a5} .etq.refuerza{background:rgba(124,58,237,.2);color:#c4b5fd}
+  .etq.ok{background:rgba(16,185,129,.16);color:#6ee7b7}
   .cab{display:flex;gap:8px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
-  .cab .tema{font-weight:700}
-  .etq{font-size:11px;font-weight:650;padding:1px 8px;border-radius:10px;background:#f3f4f6;color:#374151;white-space:nowrap}
-  .etq.mike{background:#fde2e1;color:#a3261f} .etq.lider{background:#e2f0ff;color:#174f98} .etq.ok{background:#e4f4ea;color:var(--ok)}
-  .etq.nuevo{background:#e4f4ea;color:#166534} .etq.corrige{background:#fff1d6;color:#8a5200} .etq.contradice{background:#fde2e1;color:#a3261f} .etq.refuerza{background:#e2f0ff;color:#174f98}
-  .bloque{font-size:13px;margin-top:8px} .bloque span{display:block;font-size:10.5px;font-weight:700;color:var(--tenue);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
-  .antes{background:#fdf0ef;border-radius:6px;padding:6px 8px} .despues{background:#eef8f1;border-radius:6px;padding:6px 8px}
+  .bloque{font-size:13px;margin-top:8px} .bloque span{display:block;font-size:10.5px;font-weight:700;color:var(--text-mute);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px}
+  .antes{background:rgba(239,68,68,.08);border-left:3px solid var(--red);border-radius:6px;padding:6px 10px}
+  .despues{background:rgba(16,185,129,.08);border-left:3px solid var(--mint);border-radius:6px;padding:6px 10px}
+  .linea-dec{border-top:1px solid var(--border);padding-top:10px;margin-top:10px}
   .acc{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px}
-  .btn{background:var(--acento);color:#fff;border:0;border-radius:8px;padding:6px 14px;font-weight:650;font-size:13px;cursor:pointer}
-  .btn.sec{background:#fff;color:var(--marca);border:1px solid var(--borde)} .btn:disabled{opacity:.5;cursor:default}
-  .enlace{background:none;border:0;color:var(--azul);cursor:pointer;font-size:12.5px;padding:0}
-  textarea{width:100%;min-height:70px;border:1px solid var(--borde);border-radius:8px;padding:8px;font-size:13px;margin-top:6px}
+  .btn{background:linear-gradient(135deg,var(--purple),var(--pink));color:#fff;border:0;border-radius:8px;padding:7px 14px;font-weight:600;font-size:13px;cursor:pointer}
+  .btn.sec{background:var(--bg-3);color:var(--text);border:1px solid var(--border)} .btn:disabled{opacity:.45;cursor:default}
+  .enlace{background:none;border:0;color:var(--cyan);cursor:pointer;font-size:12.5px}
+  textarea{width:100%;min-height:70px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font-size:13px;margin-top:6px}
   .filtros{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 12px}
-  .chip{border:1px solid var(--borde);background:#fff;border-radius:16px;padding:5px 12px;font-size:12.5px;cursor:pointer}
-  .chip.on{background:var(--acento);border-color:var(--acento);color:#fff}
-  .decidido{background:#e4f4ea;border-radius:8px;padding:8px 10px;font-size:12.5px;margin-top:8px}
-  .barra{position:sticky;bottom:12px;background:#111827;color:#fff;border-radius:12px;padding:10px 14px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:16px}
-  .barra .btn{background:#fff;color:#111827}
-  .volver{background:none;border:0;color:var(--azul);cursor:pointer;padding:0;font-size:13px;margin-bottom:8px}
-  .vacio{color:var(--tenue);font-size:13px;padding:10px 0}
-  .fondo{position:fixed;inset:0;background:rgba(17,24,39,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
-  .modal{background:#fff;border-radius:14px;padding:18px 20px;max-width:720px;width:100%;max-height:88vh;overflow:auto}
-  .modal h3{font:700 16px var(--disp);margin:0 0 8px}
-  .personas{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
-  .kb-md{white-space:pre-wrap;font-size:11.5px;max-height:45vh;overflow:auto;background:#f6f6f4;padding:8px;border-radius:6px}
-  .fila{border-bottom:1px solid var(--borde);padding:6px 0;font-size:13px} .fila.mal b{color:var(--mal)}
-  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 16px;border-radius:9px;font-size:13px;z-index:30}
-  .error{color:var(--mal);font-size:13px;margin-top:6px}
-  ol.pasos{font-size:13.5px;line-height:1.55;padding-left:20px} ol.pasos li{margin-bottom:6px}
-  .yo-movil{display:none;font-size:13px;color:var(--tenue);margin-bottom:10px}
-  .en-tablero .tabs .logo{display:none} .en-tablero .tabs{position:static}
-  @media (max-width:640px){ .tabs .logo b{display:none} .tabs .yo{display:none} .yo-movil{display:block} main{padding:14px 12px 80px} }
+  .chip{border:1px solid var(--border);background:var(--bg-2);color:var(--text-dim);border-radius:16px;padding:5px 12px;font-size:12.5px;cursor:pointer}
+  .chip.on{background:var(--purple);border-color:var(--purple);color:#fff}
+  .decidido{background:rgba(16,185,129,.1);border-radius:8px;padding:8px 10px;font-size:12.5px;margin-top:8px;color:#a7f3d0}
+  .aviso{background:rgba(6,182,212,.08);border:1px solid rgba(6,182,212,.3);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--text-dim);margin-bottom:12px}
+  .volver{background:none;border:0;color:var(--cyan);cursor:pointer;font-size:13px;margin-bottom:8px}
+  .vacio{color:var(--text-mute);font-size:13px;padding:10px 0}
+  .fondo{position:fixed;inset:0;background:rgba(4,6,12,.72);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
+  .modal{background:var(--bg-2);border:1px solid var(--border);border-radius:14px;padding:18px 20px;max-width:720px;width:100%;max-height:88vh;overflow:auto}
+  .modal h3{font-size:16px;font-weight:800;margin-bottom:8px}
+  .kb-md{white-space:pre-wrap;font-size:11.5px;max-height:45vh;overflow:auto;background:var(--bg);padding:8px;border-radius:6px;color:var(--text-dim)}
+  .fila{border-bottom:1px solid var(--border);padding:6px 0;font-size:13px} .fila.mal b{color:var(--red)}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--bg-3);border:1px solid var(--border);color:#fff;padding:9px 16px;border-radius:9px;font-size:13px;z-index:30}
+  .error{color:#fca5a5;font-size:13px;margin-top:6px}
+  ol.pasos{font-size:13.5px;line-height:1.6;padding-left:20px;color:var(--text-dim)} ol.pasos li{margin-bottom:6px} ol.pasos b{color:var(--text)}
+  .tabla{overflow-x:auto} table.t2{width:100%;border-collapse:collapse;font-size:13px} table.t2 th{text-align:left;color:var(--text-mute);font-size:11px;text-transform:uppercase;letter-spacing:.8px;padding:6px 8px;border-bottom:1px solid var(--border)}
+  table.t2 td{padding:8px;border-bottom:1px solid var(--border);vertical-align:top}
+  @media (max-width:640px){ #app{padding:10px} .grid{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
-<nav class="tabs" id="tabs"><span class="logo"><img src="https://intelligence.greatrevenue.com/logos/gr.png" alt="Great Revenue"><b>Conocimiento</b></span>
-  <button data-t="mias" class="on">Mis líneas</button><button data-t="todas">Todas las líneas</button><button data-t="como">Cómo funciona</button>
-  <span class="yo" id="yo"></span></nav>
-<div id="yoMovil" class="yo-movil" style="max-width:1180px;margin:12px auto 0;padding:0 12px"></div>
-<main id="main"><p class="vacio">Cargando…</p></main>
+<div id="app">
+  <div class="hdr"><div><b>GREAT REVENUE</b><br><span>Conocimiento</span></div></div>
+  <div class="barra-sup">
+    <nav class="tabs" id="tabs">
+      <button class="tab on" data-v="semana">Esta semana<span class="n" id="n-semana"></span></button>
+      <button class="tab" data-v="fijas">Decisiones fijas<span class="n" id="n-fijas"></span></button>
+      <button class="tab" data-v="ronda">Ronda</button>
+      <button class="tab" data-v="rezago">Rezago</button>
+      <button class="tab" data-v="como">Cómo funciona</button>
+    </nav>
+    <span class="yo" id="yo"></span>
+  </div>
+  <main id="main"><p class="vacio">Cargando…</p></main>
+</div>
 <script>
 (function(){
   // Sin clave, como el tablero (decision de Mike, 25 oct). Si una liga vieja trae ?k=, se manda igual.
   var K = new URLSearchParams(location.search).get('k') || '';
   var BASE = 'https://mikea.app.n8n.cloud/webhook/';
-  var datos = null, vista = 'mias', abierta = '', quien = '', fPend = 'por', fProp = 'nuevo', borr = {}, espera = null;
+  var datos = null, vista = 'semana', abierta = '', quien = '', fSem = 'mias', fFij = 'por', espera = null;
+  if (window.self !== window.top) document.documentElement.classList.add('en-tablero');
   var $ = function(id){ return document.getElementById(id); };
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   function toast(t){ var d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(function(){ d.remove(); }, 3200); }
@@ -94,122 +107,183 @@
       }); });
   }
   function puede(decide){ return quien === 'Mike' || quien === decide; }
+  function mia(l){ return quien === 'Mike' || quien === 'Martha' || l.lidera === quien; }
   function modal(h){ cerrar(); var f = document.createElement('div'); f.className = 'fondo'; f.id = 'fondo'; f.innerHTML = '<div class="modal">' + h + '</div>'; document.body.appendChild(f); }
   function cerrar(){ var f = $('fondo'); if (f) f.remove(); }
+  var CL = { nuevo: 'Nuevo', corrige: 'Corrige', contradice: 'Contradice', refuerza: 'Confirma' };
 
   function elegirPersona(){
     var ps = (datos && datos.personas) || [];
-    modal('<h3>¿Quién eres?</h3><p class="nota">Lo que apruebes o decidas queda con tu nombre y la hora. Cada quien ve primero sus líneas.</p><div class="personas">' +
+    modal('<h3>¿Quién eres?</h3><p class="nota">Lo que apruebes o decidas queda con tu nombre y la hora. Cada quien ve primero sus líneas.</p><div class="acc">' +
       ps.map(function(p){ return '<button class="btn' + (p === quien ? '' : ' sec') + '" data-p="' + esc(p) + '">' + esc(p) + '</button>'; }).join('') + '</div>');
     $('fondo').onclick = function(e){ var p = e.target.getAttribute('data-p'); if (p) { quien = p; guardado('gr_conocimiento_quien', p); cerrar(); pintar(); } };
   }
-  function pintarYo(){ $('yoMovil').innerHTML = quien ? 'Eres <b>' + esc(quien) + '</b> · <button class="enlace" data-cambiar="1">cambiar</button>' : ''; $('yo').innerHTML = quien ? 'Eres <b>' + esc(quien) + '</b> <button class="enlace" data-cambiar="1">cambiar</button>' : ''; }
-
   function cargar(){
     return post('gr-conocimiento').then(function(j){ datos = j; quien = guardado('gr_conocimiento_quien'); if (datos.personas.indexOf(quien) < 0) quien = ''; pintar(); if (!quien) elegirPersona(); })
-      .catch(function(e){ $('main').innerHTML = '<p class="error">No se pudo cargar: ' + esc(e.message) + '. Vuelve a intentar con Actualizar.</p>'; });
+      .catch(function(e){ $('main').innerHTML = '<p class="error">No se pudo cargar: ' + esc(e.message) + '. Vuelve a intentar.</p>'; });
+  }
+  // Pendientes de las bases agrupados por tema: cada base nombra distinto el mismo choque, asi que se agrupan en temas fijos
+  // (el orden importa: gana la primera regla que coincide). Dentro de cada tema va cada linea con su choque.
+  var TEMAS = [
+    ['fuentes', 'Fuentes sin leer o sin fuente directa', /no le[ií]das|le[ií]das en|^fuentes|sin fuente|^falta|lo que falta/i],
+    ['plazos', 'Plazos', /plazo/i],
+    ['paises', 'Países e idioma', /argentina|espa[nñ]a|pa[ií]s|puerto rico|idioma/i],
+    ['monto', 'Monto, precio y cobro', /monto|cobro|licencia|precio/i],
+    ['partner', 'Partner técnico', /partner|telecom/i],
+    ['medicion', 'Números del motor que no cuadran', /cita|interesados|reuni[oó]n|denominador|cu[aá]ntos|ventaja|apertura|resultados mezclados|ruta de|ciclo|n[uú]mero de paso|oportunidad sin origen|mensajes que produjeron|gancho|bandeja|insumos|channel factory/i],
+    ['senales', 'Señales y cómo se configuran', /se[ñn]al|vacantes|palabras clave|or[ií]genes|canales/i],
+    ['ofrece', 'Qué se ofrece y cómo se pide (llamado a la acción)', /qu[eé] se ofrece|cta|cierre|duraci[oó]n|sin costo|c[oó]mo se abre|frase ancla|seguimiento/i],
+    ['casos', 'Cifras y casos que se pueden citar', /cifra|caso|cliente|ahorro|multiplica|24\/7|pruebas|datastax|migramos|m[aá]s de 20/i],
+    ['roles', 'A quién se le habla: decisor, roles y tamaño', /qui[eé]n decide|decisor|rol|tama[nñ]o/i],
+    ['segmentos', 'Industrias, segmentos y fronteras con otras líneas', /industria|banca|seguros|agencias|ciberseguridad|frente de cx|traslape|frontera|alcance|campa[nñ]a/i],
+    ['nombre', 'Nombre del producto y cómo se dice', /nombr|motores|texto del open|integraciones|azure|perfiles falsos/i],
+    ['versiones', 'Versiones de PV, ICP, presentación y ficha', /versi[oó]n|ficha|pv vo|pie de la pv|resumen de marketing|discovery|presentaci|diferenciales|enfoque|m[eé]todo|etapas|recorridos|c[oó]digo/i],
+    ['mensajes', 'Dolores, objeciones y mensajes', /dolor|objeci[oó]n|datos solo|mensajes|alcance/i]
+  ];
+  function temaDe(t){ for (var i = 0; i < TEMAS.length; i++) if (TEMAS[i][2].test(t)) return TEMAS[i]; return ['otros', 'Otros', null]; }
+  function grupos(){
+    var g = {}, orden = TEMAS.map(function(x){ return x[0]; }).concat(['otros']);
+    datos.lineas.forEach(function(l){ l.pendientes.forEach(function(x){ var tm = temaDe(x.tema); (g[tm[0]] = g[tm[0]] || { clave: tm[0], tema: tm[1], items: [] }).items.push({ l: l, x: x }); }); });
+    return Object.keys(g).map(function(k){ var o = g[k]; o.mike = o.items.some(function(i){ return i.x.decide === 'Mike'; }); o.abiertos = o.items.filter(function(i){ return !i.x.decision; }).length;
+      o.lineas = o.items.map(function(i){ return i.l.codigo; }).filter(function(c, n, a){ return a.indexOf(c) === n; }).length; return o; })
+      .sort(function(a, b){ return orden.indexOf(a.clave) - orden.indexOf(b.clave); });
+  }
+  function contar(){
+    var sem = 0; datos.lineas.forEach(function(l){ if (fSem === 'todas' || mia(l)) sem += l.propuestas.filter(function(x){ return x.estado === 'nuevo'; }).length; });
+    var fij = 0; grupos().forEach(function(g){ if (g.items.some(function(i){ return !i.x.decision && puede(i.x.decide); })) fij++; });
+    $('n-semana').textContent = sem || ''; $('n-fijas').textContent = fij || '';
   }
 
   function pintar(){
-    pintarYo();
-    document.querySelectorAll('#tabs button[data-t]').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-t') === vista); });
-    if (vista === 'como') return pintarComo();
-    if (abierta) return pintarLinea();
-    var ls = datos.lineas.filter(function(l){ return vista === 'todas' || l.lidera === quien || quien === 'Mike' || quien === 'Martha'; });
-    var tot = ls.reduce(function(a, l){ a.p += l.cuentas.pendientes; a.r += l.cuentas.propuestas; return a; }, { p: 0, r: 0 });
-    var h = '<h1>' + (vista === 'mias' ? (quien === 'Mike' || quien === 'Martha' ? 'Todas las líneas' : 'Tus líneas, ' + esc(quien)) : 'Todas las líneas') + '</h1>' +
-      '<p class="nota">' + tot.p + ' pendientes de las bases por decidir y ' + tot.r + ' propuestas por revisar. Abre una línea para verlos.</p><div class="grid">';
-    h += ls.map(function(l){
-      if (!l.kb) return '<div class="linea sin"><div class="t">' + esc(l.nombre) + '</div><div class="l">Lidera ' + esc(l.lidera) + '</div><span class="c">Sin base de conocimiento todavía</span></div>';
-      var mios = l.pendientes.filter(function(x){ return !x.decision && puede(x.decide); }).length + l.propuestas.filter(function(x){ return x.estado === 'nuevo' && puede(x.decide); }).length;
-      return '<button class="linea" data-l="' + esc(l.codigo) + '"><div class="t">' + esc(l.nombre) + '</div><div class="l">Lidera ' + esc(l.lidera) + ' · ' + esc(l.kb.nombre) + '</div><div class="cuentas">' +
-        (l.cuentas.pendientes ? '<span class="c pend">' + l.cuentas.pendientes + ' pendientes</span>' : '') +
-        (l.cuentas.propuestas ? '<span class="c prop">' + l.cuentas.propuestas + ' propuestas</span>' : '') +
-        (l.cuentas.por_aplicar ? '<span class="c apl">' + l.cuentas.por_aplicar + ' por llevar a la base</span>' : '') +
-        (mios ? '<span class="c">' + mios + ' te tocan</span>' : '') + (!l.cuentas.pendientes && !l.cuentas.propuestas && !l.cuentas.por_aplicar ? '<span class="c">Al día</span>' : '') + '</div></button>';
-    }).join('') + '</div>';
-    if (!ls.length) h += '<p class="vacio">No lideras ninguna línea en el catálogo. Mira "Todas las líneas".</p>';
-    $('main').innerHTML = h;
+    $('yo').innerHTML = quien ? 'Eres <b>' + esc(quien) + '</b> · <button class="enlace" data-cambiar="1">cambiar</button>' : '';
+    document.querySelectorAll('#tabs .tab').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-v') === vista); });
+    contar();
+    if (vista === 'semana') return abierta ? pintarLinea() : pintarSemana();
+    if (vista === 'fijas') return pintarFijas();
+    if (vista === 'ronda') return pintarRonda();
+    if (vista === 'rezago') return pintarRezago();
+    return pintarComo();
   }
 
+  // ---------- Esta semana (Hacer): lo nuevo de cada linea, para su lider ----------
+  function pintarSemana(){
+    var ls = datos.lineas.filter(function(l){ return l.kb && (fSem === 'todas' || mia(l)); });
+    var h = '<h1>Esta semana</h1><p class="nota">Lo que dejaron las reuniones, los replies, Open+3, WhatsApp y las correcciones, comparado contra la base de cada línea. Lo que confirma o no sirve ya se archivó solo; aquí queda lo que necesita una decisión.</p>' +
+      '<div class="filtros"><button class="chip' + (fSem === 'mias' ? ' on' : '') + '" data-fs="mias">Mis líneas</button><button class="chip' + (fSem === 'todas' ? ' on' : '') + '" data-fs="todas">Todas</button></div><div class="grid">';
+    h += ls.map(function(l){
+      var nuevas = l.propuestas.filter(function(x){ return x.estado === 'nuevo'; });
+      var por = {}; nuevas.forEach(function(x){ por[x.clase] = (por[x.clase] || 0) + 1; });
+      return '<button class="card clic" data-l="' + esc(l.codigo) + '"><div class="t">' + esc(l.nombre) + '</div><div class="sub">Lidera ' + esc(l.lidera) + ' · ' + esc(l.kb.nombre) + '</div><div class="chips">' +
+        (nuevas.length ? Object.keys(por).map(function(c){ return '<span class="etq ' + esc(c) + '">' + por[c] + ' ' + esc((CL[c] || c).toLowerCase()) + '</span>'; }).join('') : '<span class="etq ok">Al día</span>') +
+        (l.por_aplicar ? '<span class="etq refuerza">' + l.por_aplicar + ' por llevar a la base</span>' : '') + '</div></button>';
+    }).join('') + '</div>';
+    if (!ls.length) h += '<p class="vacio">No lideras ninguna línea con base. Mira "Todas".</p>';
+    var sin = datos.lineas.filter(function(l){ return !l.kb; }).map(function(l){ return l.nombre; });
+    if (sin.length) h += '<p class="nota" style="margin-top:12px">Sin base todavía: ' + esc(sin.join(', ')) + '.</p>';
+    $('main').innerHTML = h;
+  }
   function linea(){ return datos.lineas.filter(function(l){ return l.codigo === abierta; })[0]; }
+  function tarjetaPropuesta(x){
+    var ok = puede(x.decide) && !x.aplicado;
+    return '<div class="card' + (x.estado !== 'nuevo' ? ' hecho' : '') + '"><div class="cab"><span class="chips" style="margin:0"><span class="etq ' + esc(x.clase) + '">' + esc(CL[x.clase] || x.clase) + '</span><span class="etq">' + esc(x.seccion || 'Sin sección') + '</span><span class="etq">' + (/^lote-/.test(x.id) ? 'Lote semanal del ' : 'Reunión del ') + esc(x.fecha) + '</span></span><span class="etq ' + (x.decide === 'Mike' ? 'mike' : 'lider') + '">Lo decide ' + esc(x.decide) + '</span></div>' +
+      (x.actual ? '<div class="bloque antes"><span>Hoy dice</span>' + esc(x.actual) + '</div>' : '') +
+      '<div class="bloque despues"><span>' + (x.actual ? 'Quedaría' : 'Se agrega') + '</span><div id="txt-' + esc(x.id) + '">' + esc(x.texto) + '</div></div>' +
+      (x.motivo ? '<div class="sub" style="margin-top:6px">' + esc(x.motivo) + '</div>' : '') + (x.cita ? '<div class="sub" style="margin-top:4px">Evidencia: “' + esc(x.cita) + '” · ' + (x.citable ? 'se puede usar en público' : 'solo interno') + '</div>' : '') +
+      (x.por ? '<div class="decidido">' + (x.estado === 'aprobado' ? 'Aprobada' : x.estado === 'descartado' ? 'No aprobada' : 'Regresada') + ' por <b>' + esc(x.por) + '</b> · ' + esc(fecha(x.ts)) + (x.aplicado ? ' · ya está en ' + esc(x.kb_version || 'la base') : '') + '</div>' : '') +
+      (ok ? '<div class="acc">' + (x.estado !== 'aprobado' ? '<button class="btn sec" data-ia="aprobar" data-i="' + esc(x.id) + '">Aprobar</button>' : '') + '<button class="btn sec" data-ia="editar" data-i="' + esc(x.id) + '">Editar</button>' +
+        (x.estado !== 'descartado' ? '<button class="btn sec" data-ia="descartar" data-i="' + esc(x.id) + '">No aprobar</button>' : '') + (x.estado !== 'nuevo' ? '<button class="enlace" data-ia="reabrir" data-i="' + esc(x.id) + '">Regresar a sin revisar</button>' : '') + '</div>' : '') + '</div>';
+  }
   function pintarLinea(){
     var l = linea(); if (!l) { abierta = ''; return pintar(); }
-    var pend = l.pendientes.filter(function(x){ return fPend === 'todos' || (fPend === 'por' ? !x.decision : fPend === 'mios' ? !x.decision && puede(x.decide) : !!x.decision); });
-    var prop = l.propuestas.filter(function(x){ return fProp === 'todas' || x.estado === fProp; });
-    var h = '<button class="volver" id="volver">← Todas mis líneas</button><h1>' + esc(l.nombre) + '</h1>' +
-      '<p class="nota">Lidera <b>' + esc(l.lidera) + '</b> (catálogo del portal). Base vigente: <a href="' + esc(l.kb.url) + '" target="_blank" rel="noopener">' + esc(l.kb.nombre) + '</a>' +
-      (l.propuesta ? ' · ' + esc(l.propuesta) : '') + (l.icp ? ' · ' + esc(l.icp) : '') + '.</p>';
-    h += '<h2>Pendientes de la base (' + l.pendientes.length + ')</h2><p class="nota">Choques entre fuentes que quedaron en "Pendiente de verificar". Lo que cambia la promesa (qué se ofrece, cifras, casos con nombre, precios, plazos, países) lo decide Mike; lo demás, quien lidera la línea.</p>' +
-      '<div class="filtros">' + [['por', 'Por decidir'], ['mios', 'Me tocan'], ['hechos', 'Decididos'], ['todos', 'Todos']].map(function(f){ return '<button class="chip' + (fPend === f[0] ? ' on' : '') + '" data-fp="' + f[0] + '">' + f[1] + '</button>'; }).join('') + '</div>';
-    h += pend.length ? pend.map(function(x){
-      var ok = puede(x.decide);
-      return '<div class="card' + (x.decision ? ' hecho' : '') + '"><div class="cab"><span class="tema">' + esc(x.tema) + '</span><span class="etq ' + (x.decide === 'Mike' ? 'mike' : 'lider') + '">Lo decide ' + esc(x.decide) + '</span></div>' +
-        '<div class="bloque"><span>Qué dicen las fuentes</span>' + esc(x.choque) + '</div><div class="bloque"><span>Qué se tomó en la base</span>' + esc(x.tomado) + '</div>' +
-        (x.decision ? '<div class="decidido"><b>Decidido por ' + esc(x.decision.por) + '</b> · ' + esc(fecha(x.decision.ts)) + (x.decision.aplicado ? ' · ya está en la base' : ' · entra en la siguiente versión') + '<br>' + esc(x.decision.texto) + '</div>' : '') +
-        (ok && !(x.decision && x.decision.aplicado) ? '<div class="acc"><button class="btn sec" data-ok="' + esc(x.id) + '">De acuerdo con lo que se tomó</button><button class="btn sec" data-otra="' + esc(x.id) + '">Decidir otra cosa</button></div><div id="otra-' + esc(x.id) + '" hidden><textarea placeholder="Qué se decide y por qué"></textarea><div class="acc"><button class="btn" data-guarda="' + esc(x.id) + '">Guardar decisión</button></div></div>' : '') + '</div>';
-    }).join('') : '<p class="vacio">Nada en este filtro.</p>';
-    h += '<h2>Propuestas (' + l.propuestas.length + ')</h2><p class="nota">Lo que Claude sacó de las reuniones con transcript y, cada lunes, de los replies, las respuestas a Open+3, WhatsApp y las correcciones de la semana, comparado contra la base. Solo lo aprobado entra a la versión nueva.</p>' +
-      '<div class="filtros">' + [['nuevo', 'Sin revisar'], ['aprobado', 'Aprobadas'], ['descartado', 'No aprobadas'], ['todas', 'Todas']].map(function(f){ return '<button class="chip' + (fProp === f[0] ? ' on' : '') + '" data-fr="' + f[0] + '">' + f[1] + '</button>'; }).join('') + '</div>';
-    var CL = { nuevo: 'Nuevo', corrige: 'Corrige', contradice: 'Contradice', refuerza: 'Confirma' };
-    h += prop.length ? prop.map(function(x){
-      var ok = puede(x.decide) && !x.aplicado;
-      return '<div class="card' + (x.estado !== 'nuevo' ? ' hecho' : '') + '"><div class="cab"><span><span class="etq ' + esc(x.clase) + '">' + esc(CL[x.clase] || x.clase) + '</span> <span class="etq">' + esc(x.seccion || 'Sin sección') + '</span> <span class="etq">' + (/^lote-/.test(x.id) ? 'Lote semanal del ' : 'Reunión del ') + esc(x.fecha) + '</span></span><span class="etq ' + (x.decide === 'Mike' ? 'mike' : 'lider') + '">Lo decide ' + esc(x.decide) + '</span></div>' +
-        (x.actual ? '<div class="bloque antes"><span>Hoy dice</span>' + esc(x.actual) + '</div>' : '') +
-        '<div class="bloque despues"><span>' + (x.actual ? 'Quedaría' : 'Se agrega') + '</span><span id="txt-' + esc(x.id) + '" style="display:inline;font-size:13px;text-transform:none;letter-spacing:0;font-weight:400;color:inherit">' + esc(x.texto) + '</span></div>' +
-        (x.motivo ? '<div class="nota" style="margin:6px 0 0">' + esc(x.motivo) + '</div>' : '') + (x.cita ? '<div class="nota" style="margin:4px 0 0">Evidencia: “' + esc(x.cita) + '” · ' + (x.citable ? 'se puede usar en público' : 'solo interno') + '</div>' : '') +
-        (x.por ? '<div class="decidido">' + (x.estado === 'aprobado' ? 'Aprobada' : x.estado === 'descartado' ? 'No aprobada' : 'Regresada') + ' por <b>' + esc(x.por) + '</b> · ' + esc(fecha(x.ts)) + (x.aplicado ? ' · ya está en ' + esc(x.kb_version || 'la base') : '') + '</div>' : '') +
-        (ok ? '<div class="acc">' + (x.estado !== 'aprobado' ? '<button class="btn sec" data-ia="aprobar" data-i="' + esc(x.id) + '">Aprobar</button>' : '') + '<button class="btn sec" data-ia="editar" data-i="' + esc(x.id) + '">Editar</button>' +
-          (x.estado !== 'descartado' ? '<button class="btn sec" data-ia="descartar" data-i="' + esc(x.id) + '">No aprobar</button>' : '') + (x.estado !== 'nuevo' ? '<button class="enlace" data-ia="reabrir" data-i="' + esc(x.id) + '">Regresar a sin revisar</button>' : '') + '</div>' : '') + '</div>';
-    }).join('') : '<p class="vacio">' + (l.propuestas.length ? 'Nada en este filtro.' : 'Todavía no hay propuestas de reuniones en esta línea.') + '</p>';
-    var porAplicar = l.cuentas.por_aplicar, b = borr[l.codigo];
-    if (puede(l.lidera)) h += '<div class="barra"><span><b>' + porAplicar + '</b> aprobado' + (porAplicar === 1 ? '' : 's') + ' por llevar a la base</span><button class="btn" id="verBase"' + (porAplicar ? '' : ' disabled') + '>' +
-      (b && b.estado === 'preparando' ? 'Preparando…' : 'Ver cómo quedaría la base') + '</button></div>';
+    var nuevas = l.propuestas.filter(function(x){ return x.estado === 'nuevo'; }), hechas = l.propuestas.filter(function(x){ return x.estado !== 'nuevo'; });
+    var h = '<button class="volver" id="volver">← Esta semana</button><h1>' + esc(l.nombre) + '</h1><p class="nota">Lidera <b>' + esc(l.lidera) + '</b>. Base vigente: <a href="' + esc(l.kb.url) + '" target="_blank" rel="noopener">' + esc(l.kb.nombre) + '</a>.</p>' +
+      '<h2>Por decidir (' + nuevas.length + ')</h2>' + (nuevas.length ? nuevas.map(tarjetaPropuesta).join('') : '<p class="vacio">Nada pendiente en esta línea.</p>') +
+      (hechas.length ? '<details><summary class="sub" style="cursor:pointer;margin-top:10px">Ya revisadas (' + hechas.length + ')</summary>' + hechas.map(tarjetaPropuesta).join('') + '</details>' : '');
     $('main').innerHTML = h;
   }
 
-  function pintarComo(){
-    $('main').innerHTML = '<h1>Cómo funciona</h1><p class="nota">Cada línea tiene una sola base de conocimiento (GR_KB_&lt;línea&gt;). De ahí salen el bot de WhatsApp, los mensajes del motor y las campañas. Esta página es la capa viva: lo que se aprende todos los días.</p>' +
-      '<ol class="pasos"><li><b>Quién decide.</b> Quien lidera la línea según el catálogo del portal. Lo que cambia la promesa (qué se ofrece, cifras, casos con nombre, precios, plazos, países) lo decide Mike y aparece marcado «Lo decide Mike».</li>' +
-      '<li><b>Pendientes de la base.</b> Choques entre fuentes que se dejaron por escrito al armar la base. «De acuerdo» confirma lo que se tomó; «Decidir otra cosa» deja tu decisión. Las dos quedan con tu nombre y la hora.</li>' +
-      '<li><b>Propuestas de reuniones.</b> Claude lee cada reunión con transcript de la línea y propone qué agregar o corregir en la base. Se aprueban, se editan o no se aprueban.</li>' +
-      '<li><b>Llevar a la base.</b> «Ver cómo quedaría la base» arma con Claude la versión siguiente (por ejemplo, de vB a vC) con solo lo aprobado y las decisiones. Al confirmar se crea el documento nuevo en Drive y el catálogo apunta a él. La versión anterior se conserva.</li>' +
-      '<li><b>Lo que sigue.</b> Lote semanal de replies, Open+3 y WhatsApp como patrones, aviso los lunes a cada líder, y la ficha del bot generada desde la base.</li></ol>';
+  // ---------- Decisiones fijas: choques de la PV, el ICP y las reglas, agrupados por tema ----------
+  function pintarFijas(){
+    var gs = grupos().filter(function(g){
+      if (fFij === 'por') return g.abiertos > 0;
+      if (fFij === 'mias') return g.items.some(function(i){ return !i.x.decision && puede(i.x.decide); });
+      if (fFij === 'hechas') return g.items.some(function(i){ return i.x.decision; });
+      return true; });
+    var h = '<h1>Decisiones fijas</h1><p class="nota">Choques entre la propuesta de valor, el ICP, el REA y lo que dice el mercado, que quedaron en "Pendiente de verificar" de cada base. Están agrupados por tema para decidir parejo en todas las líneas; abre un tema para ver cada línea. Lo que toca la promesa (qué se ofrece, cifras, casos, precios, plazos, países) lo decide Mike.</p>' +
+      '<div class="filtros">' + [['por', 'Por decidir'], ['mias', 'Me tocan'], ['hechas', 'Decididas'], ['todas', 'Todas']].map(function(f){ return '<button class="chip' + (fFij === f[0] ? ' on' : '') + '" data-ff="' + f[0] + '">' + f[1] + '</button>'; }).join('') + '</div>';
+    h += '<p class="sub" style="margin-bottom:10px">' + gs.length + ' tema' + (gs.length === 1 ? '' : 's') + ' en este filtro.</p>';
+    h += gs.length ? gs.map(function(g){
+      return '<details class="card"' + (gs.length <= 3 ? ' open' : '') + '><summary class="cab" style="cursor:pointer;list-style:none"><span class="t">' + esc(g.tema) + '</span><span class="chips" style="margin:0"><span class="etq">' + g.abiertos + ' por decidir de ' + g.items.length + '</span><span class="etq">' + g.lineas + ' línea' + (g.lineas === 1 ? '' : 's') + '</span><span class="etq ' + (g.mike ? 'mike' : 'lider') + '">' + (g.mike ? 'Incluye decisiones de Mike' : 'Lo decide el líder') + '</span></span></summary>' +
+        g.items.map(function(i){
+          var x = i.x, clave = i.l.codigo + '|' + x.id, ok = puede(x.decide) && !(x.decision && x.decision.aplicado);
+          return '<div class="linea-dec"><div class="cab"><div class="sub"><b style="color:var(--text)">' + esc(i.l.nombre) + '</b> · ' + esc(x.tema) + '</div><span class="etq ' + (x.decide === 'Mike' ? 'mike' : 'lider') + '">Lo decide ' + esc(x.decide) + '</span></div>' +
+            '<div class="bloque"><span>Qué dicen las fuentes</span>' + esc(x.choque) + '</div><div class="bloque"><span>Qué se tomó en la base</span>' + esc(x.tomado) + '</div>' +
+            (x.decision ? '<div class="decidido"><b>Decidido por ' + esc(x.decision.por) + '</b> · ' + esc(fecha(x.decision.ts)) + (x.decision.aplicado ? ' · ya está en la base' : ' · entra en la siguiente versión') + '<br>' + esc(x.decision.texto) + '</div>' : '') +
+            (ok ? '<div class="acc"><button class="btn sec" data-ok="' + esc(clave) + '">De acuerdo con lo que se tomó</button><button class="btn sec" data-otra="' + esc(clave) + '">Decidir otra cosa</button></div><div id="otra-' + esc(clave.replace('|', '-')) + '" hidden><textarea placeholder="Qué se decide y por qué"></textarea><div class="acc"><button class="btn" data-guarda="' + esc(clave) + '">Guardar decisión</button></div></div>' : '') + '</div>';
+        }).join('') + '</details>';
+    }).join('') : '<p class="vacio">Nada en este filtro.</p>';
+    $('main').innerHTML = h;
   }
 
-  function verBase(){
-    var l = linea(), c = l.codigo;
+  // ---------- Ronda (Verificar y Actuar) ----------
+  function pintarRonda(){
+    var lote = datos.lote, ls = datos.lineas.filter(function(l){ return l.kb; });
+    var h = '<h1>Ronda</h1><p class="nota">Qué versión de la base usa cada línea, qué falta llevar a la base y qué dejó el último lote. Al cierre de cada ronda se mide lo que está en prueba contra la línea base y se publica la versión nueva.</p>';
+    if (lote) h += '<div class="kpis"><div class="kpi"><div class="v">' + lote.propuestas + '</div><div class="t">propuestas del último lote</div></div><div class="kpi"><div class="v">' + lote.lineas.reduce(function(a, l){ return a + l.revisar; }, 0) + '</div><div class="t">para decidir</div></div><div class="kpi"><div class="v">' + lote.lineas.reduce(function(a, l){ return a + l.confirman; }, 0) + '</div><div class="t">confirman la base</div></div><div class="kpi"><div class="v">' + esc(String(lote.desde).slice(5, 10)) + ' a ' + esc(String(lote.hasta).slice(5, 10)) + '</div><div class="t">semana analizada</div></div></div>';
+    h += '<div class="card tabla"><table class="t2"><tr><th>Línea</th><th>Lidera</th><th>Base vigente</th><th>Por llevar a la base</th><th>Último lote</th><th></th></tr>' + ls.map(function(l){
+      var lt = lote ? lote.lineas.filter(function(x){ return x.linea === l.codigo; })[0] : null;
+      return '<tr><td>' + esc(l.nombre) + '</td><td>' + esc(l.lidera) + '</td><td><a href="' + esc(l.kb.url) + '" target="_blank" rel="noopener">' + esc(l.kb.nombre) + '</a></td><td>' + l.por_aplicar + '</td><td class="sub">' + (lt ? esc(lt.cuentas.replies + ' replies · ' + lt.revisar + ' para decidir · ' + lt.confirman + ' confirman') : '—') + '</td>' +
+        '<td>' + (puede(l.lidera) ? '<button class="btn sec" data-base="' + esc(l.codigo) + '"' + (l.por_aplicar ? '' : ' disabled') + '>Ver cómo quedaría</button>' : '') + '</td></tr>';
+    }).join('') + '</table></div>';
+    h += '<div class="aviso"><b>En prueba:</b> todavía no hay piezas en prueba. Se llenan con el paso 2 del plan B (madurez: hipótesis → en prueba → comprobada → núcleo, y refutada o vencida).</div>';
+    $('main').innerHTML = h;
+  }
+  // ---------- Rezago ----------
+  function pintarRezago(){
+    $('main').innerHTML = '<h1>Rezago</h1><p class="nota">Lo que ya pasó y no se ha recolectado: replies, reuniones, WhatsApp, coaching, correcciones y resultados hacia atrás.</p>' +
+      '<div class="aviso">Aquí aparecerá el inventario por línea, entrada y mes (paso 3 del plan B). Después se procesa por ciclos, empezando por los últimos 90 días. Cada líder recibe por lote un resumen por clase y solo abre lo que le toca decidir.</div>';
+  }
+  function pintarComo(){
+    $('main').innerHTML = '<h1>Cómo funciona</h1><p class="nota">Una base de conocimiento por línea (GR_KB_&lt;línea&gt;), de donde salen el bot de WhatsApp, Open+3, las secuencias, las señales, las respuestas a replies, la preparación de reuniones y la propuesta.</p>' +
+      '<ol class="pasos"><li><b>Entradas fijas</b> (PV, ICP, llamado a la acción, reglas del REA, configuración de señales, casos): las decide Mike. Sus choques están en <b>Decisiones fijas</b>.</li>' +
+      '<li><b>Entradas del día</b> (replies de secuencias y DUO, Open+3, WhatsApp, reuniones, coaching, correcciones, resultados): Claude las compara contra la base y las clasifica: nuevo, confirma, más convincente, contradice, corrige, ya no funciona, hueco, hipótesis, de otra línea o ruido. Lo que necesita decisión llega a <b>Esta semana</b>, para el líder de la línea.</li>' +
+      '<li><b>Quién decide:</b> el líder según el catálogo. Lo que cambia la promesa (qué se ofrece, cifras, casos, precios, plazos, países) lo decide Mike.</li>' +
+      '<li><b>Ronda:</b> cada 4 a 6 semanas se mide lo que está en prueba contra la línea base, lo comprobado sube al núcleo y se publica la versión nueva de la base. La anterior se conserva.</li>' +
+      '<li><b>Rezago:</b> lo que ya pasó se recolecta por ciclos, empezando por los últimos 90 días; lo viejo pesa menos.</li></ol>';
+  }
+
+  // ---------- Acciones ----------
+  function verBase(c){
+    var l = datos.lineas.filter(function(x){ return x.codigo === c; })[0];
     post('gr-portal-kb-preparar', { linea: c }).then(function(){
-      borr[c] = { estado: 'preparando' }; pintarLinea();
       modal('<h3>Preparando la versión nueva</h3><p class="nota" id="kbMsg">Claude está integrando lo aprobado y las decisiones en ' + esc(l.kb.nombre) + '. Tarda de 1 a 3 minutos; puedes cerrar esta ventana y volver.</p><div class="acc"><button class="btn sec" id="cerrar">Cerrar</button></div>');
-      $('cerrar').onclick = cerrar;
-      clearInterval(espera); var n = 0;
+      $('cerrar').onclick = cerrar; clearInterval(espera); var n = 0;
       espera = setInterval(function(){
         if (++n > 40) { clearInterval(espera); return; }
         post('gr-portal-kb-borrador', { linea: c }).then(function(j){
-          var x = j.borrador || {}; borr[c] = x;
-          if (x.estado === 'listo') { clearInterval(espera); pintarLinea(); if ($('kbMsg')) verBorrador(l, x); }
-          if (x.estado === 'error') { clearInterval(espera); pintarLinea(); if ($('kbMsg')) $('kbMsg').textContent = 'No se pudo preparar: ' + (x.error || ''); }
+          var x = j.borrador || {};
+          if (x.estado === 'listo') { clearInterval(espera); if ($('kbMsg')) verBorrador(l, x); }
+          if (x.estado === 'error') { clearInterval(espera); if ($('kbMsg')) $('kbMsg').textContent = 'No se pudo preparar: ' + (x.error || ''); }
         }).catch(function(){});
       }, 8000);
     }).catch(function(e){ toast(e.message); });
   }
   function verBorrador(l, b){
     modal('<h3>Así quedaría ' + esc(b.siguiente) + '</h3><p class="nota">Se crea un documento nuevo junto a ' + esc(b.kb_nombre) + ' (que se conserva) y el catálogo apunta a él.</p><div class="decidido">' + esc(b.resumen || '') + '</div>' +
-      (b.cambios || []).map(function(x){ return '<div class="fila' + (x.aplicado ? '' : ' mal') + '"><b>' + (x.aplicado ? 'Entra' : 'No entra') + '</b> · ' + esc(x.seccion) + '<div class="nota" style="margin:0">' + esc(x.como) + '</div></div>'; }).join('') +
-      '<details><summary class="nota" style="cursor:pointer;margin-top:8px">Ver el documento completo</summary><pre class="kb-md">' + esc(b.markdown || '') + '</pre></details><div class="error" id="kbErr"></div>' +
+      (b.cambios || []).map(function(x){ return '<div class="fila' + (x.aplicado ? '' : ' mal') + '"><b>' + (x.aplicado ? 'Entra' : 'No entra') + '</b> · ' + esc(x.seccion) + '<div class="sub">' + esc(x.como) + '</div></div>'; }).join('') +
+      '<details><summary class="sub" style="cursor:pointer;margin-top:8px">Ver el documento completo</summary><pre class="kb-md">' + esc(b.markdown || '') + '</pre></details><div class="error" id="kbErr"></div>' +
       '<div class="acc"><button class="btn sec" id="cerrar">Todavía no</button><button class="btn" id="kbOk">Confirmar y crear ' + esc(b.siguiente) + '</button></div>');
     $('cerrar').onclick = cerrar;
     $('kbOk').onclick = function(){
       var btn = this; btn.disabled = true; btn.textContent = 'Creando…';
-      post('gr-portal-kb-confirmar', { linea: l.codigo }).then(function(j){ cerrar(); toast('Listo: ' + j.nombre + ' creada y ligada en el catálogo'); borr[l.codigo] = null; return cargar(); })
+      post('gr-portal-kb-confirmar', { linea: l.codigo }).then(function(j){ cerrar(); toast('Listo: ' + j.nombre + ' creada y ligada en el catálogo'); return cargar(); })
         .catch(function(e){ btn.disabled = false; btn.textContent = 'Confirmar y crear ' + b.siguiente; $('kbErr').textContent = e.message; });
     };
   }
-
-  function decidir(id, decision, texto){
-    var l = linea(), x = l.pendientes.filter(function(p){ return p.id === id; })[0];
-    post('gr-conocimiento-decidir', { por: quien, linea: l.codigo, id: id, tema: x.tema, choque: x.choque, tomado: x.tomado, decision: decision, texto: texto || '' })
+  function pendiente(clave){ var p = clave.split('|'), l = datos.lineas.filter(function(x){ return x.codigo === p[0]; })[0]; return { l: l, x: l.pendientes.filter(function(x){ return x.id === p[1]; })[0] }; }
+  function decidir(clave, decision, texto){
+    var o = pendiente(clave);
+    post('gr-conocimiento-decidir', { por: quien, linea: o.l.codigo, id: o.x.id, tema: o.x.tema, choque: o.x.choque, tomado: o.x.tomado, decision: decision, texto: texto || '' })
       .then(function(){ toast('Decisión guardada con tu nombre'); return cargar(); }).catch(function(e){ toast(e.message); });
   }
   function revisar(id, accion, texto){
@@ -218,19 +292,19 @@
       .catch(function(e){ toast(e.message); });
   }
 
-  document.addEventListener('click', function(e){ if (e.target.getAttribute && e.target.getAttribute('data-cambiar')) elegirPersona(); });
-  $('tabs').onclick = function(e){ var t = e.target.getAttribute('data-t'); if (t) { vista = t; abierta = ''; pintar(); } };
-  $('main').onclick = function(e){
-    var t = e.target.closest('[data-l],[data-fp],[data-fr],[data-ok],[data-otra],[data-guarda],[data-ia],#volver,#verBase'); if (!t) return;
+  document.addEventListener('click', function(e){
+    var t = e.target.closest('[data-cambiar],[data-v],[data-l],[data-fs],[data-ff],[data-ok],[data-otra],[data-guarda],[data-ia],[data-base],#volver'); if (!t || !datos) return;
+    if (t.hasAttribute('data-cambiar')) return elegirPersona();
+    if (t.hasAttribute('data-v')) { vista = t.getAttribute('data-v'); abierta = ''; return pintar(); }
     if (!quien) return elegirPersona();
     if (t.id === 'volver') { abierta = ''; return pintar(); }
-    if (t.id === 'verBase') return verBase();
-    if (t.hasAttribute('data-l')) { abierta = t.getAttribute('data-l'); fPend = 'por'; fProp = 'nuevo'; window.scrollTo(0, 0); return pintarLinea(); }
-    if (t.hasAttribute('data-fp')) { fPend = t.getAttribute('data-fp'); return pintarLinea(); }
-    if (t.hasAttribute('data-fr')) { fProp = t.getAttribute('data-fr'); return pintarLinea(); }
+    if (t.hasAttribute('data-l')) { abierta = t.getAttribute('data-l'); window.scrollTo(0, 0); return pintar(); }
+    if (t.hasAttribute('data-fs')) { fSem = t.getAttribute('data-fs'); return pintar(); }
+    if (t.hasAttribute('data-ff')) { fFij = t.getAttribute('data-ff'); return pintar(); }
+    if (t.hasAttribute('data-base')) return verBase(t.getAttribute('data-base'));
     if (t.hasAttribute('data-ok')) { t.disabled = true; return decidir(t.getAttribute('data-ok'), 'confirmo'); }
-    if (t.hasAttribute('data-otra')) { var d = $('otra-' + t.getAttribute('data-otra')); d.hidden = !d.hidden; if (!d.hidden) d.querySelector('textarea').focus(); return; }
-    if (t.hasAttribute('data-guarda')) { var id = t.getAttribute('data-guarda'), v = $('otra-' + id).querySelector('textarea').value.trim(); if (!v) return toast('Escribe qué se decide'); t.disabled = true; return decidir(id, 'cambio', v); }
+    if (t.hasAttribute('data-otra')) { var d = $('otra-' + t.getAttribute('data-otra').replace('|', '-')); d.hidden = !d.hidden; if (!d.hidden) d.querySelector('textarea').focus(); return; }
+    if (t.hasAttribute('data-guarda')) { var c = t.getAttribute('data-guarda'), v = $('otra-' + c.replace('|', '-')).querySelector('textarea').value.trim(); if (!v) return toast('Escribe qué se decide'); t.disabled = true; return decidir(c, 'cambio', v); }
     if (t.hasAttribute('data-ia')) {
       var a = t.getAttribute('data-ia'), i = t.getAttribute('data-i');
       if (a === 'editar') {
@@ -241,9 +315,7 @@
       }
       t.disabled = true; return revisar(i, a);
     }
-  };
-  // Dentro del tablero (?tab=conocimiento) la pagina va en un marco: sin logo propio, el tablero ya lo tiene.
-  if (window.self !== window.top) document.documentElement.classList.add('en-tablero');
+  });
   cargar();
 })();
 </script>
