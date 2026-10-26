@@ -68,6 +68,22 @@
   ol.pasos{font-size:13.5px;line-height:1.6;padding-left:20px;color:var(--text-dim)} ol.pasos li{margin-bottom:6px} ol.pasos b{color:var(--text)}
   .tabla{overflow-x:auto} table.t2{width:100%;border-collapse:collapse;font-size:13px} table.t2 th{text-align:left;color:var(--text-mute);font-size:11px;text-transform:uppercase;letter-spacing:.8px;padding:6px 8px;border-bottom:1px solid var(--border)}
   table.t2 td{padding:8px;border-bottom:1px solid var(--border);vertical-align:top}
+  /* 26 oct: filtros por lider y producto, ayudas "i" (como Consumo), tarjeta con evidencia y accion. */
+  .i{display:inline-flex;width:15px;height:15px;border-radius:50%;border:1px solid var(--text-mute);color:var(--text-mute);font-size:10px;font-weight:700;align-items:center;justify-content:center;cursor:help;margin-left:6px;text-transform:none;letter-spacing:0;vertical-align:middle;font-style:normal}
+  .filtros-top{background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:14px}
+  .fila-f{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:3px 0}
+  .lbl{font-size:11px;font-weight:700;color:var(--text-mute);text-transform:uppercase;letter-spacing:.8px;margin-right:4px;display:inline-flex;align-items:center}
+  .chip.sinbase{border-style:dashed} .chip.cero{opacity:.55}
+  details.prod{background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:10px}
+  details.prod>summary{cursor:pointer;list-style:none;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  details.prod .card{background:var(--bg);margin-top:10px}
+  details.reu{border-top:1px solid var(--border);padding:8px 0} details.reu>summary{cursor:pointer;list-style:none}
+  details.ev{margin-top:6px;font-size:12.5px} details.ev>summary{cursor:pointer;color:var(--cyan)}
+  .ev-i{border-left:2px solid var(--border);padding:4px 10px;margin:6px 0}
+  .bloque.accion{background:rgba(124,58,237,.1);border-left:3px solid var(--purple);border-radius:6px;padding:6px 10px}
+  .bloque span.i,h2 .i,.lbl .i{display:inline-flex;text-transform:none;margin-bottom:0;font-size:10px;color:var(--text-mute)}
+  .etq i{font-style:normal;opacity:.7;font-weight:600}
+  td.celda{cursor:pointer} td.celda:hover{background:var(--bg-3)} .dim{color:var(--text-mute)}
   @media (max-width:640px){ #app{padding:10px} .grid{grid-template-columns:1fr} }
 </style>
 </head>
@@ -75,29 +91,28 @@
 <div id="app">
   <div class="hdr"><div><b>GREAT REVENUE</b><br><span>Conocimiento</span></div></div>
   <div class="barra-sup">
-    <nav class="tabs" id="tabs">
-      <button class="tab on" data-v="semana">Esta semana<span class="n" id="n-semana"></span></button>
-      <button class="tab" data-v="reuniones">Reuniones<span class="n" id="n-reuniones"></span></button>
-      <button class="tab" data-v="fijas">Voz de la marca<span class="n" id="n-fijas"></span></button>
-      <button class="tab" data-v="ronda">Ronda</button>
-      <button class="tab" data-v="rezago">Rezago<span class="n" id="n-rezago"></span></button>
-      <button class="tab" data-v="como">Cómo funciona</button>
-    </nav>
+    <nav class="tabs" id="tabs"></nav>
     <span class="yo" id="yo"></span>
   </div>
+  <div id="filtros"></div>
   <main id="main"><p class="vacio">Cargando…</p></main>
 </div>
 <script>
 (function(){
   // Sin clave, como el tablero (decision de Mike, 25 oct). Si una liga vieja trae ?k=, se manda igual.
+  // 26 oct: sin "¿quien eres?": se filtra por lider y producto; quien aprueba es el lider del filtro (con "Todos", Mike).
   var K = new URLSearchParams(location.search).get('k') || '';
   var BASE = 'https://mikea.app.n8n.cloud/webhook/';
-  var datos = null, vista = 'semana', abierta = '', abiertaPasado = false, quien = '', fSem = 'mias', fFij = 'por', fEnt = 'todas', fReu = 'procesada', espera = null;
+  var datos = null, vista = guardado('gr_con_vista') || 'resumen', fLid = guardado('gr_con_lider') || 'todos', fProd = guardado('gr_con_prod') || 'todos';
+  var fPer = 'semana', fEnt = 'todas', fAcc = 'todas', fEst = 'nuevo', fFij = 'por', fReu = 'procesada', zona = 'semana', espera = null;
   if (window.self !== window.top) document.documentElement.classList.add('en-tablero');
   var $ = function(id){ return document.getElementById(id); };
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  // Ayuda al pasar el mouse, como en Consumo y el tablero: un circulo "i" con el texto.
+  function ay(t){ return '<span class="i" title="' + esc(t) + '">i</span>'; }
   function toast(t){ var d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(function(){ d.remove(); }, 3200); }
   function fecha(ts){ return ts ? new Date(ts * 1000).toLocaleString('es-MX', { timeZone: 'America/Mexico_City', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''; }
+  function dia(f){ var d = String(f || '').slice(0, 10).split('-'); return d.length === 3 ? Number(d[2]) + '-' + ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][Number(d[1]) - 1] : ''; }
   function guardado(k, v){ try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v); } catch (e) { return ''; } }
   function post(ruta, cuerpo){
     return fetch(BASE + ruta, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign(K ? { k: K } : {}, cuerpo || {})) })
@@ -107,55 +122,57 @@
         return j;
       }); });
   }
-  function puede(decide){ return quien === 'Mike' || quien === decide; }
-  function mia(l){ return quien === 'Mike' || quien === 'Martha' || l.lidera === quien; }
+  // Quien firma lo que se aprueba: el lider elegido en el filtro; con "Todos", Mike.
+  function actor(){ return fLid !== 'todos' ? fLid : 'Mike'; }
+  function puede(decide){ return actor() === 'Mike' || actor() === decide; }
   function modal(h){ cerrar(); var f = document.createElement('div'); f.className = 'fondo'; f.id = 'fondo'; f.innerHTML = '<div class="modal">' + h + '</div>'; document.body.appendChild(f); }
   function cerrar(){ var f = $('fondo'); if (f) f.remove(); }
-  // Las 10 clases del plan B y la madurez de cada pieza.
-  var CL = { nuevo: 'Nuevo', refuerza: 'Confirma', mas_convincente: 'Más convincente', contradice: 'Contradice', corrige: 'Corrige', ya_no_funciona: 'Ya no funciona',
-    hueco: 'Hueco', hipotesis: 'Hipótesis por probar', otra_linea: 'De otra línea', fuera: 'Ruido' };
-  // Entradas de la Voz del mercado (lo que llega cada dia). D1-D7 se analizan; D8-D10 son resultados que se miden en la Ronda.
-  var ENT = { D1: 'Secuencias', D2: 'DUO (señales)', D3: 'Open+3', D4: 'WhatsApp', D5: 'Reuniones', D6: 'Coaching', D7: 'Correcciones', D8: 'Resultados', D9: 'Señal de cada cita', D10: 'Motivos de pérdida' };
-  var ENT_A = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7'];
-  // Matriz linea x entrada de una corrida (lote o ventana del rezago): cuantos mensajes llegaron y cuantos quedaron para decidir.
-  // D5 sale de las reuniones con fecha en la ventana. Corridas viejas (antes del 26 oct) solo traen replies: van en D1.
-  function reunionesEn(c, desde, hasta){ var d = String(desde).slice(0, 10), h = String(hasta).slice(0, 10);
-    return (datos.reuniones || []).filter(function(r){ return r.linea === c && r.fecha >= d && r.fecha < h; }); }
-  function celda(x, e, l, c){
-    if (e === 'D5') { var rs = reunionesEn(l.codigo, c.desde, c.hasta), pr = rs.filter(function(r){ return r.estado === 'procesada'; });
-      return rs.length ? '<b style="color:var(--text)">' + pr.reduce(function(a, r){ return a + r.propuestas; }, 0) + '</b> propuestas<br>' + pr.length + ' de ' + rs.length + ' procesadas' : '—'; }
-    if (!x) return '—';
-    var n = x.cuentas[e] != null ? x.cuentas[e] : (e === 'D1' ? x.cuentas.replies || 0 : 0);
-    var cr = (x.entradas || []).filter(function(y){ return y.entrada === e; })[0];
-    if (cr && cr.error) return '<span style="color:#fca5a5">No se pudo analizar</span><br>' + cr.n + ' leídos';
-    if (cr) return '<b style="color:var(--text)">' + cr.revisar + '</b> para decidir<br>' + cr.n + ' leídos' + (cr.confirman ? ' · ' + cr.confirman + ' confirman' : '');
-    return n ? n + ' (pocos para analizar)' : '—';
-  }
-  function matriz(c, ls){
-    return '<div class="card tabla"><table class="t2"><tr><th>Línea</th>' + ENT_A.map(function(e){ return '<th>' + e + ' ' + esc(ENT[e]) + '</th>'; }).join('') + '</tr>' +
-      ls.map(function(l){ var x = (c.lineas || []).filter(function(y){ return y.linea === l.codigo; })[0];
-        return '<tr><td>' + esc(l.nombre) + '<div class="sub">Lidera ' + esc(l.lidera) + '</div></td>' + ENT_A.map(function(e){ return '<td class="sub">' + celda(x, e, l, c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</table></div>';
-  }
-  function resumenes(c, ls){
-    return (c.lineas || []).filter(function(x){ return ls.some(function(l){ return l.codigo === x.linea; }); }).map(function(x){
-      var partes = (x.entradas || []).length ? x.entradas.map(function(y){ return '<div class="bloque"><span>' + esc(y.entrada + ' ' + (ENT[y.entrada] || '')) + ' · ' + y.n + ' leídos</span>' + esc(y.error ? 'No se pudo analizar: ' + y.error : y.resumen) + '</div>'; }).join('')
-        : (x.resumen || x.error ? '<div class="bloque">' + esc(x.error ? 'No se pudo analizar: ' + x.error : x.resumen) + '</div>' : '<div class="sub">Pocos mensajes para analizar.</div>');
-      var perd = x.perdidas ? Object.keys(x.perdidas).map(function(k){ return x.perdidas[k] + ' ' + k; }).join(', ') : '';
-      return '<div class="linea-dec"><div class="sub"><b style="color:var(--text)">' + esc(x.nombre) + '</b> · ' + (x.ooo || 0) + ' fuera de oficina · ' + ((x.open3_envios != null ? x.open3_envios : (x.cuentas || {}).open3) || 0) + ' envíos de Open+3' + (perd ? ' · pérdidas: ' + esc(perd) : '') + '</div>' + partes + '</div>'; }).join('');
-  }
-  var MAD = { hipotesis: 'Hipótesis', en_prueba: 'En prueba', comprobada: 'Comprobada', nucleo: 'Núcleo', refutada: 'Refutada', vencida: 'Vencida' };
-  // Lo pasado: el rezago y las reuniones de hace mas de 14 dias. Lo demas es de esta semana.
-  var CATORCE = Date.now() - 14 * 86400000;
-  function pasado(x){ return x.origen === 'rezago' || (x.origen === 'reunion' && Date.parse(x.fecha) < CATORCE); }
 
-  function elegirPersona(){
-    var ps = (datos && datos.personas) || [];
-    modal('<h3>¿Quién eres?</h3><p class="nota">Lo que apruebes o decidas queda con tu nombre y la hora. Cada quien ve primero sus líneas.</p><div class="acc">' +
-      ps.map(function(p){ return '<button class="btn' + (p === quien ? '' : ' sec') + '" data-p="' + esc(p) + '">' + esc(p) + '</button>'; }).join('') + '</div>');
-    $('fondo').onclick = function(e){ var p = e.target.getAttribute('data-p'); if (p) { quien = p; guardado('gr_conocimiento_quien', p); cerrar(); pintar(); } };
+  // ---------- Vocabulario con su ayuda ----------
+  var CL = { nuevo: ['Nuevo', 'La base no lo dice y conviene agregarlo.'], refuerza: ['Confirma', 'La base ya lo dice y esto lo confirma.'],
+    mas_convincente: ['Más convincente', 'La base lo dice, pero responden mejor a otra forma de decirlo.'], contradice: ['Contradice', 'Dicen lo contrario de lo que la base afirma u ofrece: hay que decidir.'],
+    corrige: ['Corrige', 'Un dato de la base es falso o ya no está vigente.'], ya_no_funciona: ['Ya no funciona', 'Algo de la base dejó de producir respuestas o citas.'],
+    hueco: ['Hueco', 'Una pregunta u objeción que la base no responde.'], hipotesis: ['Hipótesis', 'Algo prometedor con poca evidencia: se prueba antes de meterlo a la base.'],
+    otra_linea: ['De otra línea', 'Es de otro producto o llegó a un segmento equivocado.'], fuera: ['Ruido', 'No sirve para la base.'] };
+  var MAD = { hipotesis: ['Hipótesis', 'Poca evidencia: 1 o 2 casos.'], en_prueba: ['En prueba', 'Aprobada para probarse en la ronda; se mide al cierre.'],
+    comprobada: ['Comprobada', 'Se repitió 3 veces o más.'], nucleo: ['Núcleo', 'Comprobada y ya en el centro de la base.'], refutada: ['Refutada', 'Los datos dicen que ya no funciona.'], vencida: ['Vencida', 'Material de hace más de 90 días que nada reciente confirma.'] };
+  // Las 10 entradas de la Voz del mercado. D1-D7 se analizan; D8 y D9 se miden al cierre de la ronda; D10 se cuenta.
+  var ENT = { D1: ['Secuencias', 'Respuestas a las secuencias de Amplemarket: qué ángulo, rol e industria responde o rechaza.'],
+    D2: ['DUO (señales)', 'Respuestas a los mensajes DUO: qué señal sí abre conversación.'], D3: ['Open+3', 'Respuestas de quien recibió el mensaje Open+3 (abrió 3 veces y no contestó).'],
+    D4: ['WhatsApp', 'Conversaciones del bot de WhatsApp: qué pregunta la gente y dónde se traba.'], D5: ['Reuniones', 'Transcripts de las reuniones (Gemini), cada una contra la base de su línea.'],
+    D6: ['Coaching', 'Notas de coaching después de cada reunión (Post-Reunión en HubSpot).'], D7: ['Correcciones', 'Mensajes del motor que el equipo corrigió.'],
+    D8: ['Resultados', 'Respuestas, citas y conversaciones medidas contra la línea base. Se mide al cierre de la ronda.'], D9: ['Señal de cada cita', 'Qué señal produjo cada cita. Se mide al cierre de la ronda.'],
+    D10: ['Motivos de pérdida', 'Oportunidades perdidas en la ventana y su motivo (HubSpot). Se cuentan, no se analizan.'] };
+  var ENT_A = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9', 'D10'];
+  var VOZ_MARCA = { E1: 'Propuesta de valor', E2: 'ICP', E3: 'Llamado a la acción', E4: 'Presentación del Discovery y template', E5: 'Catálogo: monto, responsables y partner', E6: 'Reglas del REA', E7: 'Configuración de señales', E8: 'Casos citables', E9: 'Directorio de partners' };
+  // Tipo de acción de cada propuesta. Las viejas (sin "accion") la toman de su clase.
+  var ACC = { cambiar_base: ['Cambiar la base', 'Aprobar cambia el texto de la base en la siguiente versión.'], probar: ['Probar en la ronda', 'Aprobar la pone «en prueba»: se mide al cierre de la ronda y, si funciona, entra a la base.'],
+    corregir_lista: ['Corregir la lista', 'Sacar o mover un segmento, industria o rol de una lista o secuencia de Amplemarket.'], otra_linea: ['Pasar a otra línea', 'Lo que se aprendió es de otro producto: se manda a su base.'],
+    regla: ['Respuesta del bot o del motor', 'Una regla nueva de cómo contestar (bot de WhatsApp, respuestas a replies o DUO).'], ninguna: ['Solo informativo', 'No pide cambio; queda como contexto.'] };
+  function tipoAcc(x){ if (x.accion && ACC[x.accion.tipo]) return x.accion.tipo;
+    return x.clase === 'hipotesis' ? 'probar' : x.clase === 'otra_linea' ? 'otra_linea' : 'cambiar_base'; }
+  var CATORCE = Date.now() - 14 * 86400000;
+  function pasado(x){ return x.origen === 'rezago' || ((x.origen === 'reunion' || x.origen === 'consolidada') && Date.parse(x.fecha) < CATORCE); }
+  function corto(n){ return String(n || '').replace(/\s*\(.*\)\s*$/, ''); }
+
+  // ---------- Filtros: lider y producto ----------
+  function lineasLider(){ return datos.lineas.filter(function(l){ return fLid === 'todos' || l.lidera === fLid; }); }
+  function lineasVista(){ return lineasLider().filter(function(l){ return fProd === 'todos' || l.codigo === fProd; }); }
+  function barraFiltros(){
+    var lids = ['todos'].concat((datos.lideres || []).map(function(x){ return x.nombre; }));
+    var ls = lineasLider();
+    return '<div class="filtros-top"><div class="fila-f"><span class="lbl">Líder' + ay('Muestra solo los productos que lidera esa persona según el catálogo. Lo que apruebes queda con su nombre; con «Todos», con el de Mike.') + '</span>' +
+      lids.map(function(n){ return '<button class="chip' + (fLid === n ? ' on' : '') + '" data-flid="' + esc(n) + '">' + (n === 'todos' ? 'Todos' : esc(n)) + '</button>'; }).join('') + '</div>' +
+      '<div class="fila-f"><span class="lbl">Producto' + ay('Los productos del catálogo. Los que dicen «sin base» todavía no tienen base de conocimiento: sus mensajes se cuentan, pero no se analizan.') + '</span>' +
+      '<button class="chip' + (fProd === 'todos' ? ' on' : '') + '" data-fprod="todos">Todos (' + ls.length + ')</button>' +
+      ls.map(function(l){ return '<button class="chip' + (fProd === l.codigo ? ' on' : '') + (l.kb ? '' : ' sinbase') + '" data-fprod="' + esc(l.codigo) + '" title="' + esc(l.nombre + ' · lidera ' + l.lidera + (l.kb ? ' · base ' + l.kb.nombre : ' · sin base todavía')) + '">' + esc(corto(l.nombre)) + (l.kb ? '' : ' · sin base') + '</button>'; }).join('') + '</div></div>';
   }
+
   function cargar(){
-    return post('gr-conocimiento').then(function(j){ datos = j; quien = guardado('gr_conocimiento_quien'); if (datos.personas.indexOf(quien) < 0) quien = ''; pintar(); if (!quien) elegirPersona(); })
+    return post('gr-conocimiento').then(function(j){ datos = j;
+      if (fLid !== 'todos' && !(datos.lideres || []).some(function(x){ return x.nombre === fLid; })) fLid = 'todos';
+      if (fProd !== 'todos' && !datos.lineas.some(function(l){ return l.codigo === fProd; })) fProd = 'todos';
+      pintar(); })
       .catch(function(e){ $('main').innerHTML = '<p class="error">No se pudo cargar: ' + esc(e.message) + '. Vuelve a intentar.</p>'; });
   }
   // Pendientes de las bases agrupados por tema: cada base nombra distinto el mismo choque, asi que se agrupan en temas fijos
@@ -179,95 +196,188 @@
   function temaDe(t){ for (var i = 0; i < TEMAS.length; i++) if (TEMAS[i][2].test(t)) return TEMAS[i]; return ['otros', 'Otros', null]; }
   function grupos(){
     var g = {}, orden = TEMAS.map(function(x){ return x[0]; }).concat(['otros']);
-    datos.lineas.forEach(function(l){ l.pendientes.forEach(function(x){ var tm = temaDe(x.tema); (g[tm[0]] = g[tm[0]] || { clave: tm[0], tema: tm[1], items: [] }).items.push({ l: l, x: x }); }); });
+    lineasVista().forEach(function(l){ l.pendientes.forEach(function(x){ var tm = temaDe(x.tema); (g[tm[0]] = g[tm[0]] || { clave: tm[0], tema: tm[1], items: [] }).items.push({ l: l, x: x }); }); });
     return Object.keys(g).map(function(k){ var o = g[k]; o.mike = o.items.some(function(i){ return i.x.decide === 'Mike'; }); o.abiertos = o.items.filter(function(i){ return !i.x.decision; }).length;
       o.lineas = o.items.map(function(i){ return i.l.codigo; }).filter(function(c, n, a){ return a.indexOf(c) === n; }).length; return o; })
       .sort(function(a, b){ return orden.indexOf(a.clave) - orden.indexOf(b.clave); });
   }
-  function contar(){
-    var sem = 0, rez = 0; datos.lineas.forEach(function(l){ if (fSem === 'todas' || mia(l)) l.propuestas.forEach(function(x){ if (x.estado === 'nuevo') { if (pasado(x)) rez++; else sem++; } }); });
-    var reu = (datos.reuniones || []).filter(function(r){ return r.estado === 'procesada' && r.propuestas && Date.parse(r.fecha) >= CATORCE; }).length;
-    $('n-reuniones').textContent = reu || '';
-    var fij = 0; grupos().forEach(function(g){ if (g.items.some(function(i){ return !i.x.decision && puede(i.x.decide); })) fij++; });
-    $('n-semana').textContent = sem || ''; $('n-fijas').textContent = fij || ''; $('n-rezago').textContent = rez || '';
-  }
+  function porDecidir(){ var n = 0; lineasVista().forEach(function(l){ n += l.propuestas.filter(function(x){ return x.estado === 'nuevo'; }).length; }); return n; }
 
+  var VISTAS = [['resumen', 'Resumen', 'La matriz de productos contra las 10 entradas de la Voz del mercado. Pica una celda para ver sus propuestas.'],
+    ['decidir', 'Por decidir', 'Las propuestas de cambio de la semana y del rezago, con su evidencia y la acción concreta.'],
+    ['reuniones', 'Reuniones', 'Cada reunión analizada (D5), agrupada por producto, con su resumen, su transcript y sus propuestas.'],
+    ['marca', 'Voz de la marca', 'Las entradas fijas (E1 a E9) y sus choques con lo que dice el mercado.'],
+    ['ronda', 'Ronda', 'Lo que está en prueba, qué versión de la base usa cada salida y los resultados (D8 a D10).']];
   function pintar(){
-    $('yo').innerHTML = quien ? 'Eres <b>' + esc(quien) + '</b> · <button class="enlace" data-cambiar="1">cambiar</button>' : '';
-    document.querySelectorAll('#tabs .tab').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-v') === vista); });
-    contar();
-    if (abierta) return pintarLinea();
-    if (vista === 'semana') return pintarSemana();
-    if (vista === 'fijas') return pintarFijas();
-    if (vista === 'ronda') return pintarRonda();
-    if (vista === 'rezago') return pintarRezago();
+    guardado('gr_con_vista', vista); guardado('gr_con_lider', fLid); guardado('gr_con_prod', fProd);
+    var n = { decidir: porDecidir(), marca: grupos().filter(function(g){ return g.abiertos; }).length };
+    $('tabs').innerHTML = VISTAS.map(function(v){ return '<button class="tab' + (vista === v[0] ? ' on' : '') + '" data-v="' + v[0] + '" title="' + esc(v[2]) + '">' + v[1] + (n[v[0]] ? '<span class="n">' + n[v[0]] + '</span>' : '') + '</button>'; }).join('') +
+      '<button class="tab" data-ayuda="1" title="Cómo funciona el sistema de conocimiento">?</button>';
+    $('yo').innerHTML = 'Apruebas como <b>' + esc(actor()) + '</b>' + ay('Lo que apruebes queda con este nombre y la hora. Cambia el filtro de líder para aprobar como otra persona; con «Todos» se aprueba como Mike.');
+    $('filtros').innerHTML = barraFiltros();
+    if (vista === 'decidir') return pintarDecidir();
     if (vista === 'reuniones') return pintarReuniones();
-    return pintarComo();
+    if (vista === 'marca') return pintarMarca();
+    if (vista === 'ronda') return pintarRonda();
+    return pintarResumen();
   }
 
-  // ---------- Esta semana (Hacer): lo nuevo de cada linea, para su lider ----------
-  function pintarSemana(){
-    var ls = datos.lineas.filter(function(l){ return l.kb && (fSem === 'todas' || mia(l)); });
-    var h = '<h1>Esta semana</h1><p class="nota"><b>Voz del mercado:</b> lo que dejaron esta semana las secuencias, DUO, Open+3, WhatsApp, las reuniones, el coaching y las correcciones, cada entrada analizada por separado contra la base de cada línea. Lo que confirma o no sirve ya se archivó solo; aquí queda lo que necesita una decisión.</p>' +
-      '<div class="filtros"><button class="chip' + (fSem === 'mias' ? ' on' : '') + '" data-fs="mias">Mis líneas</button><button class="chip' + (fSem === 'todas' ? ' on' : '') + '" data-fs="todas">Todas</button></div><div class="grid">';
-    h += ls.map(function(l){
-      var nuevas = l.propuestas.filter(function(x){ return x.estado === 'nuevo' && !pasado(x); });
-      var por = {}; nuevas.forEach(function(x){ por[x.clase] = (por[x.clase] || 0) + 1; });
-      return '<button class="card clic" data-l="' + esc(l.codigo) + '"><div class="t">' + esc(l.nombre) + '</div><div class="sub">Lidera ' + esc(l.lidera) + ' · ' + esc(l.kb.nombre) + '</div><div class="chips">' +
-        (nuevas.length ? Object.keys(por).map(function(c){ return '<span class="etq ' + esc(c) + '">' + por[c] + ' ' + esc((CL[c] || c).toLowerCase()) + '</span>'; }).join('') : '<span class="etq ok">Al día</span>') +
-        (l.por_aplicar ? '<span class="etq refuerza">' + l.por_aplicar + ' por llevar a la base</span>' : '') + '</div></button>';
-    }).join('') + '</div>';
-    if (!ls.length) h += '<p class="vacio">No lideras ninguna línea con base. Mira "Todas".</p>';
-    var lote = datos.lote;
-    if (lote && lote.por_entrada) h += '<h2>Por entrada · ' + esc(String(lote.desde).slice(0, 10)) + ' a ' + esc(String(lote.hasta).slice(0, 10)) + '</h2><p class="nota">Cada celda: cuántos mensajes llegaron y cuántas propuestas dejaron para decidir. «Pocos» = no alcanzó el mínimo para analizarse sola (3 en secuencias, 2 en DUO, 1 en las demás).</p>' + matriz(lote, ls) +
-      '<details class="card"><summary class="cab" style="cursor:pointer;list-style:none"><span class="t">Qué dejó cada entrada</span></summary>' + resumenes(lote, ls) + '</details>';
-    var sin = datos.lineas.filter(function(l){ return !l.kb; }).map(function(l){ return l.nombre; });
-    if (sin.length) h += '<p class="nota" style="margin-top:12px">Sin base todavía: ' + esc(sin.join(', ')) + '.</p>';
+  // ---------- Resumen: productos x 10 entradas ----------
+  function reunionesEn(c, desde, hasta){ var d = String(desde).slice(0, 10), h = String(hasta).slice(0, 10);
+    return (datos.reuniones || []).filter(function(r){ return r.linea === c && r.fecha >= d && r.fecha < h && !r.interna; }); }
+  function celda(x, e, l, c){
+    var ir = ' class="celda" data-ir="' + esc(l.codigo + '|' + e + '|' + (c === datos.lote ? 'semana' : 'rezago')) + '"';
+    if (e === 'D8' || e === 'D9') return '<td class="sub dim" title="' + esc(ENT[e][1]) + '">Al cierre de la ronda</td>';
+    if (e === 'D10') { var p = x && x.perdidas ? x.perdidas : {}, t = 0, sm = p['sin motivo'] || 0; Object.keys(p).forEach(function(k){ t += p[k]; });
+      return '<td class="sub" title="' + esc(t ? Object.keys(p).map(function(k){ return p[k] + ' ' + k; }).join(', ') : 'Sin pérdidas en la ventana') + '">' + (t ? '<b style="color:var(--text)">' + t + '</b> pérdidas' + (sm ? '<br>' + sm + ' sin motivo' : '') : '0') + '</td>'; }
+    if (e === 'D5') { var rs = reunionesEn(l.codigo, c.desde, c.hasta), pr = rs.filter(function(r){ return r.estado === 'procesada'; });
+      return '<td' + ir + ' title="Reuniones con prospecto de la ventana (sin las internas)">' + (rs.length ? '<b style="color:var(--text)">' + pr.reduce(function(a, r){ return a + r.propuestas; }, 0) + '</b> propuestas<br>' + pr.length + ' de ' + rs.length + ' procesadas' : '0') + '</td>'; }
+    if (!x) return '<td class="sub" title="Evaluada: no llegó ningún mensaje de esta entrada">0</td>';
+    var n = x.cuentas[e] != null ? x.cuentas[e] : (e === 'D1' ? x.cuentas.replies || 0 : 0);
+    var cr = (x.entradas || []).filter(function(y){ return y.entrada === e; })[0];
+    if (cr && cr.error) return '<td class="sub" style="color:#fca5a5" title="' + esc(cr.error) + '">No se pudo analizar<br>' + cr.n + ' leídos</td>';
+    if (cr) return '<td' + ir + ' title="Pica para ver sus propuestas">' + '<b style="color:var(--text)">' + cr.revisar + '</b> para decidir<br>' + cr.n + ' leídos' + (cr.confirman ? ' · ' + cr.confirman + ' confirman' : '') + '</td>';
+    if (!l.kb && n) return '<td class="sub" title="Este producto no tiene base: los mensajes se cuentan, pero no se analizan">' + n + ' leídos<br>sin base</td>';
+    return '<td class="sub" title="' + (n ? 'No alcanzó el mínimo para analizarse sola (3 en secuencias, 2 en DUO, 1 en las demás)' : 'Evaluada: no llegó ningún mensaje de esta entrada') + '">' + (n ? n + ' (pocos)' : '0') + '</td>';
+  }
+  function pintarResumen(){
+    var ls = lineasVista(), rz = (datos.rezago || []);
+    var c = zona === 'semana' ? datos.lote : rz.filter(function(x){ return String(x.desde).slice(0, 10) === zona; })[0] || datos.lote;
+    var h = '<h1>Resumen' + ay('Cada fila es un producto del catálogo; cada columna, una entrada de la Voz del mercado. Las celdas en cero también se evaluaron. Pica una celda con propuestas para verlas.') + '</h1>' +
+      '<p class="nota">Qué llegó de cada entrada y cuántas propuestas dejó, producto por producto.</p>' +
+      '<div class="filtros"><span class="lbl">Periodo' + ay('La semana es el lote de cada lunes; las ventanas del rezago son lo pasado, de 30 en 30 días.') + '</span><button class="chip' + (zona === 'semana' ? ' on' : '') + '" data-zona="semana">Última semana</button>' +
+      rz.filter(function(x){ return x.propuestas > 0 || true; }).map(function(x){ var k = String(x.desde).slice(0, 10); return '<button class="chip' + (zona === k ? ' on' : '') + '" data-zona="' + k + '" title="Rezago: ventana del ' + k + ' al ' + String(x.hasta).slice(0, 10) + '">' + dia(x.desde) + ' a ' + dia(x.hasta) + '</button>'; }).join('') + '</div>';
+    if (!c) return $('main').innerHTML = h + '<p class="vacio">Todavía no hay corridas.</p>';
+    h += '<p class="sub" style="margin-bottom:8px">' + esc(String(c.desde).slice(0, 10)) + ' a ' + esc(String(c.hasta).slice(0, 10)) + '</p>';
+    h += '<div class="card tabla"><table class="t2"><tr><th>Producto</th>' + ENT_A.map(function(e){ return '<th title="' + esc(ENT[e][1]) + '">' + e + ' ' + esc(ENT[e][0]) + '</th>'; }).join('') + '<th title="Propuestas por decidir de este producto, de todas las entradas y periodos">Por decidir</th></tr>' +
+      ls.map(function(l){ var x = (c.lineas || []).filter(function(y){ return y.linea === l.codigo; })[0];
+        var pend = l.propuestas.filter(function(p){ return p.estado === 'nuevo'; }).length;
+        return '<tr><td>' + esc(corto(l.nombre)) + '<div class="sub">Lidera ' + esc(l.lidera) + (l.kb ? '' : ' · sin base') + '</div></td>' + ENT_A.map(function(e){ return celda(x, e, l, c); }).join('') +
+          '<td class="celda" data-ir="' + esc(l.codigo + '|todas|todo') + '"><b>' + pend + '</b></td></tr>'; }).join('') + '</table></div>';
+    h += '<details class="card"><summary class="cab" style="cursor:pointer;list-style:none"><span class="t">Qué dejó cada entrada' + ay('El resumen que escribió Claude de cada entrada analizada, con sus números.') + '</span></summary>' + resumenes(c, ls) + '</details>';
     $('main').innerHTML = h;
   }
-  function linea(){ return datos.lineas.filter(function(l){ return l.codigo === abierta; })[0]; }
-  function tarjetaPropuesta(x){
-    var ok = puede(x.decide) && !x.aplicado;
-    return '<div class="card' + (x.estado !== 'nuevo' ? ' hecho' : '') + '"><div class="cab"><span class="chips" style="margin:0"><span class="etq ' + esc(x.clase) + '">' + esc(CL[x.clase] || x.clase) + '</span><span class="etq">' + esc(x.seccion || 'Sin sección') + '</span><span class="etq">' + esc((x.entrada || '') + ' ' + (ENT[x.entrada] || '')) + '</span><span class="etq">' + (x.origen === 'rezago' ? 'Rezago desde ' + esc(String(x.id).split('-').slice(2, 5).join('-')) : x.origen === 'lote' ? 'Lote semanal del ' + esc(x.fecha) : 'Reunión del ' + esc(x.fecha)) + '</span>' + (x.madurez ? '<span class="etq ' + (x.madurez === 'comprobada' ? 'ok' : x.madurez === 'refutada' ? 'contradice' : '') + '">' + esc(MAD[x.madurez] || x.madurez) + '</span>' : '') + '</span><span class="etq ' + (x.decide === 'Mike' ? 'mike' : 'lider') + '">Lo decide ' + esc(x.decide) + '</span></div>' +
-      (x.actual ? '<div class="bloque antes"><span>Hoy dice</span>' + esc(x.actual) + '</div>' : '') +
-      '<div class="bloque despues"><span>' + (x.actual ? 'Quedaría' : 'Se agrega') + '</span><div id="txt-' + esc(x.id) + '">' + esc(x.texto) + '</div></div>' +
-      (x.motivo ? '<div class="sub" style="margin-top:6px">' + esc(x.motivo) + '</div>' : '') + (x.cita ? '<div class="sub" style="margin-top:4px">Evidencia: “' + esc(x.cita) + '” · ' + (x.citable ? 'se puede usar en público' : 'solo interno') + '</div>' : '') +
-      (x.por ? '<div class="decidido">' + (x.estado === 'aprobado' ? 'Aprobada' : x.estado === 'descartado' ? 'No aprobada' : 'Regresada') + ' por <b>' + esc(x.por) + '</b> · ' + esc(fecha(x.ts)) + (x.aplicado ? ' · ya está en ' + esc(x.kb_version || 'la base') : '') + '</div>' : '') +
-      (ok ? '<div class="acc">' + (x.estado !== 'aprobado' ? '<button class="btn sec" data-ia="aprobar" data-i="' + esc(x.id) + '">Aprobar</button>' : '') + '<button class="btn sec" data-ia="editar" data-i="' + esc(x.id) + '">Editar</button>' +
-        (x.estado !== 'descartado' ? '<button class="btn sec" data-ia="descartar" data-i="' + esc(x.id) + '">No aprobar</button>' : '') + (x.estado !== 'nuevo' ? '<button class="enlace" data-ia="reabrir" data-i="' + esc(x.id) + '">Regresar a sin revisar</button>' : '') + '</div>' : '') + '</div>';
+  function resumenes(c, ls){
+    var r = (c.lineas || []).filter(function(x){ return ls.some(function(l){ return l.codigo === x.linea; }); }).map(function(x){
+      var partes = (x.entradas || []).length ? x.entradas.map(function(y){ return '<div class="bloque"><span>' + esc(y.entrada + ' ' + (ENT[y.entrada] || [''])[0]) + ' · ' + y.n + ' leídos</span>' + esc(y.error ? 'No se pudo analizar: ' + y.error : y.resumen) + '</div>'; }).join('')
+        : (x.resumen || x.error ? '<div class="bloque">' + esc(x.error ? 'No se pudo analizar: ' + x.error : x.resumen) + '</div>' : '<div class="sub">Pocos mensajes para analizar.</div>');
+      return '<div class="linea-dec"><div class="sub"><b style="color:var(--text)">' + esc(x.nombre) + '</b> · ' + (x.ooo || 0) + ' fuera de oficina · ' + ((x.open3_envios != null ? x.open3_envios : (x.cuentas || {}).open3) || 0) + ' envíos de Open+3</div>' + partes + '</div>'; }).join('');
+    return r || '<p class="vacio">Nada analizado de estos productos en este periodo.</p>';
   }
-  function pintarLinea(){
-    var l = linea(); if (!l) { abierta = ''; return pintar(); }
-    var todas = l.propuestas.filter(function(x){ return abiertaPasado ? pasado(x) : !pasado(x); });
-    var hay = ENT_A.filter(function(e){ return todas.some(function(x){ return x.entrada === e; }); });
-    if (hay.indexOf(fEnt) < 0) fEnt = 'todas';
-    var deEsta = todas.filter(function(x){ return fEnt === 'todas' || x.entrada === fEnt; });
-    var nuevas = deEsta.filter(function(x){ return x.estado === 'nuevo'; }), hechas = deEsta.filter(function(x){ return x.estado !== 'nuevo'; });
-    var h = '<button class="volver" id="volver">← ' + (abiertaPasado ? 'Rezago' : 'Esta semana') + '</button><h1>' + esc(l.nombre) + (abiertaPasado ? ' · rezago' : '') + '</h1><p class="nota">Lidera <b>' + esc(l.lidera) + '</b>. Base vigente: <a href="' + esc(l.kb.url) + '" target="_blank" rel="noopener">' + esc(l.kb.nombre) + '</a>.</p>' +
-      (hay.length > 1 ? '<div class="filtros"><button class="chip' + (fEnt === 'todas' ? ' on' : '') + '" data-fe="todas">Todas las entradas</button>' + hay.map(function(e){ var n = todas.filter(function(x){ return x.entrada === e && x.estado === 'nuevo'; }).length; return '<button class="chip' + (fEnt === e ? ' on' : '') + '" data-fe="' + e + '">' + e + ' ' + esc(ENT[e]) + (n ? ' · ' + n : '') + '</button>'; }).join('') + '</div>' : '') +
-      '<h2>Por decidir (' + nuevas.length + ')</h2>' + (nuevas.length ? nuevas.map(tarjetaPropuesta).join('') : '<p class="vacio">Nada pendiente en esta línea.</p>') +
-      (hechas.length ? '<details><summary class="sub" style="cursor:pointer;margin-top:10px">Ya revisadas (' + hechas.length + ')</summary>' + hechas.map(tarjetaPropuesta).join('') + '</details>' : '');
+
+  // ---------- Por decidir ----------
+  function filtradas(l){
+    return l.propuestas.filter(function(x){
+      if (fEst === 'nuevo' ? x.estado !== 'nuevo' : x.estado === 'nuevo') return false;
+      if (fPer === 'semana' && pasado(x)) return false;
+      if (fPer === 'rezago' && !pasado(x)) return false;
+      if (fEnt !== 'todas' && x.entrada !== fEnt) return false;
+      if (fAcc !== 'todas' && tipoAcc(x) !== fAcc) return false;
+      return true; });
+  }
+  function pintarDecidir(){
+    var ls = lineasVista().filter(function(l){ return l.kb || l.propuestas.length; });
+    var base = []; ls.forEach(function(l){ l.propuestas.forEach(function(x){ if ((fEst === 'nuevo') === (x.estado === 'nuevo') && (fPer === 'todo' || (fPer === 'rezago') === pasado(x))) base.push(x); }); });
+    var cuentaE = {}, cuentaA = {}; base.forEach(function(x){ cuentaE[x.entrada] = (cuentaE[x.entrada] || 0) + 1; if (fEnt === 'todas' || x.entrada === fEnt) cuentaA[tipoAcc(x)] = (cuentaA[tipoAcc(x)] || 0) + 1; });
+    var h = '<h1>Por decidir' + ay('Cada tarjeta dice qué pasó (con la evidencia real), qué significa y qué acción concreta se propone. Aprobar ejecuta esa acción: cambia la base o pone la prueba en la ronda.') + '</h1>' +
+      '<div class="filtros"><span class="lbl">Periodo' + ay('Esta semana: el lote del lunes y las reuniones de los últimos 14 días. Rezago: lo pasado.') + '</span>' + [['semana', 'Esta semana'], ['rezago', 'Rezago'], ['todo', 'Todo']].map(function(f){ return '<button class="chip' + (fPer === f[0] ? ' on' : '') + '" data-fper="' + f[0] + '">' + f[1] + '</button>'; }).join('') +
+      '<span class="lbl" style="margin-left:10px">Mostrar</span>' + [['nuevo', 'Por decidir'], ['hechas', 'Ya revisadas']].map(function(f){ return '<button class="chip' + (fEst === f[0] ? ' on' : '') + '" data-fest="' + f[0] + '">' + f[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="filtros"><span class="lbl">Entrada' + ay('Las 10 entradas de la Voz del mercado. Las que dicen 0 también se evaluaron.') + '</span><button class="chip' + (fEnt === 'todas' ? ' on' : '') + '" data-fent="todas">Todas (' + base.length + ')</button>' +
+      ENT_A.map(function(e){ return '<button class="chip' + (fEnt === e ? ' on' : '') + (cuentaE[e] ? '' : ' cero') + '" data-fent="' + e + '" title="' + esc(ENT[e][1]) + '">' + e + ' ' + esc(ENT[e][0]) + ' · ' + (cuentaE[e] || 0) + '</button>'; }).join('') + '</div>' +
+      '<div class="filtros"><span class="lbl">Acción' + ay('Qué pasa si se aprueba.') + '</span><button class="chip' + (fAcc === 'todas' ? ' on' : '') + '" data-facc="todas">Todas</button>' +
+      Object.keys(ACC).filter(function(a){ return cuentaA[a]; }).map(function(a){ return '<button class="chip' + (fAcc === a ? ' on' : '') + '" data-facc="' + a + '" title="' + esc(ACC[a][1]) + '">' + esc(ACC[a][0]) + ' · ' + cuentaA[a] + '</button>'; }).join('') + '</div>';
+    var bloques = ls.map(function(l){ var xs = filtradas(l); return { l: l, xs: xs }; }).filter(function(b){ return b.xs.length; });
+    h += bloques.length ? bloques.map(function(b){
+      var tope = 40, mas = b.xs.length - tope;
+      return '<details class="prod"' + (bloques.length <= 2 ? ' open' : '') + '><summary><span class="t">' + esc(corto(b.l.nombre)) + '</span> <span class="sub">Lidera ' + esc(b.l.lidera) + (b.l.kb ? ' · base <a href="' + esc(b.l.kb.url) + '" target="_blank" rel="noopener">' + esc(b.l.kb.nombre) + '</a>' : '') + '</span> <span class="etq">' + b.xs.length + '</span></summary>' +
+        b.xs.slice(0, tope).map(function(x){ return tarjeta(x, b.l); }).join('') + (mas > 0 ? '<p class="sub">Y ' + mas + ' más. Usa los filtros de entrada o acción para verlas.</p>' : '') + '</details>'; }).join('')
+      : '<p class="vacio">Nada en este filtro.</p>';
+    $('main').innerHTML = h;
+  }
+  function etq(nombre, valor, ayuda, cls){ return '<span class="etq' + (cls ? ' ' + cls : '') + '" title="' + esc(ayuda) + '"><i>' + nombre + ':</i> ' + esc(valor) + '</span>'; }
+  function origenTxt(x){ return x.origen === 'rezago' ? 'Rezago desde ' + dia(String(x.id).split('-').slice(2, 5).join('-')) : x.origen === 'lote' ? 'Lote del ' + dia(x.fecha) : x.origen === 'consolidada' ? 'Junta de ' + dia(x.fecha) : 'Reunión del ' + dia(x.fecha); }
+  function tarjeta(x, l){
+    var ok = puede(x.decide) && !x.aplicado, ta = tipoAcc(x), a = x.accion || {};
+    var reu = x.origen === 'reunion' ? (datos.reuniones || []).filter(function(r){ return r.id === x.event_id; })[0] : null;
+    var h = '<div class="card prop' + (x.estado !== 'nuevo' ? ' hecho' : '') + '"><div class="cab"><span class="chips" style="margin:0">' +
+      etq('Clase', (CL[x.clase] || [x.clase])[0], (CL[x.clase] || ['', ''])[1], x.clase) +
+      etq('Entrada', x.entrada + ' ' + (ENT[x.entrada] || [''])[0], (ENT[x.entrada] || ['', ''])[1]) +
+      etq('Origen', origenTxt(x), x.origen === 'consolidada' ? 'Junta varias propuestas parecidas en una sola.' : 'De dónde salió.') +
+      (x.madurez ? etq('Madurez', (MAD[x.madurez] || [x.madurez])[0], (MAD[x.madurez] || ['', ''])[1], x.madurez === 'comprobada' ? 'ok' : x.madurez === 'refutada' ? 'contradice' : '') : '') +
+      (x.seccion ? etq('Sección', x.seccion, 'La sección de la base a la que toca.') : '') +
+      '</span><span class="etq ' + (x.decide === 'Mike' ? 'mike' : 'lider') + '" title="' + esc(x.decide === 'Mike' ? 'Toca la promesa (qué se ofrece, cifras, casos, precios, plazos, países): decide Mike.' : 'Decide quien lidera el producto según el catálogo.') + '">Lo decide ' + esc(x.decide) + '</span></div>';
+    // 1. Que paso
+    h += '<div class="bloque"><span>Qué pasó' + ay('La evidencia: cuántos casos y los mensajes o reuniones de donde sale.') + '</span>' + esc(x.motivo) + '</div>';
+    if (x.junta) { var pe = {}; x.juntadas.forEach(function(j){ pe[j.entrada] = (pe[j.entrada] || 0) + 1; });
+      h += '<details class="ev"><summary>Junta ' + x.junta + ' propuestas parecidas · ' + Object.keys(pe).map(function(e){ return pe[e] + ' de ' + (ENT[e] || [e])[0]; }).join(', ') + '</summary>' +
+        x.juntadas.map(function(j){ return '<div class="ev-i"><b>' + dia(j.fecha) + ' · ' + esc((ENT[j.entrada] || [j.entrada])[0]) + '</b> ' + esc(j.texto) + (j.cita ? '<div class="sub">“' + esc(j.cita) + '”</div>' : '') + '</div>'; }).join('') + '</details>'; }
+    if (x.evidencia && x.evidencia.length) h += '<details class="ev"><summary>Ver los ' + x.evidencia.length + ' mensajes reales</summary>' + x.evidencia.map(function(v){
+      return '<div class="ev-i"><b>' + esc([dia(v.fecha), v.empresa, v.puesto, v.industria, v.canal].filter(Boolean).join(' · ')) + '</b>' + (v.secuencia ? '<div class="sub">Secuencia: ' + esc(v.secuencia) + (v.paso ? ' · paso ' + esc(v.paso) : '') + (v.senal ? ' · señal: ' + esc(v.senal) : '') + '</div>' : '') +
+        '<div>' + esc(v.texto || '') + '</div>' + (v.deal_id ? '<a href="https://app.hubspot.com/contacts/49671716/record/0-3/' + esc(v.deal_id) + '" target="_blank" rel="noopener">Oportunidad en HubSpot</a>' : '') + '</div>'; }).join('') + '</details>';
+    else if (x.cita) h += '<div class="sub" style="margin-top:4px">Evidencia: “' + esc(x.cita) + '” · ' + (x.citable ? 'se puede usar en público' : 'solo interno') + '</div>';
+    if (reu) h += '<div class="sub" style="margin-top:4px">Reunión: ' + esc(reu.titulo) + (reu.transcript ? ' · <a href="' + esc(reu.transcript) + '" target="_blank" rel="noopener">Transcript</a>' : '') + '</div>';
+    // 2. Que significa
+    if (x.significa) h += '<div class="bloque"><span>Qué significa</span>' + esc(x.significa) + '</div>';
+    // 3. Accion
+    h += '<div class="bloque accion"><span>Acción: ' + esc(ACC[ta][0]) + ay(ACC[ta][1]) + '</span>';
+    if (a.que_hacer) h += '<div>' + esc(a.que_hacer) + '</div>' + (a.donde ? '<div class="sub">Dónde: ' + esc(a.donde) + '</div>' : '') + (a.como_medir ? '<div class="sub">Cómo se mide: ' + esc(a.como_medir) + '</div>' : '') + (a.quien ? '<div class="sub">Quién: ' + esc(a.quien) + '</div>' : '');
+    else if (ta === 'probar') h += '<div id="txt-' + esc(x.id) + '">' + esc(x.texto) + '</div><div class="sub">Falta definir en qué secuencia o salida se prueba y con qué meta: edítala para agregarlo antes de aprobar.</div>';
+    h += '</div>';
+    if (ta === 'cambiar_base' || ta === 'regla' || (ta !== 'probar' && !a.que_hacer)) h += (x.actual ? '<div class="bloque antes"><span>Hoy dice la base</span>' + esc(x.actual) + '</div>' : '') +
+      '<div class="bloque despues"><span>' + (x.actual ? 'Quedaría' : 'Se agrega a la base') + '</span><div id="txt-' + esc(x.id) + '">' + esc(x.texto) + '</div></div>';
+    else if (a.que_hacer) h += '<div id="txt-' + esc(x.id) + '" hidden>' + esc(x.texto) + '</div>';
+    if (x.por) h += '<div class="decidido">' + (x.estado === 'aprobado' ? 'Aprobada' : x.estado === 'descartado' ? 'No aprobada' : 'Regresada') + ' por <b>' + esc(x.por) + '</b> · ' + esc(fecha(x.ts)) + (x.aplicado ? ' · ya está en ' + esc(x.kb_version || 'la base') : '') + '</div>';
+    if (ok) h += '<div class="acc">' + (x.estado !== 'aprobado' ? '<button class="btn sec" data-ia="aprobar" data-i="' + esc(x.id) + '" title="' + esc(ACC[ta][1]) + '">' + (ta === 'probar' ? 'Aprobar prueba' : ta === 'cambiar_base' ? 'Aprobar cambio' : 'Aprobar') + '</button>' : '') +
+      '<button class="btn sec" data-ia="editar" data-i="' + esc(x.id) + '" title="Cambia el texto y queda aprobada con tu versión">Editar</button>' +
+      (x.estado !== 'descartado' ? '<button class="btn sec" data-ia="descartar" data-i="' + esc(x.id) + '" title="No entra a la base y no se prueba">No aprobar</button>' : '') +
+      (x.estado !== 'nuevo' ? '<button class="enlace" data-ia="reabrir" data-i="' + esc(x.id) + '">Regresar a sin revisar</button>' : '') + '</div>';
+    else if (!x.aplicado && x.estado === 'nuevo') h += '<div class="sub" style="margin-top:8px">Para aprobarla elige en el filtro de líder a ' + esc(x.decide) + ' (o «Todos» si eres Mike).</div>';
+    return h + '</div>';
+  }
+
+  // ---------- Reuniones (D5) por producto ----------
+  function pintarReuniones(){
+    var ls = lineasVista(), cod = ls.map(function(l){ return l.codigo; });
+    var ru = (datos.reuniones || []).filter(function(r){ return cod.indexOf(r.linea) >= 0; });
+    var EST = [['procesada', 'Procesadas', 'Ya se analizaron contra la base de su línea.'], ['en_cola', 'En cola', 'Se procesan de lunes a viernes a las 19:30, 10 por vez, las más recientes primero.'],
+      ['sin_transcript', 'Sin transcript', 'Gemini no dejó transcript: no se pueden analizar.'], ['interna', 'Internas', 'Reuniones sin prospecto (planeación, juntas internas): no generan propuestas.'], ['todas', 'Todas', '']];
+    var c = {}; ru.forEach(function(r){ var k = r.interna ? 'interna' : r.estado; c[k] = (c[k] || 0) + 1; });
+    var vis = ru.filter(function(r){ return fReu === 'todas' || (fReu === 'interna' ? r.interna : (!r.interna && r.estado === fReu)); });
+    var h = '<h1>Reuniones' + ay('D5 de la Voz del mercado. Cada transcript se analiza solo contra la base de su producto. Abre una reunión para ver sus propuestas.') + '</h1>' +
+      '<div class="kpis">' + EST.slice(0, 4).map(function(e){ return '<div class="kpi" title="' + esc(e[2]) + '"><div class="v">' + (c[e[0]] || 0) + '</div><div class="t">' + e[1].toLowerCase() + '</div></div>'; }).join('') + '</div>' +
+      '<div class="filtros"><span class="lbl">Mostrar</span>' + EST.map(function(e){ return '<button class="chip' + (fReu === e[0] ? ' on' : '') + '" data-freu="' + e[0] + '" title="' + esc(e[2]) + '">' + e[1] + '</button>'; }).join('') + '</div>';
+    var porL = ls.map(function(l){ return { l: l, rs: vis.filter(function(r){ return r.linea === l.codigo; }) }; }).filter(function(b){ return b.rs.length; });
+    h += porL.length ? porL.map(function(b){
+      return '<details class="prod"' + (porL.length <= 2 ? ' open' : '') + '><summary><span class="t">' + esc(corto(b.l.nombre)) + '</span> <span class="sub">Lidera ' + esc(b.l.lidera) + '</span> <span class="etq">' + b.rs.length + '</span></summary>' +
+        b.rs.slice(0, 120).map(function(r){
+          var ps = b.l.propuestas.filter(function(x){ return x.event_id === r.id; }), pn = ps.filter(function(x){ return x.estado === 'nuevo'; }).length;
+          return '<details class="reu"><summary><span class="sub">' + esc(r.fecha) + '</span> <b>' + esc(r.titulo) + '</b>' + (r.interna ? ' <span class="etq" title="Sin prospecto: no genera propuestas">interna</span>' : '') +
+            (r.estado === 'procesada' ? ' <span class="etq' + (pn ? ' nuevo' : '') + '" title="Propuestas por decidir de esta reunión">' + pn + ' por decidir</span>' : ' <span class="etq">' + esc(r.estado === 'en_cola' ? 'en cola' : r.estado === 'sin_transcript' ? 'sin transcript' : r.estado) + '</span>') + '</summary>' +
+            '<div class="bloque"><span>Qué dejó</span>' + esc(r.resumen || 'Todavía no se analiza.') + '</div>' + (r.transcript ? '<a href="' + esc(r.transcript) + '" target="_blank" rel="noopener">Abrir el transcript</a>' : '') +
+            (ps.length ? ps.map(function(x){ return tarjeta(x, b.l); }).join('') : '') + '</details>'; }).join('') + '</details>'; }).join('')
+      : '<p class="vacio">Nada en este filtro.</p>';
     $('main').innerHTML = h;
   }
 
-  // ---------- Decisiones fijas: choques de la PV, el ICP y las reglas, agrupados por tema ----------
-  function pintarFijas(){
+  // ---------- Voz de la marca (E1-E9) ----------
+  function pintarMarca(){
     var gs = grupos().filter(function(g){
       if (fFij === 'por') return g.abiertos > 0;
       if (fFij === 'mias') return g.items.some(function(i){ return !i.x.decision && puede(i.x.decide); });
       if (fFij === 'hechas') return g.items.some(function(i){ return i.x.decision; });
       return true; });
-    var h = '<h1>Voz de la marca</h1><p class="nota">Las entradas fijas: E1 propuesta de valor, E2 ICP, E3 llamado a la acción, E4 presentación del Discovery, E5 catálogo (monto, responsables y partner), E6 reglas del REA, E7 configuración de señales, E8 casos citables y E9 directorio de partners. Aquí están sus choques con lo que dice el mercado, que quedaron en "Pendiente de verificar" de cada base. Están agrupados por tema para decidir parejo en todas las líneas; abre un tema para ver cada línea. Lo que toca la promesa (qué se ofrece, cifras, casos, precios, plazos, países) lo decide Mike.</p>' +
+    var h = '<h1>Voz de la marca' + ay('Las entradas fijas: lo que Great Revenue decide de cada producto. Se configuran en la Configuración (Productos, tarjeta 7.2). Aquí están sus choques con lo que dice el mercado.') + '</h1>' +
+      '<div class="chips" style="margin-bottom:10px">' + Object.keys(VOZ_MARCA).map(function(k){ return '<span class="etq" title="' + esc(VOZ_MARCA[k]) + '">' + k + ' ' + esc(VOZ_MARCA[k]) + '</span>'; }).join('') + '</div>' +
+      '<p class="nota">Choques que quedaron en «Pendiente de verificar» de cada base, agrupados por tema. Usa el filtro de producto para ver los de uno solo. Lo que toca la promesa lo decide Mike.</p>' +
       '<div class="filtros">' + [['por', 'Por decidir'], ['mias', 'Me tocan'], ['hechas', 'Decididas'], ['todas', 'Todas']].map(function(f){ return '<button class="chip' + (fFij === f[0] ? ' on' : '') + '" data-ff="' + f[0] + '">' + f[1] + '</button>'; }).join('') + '</div>';
-    h += '<p class="sub" style="margin-bottom:10px">' + gs.length + ' tema' + (gs.length === 1 ? '' : 's') + ' en este filtro.</p>';
     h += gs.length ? gs.map(function(g){
-      return '<details class="card"' + (gs.length <= 3 ? ' open' : '') + '><summary class="cab" style="cursor:pointer;list-style:none"><span class="t">' + esc(g.tema) + '</span><span class="chips" style="margin:0"><span class="etq">' + g.abiertos + ' por decidir de ' + g.items.length + '</span><span class="etq">' + g.lineas + ' línea' + (g.lineas === 1 ? '' : 's') + '</span><span class="etq ' + (g.mike ? 'mike' : 'lider') + '">' + (g.mike ? 'Incluye decisiones de Mike' : 'Lo decide el líder') + '</span></span></summary>' +
+      return '<details class="card"' + (gs.length <= 3 || fProd !== 'todos' ? ' open' : '') + '><summary class="cab" style="cursor:pointer;list-style:none"><span class="t">' + esc(g.tema) + '</span><span class="chips" style="margin:0"><span class="etq">' + g.abiertos + ' por decidir de ' + g.items.length + '</span><span class="etq" title="' + esc(g.items.map(function(i){ return corto(i.l.nombre); }).filter(function(c, n, a){ return a.indexOf(c) === n; }).join(', ')) + '">' + g.lineas + ' producto' + (g.lineas === 1 ? '' : 's') + '</span><span class="etq ' + (g.mike ? 'mike' : 'lider') + '">' + (g.mike ? 'Incluye decisiones de Mike' : 'Lo decide el líder') + '</span></span></summary>' +
         g.items.map(function(i){
           var x = i.x, clave = i.l.codigo + '|' + x.id, ok = puede(x.decide) && !(x.decision && x.decision.aplicado);
-          return '<div class="linea-dec"><div class="cab"><div class="sub"><b style="color:var(--text)">' + esc(i.l.nombre) + '</b> · ' + esc(x.tema) + '</div><span class="etq ' + (x.decide === 'Mike' ? 'mike' : 'lider') + '">Lo decide ' + esc(x.decide) + '</span></div>' +
+          return '<div class="linea-dec"><div class="cab"><div class="sub"><b style="color:var(--text)">' + esc(corto(i.l.nombre)) + '</b> · ' + esc(x.tema) + '</div><span class="etq ' + (x.decide === 'Mike' ? 'mike' : 'lider') + '">Lo decide ' + esc(x.decide) + '</span></div>' +
             '<div class="bloque"><span>Qué dicen las fuentes</span>' + esc(x.choque) + '</div><div class="bloque"><span>Qué se tomó en la base</span>' + esc(x.tomado) + '</div>' +
             (x.decision ? '<div class="decidido"><b>Decidido por ' + esc(x.decision.por) + '</b> · ' + esc(fecha(x.decision.ts)) + (x.decision.aplicado ? ' · ya está en la base' : ' · entra en la siguiente versión') + '<br>' + esc(x.decision.texto) + '</div>' : '') +
-            (ok ? '<div class="acc"><button class="btn sec" data-ok="' + esc(clave) + '">De acuerdo con lo que se tomó</button><button class="btn sec" data-otra="' + esc(clave) + '">Decidir otra cosa</button></div><div id="otra-' + esc(clave.replace('|', '-')) + '" hidden><textarea placeholder="Qué se decide y por qué"></textarea><div class="acc"><button class="btn" data-guarda="' + esc(clave) + '">Guardar decisión</button></div></div>' : '') + '</div>';
+            (ok ? '<div class="acc"><button class="btn sec" data-ok="' + esc(clave) + '" title="Se queda lo que se tomó en la base">De acuerdo con lo que se tomó</button><button class="btn sec" data-otra="' + esc(clave) + '">Decidir otra cosa</button></div><div id="otra-' + esc(clave.replace('|', '-')) + '" hidden><textarea placeholder="Qué se decide y por qué"></textarea><div class="acc"><button class="btn" data-guarda="' + esc(clave) + '">Guardar decisión</button></div></div>' : '') + '</div>';
         }).join('') + '</details>';
     }).join('') : '<p class="vacio">Nada en este filtro.</p>';
     $('main').innerHTML = h;
@@ -275,77 +385,34 @@
 
   // ---------- Ronda (Verificar y Actuar) ----------
   function pintarRonda(){
-    var lote = datos.lote, ls = datos.lineas.filter(function(l){ return l.kb; }), ro = datos.ronda, sal = datos.salidas || [];
-    var h = '<h1>Ronda' + (ro ? ' ' + ro.numero : '') + '</h1>' + (ro ? '<p class="nota">Del <b>' + esc(ro.inicio) + '</b> al <b>' + esc(ro.cierre) + '</b>. ' + esc(ro.linea_base) + '. ' + esc(ro.verificar) + '</p>' : '');
-    if (lote) h += '<div class="kpis"><div class="kpi"><div class="v">' + lote.propuestas + '</div><div class="t">propuestas del último lote</div></div><div class="kpi"><div class="v">' + lote.lineas.reduce(function(a, l){ return a + l.revisar; }, 0) + '</div><div class="t">para decidir</div></div><div class="kpi"><div class="v">' + lote.lineas.reduce(function(a, l){ return a + l.confirman; }, 0) + '</div><div class="t">confirman la base</div></div><div class="kpi"><div class="v">' + esc(String(lote.desde).slice(5, 10)) + ' a ' + esc(String(lote.hasta).slice(5, 10)) + '</div><div class="t">semana analizada</div></div></div>';
-    // D10: motivos de perdida del ultimo lote (resultado: no se analiza, se cuenta).
-    if (lote && lote.por_entrada) { var pl = lote.lineas.filter(function(x){ return x.perdidas && Object.keys(x.perdidas).length; });
-      var sinM = pl.reduce(function(a, x){ return a + (x.perdidas['sin motivo'] || 0); }, 0), totP = pl.reduce(function(a, x){ return a + Object.keys(x.perdidas).reduce(function(b, k){ return b + x.perdidas[k]; }, 0); }, 0);
-      h += '<h2>D10 Motivos de pérdida (' + totP + ')</h2>' + (totP ? '<p class="nota">Oportunidades cerradas como perdidas en la semana analizada, por línea y motivo.' + (sinM ? ' <b>' + sinM + ' de ' + totP + ' no tienen motivo capturado</b>: sin motivo no se sabe qué corregir.' : '') + '</p><div class="card tabla"><table class="t2"><tr><th>Línea</th><th>Motivos</th></tr>' +
-        pl.map(function(x){ return '<tr><td>' + esc(x.nombre) + '</td><td>' + esc(Object.keys(x.perdidas).map(function(k){ return x.perdidas[k] + ' ' + k; }).join(' · ')) + '</td></tr>'; }).join('') + '</table></div>' : '<p class="vacio">Sin pérdidas en la semana.</p>'); }
-    // En prueba: hipotesis aprobadas que se estan midiendo en una salida.
-    var prueba = []; datos.lineas.forEach(function(l){ l.propuestas.forEach(function(x){ if (x.madurez === 'en_prueba') prueba.push({ l: l, x: x }); }); });
-    h += '<h2>En prueba (' + prueba.length + ')</h2>' + (prueba.length ? prueba.map(function(o){ return '<div class="card"><div class="cab"><span class="t">' + esc(o.l.nombre) + '</span><span class="etq">Aprobada por ' + esc(o.x.por) + ' · ' + esc(fecha(o.x.ts)) + '</span></div><div class="bloque">' + esc(o.x.texto) + '</div></div>'; }).join('')
-      : '<p class="vacio">Todavía no hay hipótesis en prueba. Cuando un líder aprueba una «Hipótesis por probar», pasa aquí y se mide al cierre de la ronda.</p>');
-    // Registro de salidas: que version de la base usa cada salida.
+    var lote = datos.lote, ls = lineasVista().filter(function(l){ return l.kb; }), ro = datos.ronda, sal = datos.salidas || [], cod = ls.map(function(l){ return l.codigo; });
+    var h = '<h1>Ronda' + (ro ? ' ' + ro.numero : '') + ay('Cada 4 a 6 semanas se mide lo que está en prueba contra la línea base; lo comprobado sube al núcleo y se publica la versión nueva de cada base.') + '</h1>' + (ro ? '<p class="nota">Del <b>' + esc(ro.inicio) + '</b> al <b>' + esc(ro.cierre) + '</b>. ' + esc(ro.linea_base) + '. ' + esc(ro.verificar) + '</p>' : '');
+    var prueba = []; lineasVista().forEach(function(l){ l.propuestas.forEach(function(x){ if (x.madurez === 'en_prueba') prueba.push({ l: l, x: x }); }); });
+    h += '<h2>En prueba (' + prueba.length + ')' + ay('Hipótesis aprobadas que se están midiendo en una salida durante la ronda.') + '</h2>' + (prueba.length ? prueba.map(function(o){ return '<div class="card"><div class="cab"><span class="t">' + esc(corto(o.l.nombre)) + '</span><span class="etq">Aprobada por ' + esc(o.x.por) + ' · ' + esc(fecha(o.x.ts)) + '</span></div><div class="bloque">' + esc((o.x.accion && o.x.accion.que_hacer) || o.x.texto) + '</div>' + (o.x.accion && o.x.accion.como_medir ? '<div class="sub">Cómo se mide: ' + esc(o.x.accion.como_medir) + '</div>' : '') + '</div>'; }).join('')
+      : '<p class="vacio">Todavía no hay hipótesis en prueba. Cuando un líder aprueba una prueba, pasa aquí y se mide al cierre de la ronda.</p>');
+    h += '<h2>Resultados' + ay('D8 a D10 de la Voz del mercado.') + '</h2><div class="kpis"><div class="kpi" title="' + esc(ENT.D8[1]) + '"><div class="v">—</div><div class="t">D8 resultados · al cierre</div></div><div class="kpi" title="' + esc(ENT.D9[1]) + '"><div class="v">—</div><div class="t">D9 señal de cada cita · al cierre</div></div>';
+    var pl = lote ? lote.lineas.filter(function(x){ return cod.indexOf(x.linea) >= 0 || fProd === 'todos' && fLid === 'todos'; }).filter(function(x){ return x.perdidas && Object.keys(x.perdidas).length; }) : [];
+    var totP = 0, sinM = 0; pl.forEach(function(x){ Object.keys(x.perdidas).forEach(function(k){ totP += x.perdidas[k]; if (k === 'sin motivo') sinM += x.perdidas[k]; }); });
+    h += '<div class="kpi" title="' + esc(ENT.D10[1]) + '"><div class="v">' + totP + '</div><div class="t">D10 pérdidas de la semana' + (sinM ? ' · ' + sinM + ' sin motivo' : '') + '</div></div></div>';
+    if (pl.length) h += '<div class="card tabla"><table class="t2"><tr><th>Producto</th><th>Motivos de pérdida</th></tr>' + pl.map(function(x){ return '<tr><td>' + esc(x.nombre) + '</td><td>' + esc(Object.keys(x.perdidas).map(function(k){ return x.perdidas[k] + ' ' + k; }).join(' · ')) + '</td></tr>'; }).join('') + '</table></div>' + (sinM ? '<p class="nota">Sin motivo capturado no se sabe qué corregir.</p>' : '');
     var nombres = ['Bot de WhatsApp', 'Plantilla Open+3', 'Secuencias', 'Respuestas a replies y DUO', 'Configuración de señales', 'Minuta y coaching'];
     var COL = { 'al día': 'ok', 'atrasada': 'corrige', 'sin registro': '' };
-    h += '<h2>Registro de salidas</h2><p class="nota">Qué versión de la base usa cada salida. «Atrasada» = todavía no sale de la base vigente. Las de Marketing las regenera esta sesión; las del Motor, la sesión del Motor.</p><div class="card tabla"><table class="t2"><tr><th>Línea</th><th>Base vigente</th>' + nombres.map(function(n){ return '<th>' + esc(n) + '</th>'; }).join('') + '<th>Por llevar a la base</th><th></th></tr>' + ls.map(function(l){
-      return '<tr><td>' + esc(l.nombre) + '<div class="sub">Lidera ' + esc(l.lidera) + '</div></td><td><a href="' + esc(l.kb.url) + '" target="_blank" rel="noopener">' + esc(l.kb.nombre) + '</a></td>' + nombres.map(function(n){
-        // La fila mas reciente manda (el registro conserva el historial).
+    h += '<h2>Registro de salidas' + ay('Qué versión de la base usa cada salida. «Atrasada» = todavía no sale de la base vigente.') + '</h2><div class="card tabla"><table class="t2"><tr><th>Producto</th><th>Base vigente</th>' + nombres.map(function(n){ return '<th>' + esc(n) + '</th>'; }).join('') + '<th title="Propuestas aprobadas que todavía no entran a la base">Por llevar a la base</th><th></th></tr>' + ls.map(function(l){
+      return '<tr><td>' + esc(corto(l.nombre)) + '<div class="sub">Lidera ' + esc(l.lidera) + '</div></td><td><a href="' + esc(l.kb.url) + '" target="_blank" rel="noopener">' + esc(l.kb.nombre) + '</a></td>' + nombres.map(function(n){
         var x = sal.filter(function(y){ return y.linea === l.codigo && y.salida === n; }).sort(function(p, q){ return String(p.fecha).localeCompare(String(q.fecha)); }).pop();
         return '<td>' + (x ? '<span class="etq ' + (COL[x.estado] || '') + '" title="' + esc(x.donde + ' · ' + x.nota) + '">' + esc(x.estado) + '</span><div class="sub">' + esc(x.duenio) + (x.version_base ? ' · ' + esc(x.version_base) : '') + '</div>' : '—') + '</td>'; }).join('') +
-        '<td>' + l.por_aplicar + '</td><td>' + (puede(l.lidera) ? '<button class="btn sec" data-base="' + esc(l.codigo) + '"' + (l.por_aplicar ? '' : ' disabled') + '>Ver cómo quedaría</button>' : '') + '</td></tr>';
+        '<td>' + l.por_aplicar + '</td><td>' + (puede(l.lidera) ? '<button class="btn sec" data-base="' + esc(l.codigo) + '"' + (l.por_aplicar ? '' : ' disabled') + ' title="Claude integra lo aprobado y te muestra cómo quedaría la versión nueva antes de crearla">Ver cómo quedaría</button>' : '') + '</td></tr>';
     }).join('') + '</table></div>';
     $('main').innerHTML = h;
   }
-  // ---------- Rezago ----------
-  function pintarRezago(){
-    var rz = (datos.rezago || []).filter(function(c){ return c.propuestas > 0; }), ls = datos.lineas.filter(function(l){ return l.kb && (fSem === 'todas' || mia(l)); });
-    var tot = rz.reduce(function(a, c){ a.p += c.propuestas; c.lineas.forEach(function(l){ a.r += l.revisar || 0; var k = l.cuentas || {}; a.rep += k.replies != null ? k.replies : ['D1', 'D2', 'D3', 'D4', 'D6', 'D7'].reduce(function(s, e){ return s + (k[e] || 0); }, 0); }); return a; }, { p: 0, r: 0, rep: 0 });
-    var ru = datos.reuniones || [], cnt = function(f){ return ru.filter(f).length; }, NOV = Date.now() - 90 * 86400000;
-    var h = '<h1>Rezago</h1><p class="nota">Lo que ya pasó y no se había recolectado, procesado por ciclos de 30 días, de lo más reciente a lo más viejo. Lo viejo pesa menos: sirve sobre todo para confirmar, marcar como "ya no funciona" lo que la base afirma y los datos desmienten, o encontrar huecos. Revisa una ventana por semana. En lo de hace más de 90 días solo te llega lo que contradice, corrige, ya no funciona o es un hueco; lo demás se archiva como «vencida».</p>';
-    h += '<div class="kpis"><div class="kpi"><div class="v">' + rz.length + '</div><div class="t">ventanas procesadas</div></div><div class="kpi"><div class="v">' + tot.rep + '</div><div class="t">mensajes leídos (sin fuera de oficina)</div></div><div class="kpi"><div class="v">' + tot.p + '</div><div class="t">propuestas</div></div><div class="kpi"><div class="v">' + tot.r + '</div><div class="t">para decidir</div></div></div>';
-    h += '<div class="aviso"><b>Reuniones (D5):</b> ' + cnt(function(r){ return r.estado === 'procesada'; }) + ' procesadas, ' + cnt(function(r){ return r.estado === 'en_cola' && Date.parse(r.fecha) >= NOV; }) + ' en cola de los últimos 90 días y ' + cnt(function(r){ return r.estado === 'en_cola' && Date.parse(r.fecha) < NOV; }) + ' de más de 90 días; ' + cnt(function(r){ return r.estado === 'sin_transcript'; }) + ' sin transcript. Se procesan de lunes a viernes a las 19:30, hasta 10 por vez, las más recientes primero. Cada reunión nueva entra sola a la cola desde el Post-Reunión. El detalle está en la pestaña <b>Reuniones</b>.</div>';
-    h += '<div class="filtros"><button class="chip' + (fSem === 'mias' ? ' on' : '') + '" data-fs="mias">Mis líneas</button><button class="chip' + (fSem === 'todas' ? ' on' : '') + '" data-fs="todas">Todas</button></div>';
-    if (rz.length) h += '<h2>Por decidir del rezago</h2><div class="card tabla"><table class="t2"><tr><th>Línea</th><th>Por decidir</th><th>Por entrada</th><th></th></tr>' +
-      ls.map(function(l){
-        var pp = l.propuestas.filter(function(x){ return pasado(x) && x.estado === 'nuevo'; }), pe = {};
-        pp.forEach(function(x){ pe[x.entrada] = (pe[x.entrada] || 0) + 1; });
-        return '<tr><td>' + esc(l.nombre) + '<div class="sub">Lidera ' + esc(l.lidera) + '</div></td><td><b>' + pp.length + '</b></td><td class="sub">' + (Object.keys(pe).sort().map(function(e){ return pe[e] + ' ' + esc(ENT[e] || e); }).join(' · ') || '—') + '</td>' +
-          '<td><button class="btn sec" data-l="' + esc(l.codigo) + '" data-pasado="1"' + (l.propuestas.some(pasado) ? '' : ' disabled') + '>Revisar</button></td></tr>';
-      }).join('') + '</table></div>';
-    h += '<h2>Cada ventana, por entrada</h2>' + rz.map(function(c, i){
-      return '<details class="card"' + (i === 0 ? ' open' : '') + '><summary class="cab" style="cursor:pointer;list-style:none"><span class="t">' + esc(String(c.desde).slice(0, 10)) + ' a ' + esc(String(c.hasta).slice(0, 10)) + '</span><span class="etq">' + c.propuestas + ' propuestas</span></summary>' +
-        matriz(c, ls) + resumenes(c, ls) +
-        (c.sin_base && c.sin_base.length ? '<div class="linea-dec sub">Sin base (solo se cuentan): ' + esc(c.sin_base.map(function(x){ return x.nombre + ' ' + x.replies + ' replies'; }).join(', ')) + '</div>' : '') + '</details>';
-    }).join('');
-    $('main').innerHTML = h;
-  }
-  // ---------- Reuniones (D5): cada transcript, su resumen y cuantas propuestas dejo ----------
-  function pintarReuniones(){
-    var ls = datos.lineas.filter(function(l){ return fSem === 'todas' || mia(l); }), cod = ls.map(function(l){ return l.codigo; });
-    var nom = {}; datos.lineas.forEach(function(l){ nom[l.codigo] = l.nombre; });
-    var ru = (datos.reuniones || []).filter(function(r){ return fSem === 'todas' || cod.indexOf(r.linea) >= 0; });
-    var EST = [['procesada', 'Procesadas'], ['en_cola', 'En cola'], ['sin_transcript', 'Sin transcript'], ['todas', 'Todas']];
-    var c = {}; ru.forEach(function(r){ c[r.estado] = (c[r.estado] || 0) + 1; });
-    var vis = ru.filter(function(r){ return fReu === 'todas' || r.estado === fReu; });
-    var h = '<h1>Reuniones</h1><p class="nota">D5 de la Voz del mercado: cada transcript se analiza solo contra la base de su línea. Se procesan de lunes a viernes a las 19:30, hasta 10 por vez, las más recientes primero. Sus propuestas aparecen en la línea (Esta semana si son de los últimos 14 días; Rezago si son más viejas).</p>' +
-      '<div class="kpis">' + EST.slice(0, 3).map(function(e){ return '<div class="kpi"><div class="v">' + (c[e[0]] || 0) + '</div><div class="t">' + e[1].toLowerCase() + '</div></div>'; }).join('') + '<div class="kpi"><div class="v">' + ru.filter(function(r){ return r.estado === 'procesada'; }).reduce(function(a, r){ return a + r.propuestas; }, 0) + '</div><div class="t">propuestas que dejaron</div></div></div>' +
-      '<div class="filtros"><button class="chip' + (fSem === 'mias' ? ' on' : '') + '" data-fs="mias">Mis líneas</button><button class="chip' + (fSem === 'todas' ? ' on' : '') + '" data-fs="todas">Todas</button>' +
-      EST.map(function(e){ return '<button class="chip' + (fReu === e[0] ? ' on' : '') + '" data-fr="' + e[0] + '">' + e[1] + '</button>'; }).join('') + '</div>';
-    h += vis.length ? '<div class="card tabla"><table class="t2"><tr><th>Fecha</th><th>Línea</th><th>Reunión</th><th>Qué dejó</th><th>Propuestas</th></tr>' + vis.slice(0, 200).map(function(r){
-      return '<tr><td class="sub">' + esc(r.fecha) + '</td><td>' + esc(nom[r.linea] || r.linea || '—') + '</td><td>' + esc(r.titulo) + (r.transcript ? '<div class="sub"><a href="' + esc(r.transcript) + '" target="_blank" rel="noopener">Transcript</a></div>' : '') + '</td><td class="sub">' + esc(r.resumen || (r.estado === 'en_cola' ? 'En cola' : r.estado === 'sin_transcript' ? 'Sin transcript: no se puede analizar' : '')) + '</td><td>' + (r.estado === 'procesada' ? (r.propuestas ? '<button class="btn sec" data-l="' + esc(r.linea) + '"' + (Date.parse(r.fecha) < CATORCE ? ' data-pasado="1"' : '') + '>' + r.propuestas + '</button>' : '0') : '—') + '</td></tr>'; }).join('') + '</table></div>' + (vis.length > 200 ? '<p class="sub">Se muestran las 200 más recientes de ' + vis.length + '.</p>' : '')
-      : '<p class="vacio">Nada en este filtro.</p>';
-    $('main').innerHTML = h;
-  }
-  function pintarComo(){
-    $('main').innerHTML = '<h1>Cómo funciona</h1><p class="nota">Una base de conocimiento por línea (GR_KB_&lt;línea&gt;), de donde salen el bot de WhatsApp, Open+3, las secuencias, las señales, las respuestas a replies, la preparación de reuniones y la propuesta.</p>' +
-      '<ol class="pasos"><li><b>Voz de la marca</b> (entradas fijas E1 a E9: PV, ICP, llamado a la acción, presentación del Discovery, catálogo, reglas del REA, configuración de señales, casos citables y partners): las decide Mike y se configuran en la Configuración. Sus choques con el mercado están en <b>Voz de la marca</b>.</li>' +
-      '<li><b>Voz del mercado</b> (entradas del día D1 a D10: secuencias, DUO, Open+3, WhatsApp, reuniones, coaching, correcciones, resultados, qué señal produjo cada cita y motivos de pérdida): Claude analiza cada entrada por separado contra la base y la clasifica: nuevo, confirma, más convincente, contradice, corrige, ya no funciona, hueco, hipótesis, de otra línea o ruido. Lo que necesita decisión llega a <b>Esta semana</b>, para el líder de la línea.</li>' +
-      '<li><b>Quién decide:</b> el líder según el catálogo. Lo que cambia la promesa (qué se ofrece, cifras, casos, precios, plazos, países) lo decide Mike.</li>' +
-      '<li><b>Ronda:</b> cada 4 a 6 semanas se mide lo que está en prueba contra la línea base, lo comprobado sube al núcleo y se publica la versión nueva de la base. La anterior se conserva.</li>' +
-      '<li><b>Rezago:</b> lo que ya pasó se recolecta por ciclos, empezando por los últimos 90 días; lo viejo pesa menos.</li></ol>';
+  function verAyuda(){
+    modal('<h3>Cómo funciona</h3><ol class="pasos"><li><b>Una base por producto</b> (GR_KB_&lt;producto&gt;): de ahí salen el bot de WhatsApp, Open+3, las secuencias, las señales, las respuestas a replies, la preparación de reuniones y la propuesta.</li>' +
+      '<li><b>Voz de la marca</b> (E1 a E9): lo que decide Great Revenue. Se configura en la Configuración.</li>' +
+      '<li><b>Voz del mercado</b> (D1 a D10): lo que llega cada día. Claude analiza cada entrada por separado contra la base y propone una acción: cambiar la base, probar algo en la ronda, corregir una lista, pasarlo a otra línea o agregar una respuesta al bot o al motor.</li>' +
+      '<li><b>Quién decide:</b> el líder del producto según el catálogo. Lo que cambia la promesa lo decide Mike.</li>' +
+      '<li><b>Ronda:</b> cada 4 a 6 semanas se mide lo que está en prueba; lo comprobado sube al núcleo y se publica la versión nueva de la base.</li>' +
+      '<li><b>Rezago:</b> lo pasado se recolectó por ventanas de 30 días; lo de hace más de 90 días pesa menos.</li></ol><div class="acc"><button class="btn sec" id="cerrar">Cerrar</button></div>');
+    $('cerrar').onclick = cerrar;
   }
 
   // ---------- Acciones ----------
@@ -379,35 +446,40 @@
   function pendiente(clave){ var p = clave.split('|'), l = datos.lineas.filter(function(x){ return x.codigo === p[0]; })[0]; return { l: l, x: l.pendientes.filter(function(x){ return x.id === p[1]; })[0] }; }
   function decidir(clave, decision, texto){
     var o = pendiente(clave);
-    post('gr-conocimiento-decidir', { por: quien, linea: o.l.codigo, id: o.x.id, tema: o.x.tema, choque: o.x.choque, tomado: o.x.tomado, decision: decision, texto: texto || '' })
-      .then(function(){ toast('Decisión guardada con tu nombre'); return cargar(); }).catch(function(e){ toast(e.message); });
+    post('gr-conocimiento-decidir', { por: actor(), linea: o.l.codigo, id: o.x.id, tema: o.x.tema, choque: o.x.choque, tomado: o.x.tomado, decision: decision, texto: texto || '' })
+      .then(function(){ toast('Decisión guardada como ' + actor()); return cargar(); }).catch(function(e){ toast(e.message); });
   }
   function revisar(id, accion, texto){
-    post('gr-conocimiento-revisar', { por: quien, insumo_id: id, accion: accion, texto: texto || '' })
-      .then(function(){ toast(accion === 'descartar' ? 'No aprobada' : accion === 'reabrir' ? 'Regresada a sin revisar' : 'Aprobada: entra en la siguiente versión de la base'); return cargar(); })
+    post('gr-conocimiento-revisar', { por: actor(), insumo_id: id, accion: accion, texto: texto || '' })
+      .then(function(){ toast(accion === 'descartar' ? 'No aprobada' : accion === 'reabrir' ? 'Regresada a sin revisar' : 'Aprobada como ' + actor()); return cargar(); })
       .catch(function(e){ toast(e.message); });
   }
 
   document.addEventListener('click', function(e){
-    var t = e.target.closest('[data-cambiar],[data-v],[data-l],[data-fs],[data-ff],[data-fe],[data-fr],[data-ok],[data-otra],[data-guarda],[data-ia],[data-base],#volver'); if (!t || !datos) return;
-    if (t.hasAttribute('data-cambiar')) return elegirPersona();
-    if (t.hasAttribute('data-v')) { vista = t.getAttribute('data-v'); abierta = ''; abiertaPasado = false; return pintar(); }
-    if (!quien) return elegirPersona();
-    if (t.id === 'volver') { abierta = ''; abiertaPasado = false; return pintar(); }
-    if (t.hasAttribute('data-l')) { abierta = t.getAttribute('data-l'); abiertaPasado = t.hasAttribute('data-pasado'); fEnt = 'todas'; window.scrollTo(0, 0); return pintar(); }
-    if (t.hasAttribute('data-fs')) { fSem = t.getAttribute('data-fs'); return pintar(); }
-    if (t.hasAttribute('data-ff')) { fFij = t.getAttribute('data-ff'); return pintar(); }
-    if (t.hasAttribute('data-fe')) { fEnt = t.getAttribute('data-fe'); return pintar(); }
-    if (t.hasAttribute('data-fr')) { fReu = t.getAttribute('data-fr'); return pintar(); }
-    if (t.hasAttribute('data-base')) return verBase(t.getAttribute('data-base'));
-    if (t.hasAttribute('data-ok')) { t.disabled = true; return decidir(t.getAttribute('data-ok'), 'confirmo'); }
-    if (t.hasAttribute('data-otra')) { var d = $('otra-' + t.getAttribute('data-otra').replace('|', '-')); d.hidden = !d.hidden; if (!d.hidden) d.querySelector('textarea').focus(); return; }
-    if (t.hasAttribute('data-guarda')) { var c = t.getAttribute('data-guarda'), v = $('otra-' + c.replace('|', '-')).querySelector('textarea').value.trim(); if (!v) return toast('Escribe qué se decide'); t.disabled = true; return decidir(c, 'cambio', v); }
+    var t = e.target.closest('[data-v],[data-ayuda],[data-flid],[data-fprod],[data-zona],[data-ir],[data-fper],[data-fest],[data-fent],[data-facc],[data-freu],[data-ff],[data-ok],[data-otra],[data-guarda],[data-ia],[data-base]'); if (!t || !datos) return;
+    var g = function(k){ return t.getAttribute(k); };
+    if (t.hasAttribute('data-v')) { vista = g('data-v'); window.scrollTo(0, 0); return pintar(); }
+    if (t.hasAttribute('data-ayuda')) return verAyuda();
+    if (t.hasAttribute('data-flid')) { fLid = g('data-flid'); if (fProd !== 'todos' && !lineasLider().some(function(l){ return l.codigo === fProd; })) fProd = 'todos'; return pintar(); }
+    if (t.hasAttribute('data-fprod')) { fProd = g('data-fprod'); return pintar(); }
+    if (t.hasAttribute('data-zona')) { zona = g('data-zona'); return pintar(); }
+    // Celda de la matriz: abre Por decidir con ese producto, entrada y periodo.
+    if (t.hasAttribute('data-ir')) { var p = g('data-ir').split('|'); fProd = p[0]; fEnt = p[1]; fPer = p[2]; fAcc = 'todas'; fEst = 'nuevo'; vista = 'decidir'; window.scrollTo(0, 0); return pintar(); }
+    if (t.hasAttribute('data-fper')) { fPer = g('data-fper'); return pintar(); }
+    if (t.hasAttribute('data-fest')) { fEst = g('data-fest'); return pintar(); }
+    if (t.hasAttribute('data-fent')) { fEnt = g('data-fent'); fAcc = 'todas'; return pintar(); }
+    if (t.hasAttribute('data-facc')) { fAcc = g('data-facc'); return pintar(); }
+    if (t.hasAttribute('data-freu')) { fReu = g('data-freu'); return pintar(); }
+    if (t.hasAttribute('data-ff')) { fFij = g('data-ff'); return pintar(); }
+    if (t.hasAttribute('data-base')) return verBase(g('data-base'));
+    if (t.hasAttribute('data-ok')) { t.disabled = true; return decidir(g('data-ok'), 'confirmo'); }
+    if (t.hasAttribute('data-otra')) { var d = $('otra-' + g('data-otra').replace('|', '-')); d.hidden = !d.hidden; if (!d.hidden) d.querySelector('textarea').focus(); return; }
+    if (t.hasAttribute('data-guarda')) { var c = g('data-guarda'), v = $('otra-' + c.replace('|', '-')).querySelector('textarea').value.trim(); if (!v) return toast('Escribe qué se decide'); t.disabled = true; return decidir(c, 'cambio', v); }
     if (t.hasAttribute('data-ia')) {
-      var a = t.getAttribute('data-ia'), i = t.getAttribute('data-i');
+      var a = g('data-ia'), i = g('data-i');
       if (a === 'editar') {
         var actual = ($('txt-' + i) || {}).textContent || '';
-        modal('<h3>Editar la propuesta</h3><textarea id="edTxt" style="min-height:120px">' + esc(actual) + '</textarea><div class="acc"><button class="btn sec" id="cerrar">Cancelar</button><button class="btn" id="edOk">Guardar y aprobar</button></div>');
+        modal('<h3>Editar la propuesta</h3><p class="nota">Queda aprobada con tu texto. Si es una prueba, di en qué secuencia o salida y cómo se mide.</p><textarea id="edTxt" style="min-height:120px">' + esc(actual) + '</textarea><div class="acc"><button class="btn sec" id="cerrar">Cancelar</button><button class="btn" id="edOk">Guardar y aprobar</button></div>');
         $('cerrar').onclick = cerrar; $('edOk').onclick = function(){ var v = $('edTxt').value.trim(); if (!v) return; cerrar(); revisar(i, 'editar', v); };
         return;
       }
