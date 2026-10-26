@@ -75,7 +75,9 @@
   try { if (LLAVE) history.replaceState(null, '', location.pathname); } catch (e) {}
   var API = 'https://mikea.app.n8n.cloud/webhook/wa-coex-alta-api';
   var APP_ID = '2178039979444955';
-  var CONFIG_ID = CFG || '2172938969973319';
+  // 26 oct: configuración v4 "WA Coex Seguimiento v4" (Registro insertado de WhatsApp + WhatsApp Cloud API).
+  // La anterior, 2172938969973319, terminaba en "Pintaando no puede registrar clientes".
+  var CONFIG_ID = CFG || '1439898048293805';
   var signup = null;
   var listado = [];
   // El code del SDK queda atado al redirect_uri interno de Facebook (error 36008 al canjearlo sin él).
