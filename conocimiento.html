@@ -77,7 +77,8 @@
   <div class="barra-sup">
     <nav class="tabs" id="tabs">
       <button class="tab on" data-v="semana">Esta semana<span class="n" id="n-semana"></span></button>
-      <button class="tab" data-v="fijas">Decisiones fijas<span class="n" id="n-fijas"></span></button>
+      <button class="tab" data-v="reuniones">Reuniones<span class="n" id="n-reuniones"></span></button>
+      <button class="tab" data-v="fijas">Voz de la marca<span class="n" id="n-fijas"></span></button>
       <button class="tab" data-v="ronda">Ronda</button>
       <button class="tab" data-v="rezago">Rezago<span class="n" id="n-rezago"></span></button>
       <button class="tab" data-v="como">Cómo funciona</button>
@@ -91,7 +92,7 @@
   // Sin clave, como el tablero (decision de Mike, 25 oct). Si una liga vieja trae ?k=, se manda igual.
   var K = new URLSearchParams(location.search).get('k') || '';
   var BASE = 'https://mikea.app.n8n.cloud/webhook/';
-  var datos = null, vista = 'semana', abierta = '', abiertaPasado = false, quien = '', fSem = 'mias', fFij = 'por', espera = null;
+  var datos = null, vista = 'semana', abierta = '', abiertaPasado = false, quien = '', fSem = 'mias', fFij = 'por', fEnt = 'todas', fReu = 'procesada', espera = null;
   if (window.self !== window.top) document.documentElement.classList.add('en-tablero');
   var $ = function(id){ return document.getElementById(id); };
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -113,6 +114,35 @@
   // Las 10 clases del plan B y la madurez de cada pieza.
   var CL = { nuevo: 'Nuevo', refuerza: 'Confirma', mas_convincente: 'Más convincente', contradice: 'Contradice', corrige: 'Corrige', ya_no_funciona: 'Ya no funciona',
     hueco: 'Hueco', hipotesis: 'Hipótesis por probar', otra_linea: 'De otra línea', fuera: 'Ruido' };
+  // Entradas de la Voz del mercado (lo que llega cada dia). D1-D7 se analizan; D8-D10 son resultados que se miden en la Ronda.
+  var ENT = { D1: 'Secuencias', D2: 'DUO (señales)', D3: 'Open+3', D4: 'WhatsApp', D5: 'Reuniones', D6: 'Coaching', D7: 'Correcciones', D8: 'Resultados', D9: 'Señal de cada cita', D10: 'Motivos de pérdida' };
+  var ENT_A = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7'];
+  // Matriz linea x entrada de una corrida (lote o ventana del rezago): cuantos mensajes llegaron y cuantos quedaron para decidir.
+  // D5 sale de las reuniones con fecha en la ventana. Corridas viejas (antes del 26 oct) solo traen replies: van en D1.
+  function reunionesEn(c, desde, hasta){ var d = String(desde).slice(0, 10), h = String(hasta).slice(0, 10);
+    return (datos.reuniones || []).filter(function(r){ return r.linea === c && r.fecha >= d && r.fecha < h; }); }
+  function celda(x, e, l, c){
+    if (e === 'D5') { var rs = reunionesEn(l.codigo, c.desde, c.hasta), pr = rs.filter(function(r){ return r.estado === 'procesada'; });
+      return rs.length ? '<b style="color:var(--text)">' + pr.reduce(function(a, r){ return a + r.propuestas; }, 0) + '</b> propuestas<br>' + pr.length + ' de ' + rs.length + ' procesadas' : '—'; }
+    if (!x) return '—';
+    var n = x.cuentas[e] != null ? x.cuentas[e] : (e === 'D1' ? x.cuentas.replies || 0 : 0);
+    var cr = (x.entradas || []).filter(function(y){ return y.entrada === e; })[0];
+    if (cr && cr.error) return '<span style="color:#fca5a5">No se pudo analizar</span><br>' + cr.n + ' leídos';
+    if (cr) return '<b style="color:var(--text)">' + cr.revisar + '</b> para decidir<br>' + cr.n + ' leídos' + (cr.confirman ? ' · ' + cr.confirman + ' confirman' : '');
+    return n ? n + ' (pocos para analizar)' : '—';
+  }
+  function matriz(c, ls){
+    return '<div class="card tabla"><table class="t2"><tr><th>Línea</th>' + ENT_A.map(function(e){ return '<th>' + e + ' ' + esc(ENT[e]) + '</th>'; }).join('') + '</tr>' +
+      ls.map(function(l){ var x = (c.lineas || []).filter(function(y){ return y.linea === l.codigo; })[0];
+        return '<tr><td>' + esc(l.nombre) + '<div class="sub">Lidera ' + esc(l.lidera) + '</div></td>' + ENT_A.map(function(e){ return '<td class="sub">' + celda(x, e, l, c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</table></div>';
+  }
+  function resumenes(c, ls){
+    return (c.lineas || []).filter(function(x){ return ls.some(function(l){ return l.codigo === x.linea; }); }).map(function(x){
+      var partes = (x.entradas || []).length ? x.entradas.map(function(y){ return '<div class="bloque"><span>' + esc(y.entrada + ' ' + (ENT[y.entrada] || '')) + ' · ' + y.n + ' leídos</span>' + esc(y.error ? 'No se pudo analizar: ' + y.error : y.resumen) + '</div>'; }).join('')
+        : (x.resumen || x.error ? '<div class="bloque">' + esc(x.error ? 'No se pudo analizar: ' + x.error : x.resumen) + '</div>' : '<div class="sub">Pocos mensajes para analizar.</div>');
+      var perd = x.perdidas ? Object.keys(x.perdidas).map(function(k){ return x.perdidas[k] + ' ' + k; }).join(', ') : '';
+      return '<div class="linea-dec"><div class="sub"><b style="color:var(--text)">' + esc(x.nombre) + '</b> · ' + (x.ooo || 0) + ' fuera de oficina · ' + ((x.open3_envios != null ? x.open3_envios : (x.cuentas || {}).open3) || 0) + ' envíos de Open+3' + (perd ? ' · pérdidas: ' + esc(perd) : '') + '</div>' + partes + '</div>'; }).join('');
+  }
   var MAD = { hipotesis: 'Hipótesis', en_prueba: 'En prueba', comprobada: 'Comprobada', nucleo: 'Núcleo', refutada: 'Refutada', vencida: 'Vencida' };
   // Lo pasado: el rezago y las reuniones de hace mas de 14 dias. Lo demas es de esta semana.
   var CATORCE = Date.now() - 14 * 86400000;
@@ -156,6 +186,8 @@
   }
   function contar(){
     var sem = 0, rez = 0; datos.lineas.forEach(function(l){ if (fSem === 'todas' || mia(l)) l.propuestas.forEach(function(x){ if (x.estado === 'nuevo') { if (pasado(x)) rez++; else sem++; } }); });
+    var reu = (datos.reuniones || []).filter(function(r){ return r.estado === 'procesada' && r.propuestas && Date.parse(r.fecha) >= CATORCE; }).length;
+    $('n-reuniones').textContent = reu || '';
     var fij = 0; grupos().forEach(function(g){ if (g.items.some(function(i){ return !i.x.decision && puede(i.x.decide); })) fij++; });
     $('n-semana').textContent = sem || ''; $('n-fijas').textContent = fij || ''; $('n-rezago').textContent = rez || '';
   }
@@ -169,13 +201,14 @@
     if (vista === 'fijas') return pintarFijas();
     if (vista === 'ronda') return pintarRonda();
     if (vista === 'rezago') return pintarRezago();
+    if (vista === 'reuniones') return pintarReuniones();
     return pintarComo();
   }
 
   // ---------- Esta semana (Hacer): lo nuevo de cada linea, para su lider ----------
   function pintarSemana(){
     var ls = datos.lineas.filter(function(l){ return l.kb && (fSem === 'todas' || mia(l)); });
-    var h = '<h1>Esta semana</h1><p class="nota">Lo que dejaron las reuniones, los replies, Open+3, WhatsApp y las correcciones, comparado contra la base de cada línea. Lo que confirma o no sirve ya se archivó solo; aquí queda lo que necesita una decisión.</p>' +
+    var h = '<h1>Esta semana</h1><p class="nota"><b>Voz del mercado:</b> lo que dejaron esta semana las secuencias, DUO, Open+3, WhatsApp, las reuniones, el coaching y las correcciones, cada entrada analizada por separado contra la base de cada línea. Lo que confirma o no sirve ya se archivó solo; aquí queda lo que necesita una decisión.</p>' +
       '<div class="filtros"><button class="chip' + (fSem === 'mias' ? ' on' : '') + '" data-fs="mias">Mis líneas</button><button class="chip' + (fSem === 'todas' ? ' on' : '') + '" data-fs="todas">Todas</button></div><div class="grid">';
     h += ls.map(function(l){
       var nuevas = l.propuestas.filter(function(x){ return x.estado === 'nuevo' && !pasado(x); });
@@ -185,6 +218,9 @@
         (l.por_aplicar ? '<span class="etq refuerza">' + l.por_aplicar + ' por llevar a la base</span>' : '') + '</div></button>';
     }).join('') + '</div>';
     if (!ls.length) h += '<p class="vacio">No lideras ninguna línea con base. Mira "Todas".</p>';
+    var lote = datos.lote;
+    if (lote && lote.por_entrada) h += '<h2>Por entrada · ' + esc(String(lote.desde).slice(0, 10)) + ' a ' + esc(String(lote.hasta).slice(0, 10)) + '</h2><p class="nota">Cada celda: cuántos mensajes llegaron y cuántas propuestas dejaron para decidir. «Pocos» = no alcanzó el mínimo para analizarse sola (3 en secuencias, 2 en DUO, 1 en las demás).</p>' + matriz(lote, ls) +
+      '<details class="card"><summary class="cab" style="cursor:pointer;list-style:none"><span class="t">Qué dejó cada entrada</span></summary>' + resumenes(lote, ls) + '</details>';
     var sin = datos.lineas.filter(function(l){ return !l.kb; }).map(function(l){ return l.nombre; });
     if (sin.length) h += '<p class="nota" style="margin-top:12px">Sin base todavía: ' + esc(sin.join(', ')) + '.</p>';
     $('main').innerHTML = h;
@@ -192,7 +228,7 @@
   function linea(){ return datos.lineas.filter(function(l){ return l.codigo === abierta; })[0]; }
   function tarjetaPropuesta(x){
     var ok = puede(x.decide) && !x.aplicado;
-    return '<div class="card' + (x.estado !== 'nuevo' ? ' hecho' : '') + '"><div class="cab"><span class="chips" style="margin:0"><span class="etq ' + esc(x.clase) + '">' + esc(CL[x.clase] || x.clase) + '</span><span class="etq">' + esc(x.seccion || 'Sin sección') + '</span><span class="etq">' + (x.origen === 'rezago' ? 'Rezago desde ' + esc(String(x.id).split('-').slice(2, 5).join('-')) : x.origen === 'lote' ? 'Lote semanal del ' + esc(x.fecha) : 'Reunión del ' + esc(x.fecha)) + '</span>' + (x.madurez ? '<span class="etq ' + (x.madurez === 'comprobada' ? 'ok' : x.madurez === 'refutada' ? 'contradice' : '') + '">' + esc(MAD[x.madurez] || x.madurez) + '</span>' : '') + '</span><span class="etq ' + (x.decide === 'Mike' ? 'mike' : 'lider') + '">Lo decide ' + esc(x.decide) + '</span></div>' +
+    return '<div class="card' + (x.estado !== 'nuevo' ? ' hecho' : '') + '"><div class="cab"><span class="chips" style="margin:0"><span class="etq ' + esc(x.clase) + '">' + esc(CL[x.clase] || x.clase) + '</span><span class="etq">' + esc(x.seccion || 'Sin sección') + '</span><span class="etq">' + esc((x.entrada || '') + ' ' + (ENT[x.entrada] || '')) + '</span><span class="etq">' + (x.origen === 'rezago' ? 'Rezago desde ' + esc(String(x.id).split('-').slice(2, 5).join('-')) : x.origen === 'lote' ? 'Lote semanal del ' + esc(x.fecha) : 'Reunión del ' + esc(x.fecha)) + '</span>' + (x.madurez ? '<span class="etq ' + (x.madurez === 'comprobada' ? 'ok' : x.madurez === 'refutada' ? 'contradice' : '') + '">' + esc(MAD[x.madurez] || x.madurez) + '</span>' : '') + '</span><span class="etq ' + (x.decide === 'Mike' ? 'mike' : 'lider') + '">Lo decide ' + esc(x.decide) + '</span></div>' +
       (x.actual ? '<div class="bloque antes"><span>Hoy dice</span>' + esc(x.actual) + '</div>' : '') +
       '<div class="bloque despues"><span>' + (x.actual ? 'Quedaría' : 'Se agrega') + '</span><div id="txt-' + esc(x.id) + '">' + esc(x.texto) + '</div></div>' +
       (x.motivo ? '<div class="sub" style="margin-top:6px">' + esc(x.motivo) + '</div>' : '') + (x.cita ? '<div class="sub" style="margin-top:4px">Evidencia: “' + esc(x.cita) + '” · ' + (x.citable ? 'se puede usar en público' : 'solo interno') + '</div>' : '') +
@@ -202,9 +238,13 @@
   }
   function pintarLinea(){
     var l = linea(); if (!l) { abierta = ''; return pintar(); }
-    var deEsta = l.propuestas.filter(function(x){ return abiertaPasado ? pasado(x) : !pasado(x); });
+    var todas = l.propuestas.filter(function(x){ return abiertaPasado ? pasado(x) : !pasado(x); });
+    var hay = ENT_A.filter(function(e){ return todas.some(function(x){ return x.entrada === e; }); });
+    if (hay.indexOf(fEnt) < 0) fEnt = 'todas';
+    var deEsta = todas.filter(function(x){ return fEnt === 'todas' || x.entrada === fEnt; });
     var nuevas = deEsta.filter(function(x){ return x.estado === 'nuevo'; }), hechas = deEsta.filter(function(x){ return x.estado !== 'nuevo'; });
     var h = '<button class="volver" id="volver">← ' + (abiertaPasado ? 'Rezago' : 'Esta semana') + '</button><h1>' + esc(l.nombre) + (abiertaPasado ? ' · rezago' : '') + '</h1><p class="nota">Lidera <b>' + esc(l.lidera) + '</b>. Base vigente: <a href="' + esc(l.kb.url) + '" target="_blank" rel="noopener">' + esc(l.kb.nombre) + '</a>.</p>' +
+      (hay.length > 1 ? '<div class="filtros"><button class="chip' + (fEnt === 'todas' ? ' on' : '') + '" data-fe="todas">Todas las entradas</button>' + hay.map(function(e){ var n = todas.filter(function(x){ return x.entrada === e && x.estado === 'nuevo'; }).length; return '<button class="chip' + (fEnt === e ? ' on' : '') + '" data-fe="' + e + '">' + e + ' ' + esc(ENT[e]) + (n ? ' · ' + n : '') + '</button>'; }).join('') + '</div>' : '') +
       '<h2>Por decidir (' + nuevas.length + ')</h2>' + (nuevas.length ? nuevas.map(tarjetaPropuesta).join('') : '<p class="vacio">Nada pendiente en esta línea.</p>') +
       (hechas.length ? '<details><summary class="sub" style="cursor:pointer;margin-top:10px">Ya revisadas (' + hechas.length + ')</summary>' + hechas.map(tarjetaPropuesta).join('') + '</details>' : '');
     $('main').innerHTML = h;
@@ -217,7 +257,7 @@
       if (fFij === 'mias') return g.items.some(function(i){ return !i.x.decision && puede(i.x.decide); });
       if (fFij === 'hechas') return g.items.some(function(i){ return i.x.decision; });
       return true; });
-    var h = '<h1>Decisiones fijas</h1><p class="nota">Choques entre la propuesta de valor, el ICP, el REA y lo que dice el mercado, que quedaron en "Pendiente de verificar" de cada base. Están agrupados por tema para decidir parejo en todas las líneas; abre un tema para ver cada línea. Lo que toca la promesa (qué se ofrece, cifras, casos, precios, plazos, países) lo decide Mike.</p>' +
+    var h = '<h1>Voz de la marca</h1><p class="nota">Las entradas fijas: E1 propuesta de valor, E2 ICP, E3 llamado a la acción, E4 presentación del Discovery, E5 catálogo (monto, responsables y partner), E6 reglas del REA, E7 configuración de señales, E8 casos citables y E9 directorio de partners. Aquí están sus choques con lo que dice el mercado, que quedaron en "Pendiente de verificar" de cada base. Están agrupados por tema para decidir parejo en todas las líneas; abre un tema para ver cada línea. Lo que toca la promesa (qué se ofrece, cifras, casos, precios, plazos, países) lo decide Mike.</p>' +
       '<div class="filtros">' + [['por', 'Por decidir'], ['mias', 'Me tocan'], ['hechas', 'Decididas'], ['todas', 'Todas']].map(function(f){ return '<button class="chip' + (fFij === f[0] ? ' on' : '') + '" data-ff="' + f[0] + '">' + f[1] + '</button>'; }).join('') + '</div>';
     h += '<p class="sub" style="margin-bottom:10px">' + gs.length + ' tema' + (gs.length === 1 ? '' : 's') + ' en este filtro.</p>';
     h += gs.length ? gs.map(function(g){
@@ -238,6 +278,11 @@
     var lote = datos.lote, ls = datos.lineas.filter(function(l){ return l.kb; }), ro = datos.ronda, sal = datos.salidas || [];
     var h = '<h1>Ronda' + (ro ? ' ' + ro.numero : '') + '</h1>' + (ro ? '<p class="nota">Del <b>' + esc(ro.inicio) + '</b> al <b>' + esc(ro.cierre) + '</b>. ' + esc(ro.linea_base) + '. ' + esc(ro.verificar) + '</p>' : '');
     if (lote) h += '<div class="kpis"><div class="kpi"><div class="v">' + lote.propuestas + '</div><div class="t">propuestas del último lote</div></div><div class="kpi"><div class="v">' + lote.lineas.reduce(function(a, l){ return a + l.revisar; }, 0) + '</div><div class="t">para decidir</div></div><div class="kpi"><div class="v">' + lote.lineas.reduce(function(a, l){ return a + l.confirman; }, 0) + '</div><div class="t">confirman la base</div></div><div class="kpi"><div class="v">' + esc(String(lote.desde).slice(5, 10)) + ' a ' + esc(String(lote.hasta).slice(5, 10)) + '</div><div class="t">semana analizada</div></div></div>';
+    // D10: motivos de perdida del ultimo lote (resultado: no se analiza, se cuenta).
+    if (lote && lote.por_entrada) { var pl = lote.lineas.filter(function(x){ return x.perdidas && Object.keys(x.perdidas).length; });
+      var sinM = pl.reduce(function(a, x){ return a + (x.perdidas['sin motivo'] || 0); }, 0), totP = pl.reduce(function(a, x){ return a + Object.keys(x.perdidas).reduce(function(b, k){ return b + x.perdidas[k]; }, 0); }, 0);
+      h += '<h2>D10 Motivos de pérdida (' + totP + ')</h2>' + (totP ? '<p class="nota">Oportunidades cerradas como perdidas en la semana analizada, por línea y motivo.' + (sinM ? ' <b>' + sinM + ' de ' + totP + ' no tienen motivo capturado</b>: sin motivo no se sabe qué corregir.' : '') + '</p><div class="card tabla"><table class="t2"><tr><th>Línea</th><th>Motivos</th></tr>' +
+        pl.map(function(x){ return '<tr><td>' + esc(x.nombre) + '</td><td>' + esc(Object.keys(x.perdidas).map(function(k){ return x.perdidas[k] + ' ' + k; }).join(' · ')) + '</td></tr>'; }).join('') + '</table></div>' : '<p class="vacio">Sin pérdidas en la semana.</p>'); }
     // En prueba: hipotesis aprobadas que se estan midiendo en una salida.
     var prueba = []; datos.lineas.forEach(function(l){ l.propuestas.forEach(function(x){ if (x.madurez === 'en_prueba') prueba.push({ l: l, x: x }); }); });
     h += '<h2>En prueba (' + prueba.length + ')</h2>' + (prueba.length ? prueba.map(function(o){ return '<div class="card"><div class="cab"><span class="t">' + esc(o.l.nombre) + '</span><span class="etq">Aprobada por ' + esc(o.x.por) + ' · ' + esc(fecha(o.x.ts)) + '</span></div><div class="bloque">' + esc(o.x.texto) + '</div></div>'; }).join('')
@@ -257,29 +302,47 @@
   // ---------- Rezago ----------
   function pintarRezago(){
     var rz = (datos.rezago || []).filter(function(c){ return c.propuestas > 0; }), ls = datos.lineas.filter(function(l){ return l.kb && (fSem === 'todas' || mia(l)); });
-    var tot = rz.reduce(function(a, c){ a.p += c.propuestas; c.lineas.forEach(function(l){ a.r += l.revisar; a.rep += l.cuentas.replies; }); return a; }, { p: 0, r: 0, rep: 0 });
+    var tot = rz.reduce(function(a, c){ a.p += c.propuestas; c.lineas.forEach(function(l){ a.r += l.revisar || 0; var k = l.cuentas || {}; a.rep += k.replies != null ? k.replies : ['D1', 'D2', 'D3', 'D4', 'D6', 'D7'].reduce(function(s, e){ return s + (k[e] || 0); }, 0); }); return a; }, { p: 0, r: 0, rep: 0 });
+    var ru = datos.reuniones || [], cnt = function(f){ return ru.filter(f).length; }, NOV = Date.now() - 90 * 86400000;
     var h = '<h1>Rezago</h1><p class="nota">Lo que ya pasó y no se había recolectado, procesado por ciclos de 30 días, de lo más reciente a lo más viejo. Lo viejo pesa menos: sirve sobre todo para confirmar, marcar como "ya no funciona" lo que la base afirma y los datos desmienten, o encontrar huecos. Revisa una ventana por semana. En lo de hace más de 90 días solo te llega lo que contradice, corrige, ya no funciona o es un hueco; lo demás se archiva como «vencida».</p>';
-    h += '<div class="kpis"><div class="kpi"><div class="v">' + rz.length + '</div><div class="t">ventanas procesadas</div></div><div class="kpi"><div class="v">' + tot.rep + '</div><div class="t">replies leídos (sin fuera de oficina)</div></div><div class="kpi"><div class="v">' + tot.p + '</div><div class="t">propuestas</div></div><div class="kpi"><div class="v">' + tot.r + '</div><div class="t">para decidir</div></div></div>';
-    h += '<div class="aviso"><b>Reuniones del rezago:</b> las de los últimos 90 días con transcript ya están en cola (66 el 26-oct: AM 34, AEO 16, TW 6, LT 4, GenIA 3, BD 2, ITS 1). También están en cola las de más de 90 días (199 más). Se procesan de lunes a viernes a las 19:30, hasta 10 por vez, las más recientes primero. Desde el 26-oct, cada reunión nueva entra sola a la cola desde el Post-Reunión.</div>';
+    h += '<div class="kpis"><div class="kpi"><div class="v">' + rz.length + '</div><div class="t">ventanas procesadas</div></div><div class="kpi"><div class="v">' + tot.rep + '</div><div class="t">mensajes leídos (sin fuera de oficina)</div></div><div class="kpi"><div class="v">' + tot.p + '</div><div class="t">propuestas</div></div><div class="kpi"><div class="v">' + tot.r + '</div><div class="t">para decidir</div></div></div>';
+    h += '<div class="aviso"><b>Reuniones (D5):</b> ' + cnt(function(r){ return r.estado === 'procesada'; }) + ' procesadas, ' + cnt(function(r){ return r.estado === 'en_cola' && Date.parse(r.fecha) >= NOV; }) + ' en cola de los últimos 90 días y ' + cnt(function(r){ return r.estado === 'en_cola' && Date.parse(r.fecha) < NOV; }) + ' de más de 90 días; ' + cnt(function(r){ return r.estado === 'sin_transcript'; }) + ' sin transcript. Se procesan de lunes a viernes a las 19:30, hasta 10 por vez, las más recientes primero. Cada reunión nueva entra sola a la cola desde el Post-Reunión. El detalle está en la pestaña <b>Reuniones</b>.</div>';
     h += '<div class="filtros"><button class="chip' + (fSem === 'mias' ? ' on' : '') + '" data-fs="mias">Mis líneas</button><button class="chip' + (fSem === 'todas' ? ' on' : '') + '" data-fs="todas">Todas</button></div>';
-    if (rz.length) h += '<div class="card tabla"><table class="t2"><tr><th>Línea</th>' + rz.map(function(c){ return '<th>' + esc(String(c.desde).slice(5, 10)) + ' a ' + esc(String(c.hasta).slice(5, 10)) + '</th>'; }).join('') + '<th>Por decidir</th><th></th></tr>' +
+    if (rz.length) h += '<h2>Por decidir del rezago</h2><div class="card tabla"><table class="t2"><tr><th>Línea</th><th>Por decidir</th><th>Por entrada</th><th></th></tr>' +
       ls.map(function(l){
-        var pend = l.propuestas.filter(function(x){ return pasado(x) && x.estado === 'nuevo'; }).length;
-        return '<tr><td>' + esc(l.nombre) + '<div class="sub">Lidera ' + esc(l.lidera) + '</div></td>' + rz.map(function(c){ var x = c.lineas.filter(function(y){ return y.linea === l.codigo; })[0];
-          return '<td class="sub">' + (x ? '<b style="color:var(--text)">' + x.revisar + '</b> para decidir<br>' + x.cuentas.replies + ' replies' + (x.cuentas.wa ? ' · ' + x.cuentas.wa + ' WhatsApp' : '') : '—') + '</td>'; }).join('') +
-          '<td><b>' + pend + '</b></td><td><button class="btn sec" data-l="' + esc(l.codigo) + '" data-pasado="1"' + (l.propuestas.some(pasado) ? '' : ' disabled') + '>Revisar</button></td></tr>';
+        var pp = l.propuestas.filter(function(x){ return pasado(x) && x.estado === 'nuevo'; }), pe = {};
+        pp.forEach(function(x){ pe[x.entrada] = (pe[x.entrada] || 0) + 1; });
+        return '<tr><td>' + esc(l.nombre) + '<div class="sub">Lidera ' + esc(l.lidera) + '</div></td><td><b>' + pp.length + '</b></td><td class="sub">' + (Object.keys(pe).sort().map(function(e){ return pe[e] + ' ' + esc(ENT[e] || e); }).join(' · ') || '—') + '</td>' +
+          '<td><button class="btn sec" data-l="' + esc(l.codigo) + '" data-pasado="1"' + (l.propuestas.some(pasado) ? '' : ' disabled') + '>Revisar</button></td></tr>';
       }).join('') + '</table></div>';
-    h += '<h2>Lo que dejó cada ventana</h2>' + rz.map(function(c){
-      return '<details class="card"><summary class="cab" style="cursor:pointer;list-style:none"><span class="t">' + esc(String(c.desde).slice(0, 10)) + ' a ' + esc(String(c.hasta).slice(0, 10)) + '</span><span class="etq">' + c.propuestas + ' propuestas</span></summary>' +
-        c.lineas.filter(function(x){ return fSem === 'todas' || ls.some(function(l){ return l.codigo === x.linea; }); }).map(function(x){ return '<div class="linea-dec"><div class="sub"><b style="color:var(--text)">' + esc(x.nombre) + '</b> · ' + x.cuentas.replies + ' replies, ' + x.cuentas.ooo + ' fuera de oficina, ' + x.cuentas.open3 + ' envíos de Open+3</div><div class="bloque">' + esc(x.error ? 'No se pudo analizar: ' + x.error : x.resumen) + '</div></div>'; }).join('') +
+    h += '<h2>Cada ventana, por entrada</h2>' + rz.map(function(c, i){
+      return '<details class="card"' + (i === 0 ? ' open' : '') + '><summary class="cab" style="cursor:pointer;list-style:none"><span class="t">' + esc(String(c.desde).slice(0, 10)) + ' a ' + esc(String(c.hasta).slice(0, 10)) + '</span><span class="etq">' + c.propuestas + ' propuestas</span></summary>' +
+        matriz(c, ls) + resumenes(c, ls) +
         (c.sin_base && c.sin_base.length ? '<div class="linea-dec sub">Sin base (solo se cuentan): ' + esc(c.sin_base.map(function(x){ return x.nombre + ' ' + x.replies + ' replies'; }).join(', ')) + '</div>' : '') + '</details>';
     }).join('');
     $('main').innerHTML = h;
   }
+  // ---------- Reuniones (D5): cada transcript, su resumen y cuantas propuestas dejo ----------
+  function pintarReuniones(){
+    var ls = datos.lineas.filter(function(l){ return fSem === 'todas' || mia(l); }), cod = ls.map(function(l){ return l.codigo; });
+    var nom = {}; datos.lineas.forEach(function(l){ nom[l.codigo] = l.nombre; });
+    var ru = (datos.reuniones || []).filter(function(r){ return fSem === 'todas' || cod.indexOf(r.linea) >= 0; });
+    var EST = [['procesada', 'Procesadas'], ['en_cola', 'En cola'], ['sin_transcript', 'Sin transcript'], ['todas', 'Todas']];
+    var c = {}; ru.forEach(function(r){ c[r.estado] = (c[r.estado] || 0) + 1; });
+    var vis = ru.filter(function(r){ return fReu === 'todas' || r.estado === fReu; });
+    var h = '<h1>Reuniones</h1><p class="nota">D5 de la Voz del mercado: cada transcript se analiza solo contra la base de su línea. Se procesan de lunes a viernes a las 19:30, hasta 10 por vez, las más recientes primero. Sus propuestas aparecen en la línea (Esta semana si son de los últimos 14 días; Rezago si son más viejas).</p>' +
+      '<div class="kpis">' + EST.slice(0, 3).map(function(e){ return '<div class="kpi"><div class="v">' + (c[e[0]] || 0) + '</div><div class="t">' + e[1].toLowerCase() + '</div></div>'; }).join('') + '<div class="kpi"><div class="v">' + ru.filter(function(r){ return r.estado === 'procesada'; }).reduce(function(a, r){ return a + r.propuestas; }, 0) + '</div><div class="t">propuestas que dejaron</div></div></div>' +
+      '<div class="filtros"><button class="chip' + (fSem === 'mias' ? ' on' : '') + '" data-fs="mias">Mis líneas</button><button class="chip' + (fSem === 'todas' ? ' on' : '') + '" data-fs="todas">Todas</button>' +
+      EST.map(function(e){ return '<button class="chip' + (fReu === e[0] ? ' on' : '') + '" data-fr="' + e[0] + '">' + e[1] + '</button>'; }).join('') + '</div>';
+    h += vis.length ? '<div class="card tabla"><table class="t2"><tr><th>Fecha</th><th>Línea</th><th>Reunión</th><th>Qué dejó</th><th>Propuestas</th></tr>' + vis.slice(0, 200).map(function(r){
+      return '<tr><td class="sub">' + esc(r.fecha) + '</td><td>' + esc(nom[r.linea] || r.linea || '—') + '</td><td>' + esc(r.titulo) + (r.transcript ? '<div class="sub"><a href="' + esc(r.transcript) + '" target="_blank" rel="noopener">Transcript</a></div>' : '') + '</td><td class="sub">' + esc(r.resumen || (r.estado === 'en_cola' ? 'En cola' : r.estado === 'sin_transcript' ? 'Sin transcript: no se puede analizar' : '')) + '</td><td>' + (r.estado === 'procesada' ? (r.propuestas ? '<button class="btn sec" data-l="' + esc(r.linea) + '"' + (Date.parse(r.fecha) < CATORCE ? ' data-pasado="1"' : '') + '>' + r.propuestas + '</button>' : '0') : '—') + '</td></tr>'; }).join('') + '</table></div>' + (vis.length > 200 ? '<p class="sub">Se muestran las 200 más recientes de ' + vis.length + '.</p>' : '')
+      : '<p class="vacio">Nada en este filtro.</p>';
+    $('main').innerHTML = h;
+  }
   function pintarComo(){
     $('main').innerHTML = '<h1>Cómo funciona</h1><p class="nota">Una base de conocimiento por línea (GR_KB_&lt;línea&gt;), de donde salen el bot de WhatsApp, Open+3, las secuencias, las señales, las respuestas a replies, la preparación de reuniones y la propuesta.</p>' +
-      '<ol class="pasos"><li><b>Entradas fijas</b> (PV, ICP, llamado a la acción, reglas del REA, configuración de señales, casos): las decide Mike. Sus choques están en <b>Decisiones fijas</b>.</li>' +
-      '<li><b>Entradas del día</b> (replies de secuencias y DUO, Open+3, WhatsApp, reuniones, coaching, correcciones, resultados): Claude las compara contra la base y las clasifica: nuevo, confirma, más convincente, contradice, corrige, ya no funciona, hueco, hipótesis, de otra línea o ruido. Lo que necesita decisión llega a <b>Esta semana</b>, para el líder de la línea.</li>' +
+      '<ol class="pasos"><li><b>Voz de la marca</b> (entradas fijas E1 a E9: PV, ICP, llamado a la acción, presentación del Discovery, catálogo, reglas del REA, configuración de señales, casos citables y partners): las decide Mike y se configuran en la Configuración. Sus choques con el mercado están en <b>Voz de la marca</b>.</li>' +
+      '<li><b>Voz del mercado</b> (entradas del día D1 a D10: secuencias, DUO, Open+3, WhatsApp, reuniones, coaching, correcciones, resultados, qué señal produjo cada cita y motivos de pérdida): Claude analiza cada entrada por separado contra la base y la clasifica: nuevo, confirma, más convincente, contradice, corrige, ya no funciona, hueco, hipótesis, de otra línea o ruido. Lo que necesita decisión llega a <b>Esta semana</b>, para el líder de la línea.</li>' +
       '<li><b>Quién decide:</b> el líder según el catálogo. Lo que cambia la promesa (qué se ofrece, cifras, casos, precios, plazos, países) lo decide Mike.</li>' +
       '<li><b>Ronda:</b> cada 4 a 6 semanas se mide lo que está en prueba contra la línea base, lo comprobado sube al núcleo y se publica la versión nueva de la base. La anterior se conserva.</li>' +
       '<li><b>Rezago:</b> lo que ya pasó se recolecta por ciclos, empezando por los últimos 90 días; lo viejo pesa menos.</li></ol>';
@@ -326,14 +389,16 @@
   }
 
   document.addEventListener('click', function(e){
-    var t = e.target.closest('[data-cambiar],[data-v],[data-l],[data-fs],[data-ff],[data-ok],[data-otra],[data-guarda],[data-ia],[data-base],#volver'); if (!t || !datos) return;
+    var t = e.target.closest('[data-cambiar],[data-v],[data-l],[data-fs],[data-ff],[data-fe],[data-fr],[data-ok],[data-otra],[data-guarda],[data-ia],[data-base],#volver'); if (!t || !datos) return;
     if (t.hasAttribute('data-cambiar')) return elegirPersona();
     if (t.hasAttribute('data-v')) { vista = t.getAttribute('data-v'); abierta = ''; abiertaPasado = false; return pintar(); }
     if (!quien) return elegirPersona();
     if (t.id === 'volver') { abierta = ''; abiertaPasado = false; return pintar(); }
-    if (t.hasAttribute('data-l')) { abierta = t.getAttribute('data-l'); abiertaPasado = t.hasAttribute('data-pasado'); window.scrollTo(0, 0); return pintar(); }
+    if (t.hasAttribute('data-l')) { abierta = t.getAttribute('data-l'); abiertaPasado = t.hasAttribute('data-pasado'); fEnt = 'todas'; window.scrollTo(0, 0); return pintar(); }
     if (t.hasAttribute('data-fs')) { fSem = t.getAttribute('data-fs'); return pintar(); }
     if (t.hasAttribute('data-ff')) { fFij = t.getAttribute('data-ff'); return pintar(); }
+    if (t.hasAttribute('data-fe')) { fEnt = t.getAttribute('data-fe'); return pintar(); }
+    if (t.hasAttribute('data-fr')) { fReu = t.getAttribute('data-fr'); return pintar(); }
     if (t.hasAttribute('data-base')) return verBase(t.getAttribute('data-base'));
     if (t.hasAttribute('data-ok')) { t.disabled = true; return decidir(t.getAttribute('data-ok'), 'confirmo'); }
     if (t.hasAttribute('data-otra')) { var d = $('otra-' + t.getAttribute('data-otra').replace('|', '-')); d.hidden = !d.hidden; if (!d.hidden) d.querySelector('textarea').focus(); return; }
