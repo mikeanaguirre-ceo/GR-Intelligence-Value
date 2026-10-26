@@ -719,7 +719,6 @@ body {
     <button class="tab" data-tab="amplemarket">Amplemarket</button>
     <button class="tab" data-tab="forecast">Forecast</button>
     <button class="tab" data-tab="metricas">Métricas</button>
-    <button class="tab" data-tab="reuniones">Reuniones <span class="badge-red" id="reu-count">—</span></button>
     <button class="tab" data-tab="conocimiento">Conocimiento</button>
     <button class="tab" data-tab="chat">💬 Chat</button>
   </nav>
@@ -737,7 +736,6 @@ body {
     <section class="panel" id="p-amplemarket"></section>
     <section class="panel" id="p-forecast"></section>
     <section class="panel" id="p-metricas"></section>
-    <section class="panel" id="p-reuniones"></section>
     <section class="panel" id="p-conocimiento"></section>
     <section class="panel" id="p-chat"></section>
   </main>
@@ -1522,7 +1520,7 @@ let recapFilters = {
 };
 // ===== Estado unificado de filtros (homologado) =====
 var FILT = {
-  pipeline:   { persona:'Todos', lider:'ALL', tiempo:'ALL', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, excludeP:false, nueva:'ALL', cierre:'ALL', fcampo:'creacion', fper:'todo', fdesde:'', fhasta:'', faltan:false, cita:'ALL' },
+  pipeline:   { persona:'Todos', lider:'ALL', apoyo:'ALL', tiempo:'ALL', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, excludeP:false, nueva:'ALL', cierre:'ALL', fcampo:'creacion', fper:'todo', fdesde:'', fhasta:'', faltan:false, cita:'ALL' },
   pendientes: { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', sort:'urgency', nueva:'ALL' },
   alertas:    { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, categoria:'ALL', accion:'ALL', sort:'monto_desc' },
   recap:      { persona:'Todos', grupo:'ALL', prod:'ALL' }
@@ -1822,13 +1820,6 @@ function renderCurrentTab() {
     try { renderCalidad(); } catch(e) {
       var ec = document.getElementById('p-calidad');
       if (ec) ec.innerHTML = '<div style="color:#ef4444;padding:16px;">Error en render: ' + e.message + '</div>';
-    }
-    return;
-  }
-  if (currentTab === 'reuniones') {
-    try { renderReuniones(); } catch(e) {
-      var er = document.getElementById('p-reuniones');
-      if (er) er.innerHTML = '<div style="color:#ef4444;padding:16px;">Error en render: ' + e.message + '</div>';
     }
     return;
   }
@@ -2594,6 +2585,7 @@ function grPipePasa(d, excepto){ var f=FILT.pipeline, ex=function(k){ return exc
   if(!ex('etapa')){ var st=f.stage||'ALL'; if(st==='G:prosp'){ if(GR_ETAPAS_PROSP.indexOf(String(d.stage))<0) return false; } else if(st==='G:ventas'){ if(GR_ETAPAS_VENTAS.indexOf(String(d.stage))<0) return false; } else if(st!=='ALL' && grStageLabel(d)!==st) return false; }
   if(!ex('persona') && f.persona && f.persona!=='Todos'){ var ps=personasDeItem(d); if(f.persona==='Otro'){ if(ps.length) return false; } else if(ps.indexOf(f.persona)<0) return false; }
   if(!ex('lider') && f.lider && f.lider!=='ALL' && grLiderDe(d)!==f.lider) return false;
+  if(!ex('apoyo') && f.apoyo && f.apoyo!=='ALL'){ var ap=grApoyoDe(d); if(f.apoyo==='SIN'){ if(ap.length) return false; } else if(ap.indexOf(f.apoyo)<0) return false; }
   if(!ex('tiempo') && f.tiempo && f.tiempo!=='ALL' && !grTiempoDe(d,f.tiempo)) return false;
   if(!ex('prod') && f.prod && f.prod!=='ALL' && d.prod!==f.prod) return false;
   if(!ex('cita') && f.cita && f.cita!=='ALL' && grCitaReg(d)!==f.cita) return false;
@@ -2602,7 +2594,7 @@ function grPipePasa(d, excepto){ var f=FILT.pipeline, ex=function(k){ return exc
   if(!ex('q') && !pipeQPasa(d)) return false;
   return true; }
 function grPipeFiltrosHTML(pool){
-  var f=FILT.pipeline;
+  var f=FILT.pipeline, H_APOYO='';
   var cuenta=function(k, prueba){ return pool.filter(function(d){ return grPipePasa(d,[k]) && prueba(d); }).length; };
   var chip=function(k,v,label,n,extra){ var on=String(f[k]||'')===String(v); return '<button class="chip '+(on?'active':'')+'" data-f="pipeline" data-k="'+k+'" data-v="'+grEsc(v)+'"'+(extra||'')+'>'+grEsc(label)+(n===null||n===undefined?'':' '+n)+'</button>'; };
   var fila=function(titulo, info, cuerpo){ return '<div class="filters"><span class="filter-label">'+titulo+' '+grI(info)+'</span>'+cuerpo+'</div>'; };
@@ -2626,7 +2618,13 @@ function grPipeFiltrosHTML(pool){
   var lid=chip('lider','ALL','Todos',cuenta('lider',function(){return true;}));
   var nombresL={}; pool.forEach(function(d){ var l=grLiderDe(d); if(l) nombresL[l]=1; });
   Object.keys(nombresL).sort().forEach(function(n){ lid+=chip('lider',n,n,cuenta('lider',function(d){ return grLiderDe(d)===n; })); });
+  var apo=chip('apoyo','ALL','Todos',cuenta('apoyo',function(){return true;}));
+  var nombresA={}; pool.forEach(function(d){ grApoyoDe(d).forEach(function(n){ nombresA[n]=1; }); });
+  Object.keys(nombresA).sort().forEach(function(n){ apo+=chip('apoyo',n,n,cuenta('apoyo',function(d){ return grApoyoDe(d).indexOf(n)>=0; })); });
+  apo+=chip('apoyo','SIN','Sin apoyo',cuenta('apoyo',function(d){ return !grApoyoDe(d).length; }));
+  H_APOYO=fila('Apoyo','Quien acompaña en las reuniones de la oportunidad. No es fijo por producto: se marca en cada oportunidad, en la ficha.',apo);
   H+=fila('Líder','Quien lidera el producto según la ficha de productos del portal. No se edita en la oportunidad: cambia si cambias el líder en el portal.',lid);
+  H+=H_APOYO;
   // Semaforo de tiempos
   var ti='', grupoAnt='';
   GR_TIEMPO_OPC.forEach(function(o){ if(o[2] && o[2]!==grupoAnt){ ti+='<span style="font-size:11px;color:#6B7280;margin-left:6px;">'+o[2]+':</span>'; grupoAnt=o[2]; } ti+=chip('tiempo',o[0],o[1],o[0]==='ALL'?cuenta('tiempo',function(){return true;}):cuenta('tiempo',function(d){ return grTiempoDe(d,o[0]); })); });
@@ -6370,6 +6368,8 @@ function init() {
   loadData();
   // Liga directa a la pestana de conocimiento (?tab=conocimiento).
   if (/[?&]tab=conocimiento\b/.test(location.search)) switchTab('conocimiento');
+  // 25oct2026 (Mike): la pestana Reuniones se quito; sus reuniones viven en la ficha (Pipeline) y en Pendientes.
+  if (/[?&]tab=reuniones\b/.test(location.search)) switchTab('pendientes');
   // Auto-refresh DESACTIVADO — solo manual via botón "Actualizar" para conservar ejecuciones de n8n
 }
 
