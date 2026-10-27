@@ -2179,25 +2179,24 @@ function renderRecap() {
       </div>
       <table class="tbl">
         <thead><tr>
-          <th>Persona</th>
-          <th class="num">Deals Creados</th>
-          <th class="num">Deals Movidos</th>
+          <th>Responsable ${grI('Quien lleva la cuenta de cada oportunidad (campo Responsable de la ficha), no el dueño de HubSpot.')}</th>
+          <th class="num">Oportunidades creadas</th>
+          <th class="num">Oportunidades movidas</th>
         </tr></thead>
         <tbody>
   `;
-  const todasPersonas = new Set([
-    ...Object.keys(recap.tareasCompletadas.porPersona || {}),
-    ...Object.keys(recap.dealsCreados.porOwner || {}),
-    ...Object.keys(recap.dealsMovidos.porOwner || {})
-  ]);
-  const personasArr = Array.from(todasPersonas).sort();
+  // 26oct2026 (Mike): el Recap cuenta por Responsable de la cuenta. Cada oportunidad trae su id desde el motor;
+  // si una no aparece en el tablero (por ejemplo, ya perdida y fuera de la lista), se queda con el nombre que manda el motor.
+  const _recResp = function(d, owner){ const x = d && d.id ? grDealPorId(d.id) : null; return (x && grRespDe(x)) || (d && d.id ? 'Sin responsable' : owner); };
+  const _recPor = function(bloque){ const m = {}; Object.entries((bloque && bloque.detalle) || {}).forEach(([o, arr]) => (arr || []).forEach(d => { const r = _recResp(d, o); m[r] = (m[r] || 0) + 1; })); return m; };
+  const _creadosResp = _recPor(recap.dealsCreados), _movidosResp = _recPor(recap.dealsMovidos);
+  const personasArr = Array.from(new Set([...Object.keys(_creadosResp), ...Object.keys(_movidosResp)])).sort();
   if (personasArr.length === 0) {
     html += `<tr><td colspan="3" class="empty">Sin actividad detectada en la última semana.</td></tr>`;
   }
   personasArr.forEach(p => {
-    const tc = recap.tareasCompletadas.porPersona[p] || 0;
-    const dc = recap.dealsCreados.porOwner[p] || 0;
-    const dm = recap.dealsMovidos.porOwner[p] || 0;
+    const dc = _creadosResp[p] || 0;
+    const dm = _movidosResp[p] || 0;
     html += `<tr>
       <td><strong>${p}</strong></td>
       <td class="num">${dc}</td>
@@ -2215,7 +2214,7 @@ function renderRecap() {
   if (recap.dealsMovidos.total > 0) {
     const dealsMovList = [];
     Object.entries(recap.dealsMovidos.detalle || {}).forEach(([owner, deals]) => {
-      deals.forEach(d => dealsMovList.push({ ...d, owner }));
+      deals.forEach(d => dealsMovList.push({ ...d, owner, resp: _recResp(d, owner) }));
     });
 
     const prodsMov = [...new Set(dealsMovList.map(d => d.prod || 'Otro'))].sort();
@@ -2223,31 +2222,43 @@ function renderRecap() {
     const STAGES_MOV_PREDEF = catStageLabelsAct().concat(['Won','Perdida']); // catálogo (CAT)
 
     const prodMovFilter = recapFilters.prodMovido || 'ALL';
-    const grupoMovFilter = recapFilters.grupo || 'ALL';
-
-    const filteredMov = dealsMovList.filter(d => {
-      if (grupoMovFilter !== 'ALL' && grupoDeProd(d.prod) !== grupoMovFilter) return false;
-      if (prodMovFilter !== 'ALL' && (d.prod || 'Otro') !== prodMovFilter) return false;
+    const etapaMovFilter = recapFilters.etapaMov || 'ALL';
+    const respMovFilter = recapFilters.respMov || 'Todos';
+    // 26oct2026 (Mike): mismos nombres que Pipeline. Etapa separa lo que se perdio o se gano esta semana.
+    const _etapaMovDe = d => d.stageActual === 'Perdida' ? 'perdida' : (d.stageActual === 'Won' ? 'won' : 'activa');
+    const _pasaMov = (d, ex) => {
+      if (ex !== 'prod' && prodMovFilter !== 'ALL' && String(d.prod || '').toUpperCase() !== String(prodMovFilter).toUpperCase()) return false;
+      if (ex !== 'etapa' && etapaMovFilter !== 'ALL' && _etapaMovDe(d) !== etapaMovFilter) return false;
+      if (ex !== 'resp' && respMovFilter !== 'Todos' && d.resp !== respMovFilter) return false;
       return true;
-    });
+    };
+    const _cuentaMov = (ex, prueba) => dealsMovList.filter(d => _pasaMov(d, ex) && prueba(d)).length;
+    const filteredMov = dealsMovList.filter(d => _pasaMov(d));
+    const _chipR = (k, v, label, n) => `<button class="chip ${String(recapFilters[k] || (k === 'respMov' ? 'Todos' : 'ALL')) === String(v) ? 'active' : ''}" data-recapfilter="${k}" data-rval="${grEsc(v)}">${label}${n === null ? '' : ' ' + n}</button>`;
+    const _catMov = ((pipeCfg() || {}).productos || []).map(x => String(x.codigo || '')).filter(Boolean);
+    const _fueraMov = [...new Set(dealsMovList.map(d => String(d.prod || '')).filter(p => p && _catMov.map(c => c.toUpperCase()).indexOf(p.toUpperCase()) < 0 && ['Interno','Otro','P-Otro'].indexOf(p) < 0))];
+    const _respsMov = [...new Set(dealsMovList.map(d => d.resp))].sort();
 
     filteredMov.sort((a,b) => (b.lastMod||'').localeCompare(a.lastMod||''));
 
     const montoMovFiltrado = filteredMov.reduce((s, d) => s + (d.amount || 0), 0);
 
     html += `<div class="section">
-      <div class="section-title">Deals con movimiento esta semana <span class="section-count">${filteredMov.length}/${recap.dealsMovidos.total}</span> <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">${fmtK(montoMovFiltrado)}</span></div>
+      <div class="section-title">Oportunidades con movimiento esta semana <span class="section-count">${filteredMov.length}/${recap.dealsMovidos.total}</span> <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">${fmtK(montoMovFiltrado)}</span></div>
       <div class="filters">
-        <span class="filter-label">Grupo:</span>
-        ${GRUPOS_ORDEN.map(gg => `<button class="chip ${grupoMovFilter === gg ? 'active' : ''}" data-recapfilter="grupo" data-rval="${gg}">${grupoLabel(gg)}</button>`).join('')}
+        <span class="filter-label">Etapa ${grI('Activa: sigue abierta. Ganada y Perdida: lo que se cerró esta semana.')}</span>
+        ${_chipR('etapaMov','ALL','Todos',_cuentaMov('etapa',()=>true))}${_chipR('etapaMov','activa','Activa',_cuentaMov('etapa',d=>_etapaMovDe(d)==='activa'))}${_chipR('etapaMov','won','Ganada',_cuentaMov('etapa',d=>_etapaMovDe(d)==='won'))}${_chipR('etapaMov','perdida','Perdida',_cuentaMov('etapa',d=>_etapaMovDe(d)==='perdida'))}
       </div>
       <div class="filters">
-        <span class="filter-label">Producto:</span>
-        <button class="chip ${prodMovFilter === 'ALL' ? 'active' : ''}" data-recapfilter="prodMovido" data-rval="ALL">Todos</button>
-        ${prodsMov.map(pr => `<button class="chip ${prodMovFilter === pr ? 'active' : ''}" data-recapfilter="prodMovido" data-rval="${pr}">${pr}</button>`).join('')}
+        <span class="filter-label">Responsable ${grI('Quien lleva la cuenta de la oportunidad (campo Responsable de la ficha).')}</span>
+        ${_chipR('respMov','Todos','Todos',_cuentaMov('resp',()=>true))}${_respsMov.map(r => _chipR('respMov', r, r, _cuentaMov('resp', d => d.resp === r))).join('')}
+      </div>
+      <div class="filters">
+        <span class="filter-label">Producto ${grI('Línea de servicio. Aparecen todas las del catálogo del portal, aunque hoy no tengan movimiento.')}</span>
+        ${_chipR('prodMovido','ALL','Todos',_cuentaMov('prod',()=>true))}${_catMov.concat(_fueraMov).map(pr => _chipR('prodMovido', pr, pr, _cuentaMov('prod', d => String(d.prod || '').toUpperCase() === pr.toUpperCase()))).join('')}
       </div>
       <table class="tbl">
-        <thead><tr><th>Cliente / Deal</th><th>Producto</th><th>Owner</th><th>Stage Actual</th><th>Última modif.</th><th class="num">Monto</th></tr></thead>
+        <thead><tr><th>Cliente / Oportunidad</th><th>Producto</th><th>Responsable</th><th>Etapa actual</th><th>Última modif.</th><th class="num">Monto</th></tr></thead>
         <tbody>`;
 
     filteredMov.slice(0, 150).forEach(d => {
@@ -2258,7 +2269,7 @@ function renderRecap() {
       html += `<tr>
         <td>${display}</td>
         <td><span class="tag">${d.prod || 'Otro'}</span></td>
-        <td>${d.owner}</td>
+        <td>${grEsc(d.resp)}</td>
         <td><span class="tag ${stageTag}">${d.stageActual || '—'}</span></td>
         <td>${d.lastMod || '—'}</td>
         <td class="num">${fmt(d.amount)}</td>
@@ -4814,14 +4825,23 @@ const REPLY_TAG_STYLES = {
 };
 
 let amFilters = { canal: 'todos', tipo: 'todos', producto: 'todos' };
-let prospProducto = 'ALL', prospGrupo = 'ALL', prospCanal = 'ALL', prospSem = 'ALL', prospStage = 'ALL';
+let prospProducto = 'ALL', prospGrupo = 'ALL', prospCanal = 'ALL', prospSem = 'ALL', prospStage = 'ALL', prospResp = 'Todos', prospTipo = 'ALL', prospQ = '';
+// 26oct2026 (Mike): Prospeccion con los nombres de Pipeline. Etapa agrupa Prospeccion y Ventas y suma Sin oportunidad;
+// Responsable es el de la oportunidad del evento; Tipo de senal es Reply u Open+3. Grupo y Semaforo ya no existen.
+var GR_PM_PROSP=['Senal Detectada','Reply Recibido','Contactado','En Conversacion'];
+var GR_PM_VENTAS=['Atraccion','Educacion','Propuesta Enviada','Aprobacion Verbal','Contract Sent'];
+function prospRespDe(e){ var id=e&&(e.deal_id||e.dealId); var d=id?grDealPorId(id):null; return d?grRespDe(d):''; }
+function prospEtapaPasa(e,st){ var et=String(e.etapa||''); if(st==='G:prosp') return GR_PM_PROSP.indexOf(et)>=0; if(st==='G:ventas') return GR_PM_VENTAS.indexOf(et)>=0; if(st==='G:sin') return !et && !(e.deal_id||e.dealId); return et===st; }
+function prospQPasa(e){ var q=_pipeNorm(prospQ||'').trim(); if(!q) return true; var t=_pipeNorm([e.empresa,e.prospecto,e.puesto,e.secuencia,e.campana,e.producto].join(' ')); return q.split(/\s+/).every(function(w){ return t.indexOf(w)>=0; }); }
+var _prospQT=null;
+function prospBuscar(v){ clearTimeout(_prospQT); _prospQT=setTimeout(function(){ prospQ=v; renderProspeccion(); var el=document.getElementById('prosp-q'); if(el){ el.focus(); try{ el.setSelectionRange(el.value.length,el.value.length); }catch(e){} } },250); }
 // Periodo de Prospeccion (20oct2026): el mismo filtro que Pipeline y Consumo, sobre la fecha del evento.
 var prospPer = { fper: 'todo', fdesde: '', fhasta: '' };
 function prospPerPasa(e){ if(!prospPer.fper||prospPer.fper==='todo') return true; var r=periodoRango(prospPer); var t=new Date(e.fecha); if(isNaN(t)) return false; var s=_diaLocal(t); return s>=r[0] && s<=r[1]; }
 function prospPerVista(){ var r=periodoRango(prospPer); if(r[0]) return r; var hoy=_diaLocal(new Date()), mn=''; ((PROSPECCION_DATA&&PROSPECCION_DATA.eventos)||[]).forEach(function(e){ var t=new Date(e.fecha); if(isNaN(t)) return; var s=_diaLocal(t); if(!mn||s<mn) mn=s; }); return [mn||hoy, hoy]; }
 function prospPeriodoFecha(){ var a=document.getElementById('prosp-desde'), b=document.getElementById('prosp-hasta'); if(!a||!b||!a.value||!b.value) return; prospPer.fper='rango'; prospPer.fdesde=a.value; prospPer.fhasta=b.value; renderProspeccion(); }
 function prospSemOf(e){ var f=new Date(e.fecha); if(isNaN(f)) return 'verde'; var age=Math.floor((new Date()-f)/86400000); return age>30?'rojo':(age>7?'amarillo':'verde'); }
-function prospPasa(e){ if(prospGrupo!=='ALL'&&grupoDeProd(e.producto||'')!==prospGrupo) return false; if(prospStage!=='ALL'&&(e.etapa||'')!==prospStage) return false; if(prospProducto!=='ALL'&&(e.producto||'')!==prospProducto) return false; if(prospCanal!=='ALL'&&(e.canal||'')!==prospCanal) return false; if(prospSem!=='ALL'&&prospSemOf(e)!==prospSem) return false; if(!prospPerPasa(e)) return false; return true; }
+function prospPasa(e, ex){ if(ex!=='etapa'&&prospStage!=='ALL'&&!prospEtapaPasa(e,prospStage)) return false; if(ex!=='prod'&&prospProducto!=='ALL'&&String(e.producto||'').toUpperCase()!==String(prospProducto).toUpperCase()) return false; if(ex!=='canal'&&prospCanal!=='ALL'&&(e.canal||'')!==prospCanal) return false; if(ex!=='resp'&&prospResp!=='Todos'){ var r=prospRespDe(e); if(prospResp==='Otro'?!!r:r!==prospResp) return false; } if(ex!=='tipo'&&prospTipo!=='ALL'&&String(e.tipo||'')!==prospTipo) return false; if(ex!=='fecha'&&!prospPerPasa(e)) return false; if(ex!=='q'&&!prospQPasa(e)) return false; return true; }
 let amDetailView = 'sequences';
 let amDrilldown = null;  // null | 'meetings' | 'replies' | 'openplus3' | 'duogenerated'
 
@@ -5284,15 +5304,38 @@ function renderProspeccion() {
   var prodShown = prospGrupo==='ALL'?activeProd:activeProd.filter(function(p){return grupoDeProd(p)===prospGrupo;});
   var canalesPres=Array.from(new Set(PEV_n.map(function(e){return e.canal;}).filter(Boolean)));
   var chips='';
-  chips+=_row('Grupo', _cf('grupo','ALL','Todos',prospGrupo)+GRUPOS_PRES.map(function(g){return _cf('grupo',g,g,prospGrupo);}).join(''));
-  chips+=_row('Producto', _cf('prod','ALL','Todos',prospProducto)+prodShown.map(function(p){return _cf('prod',p,p,prospProducto);}).join(''));
-  var _ordEt=(typeof GR_ETAPAS_ORDER_PM!=='undefined')?GR_ETAPAS_ORDER_PM:[];
-  var etapasPres=Array.from(new Set(PEV_n.map(function(e){return e.etapa;}).filter(Boolean))).sort(function(a,b){var ia=_ordEt.indexOf(a),ib=_ordEt.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
-  if(etapasPres.length){ chips+=_row('Stage', _cf('stage','ALL','Todos',prospStage)+etapasPres.map(function(et){return _cf('stage',et,(typeof GR_ETAPA_LABEL!=='undefined'&&GR_ETAPA_LABEL[et])?GR_ETAPA_LABEL[et]:et,prospStage);}).join('')); }
-  if(canalesPres.length){ chips+=_row('Canal', _cf('canal','ALL','Todos',prospCanal)+canalesPres.map(function(c){return _cf('canal',c,c,prospCanal);}).join('')); }
-  chips+=_row('Semáforo', _cf('sem','ALL','Todos',prospSem)+_cf('sem','rojo','🔴 Vencidas',prospSem)+_cf('sem','amarillo','🟡 Próximas',prospSem)+_cf('sem','verde','🟢 Al día',prospSem));
+  var _base=PEV_n.filter(function(e){ return e.tipo==='open3' || esReplyReal(e); });
+  var _n=function(ex,prueba){ return _base.filter(function(e){ return prospPasa(e,ex) && prueba(e); }).length; };
+  var _cfn=function(field,val,lbl,cur,n){ return _cf(field,val,lbl+(n===undefined||n===null?'':' '+n),cur); };
+  var _rowI=function(label,info,inner){ return _row(label+' '+grI(info),inner); };
+  // Etapa
+  var et=_cfn('stage','ALL','Todos',prospStage,_n('etapa',function(){return true;}));
+  et+=_cfn('stage','G:prosp','Prospección',prospStage,_n('etapa',function(e){ return prospEtapaPasa(e,'G:prosp'); }));
+  GR_PM_PROSP.forEach(function(x){ var n=_n('etapa',function(e){ return (e.etapa||'')===x; }); if(n||prospStage===x) et+=_cfn('stage',x,(GR_ETAPA_LABEL[x]||x),prospStage,n); });
+  et+=_cfn('stage','G:ventas','Ventas',prospStage,_n('etapa',function(e){ return prospEtapaPasa(e,'G:ventas'); }));
+  GR_PM_VENTAS.forEach(function(x){ var n=_n('etapa',function(e){ return (e.etapa||'')===x; }); if(n||prospStage===x) et+=_cfn('stage',x,(GR_ETAPA_LABEL[x]||x),prospStage,n); });
+  ['Ganada','Perdida','Renovacion','Otra etapa'].forEach(function(x){ var n=_n('etapa',function(e){ return (e.etapa||'')===x; }); if(n||prospStage===x) et+=_cfn('stage',x,(GR_ETAPA_LABEL[x]||x),prospStage,n); });
+  et+=_cfn('stage','G:sin','Sin oportunidad',prospStage,_n('etapa',function(e){ return prospEtapaPasa(e,'G:sin'); }));
+  chips+=_rowI('Etapa','Etapa de la oportunidad del prospecto. Prospección: Señal, Reply, Contactado y En Conversación. Ventas: Atracción, Educación, Propuesta y Aprobación. Sin oportunidad: el evento todavía no tiene oportunidad.',et);
+  // Responsable
+  var nomR={}; (((pipeCfg()||{}).equipo)||[]).forEach(function(p){ if(p&&p.nombre) nomR[p.nombre]=1; });
+  var rs=_cfn('resp','Todos','Todos',prospResp,_n('resp',function(){return true;}));
+  Object.keys(nomR).sort().forEach(function(n){ rs+=_cfn('resp',n,n,prospResp,_n('resp',function(e){ return prospRespDe(e)===n; })); });
+  rs+=_cfn('resp','Otro','Sin responsable',prospResp,_n('resp',function(e){ return !prospRespDe(e); }));
+  chips+=_rowI('Responsable','Quien lleva la cuenta de la oportunidad del prospecto (campo Responsable de la ficha).',rs);
+  // Producto: las lineas del catalogo del portal
+  var catP=(((pipeCfg()||{}).productos)||[]).map(function(x){ return String(x.codigo||''); }).filter(Boolean);
+  if(!catP.length) catP=GR_PRODS.slice();
+  var pr=_cfn('prod','ALL','Todos',prospProducto,_n('prod',function(){return true;}));
+  catP.forEach(function(p){ pr+=_cfn('prod',p,p,prospProducto,_n('prod',function(e){ return String(e.producto||'').toUpperCase()===p.toUpperCase(); })); });
+  chips+=_rowI('Producto','Línea de servicio. Aparecen todas las del catálogo del portal, aunque hoy no tengan eventos.',pr);
+  // Tipo de senal
+  chips+=_rowI('Tipo de señal','Reply: el prospecto contestó. Open+3: abrió tres veces o más sin contestar. Es el mismo campo de la ficha de la oportunidad.',_cfn('tipo','ALL','Todos',prospTipo,_n('tipo',function(){return true;}))+_cfn('tipo','reply','Reply',prospTipo,_n('tipo',function(e){ return e.tipo==='reply'; }))+_cfn('tipo','open3','Open+3',prospTipo,_n('tipo',function(e){ return e.tipo==='open3'; })));
+  if(canalesPres.length){ chips+=_rowI('Canal','Por dónde llegó el evento.',_cfn('canal','ALL','Todos',prospCanal,_n('canal',function(){return true;}))+canalesPres.map(function(c){return _cfn('canal',c,c,prospCanal,_n('canal',function(e){ return (e.canal||'')===c; }));}).join('')); }
   (function(){ var r=prospPerVista(), hoy=_diaLocal(new Date()); var est='background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;padding:6px 9px;border-radius:8px;font:inherit;font-size:12px;color-scheme:dark;cursor:pointer;'; var ab='onclick="try{this.showPicker&&this.showPicker()}catch(e){}"';
-    chips+=_row('Periodo', PERIODO_OPC.map(function(o){ return _cf('per',o[0],o[1],prospPer.fper||'todo'); }).join('')+'<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><span style="color:var(--text-dim);font-size:12px;">del</span><input type="date" id="prosp-desde" value="'+r[0]+'" max="'+hoy+'" '+ab+' onchange="prospPeriodoFecha()" title="Fecha de inicio del rango" style="'+est+'"><span style="color:var(--text-dim);font-size:12px;">al</span><input type="date" id="prosp-hasta" value="'+r[1]+'" max="'+hoy+'" '+ab+' onchange="prospPeriodoFecha()" title="Fecha de fin del rango (incluida)" style="'+est+'"></span>'); })();
+    var opc=[['todo','Todo'],['30','Últimos 30 días'],['7','Últimos 7 días'],['ayer','Ayer'],['hoy','Hoy'],['rango','Rango']];
+    chips+=_rowI('Fecha','Del pasado a hoy, sobre el día del evento.', opc.map(function(o){ return _cf('per',o[0],o[1],prospPer.fper||'todo'); }).join('')+(prospPer.fper==='rango'?'<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><span style="color:var(--text-dim);font-size:12px;">del</span><input type="date" id="prosp-desde" value="'+r[0]+'" max="'+hoy+'" '+ab+' onchange="prospPeriodoFecha()" title="Fecha de inicio del rango" style="'+est+'"><span style="color:var(--text-dim);font-size:12px;">al</span><input type="date" id="prosp-hasta" value="'+r[1]+'" max="'+hoy+'" '+ab+' onchange="prospPeriodoFecha()" title="Fecha de fin del rango (incluida)" style="'+est+'"></span>':'')); })();
+  chips+=_rowI('Buscar','Busca en la empresa, el prospecto, el puesto y la secuencia.','<input id="prosp-q" type="search" placeholder="Buscar empresa, prospecto o secuencia" value="'+grEsc(prospQ||'')+'" oninput="prospBuscar(this.value)" style="flex:1;min-width:0;max-width:420px;padding:7px 11px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:12px;">');
   var dot=function(c){ return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+c+';margin-right:7px;vertical-align:middle;"></span>'; };
   var H1='<thead><tr><th style="width:38%;">CLASIFICACIÓN</th><th style="text-align:center;">HOY</th><th style="text-align:center;">7D</th><th style="text-align:center;">30D</th><th style="text-align:center;">90D</th><th style="text-align:center;">TOTAL</th></tr></thead>';
   var wc=function(n,win,clas,bold){ var s=bold?'font-weight:700;':''; return n>0?'<td class="pcell" data-ptype="clas" data-pval="'+encodeURIComponent(clas)+'" data-pwin="'+win+'" style="text-align:center;'+s+'cursor:pointer;">'+n+'</td>':'<td style="text-align:center;color:var(--text-mute);'+s+'">0</td>'; };
@@ -5378,7 +5421,7 @@ function renderProspeccion() {
   // ETAPAS y sc eliminados (tabla dh quitada)
   // Tabla Oportunidades eliminada
   cont.innerHTML=GR_SYNC_BOX + '<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Fuente: tabla de eventos (los 3 tenants), no HubSpot. Los 30d incluyen 7d y hoy.</div>'+chips+'<div id="pipeline-metrics-gr" style="margin:14px 0 4px;"></div><div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado. Toca un número para ver el detalle.</div>'+t1+'<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto</div>'+t2+'<div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:18px 0 6px;">Open+3 por tipo de interés</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">La reapertura es la señal más fuerte: volvió solo, sin que le escribiéramos. Toca un número para ver el detalle.</div>'+t3+'<div style="border:none;border-top:1px solid #252d50;margin:14px 0"></div><div id="prosp-detalle" style="margin-top:16px;"></div></div>';
-  cont.querySelectorAll('[data-pf]').forEach(function(btn){ btn.addEventListener('click',function(){ var f=btn.dataset.pf, v=decodeURIComponent(btn.dataset.pv); if(f==='grupo'){prospGrupo=v; prospProducto='ALL';} else if(f==='prod')prospProducto=v; else if(f==='canal')prospCanal=v; else if(f==='sem')prospSem=v; else if(f==='stage')prospStage=v; else if(f==='per'){ prospPer.fper=v; if(v==='rango'&&!prospPer.fdesde){ var _r=prospPerVista(); prospPer.fdesde=_r[0]; prospPer.fhasta=_r[1]; } } renderProspeccion(); }); });
+  cont.querySelectorAll('[data-pf]').forEach(function(btn){ btn.addEventListener('click',function(){ var f=btn.dataset.pf, v=decodeURIComponent(btn.dataset.pv); if(f==='grupo'){prospGrupo=v; prospProducto='ALL';} else if(f==='prod')prospProducto=v; else if(f==='resp')prospResp=v; else if(f==='tipo')prospTipo=v; else if(f==='canal')prospCanal=v; else if(f==='sem')prospSem=v; else if(f==='stage')prospStage=v; else if(f==='per'){ prospPer.fper=v; if(v==='rango'&&!prospPer.fdesde){ var _r=prospPerVista(); prospPer.fdesde=_r[0]; prospPer.fhasta=_r[1]; } } renderProspeccion(); }); });
   renderPipelineMetricsGR();
   renderGanadoresGR(cont);
   cont.querySelectorAll('.pcell').forEach(function(td){ td.addEventListener('click',function(){
