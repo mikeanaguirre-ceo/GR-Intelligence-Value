@@ -1418,6 +1418,7 @@ function _stagesPresentes(arr){
 }
 // arr = universo del menú (para conteos y opciones presentes). kind: 'deal'|'task'|'alerta'
 function filtrosHTML(menu, arr, kind){
+  if(menu==='pendientes'||menu==='alertas') return grGenFiltrosHTML(menu, arr, kind);
   var f=FILT[menu]; var H='';
   // Persona (todos los menús) con conteo
   var pcount={}; var totalP=0;
@@ -1474,6 +1475,11 @@ function filtrosHTML(menu, arr, kind){
 // Predicado unificado
 function pasaFiltro(menu, it, kind){
   var f=FILT[menu];
+  if(menu==='pendientes'||menu==='alertas'){
+    if(!grGenPasa(menu, it, kind)) return false;
+    if(menu==='alertas' && !grNivel1Pasa(it)) return false;
+    return true;
+  }
   if(f.persona && f.persona!=='Todos'){ var ps=personasDeItem(it); if(f.persona==='Otro'){ if(ps.length>0) return false; } else if(ps.indexOf(f.persona)<0) return false; }
   if(menu!=='recap' && f.sem && f.sem!=='ALL'){ if(semDeItem(it,kind)!==f.sem) return false; }
   if(f.grupo && f.grupo!=='ALL'){ if(grupoDeProd(it.prod)!==f.grupo) return false; }
@@ -1521,8 +1527,8 @@ let recapFilters = {
 // ===== Estado unificado de filtros (homologado) =====
 var FILT = {
   pipeline:   { persona:'Todos', lider:'ALL', apoyo:'ALL', tiempo:'ALL', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, excludeP:false, nueva:'ALL', cierre:'ALL', fcampo:'creacion', fper:'todo', fdesde:'', fhasta:'', faltan:false, cita:'ALL' },
-  pendientes: { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', sort:'urgency', nueva:'ALL' },
-  alertas:    { persona:'Todos', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, categoria:'ALL', accion:'ALL', sort:'monto_desc' },
+  pendientes: { persona:'Todos', lider:'ALL', apoyo:'ALL', stage:'ALL', sem:'ALL', grupo:'ALL', prod:'ALL', sort:'urgency', nueva:'ALL', fper:'todo', fdesde:'', fhasta:'', q:'' },
+  alertas:    { persona:'Todos', lider:'ALL', apoyo:'ALL', tiempo:'ALL', sem:'ALL', grupo:'ALL', prod:'ALL', stage:'ALL', monto:0, categoria:'ALL', accion:'ALL', sort:'monto_desc', q:'' },
   recap:      { persona:'Todos', grupo:'ALL', prod:'ALL' }
 };
 // El pipeline recuerda sus filtros en este navegador: al volver, se ve como se dejo.
@@ -2652,6 +2658,108 @@ function grPipeFiltrosHTML(pool){
   return H;
 }
 
+// ===== 26oct2026 (Mike): Pendientes y Alertas con los mismos filtros y nombres que Pipeline =====
+// Responsable, Lider, Apoyo, Etapa, Semaforo de tiempos, Producto (las 16 lineas del catalogo), Fecha y Buscar.
+// Cada conteo respeta los demas filtros (cuenta lo que se veria al elegirlo). Grupo, Monto, Nuevas y Categoria ya no existen.
+function grDealDeItem(it){ if(it&&it.campos&&it.stage) return it; var id=it&&(it.dealId||((it.matchedDealIds||[])[0])); return id?grDealPorId(id):null; }
+function grItemInterno(it,d){ if(it&&it.isInternal) return true; return d?grEsInterna(d):false; }
+function grGenEtapaPasa(it,d,st){
+  if(st==='G:internas') return grItemInterno(it,d);
+  if(grItemInterno(it,d)) return false;
+  var s=String(d?d.stage:(it.stage||''));
+  if(st==='G:prosp') return GR_ETAPAS_PROSP.indexOf(s)>=0;
+  if(st==='G:ventas') return GR_ETAPAS_VENTAS.indexOf(s)>=0;
+  if(st==='G:renov') return s==='1355589932';
+  return (d?grStageLabel(d):(it.stageLabel||it.stage))===st;
+}
+function grGenTiempoPasa(menu,it,d,v){
+  if(menu==='pendientes'){ return semDeItem(it,'task')===v; }
+  return grTiempoDe(d||it,v);
+}
+function grGenFechaDe(menu,it){ return menu==='pendientes'?grDiaDe(it.cierre||it.date):''; }
+function grGenQPasa(menu,it){
+  var q=_pipeNorm(FILT[menu].q||'').trim(); if(!q) return true;
+  var d=grDealDeItem(it)||{};
+  var txt=_pipeNorm([it.title,it.client,it.dealName,it.name,it.persona,it.prod,d.name,d.cliente,((d.contacto||{}).nombre)].join(' '));
+  return q.split(/\s+/).every(function(w){ return txt.indexOf(w)>=0; });
+}
+// Alertas: Vender = Cerrar + ReActivar; Arreglar = Higienizar. Los conteos de los filtros cuentan solo lo de la vista elegida.
+function grNivel1Pasa(it){ return (FIX_NIVEL1==='arreglar') ? it.categoria==='Higienizar' : it.categoria!=='Higienizar'; }
+function grGenPasa(menu,it,kind,excepto){
+  var f=FILT[menu], ex=function(k){ return excepto && excepto.indexOf(k)>=0; }, d=grDealDeItem(it);
+  if(!ex('etapa') && f.stage && f.stage!=='ALL' && !grGenEtapaPasa(it,d,f.stage)) return false;
+  if(!ex('persona') && f.persona && f.persona!=='Todos'){ var ps=personasDeItem(it); if(f.persona==='Otro'){ if(ps.length && ps.indexOf('Otro')<0) return false; } else if(ps.indexOf(f.persona)<0) return false; }
+  if(!ex('lider') && f.lider && f.lider!=='ALL' && grLiderDe({prod:it.prod})!==f.lider) return false;
+  if(!ex('apoyo') && f.apoyo && f.apoyo!=='ALL'){ var ap=d?grApoyoDe(d):[]; if(f.apoyo==='SIN'){ if(ap.length) return false; } else if(ap.indexOf(f.apoyo)<0) return false; }
+  if(!ex('tiempo')){ var tv=(menu==='pendientes')?(f.sem||'ALL'):(f.tiempo||'ALL'); if(tv!=='ALL' && tv!=='cerradas' && !grGenTiempoPasa(menu,it,d,tv)) return false; }
+  if(!ex('prod') && f.prod && f.prod!=='ALL' && String(it.prod||'').toUpperCase()!==String(f.prod).toUpperCase()) return false;
+  if(!ex('fecha') && menu==='pendientes' && f.fper && f.fper!=='todo'){ var r=grFechaRango(f), v=grGenFechaDe(menu,it); if(!v||v<r[0]||v>r[1]) return false; }
+  if(!ex('q') && !grGenQPasa(menu,it)) return false;
+  return true;
+}
+var _grGenQT=null;
+function grGenBuscar(menu,v){ clearTimeout(_grGenQT); _grGenQT=setTimeout(function(){ FILT[menu].q=v; renderCurrentTab(); var el=document.getElementById('gen-q-'+menu); if(el){ el.focus(); try{ el.setSelectionRange(el.value.length,el.value.length); }catch(e){} } },250); }
+function grGenPeriodoFecha(menu){ var a=document.getElementById('gen-desde-'+menu), b=document.getElementById('gen-hasta-'+menu); if(!a||!b||!a.value||!b.value) return; FILT[menu].fper='rango'; FILT[menu].fdesde=a.value; FILT[menu].fhasta=b.value; renderCurrentTab(); }
+function grGenFiltrosHTML(menu, pool, kind){
+  var f=FILT[menu], esP=(menu==='pendientes');
+  // En Pendientes > Cerradas el universo ya viene filtrado por cierre; el semaforo no se vuelve a aplicar al contar.
+  var cuenta=function(k,prueba){ return pool.filter(function(it){ return grGenPasa(menu,it,kind,[k]) && (menu!=='alertas' || grNivel1Pasa(it)) && prueba(it); }).length; };
+  var chip=function(k,v,label,n,extra){ var on=String(f[k]||'')===String(v); return '<button class="chip '+(on?'active':'')+'" data-f="'+menu+'" data-k="'+k+'" data-v="'+grEsc(v)+'"'+(extra||'')+'>'+label+(n===null||n===undefined?'':' '+n)+'</button>'; };
+  var fila=function(titulo,info,cuerpo){ return '<div class="filters"><span class="filter-label">'+titulo+' '+grI(info)+'</span>'+cuerpo+'</div>'; };
+  var H='';
+  // Etapa
+  var et=chip('stage','ALL','Todos',cuenta('etapa',function(){return true;}));
+  et+=chip('stage','G:prosp','Prospección',cuenta('etapa',function(it){ return grGenEtapaPasa(it,grDealDeItem(it),'G:prosp'); }),' style="border-color:#DB054080;"');
+  if(!esP) stageOrder().filter(function(x){ return GR_ETAPAS_PROSP.indexOf(String(x.id))>=0; }).forEach(function(x){ var n=cuenta('etapa',function(it){ return grGenEtapaPasa(it,grDealDeItem(it),x.label); }); if(n||f.stage===x.label) et+=chip('stage',x.label,x.label,n); });
+  et+=chip('stage','G:ventas','Ventas',cuenta('etapa',function(it){ return grGenEtapaPasa(it,grDealDeItem(it),'G:ventas'); }),' style="border-color:#62D17580;"');
+  if(!esP) stageOrder().filter(function(x){ return GR_ETAPAS_VENTAS.indexOf(String(x.id))>=0; }).forEach(function(x){ var n=cuenta('etapa',function(it){ return grGenEtapaPasa(it,grDealDeItem(it),x.label); }); if(n||f.stage===x.label) et+=chip('stage',x.label,x.label,n); });
+  var nRen=cuenta('etapa',function(it){ return grGenEtapaPasa(it,grDealDeItem(it),'G:renov'); }); if(nRen||f.stage==='G:renov') et+=chip('stage','G:renov',grStageLabel({stage:'1355589932'}),nRen);
+  if(esP) et+=chip('stage','G:internas','Internas',cuenta('etapa',function(it){ return grItemInterno(it,grDealDeItem(it)); }));
+  H+=fila('Etapa', esP?'Etapa de la oportunidad de la tarea. Prospección: Señal, Reply, Contactado y En Conversación. Ventas: Atracción, Educación, Propuesta y Aprobación. Internas: tareas del equipo sin cliente.':'Prospección: Señal, Reply, Contactado y En Conversación (aún sin cita). Ventas: Atracción, Educación, Propuesta y Aprobación (ya hay o hubo cita). Elige el grupo o una etapa.', et);
+  // Responsable
+  var resp=chip('persona','Todos','Todos',cuenta('persona',function(){return true;}));
+  var nomR={}; (((pipeCfg()||{}).equipo)||[]).forEach(function(p){ if(p&&p.nombre) nomR[p.nombre]=1; }); pool.forEach(function(it){ personasDeItem(it).forEach(function(n){ if(n&&n!=='Otro') nomR[n]=1; }); });
+  Object.keys(nomR).sort().forEach(function(n){ resp+=chip('persona',n,n,cuenta('persona',function(it){ return personasDeItem(it).indexOf(n)>=0; })); });
+  var sinR=cuenta('persona',function(it){ var ps=personasDeItem(it); return !ps.length || ps.indexOf('Otro')>=0; }); if(sinR) resp+=chip('persona','Otro','Sin responsable',sinR);
+  H+=fila('Responsable', esP?'Quien hace la tarea: el mismo nombre que va en el asunto de la tarea.':'Quien lleva la cuenta de la oportunidad (campo Responsable de la ficha).', resp);
+  // Lider
+  var lid=chip('lider','ALL','Todos',cuenta('lider',function(){return true;}));
+  var nomL={}; (((pipeCfg()||{}).productos)||[]).forEach(function(x){ var l=grEquipoNombre(x.lidera); if(l) nomL[l]=1; });
+  Object.keys(nomL).sort().forEach(function(n){ lid+=chip('lider',n,n,cuenta('lider',function(it){ return grLiderDe({prod:it.prod})===n; })); });
+  H+=fila('Líder','Quien lidera el producto según la ficha de productos del portal.', lid);
+  // Apoyo
+  var apo=chip('apoyo','ALL','Todos',cuenta('apoyo',function(){return true;}));
+  var nomA={}; (((pipeCfg()||{}).equipo)||[]).forEach(function(p){ if(p&&p.nombre) nomA[p.nombre]=1; });
+  Object.keys(nomA).sort().forEach(function(n){ apo+=chip('apoyo',n,n,cuenta('apoyo',function(it){ var d=grDealDeItem(it); return !!d && grApoyoDe(d).indexOf(n)>=0; })); });
+  apo+=chip('apoyo','SIN','Sin apoyo',cuenta('apoyo',function(it){ var d=grDealDeItem(it); return !d || !grApoyoDe(d).length; }));
+  H+=fila('Apoyo','Quien acompaña en las reuniones de la oportunidad. Se marca en cada oportunidad, en la ficha.', apo);
+  // Semaforo de tiempos
+  var ti='';
+  if(esP){
+    [['ALL','Todos'],['rojo','Fuera de plazo'],['amarillo','Por vencer'],['verde','En plazo'],['cerradas','Cerradas ('+CERRADAS_DIAS+' días)']].forEach(function(o){ ti+=chip('sem',o[0],o[1],(o[0]==='ALL'||o[0]==='cerradas')?null:cuenta('tiempo',function(it){ return semDeItem(it,'task')===o[0]; })); });
+    H+=fila('Semáforo de tiempos','Fuera de plazo: la tarea ya venció. Por vencer: vence hoy o en los próximos 3 días. En plazo: vence después. Cerradas: las que se completaron en los últimos '+CERRADAS_DIAS+' días.', ti);
+  } else {
+    var gAnt='';
+    GR_TIEMPO_OPC.forEach(function(o){ if(o[2]&&o[2]!==gAnt){ ti+='<span style="font-size:11px;color:#6B7280;margin-left:6px;">'+o[2]+':</span>'; gAnt=o[2]; } ti+=chip('tiempo',o[0],o[1],o[0]==='ALL'?cuenta('tiempo',function(){return true;}):cuenta('tiempo',function(it){ return grGenTiempoPasa(menu,it,grDealDeItem(it),o[0]); })); });
+    H+=fila('Semáforo de tiempos','Etapa: días que lleva la oportunidad en su etapa contra el plazo del portal. Cierre: la fecha en que esperamos firmar ya pasó, o no tiene fecha.', ti);
+  }
+  // Producto: las lineas del catalogo del portal, aunque esten en 0
+  var pr=chip('prod','ALL','Todos',cuenta('prod',function(){return true;})), vistos={};
+  (((pipeCfg()||{}).productos)||[]).forEach(function(x){ var k=String(x.codigo||''); if(!k||vistos[k.toUpperCase()]) return; vistos[k.toUpperCase()]=1; pr+=chip('prod',k,k,cuenta('prod',function(it){ return String(it.prod||'').toUpperCase()===k.toUpperCase(); })); });
+  var fuera={}; pool.forEach(function(it){ var k=String(it.prod||''); if(k&&!vistos[k.toUpperCase()]&&['Interno','Otro','P-Otro'].indexOf(k)<0) fuera[k]=1; });
+  Object.keys(fuera).forEach(function(k){ pr+=chip('prod',k,k,cuenta('prod',function(it){ return it.prod===k; })); });
+  H+=fila('Producto','Línea de servicio. Aparecen todas las del catálogo del portal, aunque hoy no tengan nada.', pr);
+  // Fecha (solo Pendientes: el dia en que vence la tarea, o en que se cerro)
+  if(esP){
+    var fe=GR_FECHA_OPC.map(function(o){ return chip('fper',o[0],o[1],null); }).join('');
+    if(f.fper==='rango'){ var rr=grFechaRango(f), est='background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;padding:7px 10px;border-radius:8px;font:inherit;font-size:13px;color-scheme:dark;'; fe+='<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><span style="color:var(--text-dim);font-size:12px;">del</span><input type="date" id="gen-desde-'+menu+'" value="'+rr[0]+'" onchange="grGenPeriodoFecha(\''+menu+'\')" style="'+est+'"><span style="color:var(--text-dim);font-size:12px;">al</span><input type="date" id="gen-hasta-'+menu+'" value="'+rr[1]+'" onchange="grGenPeriodoFecha(\''+menu+'\')" style="'+est+'"></span>'; }
+    H+=fila('Fecha','Del pasado al futuro, sobre el día en que vence la tarea (en Cerradas, el día en que se cerró).', fe);
+  }
+  // Buscar
+  H+=fila('Buscar', esP?'Busca en la tarea, el cliente y la oportunidad.':'Busca en la oportunidad, el cliente y el contacto.', '<input id="gen-q-'+menu+'" type="search" placeholder="Buscar cliente, oportunidad o tarea" value="'+grEsc(f.q||'')+'" oninput="grGenBuscar(\''+menu+'\',this.value)" style="flex:1;min-width:0;max-width:420px;padding:8px 12px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:13px;">');
+  return H;
+}
+
 function renderPipeline() {
   // Normaliza producto desde el nombre para categorias que el backend deja en Otro (BD, AEO+SEO)
   (DATA.deals||[]).forEach(function(d){
@@ -3174,7 +3282,6 @@ function renderPendientes() {
   if (_isCerradas) FILT.pendientes.sem = 'ALL';
   let filtered = allT.filter(t => pasaFiltro('pendientes', t, 'task'));
   FILT.pendientes.sem = _savedSem;
-  if (FILT.pendientes.nueva !== 'ALL') { const _am = _dealAgeMap(); filtered = filtered.filter(t => nuevaPasaTask(t, FILT.pendientes.nueva, _am)); }
 
   // Re-sort por opción elegida
   const sortMode = FILT.pendientes.sort || 'urgency';
@@ -3227,10 +3334,6 @@ function renderPendientes() {
   // Persona filter
   html += `<div class="section">
     ${filtrosHTML('pendientes', allT, 'task')}
-    <div class="filters">
-      <span class="filter-label">Nuevas oportunidades:</span>
-      ${[['ALL','Todas'],['mes','Mes'],['s1','Sem 1'],['s2','Sem 2'],['s3','Sem 3'],['s4','Sem 4'],['g30','>30d'],['g45','>45d'],['g90','>90d']].map(o => { const col = ({s1:'#10B981',s2:'#34d399',s3:'#A3E635',s4:'#FFCD00',g30:'#F59E0B',g45:'#F97316',g90:'#EF4444'})[o[0]]||''; return `<button class="chip ${FILT.pendientes.nueva===o[0]?'active':''}" data-f="pendientes" data-k="nueva" data-v="${o[0]}" ${col?`style="border-color:${col}80;"`:''}>${o[1]}</button>`; }).join('')}
-    </div>
     <div class="filters">
       <span class="filter-label">Ordenar por:</span>
       <button class="chip ${sortMode === 'urgency' ? 'active' : ''}" data-f="pendientes" data-k="sort" data-v="urgency">🎯 Urgencia</button>
