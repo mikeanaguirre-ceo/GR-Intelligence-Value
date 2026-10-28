@@ -199,7 +199,13 @@
     .volver{display:inline-block}
     .msgs{padding:14px 10px}
     .m{max-width:88%}
+    .tabs{padding:0 8px;gap:0} .tabs .logo{margin-right:6px} .tabs .logo b{display:none} .tabs .logo img{height:24px}
+    .tabs button{padding:0 8px;font-size:12.5px}
+    .item .nom{white-space:normal;overflow:visible;text-overflow:clip;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+    .ficha-op{padding:8px 10px;font-size:11.5px}
+    .filtros select{flex:1 1 140px;min-width:0}
   }
+  @media (max-width:440px){ .tabs .logo{display:none} .tabs{justify-content:space-between} .tabs button{padding:0 6px;font-size:12px} }
 </style>
 </head>
 <body>
@@ -374,11 +380,13 @@
       et.filter(function(e){ return e.fase === f; }).map(function(e){ return '<option value="' + esc(e.id) + '">' + esc(e.nombre) + '</option>'; }).join('') + '</optgroup>'; };
     return '<option value="">' + todas + '</option>' + grupo('prospeccion', 'Prospección') + grupo('venta', 'Venta');
   }
+  // Pintaando (PT) es cliente, no linea de servicio de Great Revenue: no aparece en los filtros.
+  var NO_LINEA = ['PT', 'SIN'];
   function lineasConocidas(){
     var m = {};
     ((conf && conf.productos) || []).forEach(function(p){ m[p.codigo] = p.nombre.replace(/ \(.*\)$/, ''); });
     ((opor && opor.lineas) || []).forEach(function(l){ if (l.codigo !== 'SIN') m[l.codigo] = l.nombre; });
-    return Object.keys(m).map(function(k){ return { codigo: k, nombre: m[k] }; }).sort(function(a, b){ return a.nombre.localeCompare(b.nombre); });
+    return Object.keys(m).filter(function(k){ return NO_LINEA.indexOf(k) < 0; }).map(function(k){ return { codigo: k, nombre: m[k] }; }).sort(function(a, b){ return a.nombre.localeCompare(b.nombre); });
   }
   function pintarSelects(){
     $('f-linea').innerHTML = '<option value="">Todas las líneas</option>' + lineasConocidas().map(function(l){ return '<option value="' + esc(l.codigo) + '">' + esc(l.nombre) + '</option>'; }).join('');
@@ -487,7 +495,7 @@
     };
     var pend = todas.filter(pendienteOpen3);
     var cts = [].concat.apply([], todas.map(function(o){ return o.contactos; }));
-    var lineasF = (opor.catalogo || opor.lineas).map(function(l){ return [l.codigo, esc(l.nombre)]; });
+    var lineasF = (opor.catalogo || opor.lineas).filter(function(l){ return NO_LINEA.indexOf(l.codigo) < 0; }).map(function(l){ return [l.codigo, esc(l.nombre)]; });
     if (todas.some(function(o){ return o.linea.codigo === 'SIN'; })) lineasF.push(['SIN', 'Sin línea']);
     var personasF = (opor.equipo || []).map(function(p){ return [p, esc(p)]; }).concat([['Sin', 'Sin responsable']]);
     var principales = fila('linea', 'Línea:', lineasF) + fila('persona', 'Persona:', personasF, 'Todos') +
