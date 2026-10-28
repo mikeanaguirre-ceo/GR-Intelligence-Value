@@ -139,10 +139,38 @@
   #tip{position:fixed;z-index:30;max-width:280px;background:#14201c;color:#fff;font-size:12px;line-height:1.4;padding:6px 9px;border-radius:7px;pointer-events:none;opacity:0;transition:opacity .12s}
   #tip.ver{opacity:1}
   .ficha-op .verop{background:transparent;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;text-decoration:underline dotted}
-  .op-det{padding:10px 16px;border-bottom:1px solid var(--borde);background:#fbfaff;font-size:12.5px;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px 18px}
-  .op-det h4{margin:0 0 3px;font-size:11px;color:var(--tenue);font-weight:650;text-transform:uppercase;letter-spacing:.04em}
-  .op-det div{line-height:1.45} .op-det .sigue{grid-column:1/-1;background:#f1eafe;border-radius:8px;padding:7px 10px}
-  .op-det .resp{grid-column:1/-1;white-space:pre-wrap;color:var(--texto)}
+  /* Ficha de la oportunidad en solo lectura (28 oct): las pestanas de la ventana de editar del tablero. */
+  .modal .caja-m.ficha{max-width:980px;padding:0;gap:0}
+  .ficha .fhead{display:flex;justify-content:space-between;gap:12px;padding:16px 18px 10px}
+  .ficha .ftit{font-size:17px;font-weight:750;color:var(--texto)}
+  .ficha .fpills{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .ficha .pill{border:1px solid var(--borde);border-radius:14px;padding:2px 10px;font-size:12px;color:var(--texto)} .ficha .pill a{color:var(--azul);text-decoration:none}
+  .ficha .pill.wa{background:#efe7ff;border-color:#d9c8ff;color:#5b21b6}
+  .ficha .forig{font-size:12px;color:var(--tenue);margin-top:8px}
+  .ficha .fx{border:0;background:transparent;font-size:24px;line-height:1;cursor:pointer;color:var(--tenue);align-self:flex-start}
+  .ficha .ftabs{display:flex;gap:4px;border-bottom:1px solid var(--borde);padding:0 14px;overflow-x:auto}
+  .ficha .ftab{border:0;background:transparent;padding:9px 10px;font:inherit;font-size:13px;color:var(--tenue);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+  .ficha .ftab.on{color:var(--texto);font-weight:650;border-bottom-color:var(--acento)}
+  .ficha .fhead,.ficha .ftabs,.ficha .fpie{flex:none}
+  .ficha .fbody{padding:14px 18px;overflow:auto;flex:1;min-height:0}
+  .ficha .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px} .ficha .fcol{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .ficha .fcard{border:1px solid var(--borde);border-radius:10px;padding:12px 14px}
+  .ficha .fh{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tenue);margin-bottom:8px} .ficha .fh small{text-transform:none;letter-spacing:0;font-weight:500}
+  .ficha .fk{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:13px} .ficha .fk .k{color:var(--tenue)} .ficha .fk .v{color:var(--texto);word-break:break-word} .ficha .fk .v.falta{color:#b7791f}
+  .ficha .fk a,.ficha .ftexto a{color:var(--azul)}
+  .ficha .flbl{font-size:12px;color:var(--tenue);margin-top:10px} .ficha .fval{font-size:13px} .ficha .fval.ok{color:var(--ok)} .ficha .fval.aviso{color:#9a5300} .ficha .fval.mal{color:#a3261f}
+  .ficha .fnota{font-size:12px;color:var(--tenue);margin-top:6px} .ficha .fsigue{background:#f1eafe;border-radius:8px;padding:7px 10px;font-size:12.5px;margin-bottom:8px}
+  .ficha .freu{font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--borde)}
+  .ficha .ftarea{display:flex;align-items:center;gap:8px;font-size:13px;padding:5px 0;border-bottom:1px solid var(--borde)} .ficha .ftarea .t{flex:1} .ficha .ftarea .d{font-size:11px;color:var(--tenue)} .ficha .ftarea.hecha .t{text-decoration:line-through;color:var(--tenue)}
+  .ficha .sem2{width:9px;height:9px;border-radius:50%;flex:none} .sem2.rojo{background:#DB0540} .sem2.amarillo{background:#e3b200} .sem2.verde{background:#3fb45b} .sem2.gris{background:#9aa}
+  .ficha details summary{cursor:pointer;font-size:12px;color:var(--tenue);margin-top:8px}
+  .ficha .ftexto{white-space:pre-wrap;font-size:13px;line-height:1.45;max-height:260px;overflow:auto}
+  .ficha .fotro{font-size:13px;padding:5px 0;border-bottom:1px solid var(--borde)}
+  .ficha .fev{display:grid;grid-template-columns:78px 1fr;gap:8px;font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--borde)} .ficha .fev .d{color:var(--tenue)} .ficha .fev .s{color:var(--tenue);font-size:11.5px} .ficha .fev .x{white-space:pre-wrap;margin-top:3px}
+  .ficha .fev.respuesta b{color:var(--ok)} .ficha .fev.apertura b{color:#9a5300}
+  .ficha .fnotaH{border:1px solid var(--borde);border-radius:10px;padding:10px 12px;margin-bottom:10px} .ficha .fnotaH .d{font-size:11px;color:var(--tenue);margin-bottom:4px}
+  .ficha .fpie{font-size:11.5px;color:var(--tenue);padding:8px 18px 14px;border-top:1px solid var(--borde)}
+  @media (max-width:760px){ .ficha .fgrid{grid-template-columns:1fr} .modal .caja-m.ficha{max-height:96vh;overflow:hidden} .ficha .fhead{padding:12px 14px 8px} .ficha .ftit{font-size:15px} .ficha .fbody{padding:12px} .ficha .fk{grid-template-columns:minmax(80px,auto) 1fr} }
   .items{overflow-y:auto;flex:1;min-height:0;overscroll-behavior:contain}
   .vacio{padding:24px 16px;color:var(--tenue);font-size:14px}
   .item{padding:10px 14px;border-bottom:1px solid var(--borde);cursor:pointer;display:flex;gap:10px}
@@ -267,8 +295,8 @@
   var abrirPlantillaDesde = '';
   var pendiente = null;
   var sel = null, filtro = 'todas', plantillas = {}, ocupado = false, syncTimer = null;
-  var conf = null, confTipo = '', fichaAbierta = false;
-  var F = { atiende: 'todas', ventana: '', linea: '', etapa: '', origen: '', toque: '', plantilla: '', firma: '' }, ayudaAbierta = {};
+  var conf = null, confTipo = '';
+  var F = { atiende: 'todas', ventana: '', linea: '', etapa: '', senal: '', origen: '', canal: '', toque: '', resultado: '', plantilla: '', firma: '' }, ayudaAbierta = {};
   var opor = null, oporF = { fase: '', linea: '', persona: '', wa: '', pend: false, sem: '', origen: '', senal: '', monto: '', cierre: '', nuevas: '', tipo: '', q: '' };
   var $ = function(id){ return document.getElementById(id); };
 
@@ -393,21 +421,31 @@
   function pintarSelects(){ pintarLista(); }
   // De donde llego la conversacion: la senal de su oportunidad en HubSpot (como el tablero) o, sin oportunidad, si llego
   // por un anuncio o escribio directo.
+  // Senal (como el tablero: Open+3 o Reply con su tipo de Amplemarket), origen (camino de llegada) y canal de la respuesta.
+  function senalConv(c){ var op = oporDe(c); if (!op) return ''; var o = op.o; return o.tipo_senal === 'open3' || o.senal === 'Open+3' ? 'open3' : (o.tipo_senal === 'reply' || o.senal === 'Reply' ? 'reply' : ''); }
   function origenConv(c){
     var op = oporDe(c);
-    if (op) {
-      if (op.o.senal === 'Open+3' || op.o.origen === 'Open+3') return 'open3';
-      if (op.o.senal === 'Reply') return 'reply';
-      if (op.o.origen === 'DUO') return 'duo';
-      if (op.o.origen === 'Referido') return 'referido';
-      return 'hubspot';
-    }
+    if (op) { var k = op.o.camino; return k === 'respuesta' || k === 'open3' ? 'secuencia' : (k === 'senal' ? 'duo' : (k === 'referido' ? 'referido' : 'otra')); }
     return c.origen && c.origen.indexOf('anuncio') === 0 ? 'anuncio' : 'directo';
   }
+  // Canal por el que contesto (gr_canal_respuesta); si contesto a un toque de Open+3, WhatsApp.
+  function canalConv(c){ var op = oporDe(c); if (!op) return ''; return op.o.canal || (op.o.o3 && op.o.o3.estado === 'respondio' ? 'whatsapp' : ''); }
   var FALLO_TOQUE = ['no_entregado', 'error', 'datos_faltantes', 'excluido'];
+  // Etiquetas del tablero (pipelineCfg.campos de gr-dashboard).
+  var COMO_LLEGO = { interested: 'Interested', meeting_booked: 'Meeting Booked', forwarded_to_the_right_person: 'Forwarded to the right person', introduction: 'Introduction',
+    asked_to_circle_back_later: 'Asked to circle back later', not_interested: 'Not interested', not_the_right_person: 'Not the right person', hard_no: 'Hard no', ooo: 'Out of the Office' };
+  var TIPO_INTERES = { reapertura: 'Reapertura', interes_maduro: 'Interés maduro', interes_en_curso: 'Interés en curso' };
+  var CAMINO = { respuesta: 'Sequence', senal: 'DUO', open3: 'Open+3', referido: 'Referido', evento: 'Evento', cliente_actual: 'Cliente actual', sitio_web: 'Sitio web', otro: 'Otro' };
+  var CANAL = { correo: 'Correo', linkedin: 'LinkedIn', whatsapp: 'WhatsApp', llamada: 'Llamada', otro: 'Otro' };
+  var TIPO_OP = { cliente_nuevo: 'Cliente nuevo', venta_adicional: 'Venta adicional', venta_cruzada: 'Venta cruzada', renovacion: 'Renovación' };
+  var PARTNER = { artool: 'Artool', hootsuite: 'Hootsuite', roomie_it: 'Roomie IT', venta_directa: 'Venta directa', interno: 'Interno' };
+  // Nombres cortos de las etapas, como los chips del tablero.
+  var ETAPA_CORTA = { '1332596061': 'Señal', '1332596062': 'Reply', '1332596063': 'Contactado', '1332596064': 'En Conv.', appointmentscheduled: 'Atracción',
+    qualifiedtobuy: 'Educación', presentationscheduled: 'Propuesta', decisionmakerboughtin: 'Aprobación', contractsent: 'Contract Sent', '1355589932': 'Renovación' };
   var TIP_ETAPA = {
     '1332596061': 'Detectamos la señal (abrió el correo 3 veces o más, contestó, DUO) y todavía no le llega el primer WhatsApp',
-    '1332596062': 'Etapa anterior: las de Open+3 ya no pasan por aquí',
+    '1332596062': 'Contestó un correo (Reply) y todavía no se le escribe',
+    '1355589932': 'Cliente en renovación',
     '1332596063': 'Ya le llegó el primer toque por WhatsApp. Tiene 10 días hábiles para contestar',
     '1332596064': 'Contestó: el bot conversa con él para llevarlo a la reunión',
     'appointmentscheduled': 'Tiene reunión agendada',
@@ -427,22 +465,35 @@
       { k: 'ventana', t: 'Ventana de 24 h', ayuda: 'WhatsApp solo deja escribir texto libre si el cliente escribió en las últimas 24 h; si no, solo plantilla aprobada.', ops: [
         ['libre', 'Puedo escribirle libre', 'El cliente escribió en las últimas 24 h: le puedes mandar cualquier texto'],
         ['plantilla', 'Solo plantilla', 'Nunca ha escrito o pasaron más de 24 h: WhatsApp solo deja mandarle una plantilla aprobada']] },
-      { k: 'linea', t: 'Línea de servicio', ayuda: 'El producto de su oportunidad en HubSpot o, si no tiene, el que entendió el bot en la conversación.',
-        ops: lineasConocidas().map(function(l){ return [l.codigo, l.nombre, 'Conversaciones de ' + l.nombre]; }).concat([['SIN', 'Sin línea', 'No tiene oportunidad en HubSpot y el bot todavía no identifica el producto']]) },
-      { k: 'etapa', t: 'Etapa en HubSpot', ayuda: 'La etapa de su oportunidad abierta en HubSpot.',
-        ops: et.map(function(e){ return [e.id, e.nombre, TIP_ETAPA[e.id] || e.nombre]; }).concat([['sin', 'Sin oportunidad', 'El número no está en ninguna oportunidad abierta de HubSpot (escribió directo, anuncio…)']]) },
-      { k: 'origen', t: 'De dónde llegó', ayuda: 'Cómo llegó: la señal de su oportunidad en HubSpot o, si no tiene, cómo nos escribió.', ops: [
-        ['open3', 'Open+3', 'Abrió el correo de la secuencia 3 veces o más (por Sequence o DUO) y le escribimos por WhatsApp'],
-        ['reply', 'Contestó un correo', 'Contestó un correo de la secuencia'],
-        ['duo', 'DUO', 'Señal de intención de Amplemarket (DUO)'],
+      { k: 'linea', t: 'Producto', ayuda: 'El producto de su oportunidad en HubSpot o, si no tiene, el que entendió el bot en la conversación.',
+        ops: lineasConocidas().map(function(l){ return [l.codigo, l.nombre, 'Conversaciones de ' + l.nombre]; }).concat([['SIN', 'Sin producto', 'No tiene oportunidad en HubSpot y el bot todavía no identifica el producto']]) },
+      { k: 'etapa', t: 'Etapa', ayuda: 'La etapa de su oportunidad en HubSpot, con los mismos nombres del tablero. Prospección y Ventas juntan sus etapas.',
+        ops: [['prospeccion', 'Prospección', 'Señal, Reply, Contactado y En Conversación']].concat(et.filter(function(e){ return e.fase === 'prospeccion'; }).map(function(e){ return [e.id, ETAPA_CORTA[e.id] || e.nombre, TIP_ETAPA[e.id] || e.nombre]; }),
+          [['venta', 'Ventas', 'De Atracción en adelante']], et.filter(function(e){ return e.fase === 'venta'; }).map(function(e){ return [e.id, ETAPA_CORTA[e.id] || e.nombre, TIP_ETAPA[e.id] || e.nombre]; }),
+          [['sin', 'Sin oportunidad', 'El número no está en ninguna oportunidad abierta de HubSpot (escribió directo, anuncio…)']]) },
+      { k: 'senal', t: 'Señal', ayuda: 'Qué hizo el prospecto para volverse oportunidad: abrió el correo 3 veces o más (Open+3) o contestó (Reply). El Reply lleva la etiqueta de Amplemarket de cómo contestó.', ops: [
+        ['open3', 'Open+3', 'Abrió el correo de la secuencia 3 veces o más sin contestar'],
+        ['reply', 'Reply (todos)', 'Contestó un correo o un mensaje de la secuencia'],
+        ['interested', 'Interested', 'Contestó con interés'],
+        ['meeting_booked', 'Meeting Booked', 'Agendó la reunión desde la secuencia'],
+        ['introduction', 'Introduction', 'Nos presentó con otra persona'],
+        ['forwarded_to_the_right_person', 'Forwarded to the right person', 'Nos pasó con la persona correcta'],
+        ['asked_to_circle_back_later', 'Asked to circle back later', 'Pidió que le escribamos más adelante']] },
+      { k: 'origen', t: 'Origen', ayuda: 'El camino por el que llegó: la secuencia de correo, una señal de DUO, un referido; o, sin oportunidad, un anuncio o escribió directo.', ops: [
+        ['secuencia', 'Secuencia', 'Venía en una secuencia de Amplemarket (Sequence)'],
+        ['duo', 'DUO', 'Amplemarket detectó una señal de la persona (publicación, cambio de puesto, contratación) y le escribió'],
         ['referido', 'Referido', 'Nos lo recomendaron'],
-        ['hubspot', 'Otra oportunidad', 'Tiene oportunidad en HubSpot sin señal registrada'],
-        ['anuncio', 'Anuncio', 'Escribió desde un anuncio de Meta'],
+        ['otra', 'Otra oportunidad', 'Oportunidad de HubSpot con otro camino (evento, cliente actual, sitio web) o sin dato'],
+        ['anuncio', 'Anuncio', 'Escribió desde un anuncio de Meta, sin oportunidad en HubSpot'],
         ['directo', 'Escribió directo', 'Escribió al número sin oportunidad en HubSpot ni anuncio']] },
-      { k: 'toque', t: 'Toques de Open+3', ayuda: 'Los 3 WhatsApp automáticos de Open+3: toque 1 al detectar la señal, toque 2 al 3er día hábil, toque 3 (despedida) al 7º y Perdida al 10º si no contesta.', ops: [
-        ['1', 'Toque 1', 'Le llegó el primer mensaje. Si no contesta, el toque 2 sale al 3er día hábil'],
-        ['2', 'Toque 2', 'Le llegó el segundo. Si no contesta, el toque 3 sale al 7º día hábil'],
-        ['3', 'Toque 3', 'Le llegó la despedida. Si no contesta, al 10º día hábil la oportunidad pasa a Perdida'],
+      { k: 'canal', t: 'Canal', ayuda: 'Por dónde contestó el prospecto (campo Canal de la oportunidad). Si contestó a un toque de WhatsApp, WhatsApp.', ops: [
+        ['correo', 'Correo', 'Contestó por correo'], ['linkedin', 'LinkedIn', 'Contestó por LinkedIn'], ['whatsapp', 'WhatsApp', 'Contestó por WhatsApp']] },
+      { k: 'toque', t: 'Toque de Open+3', ayuda: 'En qué toque va: toque 1 al detectar la señal, toque 2 al 3er día hábil y toque 3 (despedida) al 7º. Se combina con «Resultado del toque»: por ejemplo Toque 1 + Contestó.', ops: [
+        ['1', 'Toque 1', 'Su último WhatsApp automático fue el toque 1'],
+        ['2', 'Toque 2', 'Su último WhatsApp automático fue el toque 2'],
+        ['3', 'Toque 3', 'Su último WhatsApp automático fue el toque 3 (despedida)']] },
+      { k: 'resultado', t: 'Resultado del toque', ayuda: 'Qué pasó con los toques de Open+3. Si no contesta, al 10º día hábil la oportunidad pasa a Perdida.', ops: [
+        ['activo', 'Esperando respuesta', 'Le llegó el toque y todavía no contesta; el siguiente sale solo'],
         ['respondio', 'Contestó', 'Escribió después de un toque: pasó a En Conversación y ya no recibe más toques'],
         ['perdida', 'Perdida', 'Pasaron 10 días hábiles sin respuesta'],
         ['fallo', 'No le llegó', 'WhatsApp no lo entregó o no se pudo mandar (pago de Meta, faltan datos, país excluido). Se reintenta solo'],
@@ -461,9 +512,12 @@
     if (k === 'atiende') return v === 'sinleer' ? !!c.sin_leer : (v === 'atender' ? !!porAtender(c) : c.modo === v);
     if (k === 'ventana') return v === 'libre' ? ventana(c).abierta : !ventana(c).abierta;
     if (k === 'linea') { var cod = lineaDe(c).codigo; return v === 'SIN' ? (!cod || cod === 'SIN') : cod === v; }
-    if (k === 'etapa') return v === 'sin' ? !op : (!!op && op.o.etapa.id === v);
+    if (k === 'etapa') return v === 'sin' ? !op : (!!op && (op.o.etapa.id === v || op.o.etapa.fase === v));
+    if (k === 'senal') return v === 'open3' || v === 'reply' ? senalConv(c) === v : (!!op && senalConv(c) === 'reply' && op.o.como_llego === v);
     if (k === 'origen') return origenConv(c) === v;
-    if (k === 'toque') return !!o3 && (/^[123]$/.test(v) ? (o3.estado === 'activo' && String(o3.toque) === v) : (v === 'fallo' ? FALLO_TOQUE.indexOf(o3.estado) >= 0 : o3.estado === v));
+    if (k === 'canal') return canalConv(c) === v;
+    if (k === 'toque') return !!o3 && String(o3.toque) === v;
+    if (k === 'resultado') return !!o3 && (v === 'fallo' ? FALLO_TOQUE.indexOf(o3.estado) >= 0 : o3.estado === v);
     if (k === 'plantilla') { pi = plantillaInfo(c); return v === 'mando' ? !!pi : (!!pi && (v === 'contesto' ? pi.respondio : !pi.respondio)); }
     if (k === 'firma') return !!op && op.o.remitente === v;
     return true;
@@ -771,39 +825,180 @@
     var o = op.o, o3 = o.o3, f = function(ts){ return ts ? nombreDia(ts).toLowerCase() + ' ' + hora(ts) : ''; };
     var ult = o3 ? (o3.t3 || o3.t2 || o3.t1) : 0;
     return '<div class="ficha-op"><span data-tip="Línea de servicio de la oportunidad"><b>' + esc(o.linea.nombre) + '</b></span>' +
-      '<span>Etapa: <button class="verop" id="verOp" data-tip="Ver el detalle de la oportunidad"><b>' + esc(o.etapa.nombre) + '</b> ' + (fichaAbierta ? '▴' : '▾') + '</button></span>' +
+      '<span>Etapa: <button class="verop" id="verOp" data-tip="Ver la ficha de la oportunidad, como en el tablero (solo lectura)"><b>' + esc(o.etapa.nombre) + '</b> ▾</button></span>' +
       (o.campana ? '<span data-tip="Secuencia de correo o señal de donde salió la oportunidad">Campaña: <b>' + esc(o.campana) + '</b></span>' : '') +
       (o.senal ? '<span data-tip="Open+3: abrió el correo 3 veces o más. Reply: contestó el correo">Señal: <b>' + esc(o.senal) + '</b></span>' : '') +
       (o.remitente ? '<span data-tip="Quién mandó la campaña de correo; su nombre firma los WhatsApp">Envió: <b>' + esc(nombreRemitente(o.remitente)) + '</b></span>' : '') +
       (o3 ? '<span data-tip="Toques automáticos de Open+3 por WhatsApp">WhatsApp: <b>' + esc(textoToque(o3)) + '</b>' + (ult ? ' · último ' + esc(f(ult)) : '') + (o3.estado !== 'activo' && o3.detalle ? ' · ' + esc(o3.detalle) : '') + '</span>' : '') +
-      '</div>' + (fichaAbierta ? detalleOportunidad(o, op.c) : '');
-  }
-  function detalleOportunidad(o, ct){
-    var o3 = o.o3, fe = function(ts){ return ts ? fmt(ts, { weekday: 'short', day: 'numeric', month: 'short' }) + ' ' + hora(ts) : ''; };
-    var fd = function(d){ return d ? fmt(Date.parse(d) / 1000, { day: 'numeric', month: 'short', year: 'numeric' }) : ''; };
-    var sigue = '';
-    if (o3 && o3.estado === 'activo' && o3.t1) {
-      sigue = o3.toque === 1 ? 'Si no contesta, el toque 2 sale el ' + fe(masHabiles(o3.t1, 3)).replace(/ \d+:\d+.*$/, '') + ' a partir de las 9:00 de su país.'
-        : o3.toque === 2 ? 'Si no contesta, el toque 3 (despedida) sale el ' + fe(masHabiles(o3.t1, 7)).replace(/ \d+:\d+.*$/, '') + '.'
-        : 'Si no contesta, el ' + fe(masHabiles(o3.t1, 10)).replace(/ \d+:\d+.*$/, '') + ' la oportunidad pasa a Perdida.';
-    } else if (o3 && o3.estado === 'respondio') sigue = 'Contestó: el bot conversa con él para llevarlo a la reunión. Ya no recibe toques.';
-    else if (o3 && FALLO_TOQUE.indexOf(o3.estado) >= 0) sigue = 'No le llegó el WhatsApp' + (o3.detalle ? ' (' + o3.detalle + ')' : '') + '. Se reintenta solo en la siguiente vuelta.';
-    else if (o3 && o3.estado === 'sin_whatsapp') sigue = 'Ese número no tiene WhatsApp: no se reintenta. Sigue por correo o LinkedIn.';
-    else sigue = TIP_ETAPA[o.etapa.id] || '';
-    var dato = function(t, v){ return v ? t + ': <b>' + esc(v) + '</b><br>' : ''; };
-    var emp = o.empresa || {};
-    return '<div class="op-det">' +
-      (sigue ? '<div class="sigue"><b>Qué sigue:</b> ' + esc(sigue) + '</div>' : '') +
-      '<div><h4>Oportunidad</h4>' + dato('Etapa', o.etapa.nombre + (o.dias_etapa != null ? ' · ' + o.dias_etapa + ' días ahí' : '')) +
-        dato('Fase', o.etapa.fase === 'venta' ? 'Venta' : 'Prospección') + dato('Creada', fd(o.creada)) +
-        dato('Monto', o.monto ? '$' + o.monto.toLocaleString('es-MX') : '') + dato('Cierre estimado', fd(o.cierre)) + '</div>' +
-      '<div><h4>Equipo</h4>' + dato('Responsable', o.responsable || o.dueno_corto) + dato('Apoyo', o.apoyo) + dato('Dueño en HubSpot', o.dueno) + dato('Envió la campaña', o.remitente ? nombreRemitente(o.remitente) : '') + '</div>' +
-      '<div><h4>Cómo llegó</h4>' + dato('Campaña', o.campana) + dato('Señal', o.senal) + dato('Camino', o.origen) + dato('Aperturas del correo', o.aperturas || '') + '</div>' +
-      '<div><h4>Contacto y empresa</h4>' + dato('Contacto', ct && ct.nombre) + dato('Puesto', ct && ct.puesto) + dato('Correo', ct && ct.correo) +
-        dato('Empresa', emp.nombre) + dato('Industria', emp.industria) + (emp.web ? '<a href="' + esc(emp.web) + '" target="_blank" rel="noopener">Sitio web</a> ' : '') + (emp.linkedin ? '<a href="' + esc(emp.linkedin) + '" target="_blank" rel="noopener">LinkedIn</a>' : '') + '</div>' +
-      (o3 ? '<div><h4>WhatsApp de Open+3</h4>' + dato('Estado', textoToque(o3)) + dato('Toque 1', fe(o3.t1)) + dato('Toque 2', fe(o3.t2)) + dato('Toque 3', fe(o3.t3)) + dato('Firma', o3.firma) + dato('Plantilla', o3.plantilla) + '</div>' : '') +
-      (o.respuesta ? '<div class="resp"><h4>Lo que respondió por correo</h4>' + esc(o.respuesta) + '</div>' : '') +
       '</div>';
+  }
+  // Ficha de la oportunidad (28 oct, Mike): la misma informacion de la ventana de editar del tablero, en solo lectura,
+  // con sus pestanas Estado, Contacto y empresa, Origen y secuencia y Notas. Lee los mismos servicios del tablero:
+  // gr-company (origen, contactos, empresa, tareas y notas), gr-bitacora (reuniones) y, con el boton,
+  // gr-historial-secuencia (la secuencia de Amplemarket). Nada se edita desde aqui.
+  var fichaTab = 'estado', fichaDatos = null, reunionesProm = null;
+  // Plazos de prospeccion del tablero (GRMD_PROSPECCION): en esas etapas la fecha de cierre no aplica.
+  var PLAZO_PROSP = { '1332596061': 2, '1332596062': 2, '1332596063': 10, '1332596064': 10, appointmentscheduled: 7 };
+  var DOM_PERSONAL = ['gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'yahoo.com.mx', 'live.com', 'icloud.com', 'prodigy.net.mx', 'hotmail.es', 'outlook.es', 'msn.com', 'me.com', 'protonmail.com'];
+  function postAbierto(ruta, body){ return fetch(N8N + '/webhook/' + ruta, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }).then(function(r){ return r.json(); }); }
+  function fechaCorta(x){
+    if (!x) return '';
+    var t = typeof x === 'number' ? x : (/^\d{4}-\d{2}-\d{2}$/.test(String(x)) ? Date.parse(x + 'T12:00:00Z') : Date.parse(x));
+    return isNaN(t) ? String(x) : new Date(t).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric', timeZone: TZ });
+  }
+  function haceDias(x){ var t = Date.parse(String(x).length === 10 ? x + 'T12:00:00Z' : x); if (isNaN(t)) return ''; var d = Math.floor((Date.now() - t) / 86400000); return d <= 0 ? 'hoy' : (d === 1 ? 'hace 1 día' : 'hace ' + d + ' días'); }
+  // Filas de dato: [etiqueta, valor, valor ya en HTML]. Lo vacio dice "Falta", como el tablero.
+  function kv(filas){ return '<div class="fk">' + filas.map(function(f){ return '<div class="k">' + esc(f[0]) + '</div><div class="v' + (f[1] ? '' : ' falta') + '">' + (f[1] ? (f[2] ? f[1] : esc(f[1])) : 'Falta') + '</div>'; }).join('') + '</div>'; }
+  function ligaF(url, t){ if (!url) return ''; var u = /^https?:/i.test(url) ? url : 'https://' + url; return '<a href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(t) + ' ↗</a>'; }
+  function domBase(dm){ dm = String(dm || '').toLowerCase().replace(/^www\./, ''); if (!dm || DOM_PERSONAL.indexOf(dm) >= 0) return ''; var b = dm.split('.')[0]; return b.length >= 4 ? b : dm; }
+  function cargarReuniones(){
+    if (!reunionesProm) reunionesProm = postAbierto('gr-bitacora', {}).then(function(d){ return (d && d.reuniones) || []; }).catch(function(){ reunionesProm = null; return null; });
+    return reunionesProm;
+  }
+  // Mismo cruce del tablero: reuniones cuyos invitados externos son estos contactos o su dominio.
+  function reunionesDe(cts, todas){
+    if (!todas) return null;
+    var ems = {}, doms = {};
+    (cts || []).forEach(function(c){ var e = String(c.email || '').trim().toLowerCase(); if (e.indexOf('@') < 0) return; ems[e] = 1; var b = domBase(e.split('@')[1]); if (b) doms[b] = 1; });
+    return todas.filter(function(r){
+      if (r.estado === 'No aplica') return false;
+      return String(r.externos || '').toLowerCase().split(',').some(function(x){ x = x.trim(); if (!x) return false; var b = domBase(x.split('@')[1]); return ems[x] || (b && doms[b]); });
+    }).sort(function(a, b){ return String(b.inicio || b.fecha || '').localeCompare(String(a.inicio || a.fecha || '')); });
+  }
+  function abrirFicha(o, ct){
+    fichaTab = 'estado';
+    fichaDatos = { o: o, ct: ct || {}, cargando: true };
+    pintarFicha();
+    postAbierto('gr-company', { dealId: o.id, empresa: '' }).then(function(d){
+      if (!fichaDatos || fichaDatos.o !== o) return;
+      fichaDatos.cargando = false; fichaDatos.origen = d.oportunidad || {}; fichaDatos.emp = d.empresa_ficha || {};
+      fichaDatos.contactos = d.contactos || []; fichaDatos.acts = d.actividades || [];
+      pintarFicha();
+      return cargarReuniones().then(function(todas){ if (!fichaDatos || fichaDatos.o !== o) return; fichaDatos.reuniones = reunionesDe(fichaDatos.contactos, todas); fichaDatos.reuLeidas = true; pintarFicha(); });
+    }).catch(function(){ if (fichaDatos && fichaDatos.o === o) { fichaDatos.cargando = false; fichaDatos.error = 'No se pudo leer la oportunidad en HubSpot.'; pintarFicha(); } });
+  }
+  function contactoFicha(){
+    var f = fichaDatos, cts = f.contactos || [];
+    var n = function(x){ return String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]+/g, ' ').trim(); };
+    return cts.filter(function(c){ return String(c.id) === String(f.ct.id); })[0] || cts.filter(function(c){ return n(c.nombre) === n(f.ct.nombre); })[0] || cts[0] || {};
+  }
+  function textoNota(x){
+    var m = x.metadata || {}, e = x.engagement || {};
+    return String(m.body || e.bodyPreview || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|li|tr|h\d)>/gi, '\n').replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/[ \t]+/g, ' ').replace(/\n\s*\n+/g, '\n').trim();
+  }
+  function citaTexto(o){
+    var c = o.cita || {}, PR = { grabacion: 'grabación de la reunión', seguimiento: 'envío de siguientes pasos', confirmada: 'confirmada por el equipo' };
+    var fh = c.fecha ? new Date(c.fecha) : null, fhT = fh && !isNaN(fh) ? fh.toLocaleString('es-MX', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: TZ }) : '';
+    if (c.realizada) return ['Realizada el ' + fechaCorta(c.realizada) + (PR[c.prueba] ? ' · ' + PR[c.prueba] : ''), 'ok'];
+    if (c.estado === 'no_realizada') return ['No se realizó · pendiente de reagendar' + (fhT ? ' (era ' + fhT + ')' : ''), 'mal'];
+    if (fhT) return ['Agendada · ' + fhT, 'aviso'];
+    return ['Sin cita', ''];
+  }
+  function pintarFicha(){
+    var f = fichaDatos; if (!f) return;
+    var o = f.o, or = f.origen || {}, e = f.emp || {}, ct = contactoFicha(), ld = f.cargando ? 'Cargando…' : '';
+    var esOpen = (or.tipo_senal || o.tipo_senal) === 'open3';
+    var camino = or.camino || o.camino, comoLl = or.como_llego || o.como_llego, tInt = or.tipo_interes || o.tipo_interes, fSen = or.fecha_senal || o.fecha_senal;
+    var tipoTxt = (or.tipo_senal || o.tipo_senal) === 'open3' ? 'Open+3' : ((or.tipo_senal || o.tipo_senal) === 'reply' ? 'Reply' : '');
+    var como = esOpen ? (TIPO_INTERES[tInt] || tInt || '') : (COMO_LLEGO[comoLl] || comoLl || '');
+    var lineaOr = [CAMINO[camino] || camino, tipoTxt, como, fSen ? haceDias(fSen) : ''].filter(Boolean).join(' · ');
+    var nomCt = ct.nombre || f.ct.nombre || '';
+    var titulo = ((o.empresa && o.empresa.nombre) || e.nombre || empresaDe(o, f.ct)) + (nomCt ? ' — ' + nomCt : '');
+    var pills = '<span class="pill">' + esc(o.linea.codigo || o.linea.nombre) + '</span><span class="pill">$' + (o.monto || 0).toLocaleString('es-MX') + '</span><span class="pill">' + esc(ETAPA_CORTA[o.etapa.id] || o.etapa.nombre) + '</span>' +
+      (o.o3 ? '<span class="pill wa">WhatsApp: ' + esc(textoToque(o.o3)) + '</span>' : '');
+    var ligas = [ligaF(ct.linkedin, 'in Persona'), ligaF(e.linkedin || (o.empresa || {}).linkedin, 'in Empresa'), ligaF(e.web || (o.empresa || {}).web, 'Web')].filter(Boolean).map(function(x){ return '<span class="pill">' + x + '</span>'; }).join('');
+    var tab = function(k, t){ return '<button class="ftab' + (fichaTab === k ? ' on' : '') + '" data-ft="' + k + '">' + t + '</button>'; };
+    var notas = (f.acts || []).filter(function(x){ return (x.engagement || {}).type === 'NOTE'; }).sort(function(a, b){ return ((b.engagement || {}).timestamp || 0) - ((a.engagement || {}).timestamp || 0); });
+    var h = '<div class="fhead"><div><div class="ftit">' + esc(titulo) + '</div><div class="fpills">' + pills + '</div>' +
+      (lineaOr ? '<div class="forig">Origen: ' + esc(lineaOr) + '</div>' : '') + (ligas ? '<div class="fpills">' + ligas + '</div>' : '') + '</div>' +
+      '<button class="fx" data-cerrar-ficha aria-label="Cerrar">×</button></div>' +
+      '<div class="ftabs">' + tab('estado', 'Estado') + tab('contacto', 'Contacto y empresa') + tab('origen', 'Origen y secuencia') + tab('notas', 'Notas' + (notas.length ? ' · ' + notas.length : '')) + '</div>' +
+      '<div class="fbody">' + (f.error ? '<p class="error">' + esc(f.error) + '</p>' : '');
+    if (fichaTab === 'estado') {
+      var plazo = PLAZO_PROSP[o.etapa.id], cita = citaTexto(o);
+      var hecho = function(x){ return String((x.metadata || {}).status || '').toUpperCase() === 'COMPLETED'; };
+      var tareas = (f.acts || []).filter(function(x){ return (x.engagement || {}).type === 'TASK'; });
+      var filaT = function(x){
+        var en = x.engagement || {}, m = x.metadata || {}, done = hecho(x), ts = en.timestamp || 0, ahora = Date.now();
+        var col = done ? 'gris' : (ts && ts < ahora ? 'rojo' : (ts && ts - ahora < 3 * 86400000 ? 'amarillo' : 'verde'));
+        var subj = String(m.subject || m.body || 'Tarea').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').trim().slice(0, 120);
+        var quien = (String(m.subject || '').match(/\(([^()]*)\)\s*$/) || [])[1] || '';
+        return '<div class="ftarea' + (done ? ' hecha' : '') + '"><span class="sem2 ' + col + '"></span><span class="t">' + esc(subj) + (quien ? '<small> · ' + esc(quien) + '</small>' : '') + '</span><span class="d">' + (ts ? new Date(ts).toISOString().slice(0, 10) : '') + '</span></div>';
+      };
+      var pend = tareas.filter(function(x){ return !hecho(x); }).sort(function(a, b){ return ((a.engagement || {}).timestamp || 0) - ((b.engagement || {}).timestamp || 0); });
+      var cerr = tareas.filter(hecho);
+      var reus = f.reuniones;
+      var o3 = o.o3, sigue = '';
+      if (o3 && o3.estado === 'activo' && o3.t1) {
+        var dia = function(n){ return fmt(masHabiles(o3.t1, n), { weekday: 'short', day: 'numeric', month: 'short' }); };
+        sigue = o3.toque === 1 ? 'Si no contesta, el toque 2 sale el ' + dia(3) + ' desde las 9:00 de su país.' : (o3.toque === 2 ? 'Si no contesta, el toque 3 (despedida) sale el ' + dia(7) + '.' : 'Si no contesta, el ' + dia(10) + ' la oportunidad pasa a Perdida.');
+      } else if (o3) sigue = o3.estado === 'respondio' ? 'Contestó: el bot conversa con él para llevarlo a la reunión.' : (o3.detalle || textoToque(o3));
+      h += '<div class="fgrid"><div class="fcol">' +
+        '<div class="fcard"><div class="fh">Avance</div>' + kv([['Etapa', o.etapa.nombre], ['Fecha de cierre', plazo ? 'No aplica en prospección' : fechaCorta(o.cierre)]]) +
+          (plazo ? '<div class="fnota">El plazo de ' + esc(o.etapa.nombre) + ' es de ' + plazo + ' días' + (o.dias_etapa != null ? ' y esta lleva ' + o.dias_etapa : '') + '.</div>' : (o.dias_etapa != null ? '<div class="fnota">Lleva ' + o.dias_etapa + ' días en esta etapa.</div>' : '')) +
+          '<div class="flbl">Cita</div><div class="fval ' + cita[1] + '">' + esc(cita[0]) + '</div>' +
+          '<div class="flbl">Reuniones con esta empresa</div>' +
+          (reus === undefined || (!f.reuLeidas && !f.error) ? '<div class="fnota">' + (ld || 'Buscando reuniones…') + '</div>' : (reus === null ? '<div class="fnota">No se pudo leer la bitácora de reuniones.</div>' : (!reus.length ? '<div class="fnota">Sin reuniones en el calendario con esta empresa.</div>' :
+            reus.slice(0, 6).map(function(r){ return '<div class="freu"><b>' + esc(fechaCorta(r.fecha || r.inicio)) + '</b> · ' + esc(r.estado || '') + '<div>' + esc(r.titulo || 'Reunión') + '</div></div>'; }).join('')))) +
+        '</div>' +
+        (o3 ? '<div class="fcard"><div class="fh">WhatsApp de Open+3</div>' + (sigue ? '<div class="fsigue">' + esc(sigue) + '</div>' : '') +
+          kv([['Estado', textoToque(o3)], ['Toque 1', o3.t1 ? fmt(o3.t1, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''], ['Toque 2', o3.t2 ? fmt(o3.t2, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Pendiente'],
+            ['Toque 3', o3.t3 ? fmt(o3.t3, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Pendiente'], ['Firma', o3.firma], ['Plantilla', o3.plantilla]]) + '</div>' : '') +
+        '<div class="fcard"><div class="fh">Tareas</div>' + (ld ? '<div class="fnota">' + ld + '</div>' :
+          (pend.length ? pend.map(filaT).join('') : '<div class="fnota">Sin tareas pendientes.</div>') + (cerr.length ? '<details><summary>' + cerr.length + (cerr.length === 1 ? ' tarea cerrada' : ' tareas cerradas') + '</summary>' + cerr.map(filaT).join('') + '</details>' : '')) + '</div>' +
+        '</div><div class="fcol"><div class="fcard"><div class="fh">Datos de la oportunidad</div>' +
+          kv([['Producto', (o.linea.codigo ? o.linea.codigo + ' · ' : '') + o.linea.nombre], ['Responsable', o.responsable || o.dueno_corto], ['Tipo', TIPO_OP[o.tipo] || o.tipo], ['Partner', PARTNER[o.partner] || o.partner],
+            ['Apoyo · quién acompaña en reuniones', o.apoyo], ['Dueño en HubSpot', o.dueno], ['Creada', fechaCorta(o.creada)]]) + '</div></div></div>';
+    }
+    if (fichaTab === 'contacto') {
+      var otros = (f.contactos || []).filter(function(c){ return c !== ct; });
+      var emps = e.empleados ? Number(e.empleados).toLocaleString('es-MX') + ' empleados' : '';
+      h += '<div class="fgrid"><div class="fcol"><div class="fcard"><div class="fh">Contacto</div>' +
+          kv([['Persona', ct.nombre || f.ct.nombre], ['Teléfono', ct.telefono || f.ct.cel], ['Correo', ct.email || f.ct.correo]]) + '</div>' +
+        '<div class="fcard"><div class="fh">Persona <small>Etiquetas de Amplemarket</small></div>' + (ld ? '<div class="fnota">' + ld + '</div>' :
+          kv([['Nombre', ct.nombre], ['Puesto', ct.puesto || f.ct.puesto], ['Área', or.area], ['Nivel', or.nivel], ['Ubicación', [ct.ciudad, or.pais || ct.pais].filter(Boolean).join(', ')], ['LinkedIn', ligaF(ct.linkedin, 'Abrir perfil'), true]])) + '</div>' +
+          (otros.length ? '<div class="fcard"><div class="fh">Otros contactos de la empresa</div>' + otros.map(function(c){ return '<div class="fotro"><b>' + esc(c.nombre) + '</b>' + (c.puesto ? ' · ' + esc(c.puesto) : '') + (c.email ? '<br><small>' + esc(c.email) + '</small>' : '') + '</div>'; }).join('') + '</div>' : '') +
+        '</div><div class="fcol"><div class="fcard"><div class="fh">Empresa</div>' + (ld ? '<div class="fnota">' + ld + '</div>' :
+          kv([['Nombre', e.nombre], ['Sector', or.sector || e.industria], ['Tamaño', [or.tamano, emps].filter(Boolean).join(' · ')], ['Ubicación', [e.ciudad, e.pais || or.pais].filter(Boolean).join(', ')],
+            ['Sitio web', ligaF(e.web, String(e.web || '').replace(/^https?:\/\//, '').slice(0, 40)), true], ['LinkedIn', ligaF(e.linkedin, 'Abrir página'), true]]) +
+          (e.descripcion ? '<div class="ftexto">' + esc(e.descripcion) + '</div>' : '')) + '</div></div></div>';
+    }
+    if (fichaTab === 'origen') {
+      var sq = f.secuencia;
+      h += '<div class="fgrid"><div class="fcol"><div class="fcard"><div class="fh">Cómo llegó</div>' +
+          kv([['Tipo de señal', tipoTxt], [esOpen ? 'Tipo de interés' : 'Cómo llegó', como + (esOpen && (or.aperturas || o.aperturas) ? ' · ' + (or.aperturas || o.aperturas) + ' aperturas' : '')],
+            ['Canal', CANAL[or.canal || o.canal] || or.canal || o.canal], ['Campaña', String(or.campana || o.campana || '').trim()], ['Quién la envió', nombreRemitente(o.remitente)],
+            ['Fecha de la señal', fSen ? fechaCorta(fSen) + ' · ' + haceDias(fSen) : ''], ['Camino', CAMINO[camino] || camino]]) +
+          (camino === 'senal' ? '<div class="fnota">DUO: Amplemarket detectó una señal de la persona (publicación, cambio de puesto, contratación) y le escribió.</div>' : (camino === 'respuesta' ? '<div class="fnota">Sequence: la persona venía en una secuencia de Amplemarket.</div>' : '')) + '</div>' +
+        '<div class="fcard"><div class="fh">' + (esOpen ? 'Correo nuestro que abrió' : 'Mensaje nuestro que contestó') + '</div><div class="ftexto">' + esc(or.mensaje || ld || 'Falta') + '</div></div>' +
+        '<div class="fcard"><div class="fh">Respuesta del prospecto</div><div class="ftexto">' + esc(or.respuesta || o.respuesta || ld || (esOpen ? 'No contestó: abrió los correos sin responder.' : 'Sin respuesta registrada.')) + '</div></div>' +
+        '</div><div class="fcol"><div class="fcard"><div class="fh">Secuencia' + (sq && sq.resumen ? ' <small>· ' + (sq.resumen.enviados || 0) + ' enviados · ' + (sq.resumen.aperturas || 0) + ' aperturas · ' + (sq.resumen.respuestas || 0) + ' respuestas</small>' : '') + '</div>' +
+          (!sq ? '<div class="fnota">Toda la secuencia de la persona, de la cuenta de Amplemarket de GR (sin costo).</div><button class="btn sec" id="fSec">Ver la secuencia completa</button>' :
+            (sq.leyendo ? '<div class="fnota">Leyendo la secuencia en Amplemarket…</div>' : (sq.mensaje ? '<div class="fnota">' + esc(sq.mensaje) + '</div>' :
+              (sq.eventos || []).slice().reverse().map(function(ev){
+                var sub = [ev.paso ? 'Paso ' + ev.paso : '', ev.asunto ? 'Asunto: ' + ev.asunto : '', (ev.etiquetas || []).join(', ')].filter(Boolean).join(' · ');
+                return '<div class="fev ' + esc(ev.tipo || '') + '"><div class="d">' + esc(fechaCorta(ev.fecha)) + '</div><div><b>' + esc(ev.titulo || '') + '</b>' + (sub ? '<div class="s">' + esc(sub) + '</div>' : '') + (ev.texto ? '<div class="x">' + esc(ev.texto) + '</div>' : '') + '</div></div>';
+              }).join('') + (sq.nota ? '<div class="fnota">' + esc(sq.nota) + '</div>' : '')))) +
+        '</div></div></div>';
+    }
+    if (fichaTab === 'notas') h += ld ? '<div class="fnota">' + ld + '</div>' : (notas.length ? notas.map(function(x){ var en = x.engagement || {}; return '<div class="fnotaH"><div class="d">' + esc(en.timestamp ? fechaCorta(en.timestamp) : '') + '</div><div class="ftexto">' + esc(textoNota(x)) + '</div></div>'; }).join('') : '<div class="fnota">Esta oportunidad no tiene notas.</div>');
+    h += '</div><div class="fpie">Solo lectura: los cambios se hacen en el tablero.</div>';
+    $('capa').innerHTML = '<div class="modal" id="modal"><div class="caja-m ficha">' + h + '</div></div>';
+    $('modal').onclick = function(ev){
+      if (ev.target.id === 'modal' || ev.target.closest('[data-cerrar-ficha]')) { fichaDatos = null; cerrar(); return; }
+      var t = ev.target.closest('[data-ft]'); if (t) { fichaTab = t.getAttribute('data-ft'); pintarFicha(); return; }
+      if (ev.target.closest('#fSec')) verSecuencia();
+    };
+  }
+  function verSecuencia(){
+    var f = fichaDatos, ct = contactoFicha(), mail = ct.email || f.ct.correo; if (!f) return;
+    if (!mail) { f.secuencia = { mensaje: 'El contacto no tiene correo; no se puede buscar su secuencia.' }; pintarFicha(); return; }
+    f.secuencia = { leyendo: true }; pintarFicha();
+    postAbierto('gr-historial-secuencia', { email: mail }).then(function(d){
+      if (fichaDatos !== f) return;
+      f.secuencia = d.encontrado ? d : { mensaje: d.mensaje || 'No está en la cuenta de Amplemarket de GR.' }; pintarFicha();
+    }).catch(function(){ if (fichaDatos === f) { f.secuencia = { mensaje: 'No se pudo leer la secuencia.' }; pintarFicha(); } });
   }
   function pintarChat(bajar){
     var c = conv(sel); if (!c) return;
@@ -1382,7 +1577,7 @@
   $('ftog').onclick = function(){ var p = $('fpanel'); p.classList.toggle('cerrado'); this.textContent = p.classList.contains('cerrado') ? 'Filtros ▸' : 'Filtros ▾'; };
   $('flimpiar').onclick = function(){ Object.keys(F).forEach(function(k){ F[k] = ''; }); F.atiende = 'todas'; pintarLista(); };
   // Detalle de la oportunidad arriba del chat (en lugar de llevar a HubSpot).
-  document.addEventListener('click', function(e){ if (e.target.closest('#verOp')) { fichaAbierta = !fichaAbierta; pintarChat(false); } });
+  document.addEventListener('click', function(e){ if (e.target.closest('#verOp')) { var op = oporDe(conv(sel)); if (op) abrirFicha(op.o, op.c); } });
   // Globo de explicacion para todo lo que trae data-tip (botones, filtros, etiquetas y la ficha).
   (function(){
     var tip = document.createElement('div'); tip.id = 'tip'; document.body.appendChild(tip); var actual = null;
