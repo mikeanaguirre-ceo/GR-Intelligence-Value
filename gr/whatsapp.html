@@ -2,11 +2,1412 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex">
-<title>GR Intelligence</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WhatsApp Great Revenue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Formato Great Revenue (como portal_comun.css de intelligence.greatrevenue.com): morado de marca, texto oscuro, fondo claro, Poppins. */
+    --marca:#111827; --acento:#7c3aed; --fondo:#f6f6f4; --panel:#fff; --borde:#e4e4df; --texto:#111827; --tenue:#5f5f5a;
+    --b-cliente:#fff; --b-bot:#f1eafe; --b-persona:#e6f0ff; --b-nota:#fff4c7; --b-fallo:#fde4df;
+    --ok:#2e7d32; --alerta:#a35a00; --mal:#b3261e; --azul:#1f6fd1; --disp:"Poppins","Segoe UI",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;overflow:hidden}
+  body{font:15px/1.45 "Segoe UI",-apple-system,BlinkMacSystemFont,Calibri,Arial,sans-serif;color:var(--texto);background:var(--fondo)}
+  button{font:inherit}
+  .tabs{height:56px;background:#fff;border-bottom:1px solid var(--borde);display:flex;align-items:stretch;gap:2px;padding:0 14px;overflow-x:auto}
+  .tabs .logo{display:flex;align-items:center;gap:10px;margin-right:18px;flex:0 0 auto}
+  .tabs .logo img{height:30px;display:block} .tabs .logo b{font:700 14px var(--disp);color:var(--marca);white-space:nowrap}
+  .tabs button{background:transparent;border:0;border-bottom:3px solid transparent;color:var(--tenue);padding:0 14px;font:700 14px var(--disp);cursor:pointer;white-space:nowrap}
+  .tabs button.on{color:var(--marca);border-bottom-color:var(--acento)}
+  .tabs .num{background:var(--acento);color:#fff;border-radius:9px;font-size:10.5px;padding:0 6px;margin-left:6px;font-family:inherit}
+  .app{display:grid;grid-template-columns:360px 1fr;height:calc(100% - 56px);overflow:hidden}
+  .app[hidden]{display:none}
+  .conf{height:calc(100% - 56px);overflow-y:auto;padding:20px 22px 60px}
+  .conf h2{font:700 15px var(--disp);text-transform:uppercase;letter-spacing:.05em;margin:22px 0 8px} .conf h2:first-child{margin-top:0}
+  .card{background:#fff;border:1px solid var(--borde);border-radius:12px;padding:16px;margin-bottom:16px;min-width:0}
+  .card-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:3px solid var(--acento);padding-bottom:8px;margin-bottom:12px}
+  .card-h h2{margin:0 !important} .card-h .n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--marca);color:#fff;font:700 12px var(--disp);margin-right:8px}
+  .subtabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:2px solid var(--borde);margin-bottom:16px}
+  .subtabs button{background:transparent;border:0;border-bottom:3px solid transparent;margin-bottom:-2px;padding:10px 14px;font:700 14px var(--disp);color:var(--tenue);cursor:pointer}
+  .subtabs button.on{color:var(--marca);border-bottom-color:var(--acento)}
+  .conf .nota{font-size:12.5px;color:var(--tenue);margin:0 0 10px}
+  .conf .tarjeta{background:#fff;border:1px solid var(--borde);border-radius:10px;padding:12px 14px;margin-bottom:10px}
+  .resumen{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .resumen button{border:1px solid var(--borde);background:#fff;border-radius:16px;padding:5px 12px;font-size:12.5px;cursor:pointer}
+  .resumen button.on{background:var(--acento);color:#fff;border-color:var(--acento)}
+  .tabla{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid var(--borde);border-radius:10px;overflow:hidden}
+  .tabla th{text-align:left;font-size:11.5px;color:var(--tenue);font-weight:650;padding:8px 10px;border-bottom:1px solid var(--borde);background:#f7f8f6}
+  .tabla td{padding:8px 10px;border-bottom:1px solid var(--borde);vertical-align:top}
+  .tabla tr:last-child td{border-bottom:0}
+  .tabla a{color:var(--azul);text-decoration:none} .tabla a:hover{text-decoration:underline}
+  .estado-f{font-size:11px;padding:1px 8px;border-radius:10px;font-weight:650;white-space:nowrap}
+  .estado-f.al_dia,.estado-f.APPROVED{background:#e4f4ea;color:var(--ok)}
+  .estado-f.atrasada,.estado-f.PENDING,.estado-f.sin_pv{background:#ffeccc;color:#9a5300}
+  .estado-f.sin_ficha,.estado-f.REJECTED,.estado-f.falta{background:#fde2e1;color:#a3261f}
+  .estado-f.PAUSED,.estado-f.DISABLED{background:#eceaea;color:#555}
+  .plantilla-texto{white-space:pre-wrap;font-size:12.5px;background:#f5f6f3;border-radius:8px;padding:8px 10px;margin-top:6px}
+  .tenue{color:var(--tenue);font-size:12px}
+  .filtros select{background:transparent;border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:14px;padding:2px 8px;font-size:12px}
+  .filtros select option{color:#14201c}
+  .etq.producto{background:#e8eefb;color:#2b4a8f} .etq.etapa.prospeccion{background:#fff1d6;color:#8a5200} .etq.etapa.venta{background:#e2f0ff;color:#174f98}
+  .estado-wa{font-size:11.5px;font-weight:650;padding:1px 8px;border-radius:10px;white-space:nowrap}
+  .estado-wa.conversa{background:#e4f4ea;color:var(--ok)} .estado-wa.enviada{background:#efe9fb;color:#5a3fa0} .estado-wa.listo{background:#f1eafe;color:#5b21b6}
+  .estado-wa.telefono{background:#fff1d6;color:#8a5200} .estado-wa.falta{background:#fde2e1;color:#a3261f}
+  .filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}
+  .flabel{font-size:12px;color:var(--tenue);font-weight:650;min-width:58px}
+  .chip{border:1px solid var(--borde);background:#fff;color:var(--marca);border-radius:16px;padding:5px 12px;font-size:12.5px;cursor:pointer}
+  .kb-cab{font-size:12.5px;margin:4px 0 8px} .kb-ok{background:#e4f4ea;border-radius:8px;padding:8px 10px;font-size:12.5px;margin:6px 0}
+  .kb-antes,.kb-despues{border-radius:6px;padding:6px 8px;margin:4px 0;font-size:12.5px} .kb-antes{background:#fdf0ef;text-decoration:line-through;text-decoration-color:#d99} .kb-despues{background:#eef8f1}
+  .kb-antes span,.kb-despues span{display:block;font-size:10.5px;font-weight:700;color:var(--tenue);text-decoration:none;margin-bottom:2px}
+  .etq.cl-nuevo{background:#e4f4ea;color:#166534;font-weight:700} .etq.cl-corrige{background:#fff1d6;color:#8a5200;font-weight:700} .etq.cl-contradice{background:#fde2e1;color:#a3261f;font-weight:700} .etq.cl-refuerza{background:#e2f0ff;color:#174f98} .etq.cl-fuera,.etq.cl-sin{background:#eceaea;color:#555}
+  .kb-md{white-space:pre-wrap;font-size:11.5px;max-height:50vh;overflow:auto;background:#f6f6f4;padding:8px;border-radius:6px}
+  .pasos-apr{margin:6px 0 4px 18px;padding:0;font-size:12.5px;line-height:1.5} .pasos-apr li{margin-bottom:4px}
+  .estado-f.lt-esta{background:#e4f4ea;color:#166534} .estado-f.lt-otra{background:#fde2e1;color:#a3261f} .estado-f.lt-sin{background:#fdf3e1;color:#9a5300}
+  .ins-acc{display:flex;gap:6px;align-items:center;margin-top:6px}
+  /* Solo consulta: las acciones viven en el tablero (?tab=conocimiento). */
+  .ins-acc .btn,.ins-acc .enlace,#kbVer{display:none} .ins-acc .btn{padding:3px 10px;font-size:12px} .insumo.ins-descartado{opacity:.55}
+  .chip.on{background:var(--acento);border-color:var(--acento);color:#fff} .chip.pend{border-color:var(--acento)} .chip.cero{opacity:.45}
+  .ffila{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:start} .ffila .filters{margin:0} .masf summary{cursor:pointer;font-size:12.5px;color:var(--azul);margin:6px 0}
+  .sem{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:middle} .sem.rojo{background:#dc2626} .sem.amarillo{background:#f59e0b} .sem.verde{background:#16a34a} .sem.aparcada{background:#9ca3af}
+  .etq.origen{background:#f3f4f6;color:#374151} .etq.dias{background:#fff;border:1px solid var(--borde)}
+  #o-q{flex:1;min-width:0;max-width:420px;font:inherit;font-size:13px;padding:8px 12px;border:1px solid var(--borde);border-radius:9px}
+  .kanban{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,1fr);gap:10px;overflow-x:auto;padding-bottom:10px}
+  .kcol{background:#fff;border:1px solid var(--borde);border-radius:10px;display:flex;flex-direction:column;min-width:230px}
+  .kcol-h{padding:10px 12px;border-bottom:1px solid var(--borde);border-top:3px solid var(--acento);border-radius:10px 10px 0 0}
+  .kcol.venta .kcol-h{border-top-color:var(--azul)}
+  .kcol-t{font:700 12px var(--disp);text-transform:uppercase;letter-spacing:.04em} .kcol-n{font-size:11px;color:var(--tenue);margin-top:2px}
+  .kcol-b{padding:8px;display:flex;flex-direction:column;gap:8px;max-height:70vh;overflow-y:auto}
+  .kvacio{color:var(--tenue);text-align:center;padding:10px}
+  .kcard{border:1px solid var(--borde);border-radius:8px;padding:9px 10px;background:#fff;display:flex;flex-direction:column;gap:5px}
+  .kcard.pend{border-left:3px solid var(--acento)}
+  .kcard-n{font-weight:700;font-size:13.5px} .kcard-s{font-size:11px;color:var(--azul);text-decoration:none;word-break:break-all}
+  .kchips{display:flex;gap:4px;flex-wrap:wrap} .etq.pendopen{background:#f1eafe;color:#5b21b6;font-weight:600}
+  .kct{border-top:1px solid var(--borde);padding-top:6px;font-size:12px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+  .kcel{font-size:12.5px} .kct .celcap{width:100%} .kct .celin{flex:1;min-width:0;width:auto} .kct .celok{flex:0 0 auto} .kchk{display:flex;gap:6px;align-items:center;cursor:pointer;color:var(--marca)}
+  .barra-env{position:sticky;bottom:0;background:#fff;border:1px solid var(--acento);border-radius:12px;padding:10px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;box-shadow:0 4px 14px rgba(0,0,0,.12);margin-top:10px}
+  .barra-env[hidden]{display:none}
+  .envlista{display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow-y:auto} .envfila{border:1px solid var(--borde);border-radius:8px;padding:8px 10px;font-size:13px}
+  .envfila.mal{background:#fdf3f2}
+  .apr-res{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 14px}
+  .apr-res div{background:#faf9fd;border:1px solid var(--borde);border-radius:10px;padding:8px 14px;display:flex;flex-direction:column;min-width:110px}
+  .apr-res b{font:900 22px var(--disp)} .apr-res span{font-size:12px;color:var(--tenue)} .apr-res .ok b{color:var(--ok)} .apr-res .pend b{color:var(--acento)}
+  .estado-f.fr-reciente{background:#e4f4ea;color:var(--ok)} .estado-f.fr-media{background:#fff1d6;color:#8a5200} .estado-f.fr-antigua{background:#eceaea;color:#555}
+  .estado-apr{font-size:11.5px;font-weight:650;padding:1px 8px;border-radius:10px;white-space:nowrap}
+  .estado-apr.procesada{background:#e4f4ea;color:var(--ok)} .estado-apr.por_procesar{background:#f1eafe;color:#5b21b6} .estado-apr.sin_transcript{background:#eceaea;color:#555}
+  #conf .tabla{display:block;overflow-x:auto}
+  .apr-res .mal b{color:var(--mal)} .web{text-decoration:none;font-size:12px} code{background:#f1eafe;border-radius:5px;padding:1px 6px;font-size:12px} .m .pie .corregir{font-size:10.5px;margin-right:auto} .apr-h3{font:700 13px var(--disp);margin:16px 0 6px;text-transform:uppercase;letter-spacing:.04em}
+  .insumo{border:1px solid var(--borde);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:13px;display:flex;flex-direction:column;gap:4px}
+  .barra-apr{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0 10px}
+  .persona{margin-bottom:4px;font-size:12.5px} .li{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:3px;background:#0a66c2;color:#fff;font:700 10px Arial;text-decoration:none}
+  .estado-apr.en_cola{background:#e2f0ff;color:#174f98} .estado-apr.descartada{background:#eceaea;color:#555} .estado-apr.error{background:#fde2e1;color:#a3261f}
+  .celcap{display:flex;gap:4px} .celin{width:130px;font:inherit;font-size:12.5px;padding:4px 6px;border:1px solid var(--borde);border-radius:6px}
+  .celok{padding:4px 10px;font-size:12px}
+  #opor .tabla{display:block;overflow-x:auto} #opor .tabla .etq{white-space:nowrap} #opor td{font-size:12.5px}
+  #opor .resumen select,#opor .resumen input{font:inherit;font-size:12.5px;padding:5px 8px;border:1px solid var(--borde);border-radius:8px} .etq.respondio{background:#e4f4ea;color:var(--ok)} .etq.sinresp{background:#fdf3e1;color:#9a5300}
+  .lista{background:var(--panel);border-right:1px solid var(--borde);display:flex;flex-direction:column;min-width:0;min-height:0}
+  .cab{background:var(--marca);color:#fff;padding:12px 14px;display:flex;flex-direction:column;gap:10px;flex:0 0 auto}
+  .cab .fila{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .cab h1{font:700 14px var(--disp);margin:0;letter-spacing:.02em;text-transform:uppercase}
+  .cab .estado{font-size:11px;opacity:.8}
+  .cab .botones{display:flex;gap:8px}
+  .cab .botones button{flex:1;border:0;border-radius:18px;padding:9px 12px;font-weight:650;cursor:pointer}
+  .b-act{background:#fff;color:var(--marca)} .b-nuevo{background:var(--acento);color:#fff}
+  .buscar{width:100%;border:0;border-radius:8px;padding:8px 10px;font:inherit}
+  /* FILTROS EN FILAS (28 oct 2026, con la guia del portal de Pintaando): quien atiende, ventana de 24 h, linea, etapa,
+     de donde llego, toques de Open+3, plantillas y quien envio. Una opcion por fila, se combinan entre filas. El "?" de cada
+     fila explica todas sus opciones (tambien en el celular, donde no hay globo al pasar el mouse). */
+  .fpanel{display:flex;flex-direction:column;gap:6px}
+  .fcab{display:flex;align-items:center;gap:8px;font-size:12px}
+  .fcab .ftog{background:transparent;border:0;color:#fff;font-weight:600;cursor:pointer;padding:0;font-size:12.5px}
+  .fcab .fres{flex:1;min-width:0;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fcab .flimpiar{background:transparent;border:0;color:#fff;opacity:.8;text-decoration:underline;cursor:pointer;font-size:11.5px;padding:0}
+  .cf-fila{display:flex;flex-direction:column;gap:3px}
+  .cf-fila .fnom{font-size:10.5px;letter-spacing:.3px;opacity:.75;display:flex;align-items:center;gap:5px}
+  .ayuda{width:16px;height:16px;border-radius:50%;border:1px solid rgba(255,255,255,.6);background:transparent;color:#fff;font-size:10px;line-height:14px;padding:0;cursor:pointer;font-weight:700}
+  .ayuda.on{background:#fff;color:var(--marca)}
+  .cf-ayuda{background:rgba(255,255,255,.12);border-radius:8px;padding:6px 9px;font-size:11.5px;line-height:1.45}
+  .cf-ayuda b{font-weight:650}
+  .filtros{display:flex;gap:4px;flex-wrap:wrap}
+  .filtros button{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:12px;padding:1px 8px;font-size:11.5px;line-height:1.5;cursor:pointer}
+  .filtros button.on{background:#fff;color:var(--marca);border-color:#fff}
+  .filtros button.cero{opacity:.45}
+  .fpanel.cerrado .cf-fila{display:none}
+  /* Globo de explicacion para todo lo que trae data-tip. */
+  #tip{position:fixed;z-index:30;max-width:280px;background:#14201c;color:#fff;font-size:12px;line-height:1.4;padding:6px 9px;border-radius:7px;pointer-events:none;opacity:0;transition:opacity .12s}
+  #tip.ver{opacity:1}
+  .ficha-op .verop{background:transparent;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;text-decoration:underline dotted}
+  .op-det{padding:10px 16px;border-bottom:1px solid var(--borde);background:#fbfaff;font-size:12.5px;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px 18px}
+  .op-det h4{margin:0 0 3px;font-size:11px;color:var(--tenue);font-weight:650;text-transform:uppercase;letter-spacing:.04em}
+  .op-det div{line-height:1.45} .op-det .sigue{grid-column:1/-1;background:#f1eafe;border-radius:8px;padding:7px 10px}
+  .op-det .resp{grid-column:1/-1;white-space:pre-wrap;color:var(--texto)}
+  .items{overflow-y:auto;flex:1;min-height:0;overscroll-behavior:contain}
+  .vacio{padding:24px 16px;color:var(--tenue);font-size:14px}
+  .item{padding:10px 14px;border-bottom:1px solid var(--borde);cursor:pointer;display:flex;gap:10px}
+  .item:hover{background:#faf9fd} .item.sel{background:#f1eafe}
+  .ava{width:38px;height:38px;border-radius:50%;background:#ece4fb;color:#5b21b6;display:flex;align-items:center;justify-content:center;font-weight:650;flex:0 0 auto}
+  .item .cuerpo{min-width:0;flex:1;display:flex;flex-direction:column;gap:2px}
+  .arriba{display:flex;justify-content:space-between;gap:6px}
+  .nom{font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hora{font-size:11px;color:var(--tenue);flex:0 0 auto}
+  .tel{font-size:11px;color:var(--tenue)}
+  .prev{font-size:13px;color:var(--tenue);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .etqs{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+  .etq{font-size:10px;padding:1px 7px;border-radius:10px;background:#eef1ef;color:#3b4a45}
+  .etq.bot{background:#f1eafe;color:#5b21b6} .etq.persona{background:#dcecff;color:#174f98}
+  .etq.abierta{background:#e4f4ea;color:var(--ok)} .etq.cerrada{background:#f3eee2;color:var(--alerta)}
+  .etq.anuncio{background:#efe9fb;color:#5a3fa0}
+  .etq.atender{background:#fde2e1;color:#a3261f;font-weight:600} .etq.espera{background:#ffeccc;color:#9a5300;font-weight:600}
+  .etq.agendada{background:#e4f4ea;color:var(--ok);font-weight:600} .etq.nocontactar{background:#eceaea;color:#6b2b2b}
+  .contador{background:var(--acento);color:#fff;border-radius:10px;font-size:11px;padding:0 7px;font-weight:700}
+  .chat{display:flex;flex-direction:column;min-width:0;min-height:0}
+  .chatcab{background:#f5f6f3;border-bottom:1px solid var(--borde);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;flex:0 0 auto}
+  .quien{display:flex;flex-direction:column;min-width:0}
+  .quien .n{font-weight:650;display:flex;gap:6px;align-items:center}
+  .quien .m{font-size:12px;color:var(--tenue)}
+  .lapiz{border:0;background:transparent;cursor:pointer;color:var(--tenue);font-size:13px;padding:0 2px}
+  .acciones{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{border:0;border-radius:18px;padding:8px 14px;font-size:13px;font-weight:650;cursor:pointer;background:var(--marca);color:#fff}
+  .btn.sec{background:#fff;color:var(--marca);border:1px solid var(--marca)}
+  .btn.tomar{background:var(--azul)}
+  .btn:disabled{opacity:.5;cursor:default}
+  .aviso{padding:8px 16px;font-size:13px;flex:0 0 auto}
+  .aviso.persona{background:#e8f1ff;color:#174f98} .aviso.bot{background:#f4effe;color:#5b21b6}
+  .aviso.cerrada{background:#fdf3e1;color:#7a4b00}
+  .msgs{flex:1;min-height:0;overflow-y:auto;padding:18px 7%;display:flex;flex-direction:column;gap:6px;overscroll-behavior:contain}
+  .dia{align-self:center;font-size:11px;color:var(--tenue);background:#fff;border-radius:8px;padding:2px 10px;margin:8px 0}
+  .m{max-width:72%;padding:7px 10px 5px;border-radius:9px;box-shadow:0 1px 1px rgba(0,0,0,.06);white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}
+  .m.cliente{align-self:flex-start;background:var(--b-cliente)}
+  .m.bot{align-self:flex-end;background:var(--b-bot)}
+  .m.persona{align-self:flex-end;background:var(--b-persona)}
+  .m.nota{align-self:center;background:var(--b-nota);max-width:86%;font-size:13px}
+  .m.fallo{background:var(--b-fallo)}
+  .m .pie{display:flex;justify-content:flex-end;gap:6px;font-size:10.5px;color:var(--tenue);margin-top:3px}
+  .m .autor{font-size:10.5px;font-weight:650;color:var(--tenue);margin-bottom:2px}
+  .m img{max-width:260px;max-height:260px;border-radius:6px;display:block;cursor:zoom-in}
+  .m a{color:var(--azul)}
+  .check.leido{color:var(--azul)} .check.mal{color:var(--mal)}
+  .caja{border-top:1px solid var(--borde);background:#f5f6f3;padding:10px 12px;display:flex;flex-direction:column;gap:8px;flex:0 0 auto}
+  .caja .fila{display:flex;gap:8px;align-items:flex-end}
+  .caja textarea{flex:1;border:1px solid var(--borde);border-radius:10px;padding:9px 11px;font:inherit;resize:none;min-height:42px;max-height:160px}
+  .caja .opciones{display:flex;gap:12px;align-items:center;font-size:12.5px;color:var(--tenue);flex-wrap:wrap}
+  .caja .opciones label{display:flex;gap:4px;align-items:center;cursor:pointer}
+  .enlace{border:0;background:none;color:var(--azul);cursor:pointer;padding:0;font-size:12.5px}
+  .clip{border:1px solid var(--borde);background:#fff;border-radius:50%;width:42px;height:42px;flex:0 0 auto;cursor:pointer;font-size:18px;color:var(--marca)}
+  .clip:disabled{opacity:.4;cursor:default}
+  .adjunto{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--texto);background:#fff;border:1px solid var(--borde);border-radius:8px;padding:6px 10px}
+  .adjunto button{border:0;background:none;color:var(--mal);cursor:pointer;font-size:12.5px} .adjunto[hidden]{display:none}
+  .ficha-op{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:8px 16px;border-bottom:1px solid var(--borde);font-size:12px;color:var(--tenue);background:#fbfaff}
+  .ficha-op b{color:var(--texto);font-weight:600} .ficha-op a{color:inherit} .etq.toque{background:#efe7ff;color:#5b21b6} .etq.toque.mal{background:#fde8e8;color:#9b1c1c}
+  .inicio{flex:1;display:flex;align-items:center;justify-content:center;color:var(--tenue);padding:24px;text-align:center}
+  .modal{position:fixed;inset:0;background:rgba(10,20,17,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:5}
+  .modal .caja-m{background:#fff;border-radius:12px;max-width:520px;width:100%;max-height:92vh;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
+  .modal h2{margin:0;font-size:17px}
+  .modal label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--tenue)}
+  .modal input,.modal select{font:inherit;padding:8px 10px;border:1px solid var(--borde);border-radius:8px;color:var(--texto)}
+  .vista{background:#f5f6f3;border-radius:8px;padding:10px;font-size:13.5px;white-space:pre-wrap}
+  .pieModal{display:flex;justify-content:flex-end;gap:8px}
+  .error{color:var(--mal);font-size:13px}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 16px;border-radius:20px;font-size:13px;z-index:9}
+  .volver{display:none}
+  .mudanza{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:8;background:#7a4b00;color:#fff;padding:10px 40px 10px 16px;border-radius:12px;font-size:13.5px;max-width:92vw;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+  .mudanza a{color:#ffe7b3;font-weight:650} .mudanza button{position:absolute;right:8px;top:6px;border:0;background:none;color:#fff;font-size:18px;cursor:pointer}
+  @media (max-width:760px){
+    .app{grid-template-columns:1fr}
+    .conf{padding:14px 12px 40px}
+    .tabla{display:block;overflow-x:auto}
+    .app.abierto .lista{display:none}
+    .app:not(.abierto) .chat{display:none}
+    .volver{display:inline-block}
+    .msgs{padding:14px 10px}
+    .m{max-width:88%}
+    .tabs{padding:0 8px;gap:0} .tabs .logo{margin-right:6px} .tabs .logo b{display:none} .tabs .logo img{height:24px}
+    .tabs button{padding:0 8px;font-size:12.5px}
+    .item .nom{white-space:normal;overflow:visible;text-overflow:clip;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+    .ficha-op{padding:8px 10px;font-size:11.5px}
+    .filtros select{flex:1 1 140px;min-width:0}
+  }
+  @media (max-width:440px){ .tabs .logo{display:none} .tabs{justify-content:space-between} .tabs button{padding:0 6px;font-size:12px} }
+</style>
 </head>
 <body>
-<script src="/ruta.js"></script>
+<nav class="tabs" id="tabs"><span class="logo"><img src="https://intelligence.greatrevenue.com/logos/gr.png" alt="Great Revenue"><b>WhatsApp</b></span><button data-t="conv" class="on">Conversaciones</button><button data-t="opor" id="t-opor">Oportunidades</button><button data-t="conf" id="t-conf">Configuración</button></nav>
+<section class="conf" id="conf" hidden></section>
+<section class="conf" id="opor" hidden></section>
+<div class="app" id="app">
+  <aside class="lista">
+    <div class="cab">
+      <div class="fila"><h1>Conversaciones</h1><span class="estado" id="estado">Cargando…</span></div>
+      <div class="botones"><button class="b-act" id="actualizar" data-tip="Trae los mensajes nuevos y lo último de HubSpot">↻ Actualizar</button><button class="b-nuevo" id="nuevo" data-tip="Escribirle a alguien que no está en la lista. Se manda con una plantilla aprobada">+ Nuevo contacto</button></div>
+      <input class="buscar" id="buscar" placeholder="Buscar nombre, número o texto" autocomplete="off">
+      <div class="fpanel cerrado" id="fpanel">
+        <div class="fcab"><button class="ftog" id="ftog" data-tip="Muestra u oculta los filtros">Filtros ▸</button><span class="fres" id="fres"></span><button class="flimpiar" id="flimpiar" data-tip="Quita todos los filtros y vuelve a Todas">Limpiar</button></div>
+        <div id="filtros"></div>
+      </div>
+    </div>
+    <div class="items" id="items"></div>
+  </aside>
+  <main class="chat" id="chat"><div class="inicio">Elige una conversación, o escribe a alguien nuevo con “+ Nuevo contacto”.</div></main>
+</div>
+<div id="capa"></div>
+
+<script>
+(function(){
+  var K = new URLSearchParams(location.search).get('k') || '';
+  // Desde el 19 oct el portal vive en intelligence.greatrevenue.com/gr/whatsapp (sin n8n en la liga); la API sigue en n8n.
+  // La misma pagina se sirve tambien en la liga vieja de n8n, donde avisa de la direccion nueva.
+  var N8N = 'https://mikea.app.n8n.cloud';
+  var NUEVA = 'https://intelligence.greatrevenue.com/gr/whatsapp';
+  var enN8n = /\.n8n\.cloud$/.test(location.hostname);
+  var BASE = (enN8n ? location.origin : N8N) + '/webhook/';
+  var TZ = 'America/Mexico_City';
+  var datos = { convs: [], numeros: [], ahora: Math.floor(Date.now()/1000) };
+  var abrirPlantillaDesde = '';
+  var pendiente = null;
+  var sel = null, filtro = 'todas', plantillas = {}, ocupado = false, syncTimer = null;
+  var conf = null, confTipo = '', fichaAbierta = false;
+  var F = { atiende: 'todas', ventana: '', linea: '', etapa: '', origen: '', toque: '', plantilla: '', firma: '' }, ayudaAbierta = {};
+  var opor = null, oporF = { fase: '', linea: '', persona: '', wa: '', pend: false, sem: '', origen: '', senal: '', monto: '', cierre: '', nuevas: '', tipo: '', q: '' };
+  var $ = function(id){ return document.getElementById(id); };
+
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function enlazar(s){ return esc(s).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>'); }
+  function tel(w){ var d = String(w||''); var m = d.match(/^521?(\d{10})$/); return m ? '+52 ' + m[1].replace(/(\d{2})(\d{4})(\d{4})/, '$1 $2 $3') : (d ? '+' + d : ''); }
+  function fmt(ts, o){ return new Date(ts*1000).toLocaleString('es-MX', Object.assign({ timeZone: TZ }, o)); }
+  function diaClave(ts){ return fmt(ts, { year:'numeric', month:'2-digit', day:'2-digit' }); }
+  function hora(ts){ return fmt(ts, { hour:'2-digit', minute:'2-digit' }); }
+  function cuando(ts){
+    if (!ts) return '';
+    var hoy = diaClave(Date.now()/1000), ayer = diaClave(Date.now()/1000 - 86400), d = diaClave(ts);
+    if (d === hoy) return hora(ts);
+    if (d === ayer) return 'ayer';
+    return fmt(ts, { day:'numeric', month:'short' });
+  }
+  function nombreDia(ts){
+    var hoy = diaClave(Date.now()/1000), ayer = diaClave(Date.now()/1000 - 86400), d = diaClave(ts);
+    if (d === hoy) return 'Hoy'; if (d === ayer) return 'Ayer';
+    return fmt(ts, { weekday:'long', day:'numeric', month:'long' });
+  }
+  function ventana(c){ var fin = (c.ultimo_entrante_ts||0) + 86400; return { abierta: fin > Date.now()/1000, fin: fin }; }
+  function toast(t){ var d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(function(){ d.remove(); }, 3200); }
+
+  function api(accion, extra){
+    var cuerpo = Object.assign({ k: K, accion: accion }, extra || {});
+    return fetch(BASE + 'gr-portal-api', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(cuerpo) })
+      .then(function(r){ return r.text().then(function(t){
+        var j = null; try { j = JSON.parse(t); } catch(e) {}
+        if (!r.ok || !j) throw new Error((j && (j.error || j.message)) || (r.status === 500 ? 'La clave no es válida o el servidor falló' : 'Error ' + r.status));
+        return j;
+      }); });
+  }
+
+  // Actualizar: muestra lo que hay y, si algun numero tambien esta en Hootsuite, pide traer lo que se
+  // contesto desde alla y vuelve a cargar UNA vez unos segundos despues. Nada corre solo.
+  function actualizar(){
+    var p = cargar();
+    if (!(datos.numeros || []).some(function(n){ return n.hootsuite; })) return p;
+    api('sync').catch(function(){});
+    $('estado').textContent = 'Trayendo respuestas de Hootsuite…';
+    clearTimeout(syncTimer); syncTimer = setTimeout(cargar, 15000);
+    return p;
+  }
+
+  function cargar(){
+    if (ocupado) return Promise.resolve(); ocupado = true;
+    $('estado').textContent = 'Actualizando…'; $('actualizar').disabled = true;
+    return api('cargar').then(function(j){
+      datos = j; $('estado').textContent = 'Actualizado ' + hora(Math.floor(Date.now()/1000));
+      pintarLista(); if (sel) pintarChat(false);
+    }).catch(function(e){ $('estado').textContent = e.message; })
+      .finally(function(){ ocupado = false; $('actualizar').disabled = false; });
+  }
+
+  function conv(w){ return datos.convs.find(function(c){ return c.wa_id === w; }); }
+  function nombreNumero(pid){ var n = (datos.numeros || []).find(function(x){ return x.phone_id === pid; }); return n ? n.nombre : ''; }
+  function variosNumeros(){ return (datos.numeros || []).length > 1; }
+
+  // Etiqueta de lo que hay que hacer (7 oct): sale de por que el bot paso la conversacion a una persona.
+  var ATENDER = { duda: 'el bot no supo qué decir', candados: 'el bot no supo qué decir', falla_tecnica: 'falla del bot', pide_persona: 'pidió hablar con alguien',
+    precio_insiste: 'insiste en el precio', cliente_actual: 'ya es cliente', queja: 'queja', fuera_de_portafolio: 'fuera del portafolio',
+    pais_excluido: 'país excluido', sin_horarios: 'quiere reunión sin horarios', cita_fallo: 'agendar a mano', cita_no_valida: 'agendar a mano' };
+  function porAtender(c){ return (c.atender && c.atender !== 'reunion_agendada' && c.atender !== 'no_contactar') || c.esperando; }
+  function etqAtencion(c){
+    if (c.atender === 'reunion_agendada') return '<span class="etq agendada">Reunión agendada · dar seguimiento</span>';
+    if (c.atender === 'no_contactar') return '<span class="etq nocontactar">No contactar</span>';
+    var h = c.atender ? '<span class="etq atender">Atender · ' + esc(ATENDER[c.atender] || c.atender) + '</span>' : '';
+    if (c.esperando) h += '<span class="etq espera">Esperando tu respuesta</span>';
+    return h;
+  }
+
+  // Plantillas (19 oct, como en el portal de Pintaando): si se le mando una plantilla y si contesto despues.
+  function plantillaInfo(c){
+    var p = c.msgs.filter(function(m){ return m.tipo === 'plantilla' && m.dir === 'saliente' && (m.estado || '').indexOf('fallido') !== 0; });
+    if (!p.length) return null;
+    var ultima = p[p.length - 1].ts;
+    return { enviadas: p.length, respondio: c.msgs.some(function(m){ return m.dir === 'entrante' && m.ts > p[0].ts; }), ultima: ultima };
+  }
+  function productoDe(c){ return conf && conf.conv_producto ? (conf.conv_producto[c.wa_id] || '') : ''; }
+  // ===== HubSpot (20 oct): cada conversacion se liga a su oportunidad por los ultimos 10 digitos del telefono. =====
+  var idxTel = {};
+  function diez(t){ return String(t || '').replace(/\D/g, '').slice(-10); }
+  function indexarTel(){
+    idxTel = {};
+    ((opor && opor.oportunidades) || []).forEach(function(o){ o.contactos.forEach(function(ct){
+      [ct.c10 || ct.cel10, ct.tel10].forEach(function(t){ if (t && !idxTel[t]) idxTel[t] = { o: o, c: ct }; });
+    }); });
+  }
+  function oporDe(c){ return idxTel[diez(c.wa_id)] || null; }
+  function convDeTel(t){ return t ? datos.convs.find(function(c){ return diez(c.wa_id) === t; }) : null; }
+  // Linea de la conversacion: la de su oportunidad; si no tiene, la del producto que entendio el bot.
+  function lineaDe(c){
+    var op = oporDe(c); if (op) return op.o.linea;
+    var slug = productoDe(c); if (!slug || !conf) return { codigo: '', nombre: '' };
+    var p = (conf.productos || []).find(function(x){ return x.slug === slug; });
+    return p ? { codigo: p.codigo, nombre: p.nombre.replace(/ \(.*\)$/, '') } : { codigo: '', nombre: '' };
+  }
+  // Toques de WhatsApp de Open+3 (GR — Open+3 Toques WhatsApp): en que toque va y si hubo problema.
+  var ESTADO_TOQUE = { no_entregado: 'No entregado', sin_whatsapp: 'Sin WhatsApp', sin_telefono: 'Sin celular', error: 'No se envió', excluido: 'País excluido', datos_faltantes: 'Faltan datos', respondio: 'Respondió', perdida: 'Perdida' };
+  function textoToque(o3){
+    if (!o3) return '';
+    if (o3.estado === 'activo') return 'Toque ' + o3.toque + ' de 3';
+    return (ESTADO_TOQUE[o3.estado] || o3.estado) + (o3.toque ? ' · toque ' + o3.toque + ' de 3' : '');
+  }
+  // Remitente: los del equipo llegan con su nombre corto (Martha, Migue); los de Hootsuite como correo (abraham.pablo).
+  function nombreRemitente(r){ r = String(r || ''); return r.indexOf('.') > 0 ? r.split('.')[0].charAt(0).toUpperCase() + r.split('.')[0].slice(1) + ' (Hootsuite)' : r; }
+  function opcionesEtapa(todas){
+    var et = (opor && opor.etapas) || [];
+    var grupo = function(f, t){ return '<optgroup label="' + t + '"><option value="' + f + '">Toda la ' + t.toLowerCase() + '</option>' +
+      et.filter(function(e){ return e.fase === f; }).map(function(e){ return '<option value="' + esc(e.id) + '">' + esc(e.nombre) + '</option>'; }).join('') + '</optgroup>'; };
+    return '<option value="">' + todas + '</option>' + grupo('prospeccion', 'Prospección') + grupo('venta', 'Venta');
+  }
+  // Pintaando (PT) es cliente y Excepciones (EX) no es producto: no son lineas de servicio de Great Revenue ni salen en los filtros.
+  var NO_LINEA = ['PT', 'SIN', 'EX'];
+  function lineasConocidas(){
+    var m = {};
+    ((conf && conf.productos) || []).forEach(function(p){ m[p.codigo] = p.nombre.replace(/ \(.*\)$/, ''); });
+    ((opor && opor.lineas) || []).forEach(function(l){ if (l.codigo !== 'SIN') m[l.codigo] = l.nombre; });
+    return Object.keys(m).filter(function(k){ return NO_LINEA.indexOf(k) < 0; }).map(function(k){ return { codigo: k, nombre: m[k] }; }).sort(function(a, b){ return a.nombre.localeCompare(b.nombre); });
+  }
+  function pintarSelects(){ pintarLista(); }
+  // De donde llego la conversacion: la senal de su oportunidad en HubSpot (como el tablero) o, sin oportunidad, si llego
+  // por un anuncio o escribio directo.
+  function origenConv(c){
+    var op = oporDe(c);
+    if (op) {
+      if (op.o.senal === 'Open+3' || op.o.origen === 'Open+3') return 'open3';
+      if (op.o.senal === 'Reply') return 'reply';
+      if (op.o.origen === 'DUO') return 'duo';
+      if (op.o.origen === 'Referido') return 'referido';
+      return 'hubspot';
+    }
+    return c.origen && c.origen.indexOf('anuncio') === 0 ? 'anuncio' : 'directo';
+  }
+  var FALLO_TOQUE = ['no_entregado', 'error', 'datos_faltantes', 'excluido'];
+  var TIP_ETAPA = {
+    '1332596061': 'Detectamos la señal (abrió el correo 3 veces o más, contestó, DUO) y todavía no le llega el primer WhatsApp',
+    '1332596062': 'Etapa anterior: las de Open+3 ya no pasan por aquí',
+    '1332596063': 'Ya le llegó el primer toque por WhatsApp. Tiene 10 días hábiles para contestar',
+    '1332596064': 'Contestó: el bot conversa con él para llevarlo a la reunión',
+    'appointmentscheduled': 'Tiene reunión agendada',
+    'qualifiedtobuy': 'Ya tuvo la reunión: el Motor hace la minuta y el siguiente paso',
+    'presentationscheduled': 'Ya se le mandó la propuesta', 'decisionmakerboughtin': 'Dijo que sí de palabra', 'contractsent': 'Se le mandó el contrato'
+  };
+  function filasFiltro(){
+    var et = ((opor && opor.etapas) || []).filter(function(e){ return e.id !== '1332596062'; });
+    var firmas = [...new Set(((opor && opor.oportunidades) || []).map(function(o){ return o.remitente; }).filter(Boolean))].sort();
+    return [
+      { k: 'atiende', t: 'Quién atiende', ayuda: 'Quién contesta la conversación ahora.', ops: [
+        ['todas', 'Todas', 'Todas las conversaciones'],
+        ['bot', 'Bot', 'Las contesta el bot. Si escribes desde aquí, pasan a tu cargo'],
+        ['persona', 'Persona', 'Alguien del equipo tocó «Me encargo yo» o escribió desde el portal: el bot no contesta hasta que la devuelvas'],
+        ['atender', 'Por atender', 'El bot se la pasó al equipo (no supo qué decir, pidió hablar con alguien, queja, quiere reunión sin horarios…) o el cliente espera tu respuesta'],
+        ['sinleer', 'Sin leer', 'Tienen mensajes del cliente que nadie ha abierto']] },
+      { k: 'ventana', t: 'Ventana de 24 h', ayuda: 'WhatsApp solo deja escribir texto libre si el cliente escribió en las últimas 24 h; si no, solo plantilla aprobada.', ops: [
+        ['libre', 'Puedo escribirle libre', 'El cliente escribió en las últimas 24 h: le puedes mandar cualquier texto'],
+        ['plantilla', 'Solo plantilla', 'Nunca ha escrito o pasaron más de 24 h: WhatsApp solo deja mandarle una plantilla aprobada']] },
+      { k: 'linea', t: 'Línea de servicio', ayuda: 'El producto de su oportunidad en HubSpot o, si no tiene, el que entendió el bot en la conversación.',
+        ops: lineasConocidas().map(function(l){ return [l.codigo, l.nombre, 'Conversaciones de ' + l.nombre]; }).concat([['SIN', 'Sin línea', 'No tiene oportunidad en HubSpot y el bot todavía no identifica el producto']]) },
+      { k: 'etapa', t: 'Etapa en HubSpot', ayuda: 'La etapa de su oportunidad abierta en HubSpot.',
+        ops: et.map(function(e){ return [e.id, e.nombre, TIP_ETAPA[e.id] || e.nombre]; }).concat([['sin', 'Sin oportunidad', 'El número no está en ninguna oportunidad abierta de HubSpot (escribió directo, anuncio…)']]) },
+      { k: 'origen', t: 'De dónde llegó', ayuda: 'Cómo llegó: la señal de su oportunidad en HubSpot o, si no tiene, cómo nos escribió.', ops: [
+        ['open3', 'Open+3', 'Abrió el correo de la secuencia 3 veces o más (por Sequence o DUO) y le escribimos por WhatsApp'],
+        ['reply', 'Contestó un correo', 'Contestó un correo de la secuencia'],
+        ['duo', 'DUO', 'Señal de intención de Amplemarket (DUO)'],
+        ['referido', 'Referido', 'Nos lo recomendaron'],
+        ['hubspot', 'Otra oportunidad', 'Tiene oportunidad en HubSpot sin señal registrada'],
+        ['anuncio', 'Anuncio', 'Escribió desde un anuncio de Meta'],
+        ['directo', 'Escribió directo', 'Escribió al número sin oportunidad en HubSpot ni anuncio']] },
+      { k: 'toque', t: 'Toques de Open+3', ayuda: 'Los 3 WhatsApp automáticos de Open+3: toque 1 al detectar la señal, toque 2 al 3er día hábil, toque 3 (despedida) al 7º y Perdida al 10º si no contesta.', ops: [
+        ['1', 'Toque 1', 'Le llegó el primer mensaje. Si no contesta, el toque 2 sale al 3er día hábil'],
+        ['2', 'Toque 2', 'Le llegó el segundo. Si no contesta, el toque 3 sale al 7º día hábil'],
+        ['3', 'Toque 3', 'Le llegó la despedida. Si no contesta, al 10º día hábil la oportunidad pasa a Perdida'],
+        ['respondio', 'Contestó', 'Escribió después de un toque: pasó a En Conversación y ya no recibe más toques'],
+        ['perdida', 'Perdida', 'Pasaron 10 días hábiles sin respuesta'],
+        ['fallo', 'No le llegó', 'WhatsApp no lo entregó o no se pudo mandar (pago de Meta, faltan datos, país excluido). Se reintenta solo'],
+        ['sin_whatsapp', 'Número sin WhatsApp', 'Meta dice que ese número no tiene WhatsApp. No se reintenta']] },
+      { k: 'plantilla', t: 'Plantillas', ayuda: 'Cualquier plantilla aprobada que se le haya mandado (toques de Open+3 o enviadas a mano).', ops: [
+        ['mando', 'Se le mandó', 'Recibió al menos una plantilla'],
+        ['contesto', 'Contestó', 'Escribió después de la primera plantilla'],
+        ['nocontesto', 'No ha contestado', 'Recibió plantilla y todavía no escribe']] },
+      { k: 'firma', t: 'Quién envió la campaña', ayuda: 'Quién mandó la secuencia de correo de donde salió la oportunidad. Su nombre firma los WhatsApp.',
+        ops: firmas.map(function(f){ return [f, nombreRemitente(f), 'La campaña salió del correo de ' + nombreRemitente(f)]; }) }
+    ];
+  }
+  function pasaFila(c, k, v){
+    if (!v || (k === 'atiende' && v === 'todas')) return true;
+    var op = oporDe(c), o3 = op && op.o.o3, pi;
+    if (k === 'atiende') return v === 'sinleer' ? !!c.sin_leer : (v === 'atender' ? !!porAtender(c) : c.modo === v);
+    if (k === 'ventana') return v === 'libre' ? ventana(c).abierta : !ventana(c).abierta;
+    if (k === 'linea') { var cod = lineaDe(c).codigo; return v === 'SIN' ? (!cod || cod === 'SIN') : cod === v; }
+    if (k === 'etapa') return v === 'sin' ? !op : (!!op && op.o.etapa.id === v);
+    if (k === 'origen') return origenConv(c) === v;
+    if (k === 'toque') return !!o3 && (/^[123]$/.test(v) ? (o3.estado === 'activo' && String(o3.toque) === v) : (v === 'fallo' ? FALLO_TOQUE.indexOf(o3.estado) >= 0 : o3.estado === v));
+    if (k === 'plantilla') { pi = plantillaInfo(c); return v === 'mando' ? !!pi : (!!pi && (v === 'contesto' ? pi.respondio : !pi.respondio)); }
+    if (k === 'firma') return !!op && op.o.remitente === v;
+    return true;
+  }
+  function pasa(c, salvo){ return Object.keys(F).every(function(k){ return k === salvo || pasaFila(c, k, F[k]); }); }
+  function pintarFiltros(){
+    var base = datos.convs || [], filas = filasFiltro();
+    $('filtros').innerHTML = filas.filter(function(f){ return f.ops.length; }).map(function(f){
+      var resto = base.filter(function(c){ return pasa(c, f.k); });
+      return '<div class="cf-fila"><span class="fnom">' + esc(f.t) + ' <button class="ayuda' + (ayudaAbierta[f.k] ? ' on' : '') + '" data-ayuda="' + f.k + '" aria-label="Qué significa">?</button></span>' +
+        (ayudaAbierta[f.k] ? '<div class="cf-ayuda">' + esc(f.ayuda) + '<br>' + f.ops.map(function(o){ return '<b>' + esc(o[1]) + ':</b> ' + esc(o[2]); }).join('<br>') + '</div>' : '') +
+        '<div class="filtros">' + f.ops.map(function(o){
+          var n = resto.filter(function(c){ return pasaFila(c, f.k, o[0]); }).length;
+          var on = F[f.k] === o[0];
+          return '<button data-k="' + f.k + '" data-v="' + esc(o[0]) + '" data-tip="' + esc(o[2]) + '" class="' + (on ? 'on' : '') + (n ? '' : ' cero') + '">' + esc(o[1]) + ' (' + n + ')</button>';
+        }).join('') + '</div></div>';
+    }).join('');
+    var activos = filas.map(function(f){ var o = f.ops.find(function(x){ return x[0] === F[f.k]; }); return o && !(f.k === 'atiende' && o[0] === 'todas') ? o[1] : ''; }).filter(Boolean);
+    $('fres').textContent = activos.length ? activos.join(' · ') : 'Todas';
+  }
+
+
+  // Estado de cada contacto frente a WhatsApp. El numero es uno solo: el celular (es WhatsApp); si HubSpot solo
+  // tiene "telefono", se toma ese, como en el tablero de Great Revenue.
+  function estadoContacto(ct){
+    var c = convDeTel(ct.c10);
+    if (c) {
+      if (c.msgs.some(function(m){ return m.dir === 'entrante'; })) return { k: 'conversa', t: 'Ya conversa', c: c };
+      if (plantillaInfo(c)) return { k: 'enviada', t: 'Plantilla enviada', c: c };
+    }
+    if (ct.c10) return { k: 'listo', t: 'Listo para WhatsApp' };
+    return { k: 'falta', t: 'Falta celular' };
+  }
+  // Pendiente de Open+3: la oportunidad esta en Senal Detectada (asi nace el Open+3) y nadie le ha escrito por WhatsApp.
+  // Pendiente de Open+3: su senal es Open+3 (gr_tipo_senal, como el tablero), sigue en Senal Detectada y nadie le ha escrito por WhatsApp.
+  // Las de DUO o Sequence no llevan la plantilla Open+3.
+  function pendienteOpen3(o){ return o.etapa.id === '1332596061' && (o.senal === 'Open+3' || o.origen === 'Open+3') && !o.contactos.some(function(ct){ var e = estadoContacto(ct).k; return e === 'conversa' || e === 'enviada'; }); }
+  // Estado de la oportunidad en WhatsApp: el mas avanzado de sus contactos.
+  function estadoOp(o){ var orden = ['falta', 'listo', 'enviada', 'conversa'], m = 0; o.contactos.forEach(function(ct){ m = Math.max(m, orden.indexOf(estadoContacto(ct).k)); }); return orden[m]; }
+  function personasOp(o){ return [o.responsable, o.apoyo, o.dueno_corto].filter(Boolean); }
+  // Plantilla Open+3 vigente de cada linea (codigo del catalogo -> sufijo de gr_open3_*_v2).
+  var SUFIJO = { TW: 'tw', HS: 'hs', AM: 'am', AEO: 'aeo', GenIA: 'genia', GENIARH: 'rh', GENIAVTA: 'vta', GENIACOB: 'cob', SYN: 'syn', ITS: 'its', LT: 'lt', BD: 'bd', '360': '360', WB: 'wb' };
+  var elegidos = {};   // contact_id -> { o, ct }
+
+  function empresaDe(o, ct){
+    if (o && o.empresa && o.empresa.nombre) return o.empresa.nombre;
+    if (ct && ct.empresa) return ct.empresa;
+    var t = String(o.nombre || '').replace(/^P_/i, '').split('_');
+    return (t[1] || '').replace(/([a-z])([A-Z])/g, '$1 $2');
+  }
+  function chips(k, opciones, actual){
+    return opciones.map(function(op){ return '<button class="chip' + (String(actual) === String(op[0]) ? ' on' : '') + '" data-k="' + k + '" data-v="' + esc(op[0]) + '">' + esc(op[1]) + '</button>'; }).join('');
+  }
+
+  function cargarOpor(){
+    return fetch(BASE + 'gr-portal-oportunidades', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ k: K }) })
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (!j.ok) throw new Error(j.error || j.message || 'No se pudo leer HubSpot');
+        j.oportunidades = j.oportunidades.filter(function(o){ return !/_INTERNO$/i.test(o.nombre); });
+        j.oportunidades.forEach(function(o){ o.contactos.forEach(function(ct){ ct.cel = ct.celular || ct.telefono || ''; ct.c10 = diez(ct.cel); }); });
+        opor = j; indexarTel(); pintarSelects();
+        var n = j.oportunidades.filter(pendienteOpen3).length;
+        $('t-opor').innerHTML = 'Oportunidades' + (n ? '<span class="num">' + n + '</span>' : '');
+        pintarLista(); if (!$('opor').hidden) pintarOpor();
+      }).catch(function(e){ if (!$('opor').hidden) $('opor').innerHTML = '<p class="error">' + esc(e.message) + '</p>'; });
+  }
+
+  // Oportunidades con el formato del tablero de Great Revenue: filtros en chips y una columna por etapa.
+  function pintarOpor(){
+    if (!opor) { $('opor').innerHTML = '<p class="tenue">Leyendo oportunidades de HubSpot…</p>'; return; }
+    var f = oporF, q = f.q.trim().toLowerCase();
+    var todas = opor.oportunidades;
+    // Mismos filtros del tablero de Great Revenue (persona, semaforo, producto, monto, fecha de cierre, nuevas, P_)
+    // mas los de WhatsApp (estado del contacto, pendientes de Open+3). Cada chip dice cuantas hay con los demas filtros.
+    var hoy = new Date(), ym = function(d){ return d.getFullYear() * 12 + d.getMonth(); }, hoyS = hoy.toISOString().slice(0, 10);
+    var PRUEBAS = {
+      pend: function(o){ return pendienteOpen3(o); },
+      fase: function(o, v){ return o.etapa.fase === v; },
+      linea: function(o, v){ return o.linea.codigo === v; },
+      persona: function(o, v){ return v === 'Sin' ? !o.responsable : personasOp(o).indexOf(v) >= 0; },
+      wa: function(o, v){ return estadoOp(o) === v; },
+      sem: function(o, v){ return v === 'sin' ? !o.semaforo : o.semaforo === v; },
+      origen: function(o, v){ return v === 'sin' ? !o.origen : o.origen === v; },
+      senal: function(o, v){ return v === 'sin' ? !o.senal : o.senal === v; },
+      monto: function(o, v){ return (o.monto || 0) >= Number(v); },
+      cierre: function(o, v){
+        if (v === 'sin') return !o.cierre;
+        if (!o.cierre) return false;
+        var c = new Date(o.cierre + 'T12:00:00'), d = ym(c) - ym(hoy);
+        if (v === 'vencida') return o.cierre < hoyS;
+        if (v === 'mes') return d === 0 && o.cierre >= hoyS;
+        if (v === 'prox') return d === 1;
+        return o.cierre >= hoyS && Math.floor(c.getMonth() / 3) === Math.floor(hoy.getMonth() / 3) && c.getFullYear() === hoy.getFullYear();
+      },
+      nuevas: function(o, v){ return o.creada && (hoy - new Date(o.creada + 'T12:00:00')) / 864e5 <= Number(v); },
+      tipo: function(o, v){ return v === 'p' ? o.prospeccion : !o.prospeccion; }
+    };
+    var pasa = function(o, sin){
+      for (var k in PRUEBAS) { if (k === sin) continue; var v = k === 'pend' ? f.pend : f[k]; if (v && !PRUEBAS[k](o, v)) return false; }
+      if (q && (o.nombre + ' ' + o.dueno + ' ' + o.responsable + ' ' + (o.empresa ? o.empresa.nombre : '') + ' ' + o.contactos.map(function(ct){ return ct.nombre + ' ' + ct.empresa; }).join(' ')).toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    };
+    var ls = todas.filter(function(o){ return pasa(o); });
+    // Chips con su cuenta: cuantas quedarian al elegir ese valor, respetando los demas filtros (como el tablero).
+    var fila = function(k, titulo, opciones, todasTxt){
+      var base = todas.filter(function(o){ return pasa(o, k); });
+      return '<span class="flabel">' + titulo + '</span><div class="filters">' + '<button class="chip' + (f[k] ? '' : ' on') + '" data-k="' + k + '" data-v="">' + (todasTxt || 'Todas') + ' (' + base.length + ')</button>' +
+        opciones.map(function(op){
+          var n = base.filter(function(o){ return PRUEBAS[k](o, op[0]); }).length;
+          return '<button class="chip' + (String(f[k]) === String(op[0]) ? ' on' : '') + (n ? '' : ' cero') + '" data-k="' + k + '" data-v="' + esc(op[0]) + '">' + op[1] + ' (' + n + ')</button>';
+        }).join('') + '</div>';
+    };
+    var pend = todas.filter(pendienteOpen3);
+    var cts = [].concat.apply([], todas.map(function(o){ return o.contactos; }));
+    var lineasF = (opor.catalogo || opor.lineas).filter(function(l){ return NO_LINEA.indexOf(l.codigo) < 0; }).map(function(l){ return [l.codigo, esc(l.nombre)]; });
+    if (todas.some(function(o){ return o.linea.codigo === 'SIN'; })) lineasF.push(['SIN', 'Sin línea']);
+    var personasF = (opor.equipo || []).map(function(p){ return [p, esc(p)]; }).concat([['Sin', 'Sin responsable']]);
+    var principales = fila('linea', 'Línea:', lineasF) + fila('persona', 'Persona:', personasF, 'Todos') +
+      fila('wa', 'WhatsApp:', [['falta', 'Falta celular'], ['listo', 'Con celular, sin escribir'], ['enviada', 'Plantilla enviada'], ['conversa', 'Ya conversa']]) +
+      fila('sem', 'Semáforo:', [['rojo', '<span class="sem rojo"></span>Vencidas'], ['amarillo', '<span class="sem amarillo"></span>Próximas'], ['verde', '<span class="sem verde"></span>Al día'], ['aparcada', '<span class="sem aparcada"></span>Aparcadas'], ['sin', 'Sin semáforo']]) +
+      fila('fase', 'Fase:', [['prospeccion', 'Prospección'], ['venta', 'Venta']]);
+    var mas = fila('origen', 'Llegó por:', [['Sequence', 'Sequence'], ['DUO', 'DUO'], ['Referido', 'Referido'], ['sin', 'Sin dato']], 'Todos') +
+      fila('senal', 'Señal:', [['Reply', 'Reply (contestó)'], ['Open+3', 'Open+3 (abrió 3 o más veces)'], ['sin', 'Sin dato']], 'Todas') +
+      fila('monto', 'Monto:', [['10000', '≥ $10K'], ['50000', '≥ $50K'], ['100000', '≥ $100K']], 'Todos') +
+      fila('cierre', 'Cierre:', [['vencida', 'Vencidas'], ['mes', 'Este mes'], ['prox', 'Próximo mes'], ['trim', 'Este trimestre'], ['sin', 'Sin fecha']], 'Todas') +
+      fila('nuevas', 'Nuevas:', [['7', 'Últimos 7 días'], ['30', 'Últimos 30 días']], 'Todas') +
+      fila('tipo', 'Tipo:', [['p', 'Prospección (P_)'], ['np', 'Sin P_']], 'Todas');
+    var nMas = ['origen', 'senal', 'monto', 'cierre', 'nuevas', 'tipo'].filter(function(k){ return f[k]; }).length;
+    var h = '<div class="card"><div class="card-h"><h2><span class="n">1</span>Oportunidades abiertas en HubSpot</h2><span class="tenue">' + todas.length + ' oportunidades · contactos con celular: ' + cts.filter(function(ct){ return ct.c10; }).length + ' de ' + cts.length + '</span></div>' +
+      '<p class="nota">Salen de HubSpot cada vez que abres esta pestaña. La línea sale del nombre de la oportunidad; la persona es la responsable, el apoyo o la dueña en HubSpot (los mismos nombres del tablero). El semáforo, el camino de llegada y los días en la etapa son los del tablero. El celular es el WhatsApp de la persona: si falta, escríbelo en la tarjeta y se guarda en HubSpot para todo el equipo. No se revela nada en Amplemarket.</p>' +
+      '<div class="filters"><span class="flabel">Open+3:</span><button class="chip pend' + (f.pend ? ' on' : '') + '" data-k="pend" data-v="1">Pendientes de Open+3 · ' + pend.length + ' (' + pend.filter(function(o){ return o.contactos.some(function(ct){ return ct.c10; }); }).length + ' con celular)</button>' +
+      '<span class="tenue">Su señal es Open+3 (abrieron el correo 3 o más veces), siguen en Señal Detectada y nadie les ha escrito por WhatsApp</span></div>' +
+      '<div class="ffila">' + principales + '</div>' +
+      '<details class="masf"' + (nMas ? ' open' : '') + '><summary>Más filtros del tablero' + (nMas ? ' · ' + nMas + ' activo' + (nMas === 1 ? '' : 's') : '') + '</summary><div class="ffila">' + mas + '</div></details>' +
+      '<div class="filters"><input id="o-q" type="search" placeholder="Buscar empresa, oportunidad o contacto" value="' + esc(f.q) + '"><span class="tenue">' + ls.length + ' de ' + todas.length + '</span>' +
+      ((Object.keys(f).some(function(k){ return k !== 'q' && f[k]; }) || f.q) ? '<button class="enlace" id="o-borrar">Quitar filtros</button>' : '') + '</div></div>';
+    var etapas = (opor.etapas || []).filter(function(e){ return !f.fase || e.fase === f.fase; });
+    h += '<div class="kanban">';
+    etapas.forEach(function(e){
+      var col = ls.filter(function(o){ return o.etapa.id === e.id; });
+      var monto = col.reduce(function(sm, o){ return sm + (o.monto || 0); }, 0);
+      h += '<div class="kcol ' + e.fase + '"><div class="kcol-h"><div class="kcol-t">' + esc(e.nombre) + '</div><div class="kcol-n">' + col.length + ' · $' + Math.round(monto / 1000) + 'K</div></div><div class="kcol-b">' +
+        (col.length ? '' : '<div class="kvacio">—</div>');
+      col.forEach(function(o){
+        var cs = o.contactos;
+        h += '<div class="kcard' + (pendienteOpen3(o) ? ' pend' : '') + '"><div class="kcard-n">' + esc(empresaDe(o, cs[0]) || o.nombre) + (o.empresa && o.empresa.web ? ' <a class="web" href="' + esc(/^https?:/.test(o.empresa.web) ? o.empresa.web : 'https://' + o.empresa.web) + '" target="_blank" rel="noopener" title="Sitio web">🌐</a>' : '') + (o.empresa && o.empresa.linkedin ? ' <a class="li" href="' + esc(o.empresa.linkedin) + '" target="_blank" rel="noopener" title="LinkedIn de la empresa">in</a>' : '') + '</div>' + (o.empresa && o.empresa.industria ? '<div class="tenue">' + esc(o.empresa.industria) + '</div>' : '') +
+          '<a class="kcard-s" href="' + esc(o.url) + '" target="_blank" rel="noopener">' + esc(o.nombre) + '</a>' +
+          '<div class="kchips"><span class="etq producto">' + esc(o.linea.nombre) + '</span><span class="etq" title="Responsable' + (o.apoyo ? ' · apoyo: ' + esc(o.apoyo) : '') + ' · dueña en HubSpot: ' + esc(o.dueno) + '">' + (o.semaforo ? '<span class="sem ' + esc(o.semaforo) + '"></span>' : '') + esc(o.responsable || o.dueno_corto || o.dueno) + '</span>' +
+            (o.origen ? '<span class="etq origen">' + esc(o.origen) + (o.senal ? ' · ' + esc(o.senal) + (o.aperturas ? ' (' + o.aperturas + ')' : '') : '') + '</span>' : '') + (o.dias_etapa !== null && o.dias_etapa !== undefined ? '<span class="etq dias" title="Días en esta etapa">' + o.dias_etapa + ' d</span>' : '') +
+            (pendienteOpen3(o) ? '<span class="etq pendopen">Pendiente Open+3</span>' : '') + '</div>';
+        if (!cs.length) h += '<div class="kct tenue">Sin contacto en HubSpot</div>';
+        cs.forEach(function(ct){
+          var est = estadoContacto(ct), puede = est.k === 'listo';
+          h += '<div class="kct"><div><b>' + esc(ct.nombre || 'Sin nombre') + '</b>' + (ct.linkedin ? ' <a class="li" href="' + esc(ct.linkedin) + '" target="_blank" rel="noopener" title="LinkedIn">in</a>' : '') + (ct.puesto ? ' · <span class="tenue">' + esc(ct.puesto) + '</span>' : '') + '</div>' +
+            (ct.c10 ? '<div class="kcel">' + (puede ? '<label class="kchk"><input type="checkbox" class="elegir" data-c="' + esc(ct.id) + '"' + (elegidos[ct.id] ? ' checked' : '') + '> ' : '<span>') + '📱 ' + esc(ct.cel) + (puede ? '</label>' : '</span>') + '</div>'
+              : '<div class="celcap"><input class="celin" data-c="' + esc(ct.id) + '" inputmode="tel" placeholder="Celular (WhatsApp)"><button class="btn sec celok" data-c="' + esc(ct.id) + '">Guardar</button></div>') +
+            '<span class="estado-wa ' + est.k + '">' + esc(est.t) + '</span>' + (est.c ? ' <button class="enlace verconv" data-w="' + esc(est.c.wa_id) + '">ver chat</button>' : '') + '</div>';
+        });
+        h += '</div>';
+      });
+      h += '</div></div>';
+    });
+    h += '</div>';
+    var nSel = Object.keys(elegidos).length;
+    h += '<div class="barra-env"' + (nSel ? '' : ' hidden') + '><b>' + nSel + ' seleccionado' + (nSel === 1 ? '' : 's') + '</b><button class="btn" id="o-enviar">Enviar plantilla Open+3</button><button class="btn sec" id="o-limpiar">Quitar selección</button></div>';
+    $('opor').innerHTML = h;
+    $('o-q').oninput = function(){ f.q = this.value; var pos = this.selectionStart; pintarOpor(); $('o-q').focus(); $('o-q').setSelectionRange(pos, pos); };
+    $('opor').onchange = function(ev){
+      var x = ev.target; if (!x.classList.contains('elegir')) return;
+      var id = x.getAttribute('data-c');
+      if (x.checked) { todas.forEach(function(o){ o.contactos.forEach(function(ct){ if (ct.id === id) elegidos[id] = { o: o, ct: ct }; }); }); }
+      else delete elegidos[id];
+      pintarOpor();
+    };
+    $('opor').onclick = function(ev){
+      var b = ev.target.closest('button'); if (!b) return;
+      if (b.classList.contains('chip')) { var k = b.getAttribute('data-k'), v = b.getAttribute('data-v'); if (k === 'pend') f.pend = !f.pend; else f[k] = v; pintarOpor(); return; }
+      if (b.classList.contains('celok')) { var inp = document.querySelector('.celin[data-c="' + b.getAttribute('data-c') + '"]'); guardarCel(b.getAttribute('data-c'), inp.value, b); }
+      if (b.classList.contains('verconv')) { document.querySelector('#tabs [data-t="conv"]').click(); abrir(b.getAttribute('data-w')); }
+      if (b.id === 'o-limpiar') { elegidos = {}; pintarOpor(); }
+      if (b.id === 'o-borrar') { Object.keys(f).forEach(function(k){ f[k] = k === 'pend' ? false : ''; }); pintarOpor(); }
+      if (b.id === 'o-enviar') enviarOpen3();
+    };
+  }
+  function guardarCel(id, tel, btn){
+    if (String(tel || '').replace(/\D/g, '').length < 10) { toast('Escribe el celular completo, con lada'); return; }
+    btn.disabled = true;
+    fetch(BASE + 'gr-portal-telefono', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ k: K, contact_id: id, telefono: tel }) })
+      .then(function(r){ return r.text().then(function(t){ var j = null; try { j = JSON.parse(t); } catch(e) {} if (!r.ok || !j || !j.ok) throw new Error('No se guardó. Revisa que el número lleve lada (10 dígitos si es de México) y que el contacto no tenga ya otro celular en HubSpot.'); return j; }); })
+      .then(function(j){
+        opor.oportunidades.forEach(function(o){ o.contactos.forEach(function(ct){ if (ct.id === id) { ct.celular = j.celular; ct.cel = j.celular; ct.c10 = diez(j.celular); } }); });
+        indexarTel(); toast('Celular guardado en HubSpot'); pintarOpor(); pintarLista();
+      }).catch(function(e){ toast(e.message); btn.disabled = false; });
+  }
+
+  // Envio de la plantilla Open+3 de cada linea a los contactos elegidos. Usa el mismo envio del portal (uno por
+  // persona, uno por segundo). Variables: {{1}} nombre, {{2}} empresa, {{3}} firma (dueño de la oportunidad).
+  var TOPE_ENVIO = 20;
+  function enviarOpen3(){
+    var sel = Object.keys(elegidos).map(function(k){ return elegidos[k]; });
+    if (!sel.length) return;
+    traerPlantillas((datos.numeros[0] || {}).phone_id).then(function(ls){
+      var aprob = {}; ls.filter(function(t){ return t.soportada; }).forEach(function(t){ aprob[t.nombre] = t; });
+      var filas = sel.map(function(x){
+        var nom = 'gr_open3_' + (SUFIJO[x.o.linea.codigo] || '') + '_v2', t = aprob[nom];
+        var vars = [String(x.ct.nombre || '').split(' ')[0], empresaDe(x.o, x.ct), (x.o.responsable || String(x.o.dueno || '').split(' ')[0])].slice(0, t ? t.variables : 0);
+        var vista = t ? t.texto.replace(/\{\{(\d+)\}\}/g, function(m, i){ return vars[i - 1] || m; }) : '';
+        return { x: x, t: t, nom: nom, vars: vars, vista: vista, ok: !!t && vars.every(Boolean) };
+      });
+      var buenos = filas.filter(function(r){ return r.ok; }).slice(0, TOPE_ENVIO);
+      modal('<h2>Enviar plantilla Open+3</h2>' +
+        '<p class="tenue" style="margin:0">A cada persona le llega la plantilla de su línea, con su nombre y su empresa. Máximo ' + TOPE_ENVIO + ' por envío. WhatsApp pide que la persona haya aceptado recibir mensajes del negocio.</p>' +
+        '<div class="envlista">' + filas.map(function(r){
+          return '<div class="envfila' + (r.ok ? '' : ' mal') + '"><b>' + esc(r.x.ct.nombre) + '</b> · ' + esc(empresaDe(r.x.o, r.x.ct)) + ' · <span class="tenue">' + esc(r.x.ct.cel) + '</span><div class="tenue">' +
+            (r.t ? esc(r.nom) : 'No hay plantilla aprobada para ' + esc(r.x.o.linea.nombre)) + (r.t && !r.ok ? ' · falta nombre o empresa' : '') + '</div>' +
+            (r.ok ? '<details><summary class="tenue">Ver mensaje</summary><div class="vista">' + esc(r.vista) + '</div></details>' : '') + '</div>';
+        }).join('') + '</div><div class="error" id="envErr"></div>' +
+        '<div class="pieModal"><button class="btn sec" id="cancelar">Cancelar</button><button class="btn" id="envOk"' + (buenos.length ? '' : ' disabled') + '>Enviar ' + buenos.length + ' mensaje' + (buenos.length === 1 ? '' : 's') + '</button></div>');
+      $('cancelar').onclick = cerrar;
+      $('envOk').onclick = function(){
+        var btn = this; btn.disabled = true; $('cancelar').disabled = true;
+        var bien = 0, mal = [], i = 0;
+        var siguiente = function(){
+          if (i >= buenos.length) {
+            cerrar(); elegidos = {};
+            toast('Enviados: ' + bien + (mal.length ? ' · no se enviaron: ' + mal.length : ''));
+            if (mal.length) setTimeout(function(){ alert('No se enviaron:\n' + mal.join('\n')); }, 300);
+            return cargar().then(function(){ pintarOpor(); });
+          }
+          var r = buenos[i++]; btn.textContent = 'Enviando ' + i + ' de ' + buenos.length + '…';
+          api('plantilla', { plantilla: r.nom, idioma: r.t.idioma, variables: r.vars, vista: r.vista, phone_id: (datos.numeros[0] || {}).phone_id, numero: r.x.ct.cel.replace(/\D/g, ''), nombre: r.x.ct.nombre })
+            .then(function(j){ if (j.ok === false) mal.push(r.x.ct.nombre + ': ' + (j.error || 'WhatsApp no la aceptó')); else bien++; })
+            .catch(function(e){ mal.push(r.x.ct.nombre + ': ' + e.message); })
+            .finally(function(){ setTimeout(siguiente, 1100); });
+        };
+        siguiente();
+      };
+    }).catch(function(e){ toast(e.message); });
+  }
+  function nombreProducto(slug){
+    var p = conf && (conf.productos || []).find(function(x){ return x.slug === slug; });
+    return p ? p.nombre.replace(/ \(.*\)$/, '') : slug;
+  }
+  function horasVentana(c){ var v = ventana(c); return v.abierta ? Math.max(1, Math.round((v.fin - Date.now()/1000) / 3600)) : 0; }
+
+  function pintarLista(){
+    pintarFiltros();
+    var q = $('buscar').value.trim().toLowerCase();
+    var ls = datos.convs.filter(function(c){
+      if (!pasa(c)) return false;
+      if (!q) return true;
+      var opq = oporDe(c);
+      var txt = (c.nombre + ' ' + c.wa_id + ' ' + (opq ? opq.o.nombre + ' ' + (opq.o.campana || '') : '') + ' ' + c.msgs.map(function(m){ return m.texto; }).join(' ')).toLowerCase();
+      return txt.indexOf(q) >= 0;
+    });
+    if (!ls.length) { $('items').innerHTML = '<div class="vacio">' + (datos.convs.length ? 'Nada coincide con el filtro.' : 'Todavía no hay conversaciones. Cuando alguien escriba al número aparecerá aquí.') + '</div>'; return; }
+    if (F.ventana === 'libre') ls.sort(function(a, b){ return ventana(a).fin - ventana(b).fin; });
+    $('items').innerHTML = ls.map(function(c){
+      var ult = c.msgs.filter(function(m){ return m.dir !== 'nota'; }).slice(-1)[0];
+      var v = ventana(c), pi = plantillaInfo(c), lin = lineaDe(c), op = oporDe(c);
+      var ini = (c.nombre || '#').trim().charAt(0).toUpperCase();
+      return '<div class="item' + (c.wa_id === sel ? ' sel' : '') + '" data-w="' + esc(c.wa_id) + '">' +
+        '<div class="ava">' + esc(ini) + '</div><div class="cuerpo">' +
+        '<div class="arriba"><span class="nom">' + esc(c.nombre || tel(c.wa_id)) + '</span><span class="hora">' + cuando(c.ultimo_ts) + '</span></div>' +
+        (c.nombre ? '<span class="tel">' + esc(tel(c.wa_id)) + '</span>' : '') +
+        '<div class="prev">' + esc(ult ? ((ult.dir === 'saliente' ? (ult.autor === 'bot' ? 'Bot: ' : 'Tú: ') : '') + (ult.texto || '(' + ult.tipo + ')')) : '') + '</div>' +
+        '<div class="etqs">' + etqAtencion(c) + '<span class="etq ' + c.modo + '" data-tip="' + (c.modo === 'persona' ? 'La atiende una persona del equipo: el bot no contesta hasta que la devuelvas' : 'La contesta el bot') + '">' + (c.modo === 'persona' ? 'Persona' : 'Bot') + '</span>' +
+        '<span class="etq ' + (v.abierta ? 'abierta' : 'cerrada') + '" data-tip="' + (v.abierta ? 'Escribió en las últimas 24 h: le puedes mandar cualquier texto' : 'WhatsApp solo deja mandarle una plantilla aprobada') + '">' + (v.abierta ? 'Ventana abierta · quedan ' + horasVentana(c) + ' h' : 'Solo plantilla') + '</span>' +
+        (lin.codigo ? '<span class="etq producto">' + esc(lin.nombre) + '</span>' : '') +
+        (op ? '<span class="etq etapa ' + op.o.etapa.fase + '">' + esc(op.o.etapa.nombre) + '</span>' : '') +
+        (op && op.o.o3 ? '<span class="etq toque' + (op.o.o3.estado === 'activo' || op.o.o3.estado === 'respondio' ? '' : ' mal') + '">' + esc(textoToque(op.o.o3)) + '</span>' : '') +
+        (pi ? '<span class="etq ' + (pi.respondio ? 'respondio' : 'sinresp') + '">' + (pi.respondio ? 'Respondió' : 'Sin respuesta') + '</span>' : '') +
+        (c.origen && c.origen.indexOf('anuncio') === 0 ? '<span class="etq anuncio">Anuncio</span>' : '') +
+        (variosNumeros() ? '<span class="etq">' + esc(nombreNumero(c.phone_id)) + '</span>' : '') +
+        (c.sin_leer ? '<span class="contador">' + c.sin_leer + '</span>' : '') + '</div>' +
+        '</div></div>';
+    }).join('');
+  }
+
+  function check(m){
+    if (m.dir !== 'saliente') return '';
+    var e = m.estado || '';
+    if (e.indexOf('fallido') === 0) return '<span class="check mal" title="' + esc(e) + '">⚠ no se entregó</span>';
+    if (e === 'read') return '<span class="check leido" title="Leído">✓✓</span>';
+    if (e === 'delivered') return '<span class="check" title="Entregado">✓✓</span>';
+    return '<span class="check" title="Enviado">✓</span>';
+  }
+
+  function cuerpoMsg(m){
+    var url = BASE + 'gr-portal-media?k=' + encodeURIComponent(K) + '&id=' + encodeURIComponent(m.media);
+    if (m.media && (m.tipo === 'image' || m.tipo === 'sticker')) return '<a href="' + url + '" target="_blank" rel="noopener"><img loading="lazy" src="' + url + '" alt="Imagen del cliente"></a>' + (m.texto ? '<div>' + enlazar(m.texto) + '</div>' : '');
+    if (m.media && m.tipo === 'audio') return '<audio controls preload="none" src="' + url + '"></audio>';
+    if (m.media && m.tipo === 'video') return '<video controls preload="none" style="max-width:260px" src="' + url + '"></video>' + (m.texto ? '<div>' + enlazar(m.texto) + '</div>' : '');
+    if (m.media) return '📎 <a href="' + url + '" target="_blank" rel="noopener">' + esc(m.texto || 'Abrir archivo') + '</a>';
+    return enlazar(m.texto || '(' + m.tipo + ')');
+  }
+
+  // Ficha de la oportunidad arriba del chat: producto, etapa, campana o senal, quien la envio y el toque. Tocar la etapa
+  // abre el detalle aqui mismo (28 oct: el equipo no debe irse a HubSpot para verlo).
+  function masHabiles(ts, n){ var d = new Date(ts * 1000); while (n > 0) { d.setDate(d.getDate() + 1); if (d.getDay() % 6) n--; } return Math.floor(d.getTime() / 1000); }
+  function fichaOportunidad(c){
+    var op = oporDe(c), lin = lineaDe(c);
+    if (!op) return '<div class="ficha-op">' + (lin.codigo ? '<span data-tip="Producto que entendió el bot en la conversación"><b>' + esc(lin.nombre) + '</b></span>' : '') + '<span data-tip="Este número no está en ninguna oportunidad abierta de HubSpot">Sin oportunidad abierta en HubSpot</span></div>';
+    var o = op.o, o3 = o.o3, f = function(ts){ return ts ? nombreDia(ts).toLowerCase() + ' ' + hora(ts) : ''; };
+    var ult = o3 ? (o3.t3 || o3.t2 || o3.t1) : 0;
+    return '<div class="ficha-op"><span data-tip="Línea de servicio de la oportunidad"><b>' + esc(o.linea.nombre) + '</b></span>' +
+      '<span>Etapa: <button class="verop" id="verOp" data-tip="Ver el detalle de la oportunidad"><b>' + esc(o.etapa.nombre) + '</b> ' + (fichaAbierta ? '▴' : '▾') + '</button></span>' +
+      (o.campana ? '<span data-tip="Secuencia de correo o señal de donde salió la oportunidad">Campaña: <b>' + esc(o.campana) + '</b></span>' : '') +
+      (o.senal ? '<span data-tip="Open+3: abrió el correo 3 veces o más. Reply: contestó el correo">Señal: <b>' + esc(o.senal) + '</b></span>' : '') +
+      (o.remitente ? '<span data-tip="Quién mandó la campaña de correo; su nombre firma los WhatsApp">Envió: <b>' + esc(nombreRemitente(o.remitente)) + '</b></span>' : '') +
+      (o3 ? '<span data-tip="Toques automáticos de Open+3 por WhatsApp">WhatsApp: <b>' + esc(textoToque(o3)) + '</b>' + (ult ? ' · último ' + esc(f(ult)) : '') + (o3.estado !== 'activo' && o3.detalle ? ' · ' + esc(o3.detalle) : '') + '</span>' : '') +
+      '</div>' + (fichaAbierta ? detalleOportunidad(o, op.c) : '');
+  }
+  function detalleOportunidad(o, ct){
+    var o3 = o.o3, fe = function(ts){ return ts ? fmt(ts, { weekday: 'short', day: 'numeric', month: 'short' }) + ' ' + hora(ts) : ''; };
+    var fd = function(d){ return d ? fmt(Date.parse(d) / 1000, { day: 'numeric', month: 'short', year: 'numeric' }) : ''; };
+    var sigue = '';
+    if (o3 && o3.estado === 'activo' && o3.t1) {
+      sigue = o3.toque === 1 ? 'Si no contesta, el toque 2 sale el ' + fe(masHabiles(o3.t1, 3)).replace(/ \d+:\d+.*$/, '') + ' a partir de las 9:00 de su país.'
+        : o3.toque === 2 ? 'Si no contesta, el toque 3 (despedida) sale el ' + fe(masHabiles(o3.t1, 7)).replace(/ \d+:\d+.*$/, '') + '.'
+        : 'Si no contesta, el ' + fe(masHabiles(o3.t1, 10)).replace(/ \d+:\d+.*$/, '') + ' la oportunidad pasa a Perdida.';
+    } else if (o3 && o3.estado === 'respondio') sigue = 'Contestó: el bot conversa con él para llevarlo a la reunión. Ya no recibe toques.';
+    else if (o3 && FALLO_TOQUE.indexOf(o3.estado) >= 0) sigue = 'No le llegó el WhatsApp' + (o3.detalle ? ' (' + o3.detalle + ')' : '') + '. Se reintenta solo en la siguiente vuelta.';
+    else if (o3 && o3.estado === 'sin_whatsapp') sigue = 'Ese número no tiene WhatsApp: no se reintenta. Sigue por correo o LinkedIn.';
+    else sigue = TIP_ETAPA[o.etapa.id] || '';
+    var dato = function(t, v){ return v ? t + ': <b>' + esc(v) + '</b><br>' : ''; };
+    var emp = o.empresa || {};
+    return '<div class="op-det">' +
+      (sigue ? '<div class="sigue"><b>Qué sigue:</b> ' + esc(sigue) + '</div>' : '') +
+      '<div><h4>Oportunidad</h4>' + dato('Etapa', o.etapa.nombre + (o.dias_etapa != null ? ' · ' + o.dias_etapa + ' días ahí' : '')) +
+        dato('Fase', o.etapa.fase === 'venta' ? 'Venta' : 'Prospección') + dato('Creada', fd(o.creada)) +
+        dato('Monto', o.monto ? '$' + o.monto.toLocaleString('es-MX') : '') + dato('Cierre estimado', fd(o.cierre)) + '</div>' +
+      '<div><h4>Equipo</h4>' + dato('Responsable', o.responsable || o.dueno_corto) + dato('Apoyo', o.apoyo) + dato('Dueño en HubSpot', o.dueno) + dato('Envió la campaña', o.remitente ? nombreRemitente(o.remitente) : '') + '</div>' +
+      '<div><h4>Cómo llegó</h4>' + dato('Campaña', o.campana) + dato('Señal', o.senal) + dato('Camino', o.origen) + dato('Aperturas del correo', o.aperturas || '') + '</div>' +
+      '<div><h4>Contacto y empresa</h4>' + dato('Contacto', ct && ct.nombre) + dato('Puesto', ct && ct.puesto) + dato('Correo', ct && ct.correo) +
+        dato('Empresa', emp.nombre) + dato('Industria', emp.industria) + (emp.web ? '<a href="' + esc(emp.web) + '" target="_blank" rel="noopener">Sitio web</a> ' : '') + (emp.linkedin ? '<a href="' + esc(emp.linkedin) + '" target="_blank" rel="noopener">LinkedIn</a>' : '') + '</div>' +
+      (o3 ? '<div><h4>WhatsApp de Open+3</h4>' + dato('Estado', textoToque(o3)) + dato('Toque 1', fe(o3.t1)) + dato('Toque 2', fe(o3.t2)) + dato('Toque 3', fe(o3.t3)) + dato('Firma', o3.firma) + dato('Plantilla', o3.plantilla) + '</div>' : '') +
+      (o.respuesta ? '<div class="resp"><h4>Lo que respondió por correo</h4>' + esc(o.respuesta) + '</div>' : '') +
+      '</div>';
+  }
+  function pintarChat(bajar){
+    var c = conv(sel); if (!c) return;
+    var v = ventana(c);
+    var ms = $('msgs'); var alFinal = ms ? (ms.scrollHeight - ms.scrollTop - ms.clientHeight < 60) : true;
+    var borrador = $('texto') ? $('texto').value : '';
+    var esNota = $('comoNota') ? $('comoNota').checked : false;
+    var html = '<div class="chatcab"><div class="quien"><span class="n"><button class="btn sec volver" id="volver">←</button>' + esc(c.nombre || tel(c.wa_id)) +
+      ' <button class="lapiz" id="renombrar" title="Cambiar nombre">✎</button></span>' +
+      '<span class="m">' + esc(tel(c.wa_id)) + (variosNumeros() ? ' · por ' + esc(nombreNumero(c.phone_id)) : '') + (c.origen ? ' · ' + esc(c.origen) : '') + '</span></div><div class="acciones">' +
+      (c.modo === 'bot' ? '<button class="btn tomar" id="tomar" data-tip="Tomas la conversación: el bot deja de contestar y le escribes tú">Me encargo yo</button>' : '<button class="btn sec" id="devolver" data-tip="El bot vuelve a contestar esta conversación">Devolver al bot</button>') +
+      '</div></div>' + fichaOportunidad(c);
+    html += c.modo === 'persona'
+      ? '<div class="aviso persona">Una persona atiende esta conversación. El bot no contesta hasta que la devuelvas.</div>'
+      : '<div class="aviso bot">El bot contesta esta conversación. Si escribes desde aquí, pasa a tu cargo.</div>';
+    if (!v.abierta) html += '<div class="aviso cerrada">' + (c.msgs.some(function(m){ return m.dir === 'entrante'; }) ? 'Pasaron más de 24 h desde el último mensaje del cliente.' : 'El contacto todavía no ha escrito.') + ' WhatsApp solo deja escribirle con una plantilla aprobada.</div>';
+    else html += '<div class="aviso" style="font-size:12px;color:var(--tenue)">Puedes escribir texto libre hasta ' + nombreDia(v.fin).toLowerCase() + ' a las ' + hora(v.fin) + '.</div>';
+    html += '<div class="msgs" id="msgs">';
+    var ultimoDia = '';
+    c.msgs.forEach(function(m){
+      var d = diaClave(m.ts); if (d !== ultimoDia) { ultimoDia = d; html += '<div class="dia">' + nombreDia(m.ts) + '</div>'; }
+      var cls = m.dir === 'nota' ? 'nota' : (m.dir === 'entrante' ? 'cliente' : (m.autor === 'bot' ? 'bot' : 'persona'));
+      if ((m.estado || '').indexOf('fallido') === 0) cls += ' fallo';
+      var desdeHs = (m.estado || '').indexOf('Hootsuite') >= 0;
+      var autor = m.dir === 'nota' ? 'Nota interna' : (m.dir === 'saliente' ? (m.autor === 'bot' ? (desdeHs ? 'Agente virtual de Hootsuite' : 'Bot') : (m.tipo === 'plantilla' ? 'Plantilla' : (desdeHs ? 'Equipo · desde Hootsuite' : 'Equipo'))) : '');
+      html += '<div class="m ' + cls + '">' + (autor ? '<div class="autor">' + autor + '</div>' : '') + cuerpoMsg(m) +
+        '<div class="pie">' + (m.dir === 'saliente' ? '<button class="enlace corregir" data-id="' + esc(m.id) + '" title="Decir qué estuvo mal y cómo lo dirías tú (llega a Mejoras)">Corregir</button>' : '') + ((m.estado || '').indexOf('fallido') === 0 ? '<span>' + esc(m.estado.replace('fallido: ', '')) + '</span>' : '') + '<span>' + hora(m.ts) + '</span>' + check(m) + '</div></div>';
+    });
+    html += '</div><div class="caja"><div class="opciones"><label><input type="checkbox" id="comoNota"> Nota interna (el cliente no la ve)</label>' +
+      '<button class="enlace" id="abrirPlantilla">Enviar plantilla</button></div>' +
+      '<div class="adjunto" id="adjunto" hidden><span id="adjNombre"></span><button id="quitarAdj" type="button">Quitar</button></div>' +
+      '<div class="fila"><button class="clip" id="clip" type="button" title="Adjuntar archivo" aria-label="Adjuntar archivo">📎</button><input type="file" id="archivo" hidden accept="image/jpeg,image/png,application/pdf,video/mp4,audio/*,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip"><textarea id="texto" rows="1" placeholder="Escribe un mensaje"></textarea><button class="btn" id="enviar">Enviar</button></div></div>';
+    $('chat').innerHTML = html;
+    $('texto').value = borrador; $('comoNota').checked = esNota; ajustarCaja();
+    ms = $('msgs'); if (bajar || alFinal) ms.scrollTop = ms.scrollHeight;
+    $('volver').onclick = function(){ sel = null; $('app').classList.remove('abierto'); pintarLista(); };
+    $('msgs').onclick = function(e){ var b = e.target.closest('.corregir'); if (!b) return; var m = c.msgs.find(function(x){ return x.id === b.getAttribute('data-id'); }); if (m) corregir(c, m); };
+    $('renombrar').onclick = renombrar;
+    if ($('tomar')) $('tomar').onclick = function(){ cambiarModo('persona'); };
+    if ($('devolver')) $('devolver').onclick = function(){ cambiarModo('bot'); };
+    $('abrirPlantilla').onclick = function(){ abrirPlantilla(c); };
+    $('enviar').onclick = enviar;
+    $('clip').onclick = function(){ $('archivo').click(); };
+    $('archivo').onchange = function(){
+      var f = this.files && this.files[0]; this.value = '';
+      if (!f) return;
+      if (f.size > 10 * 1024 * 1024) { toast('El archivo pasa de 10 MB'); return; }
+      pendiente = f; mostrarAdjunto(); ajustarCaja();
+    };
+    $('quitarAdj').onclick = function(){ pendiente = null; mostrarAdjunto(); ajustarCaja(); };
+    mostrarAdjunto();
+    $('comoNota').onchange = ajustarCaja;
+    $('texto').oninput = function(){ this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 160) + 'px'; };
+    $('texto').onkeydown = function(e){ if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } };
+  }
+
+  function mostrarAdjunto(){
+    if (!$('adjunto')) return;
+    $('adjunto').hidden = !pendiente;
+    if (pendiente) $('adjNombre').textContent = '📎 ' + pendiente.name + ' (' + Math.max(1, Math.round(pendiente.size / 1024)) + ' KB)';
+  }
+
+  function ajustarCaja(){
+    var c = conv(sel); if (!c) return;
+    var nota = $('comoNota').checked, abierta = ventana(c).abierta;
+    var t = $('texto'), b = $('enviar');
+    t.disabled = !nota && !abierta;
+    b.disabled = t.disabled;
+    $('clip').disabled = nota || !abierta;
+    if (nota && pendiente) { pendiente = null; mostrarAdjunto(); }
+    t.placeholder = nota ? 'Escribe una nota para el equipo' : (!abierta ? 'Ventana cerrada: usa “Enviar plantilla” o escribe una nota' : (pendiente ? 'Agrega un texto al archivo (opcional)' : 'Escribe un mensaje'));
+    b.textContent = nota ? 'Guardar nota' : (pendiente ? 'Enviar archivo' : 'Enviar');
+  }
+
+  function leerBase64(f){
+    return new Promise(function(ok, mal){
+      var r = new FileReader();
+      r.onload = function(){ ok(String(r.result).replace(/^data:[^,]*,/, '')); };
+      r.onerror = function(){ mal(new Error('No se pudo leer el archivo')); };
+      r.readAsDataURL(f);
+    });
+  }
+
+  function abrir(w){
+    if (sel !== w) pendiente = null;
+    sel = w; $('app').classList.add('abierto');
+    pintarLista(); pintarChat(true);
+    var c = conv(w);
+    if (c && c.sin_leer) {
+      var ultEnt = c.msgs.filter(function(m){ return m.dir === 'entrante'; }).slice(-1)[0];
+      c.sin_leer = 0; pintarLista();
+      api('conv', { wa_id: w, cambios: { visto_ts: Math.floor(Date.now()/1000) } }).catch(function(){});
+      if (ultEnt && ventana(c).abierta) api('leido', { message_id: ultEnt.id, phone_id: c.phone_id }).catch(function(){});
+    }
+  }
+
+  function enviar(){
+    var c = conv(sel); var t = $('texto'); var txt = t.value.trim(); if (!c) return;
+    var nota = $('comoNota').checked;
+    var f = (!nota && pendiente) ? pendiente : null;
+    if (!txt && !f) return;
+    $('enviar').disabled = true;
+    var p;
+    if (nota) p = api('nota', { wa_id: c.wa_id, texto: txt });
+    else if (f) {
+      $('enviar').textContent = 'Enviando archivo…';
+      p = leerBase64(f).then(function(b64){
+        return api('archivo', { wa_id: c.wa_id, phone_id: c.phone_id, archivo: b64, mime: f.type || 'application/octet-stream', nombre_archivo: f.name, texto: txt });
+      });
+    }
+    else p = api('enviar', { wa_id: c.wa_id, phone_id: c.phone_id, texto: txt });
+    p.then(function(j){
+      if (j.ok === false) { toast('No se envió: ' + (j.error || 'error de WhatsApp')); }
+      else { t.value = ''; if (f) { pendiente = null; } if (!nota && c.modo === 'bot') toast('La conversación pasó a tu cargo'); }
+      return cargar();
+    }).catch(function(e){ toast(e.message); }).finally(function(){ if ($('enviar')) { $('enviar').disabled = false; mostrarAdjunto(); ajustarCaja(); } });
+  }
+
+  function cambiarModo(modo){
+    var c = conv(sel); if (!c) return;
+    api('conv', { wa_id: c.wa_id, cambios: { modo: modo } }).then(function(){
+      c.modo = modo; pintarLista(); pintarChat(false);
+      toast(modo === 'persona' ? 'Listo: la conversación es tuya y el bot ya no contesta' : 'Listo: el bot vuelve a contestar');
+    }).catch(function(e){ toast(e.message); });
+  }
+
+  function modal(html){ $('capa').innerHTML = '<div class="modal" id="modal"><div class="caja-m">' + html + '</div></div>'; $('modal').onclick = function(e){ if (e.target.id === 'modal') cerrar(); }; }
+  function cerrar(){ $('capa').innerHTML = ''; }
+
+  function renombrar(){
+    var c = conv(sel);
+    modal('<h2>Nombre del contacto</h2><label>Nombre<input id="nNombre" value="' + esc(c.nombre) + '" maxlength="80"></label><div class="pieModal"><button class="btn sec" id="cancelar">Cancelar</button><button class="btn" id="guardar">Guardar</button></div>');
+    $('cancelar').onclick = cerrar; $('nNombre').focus();
+    $('guardar').onclick = function(){
+      var n = $('nNombre').value.trim();
+      api('conv', { wa_id: c.wa_id, cambios: { nombre: n } }).then(function(){ c.nombre = n; cerrar(); pintarLista(); pintarChat(false); }).catch(function(e){ toast(e.message); });
+    };
+  }
+
+  function traerPlantillas(pid){
+    if (plantillas[pid]) return Promise.resolve(plantillas[pid]);
+    return api('plantillas', { phone_id: pid }).then(function(j){ if (!j.ok) throw new Error(j.error); plantillas[pid] = j.plantillas; return j.plantillas; });
+  }
+
+  // Sirve para dos cosas: escribirle a un contacto nuevo y reabrir una conversación con la ventana cerrada.
+  function abrirPlantilla(c){
+    var nuevo = !c;
+    modal('<h2>' + (nuevo ? 'Escribir a un contacto nuevo' : 'Enviar plantilla a ' + esc(c.nombre || tel(c.wa_id))) + '</h2>' +
+      (nuevo && variosNumeros() ? '<label>Enviar desde<select id="pDesde">' + datos.numeros.map(function(n){ return '<option value="' + esc(n.phone_id) + '">' + esc(n.nombre) + '</option>'; }).join('') + '</select></label>' : '') +
+      (nuevo ? '<label>Número de WhatsApp (con lada; 10 dígitos si es de México)<input id="pNum" inputmode="tel" placeholder="55 1234 5678"></label><label>Nombre (opcional)<input id="pNom" maxlength="80"></label>' : '') +
+      '<label>Plantilla<select id="pSel"><option>Cargando plantillas…</option></select></label><div id="pVars"></div><div class="vista" id="pVista"></div><div class="error" id="pErr"></div>' +
+      '<p style="margin:0;font-size:12px;color:var(--tenue)">WhatsApp solo deja iniciar una conversación con plantillas aprobadas por Meta, y la persona debe haber aceptado recibir mensajes del negocio.</p>' +
+      '<div class="pieModal"><button class="btn sec" id="cancelar">Cancelar</button><button class="btn" id="pEnviar" disabled>Enviar</button></div>');
+    $('cancelar').onclick = cerrar;
+    var desde = function(){ return nuevo ? ($('pDesde') ? $('pDesde').value : ((datos.numeros[0] || {}).phone_id || '')) : c.phone_id; };
+    if ($('pDesde')) $('pDesde').onchange = function(){ cerrar(); abrirPlantillaDesde = this.value; abrirPlantilla(null); };
+    if (nuevo && $('pDesde') && abrirPlantillaDesde) $('pDesde').value = abrirPlantillaDesde;
+    traerPlantillas(desde()).then(function(ls){
+      var ok = ls.filter(function(p){ return p.soportada; });
+      if (!ok.length) { $('pSel').innerHTML = '<option>No hay plantillas aprobadas</option>'; $('pErr').textContent = 'Crea y aprueba una plantilla en el WhatsApp Manager de Meta.'; return; }
+      // Agrupadas por linea: las de Open+3 (gr_o3_<linea>_...) con su toque y area; las demas al final.
+      var AREAS = { mkt: 'marketing', com: 'comunicación', cx: 'experiencia del cliente', redes: 'redes' };
+      var nomLinea = function(cod){ var x = ((conf && conf.productos) || []).find(function(q){ return String(q.codigo).toLowerCase() === cod; }); return x ? x.nombre.replace(/ \(.*\)$/, '') : cod.toUpperCase(); };
+      var grupos = {}, orden = [];
+      ok.forEach(function(p, i){
+        var m = /^gr_o3_([a-z0-9]+?)(?:_(mkt|com|cx|redes))?_t(\d)(b?)_v[a-z]$/.exec(p.nombre);
+        var g = m ? nomLinea(m[1]) : (/^gr_open3_/.test(p.nombre) ? 'Open+3 anteriores' : 'Otras plantillas');
+        var et = m ? 'Toque ' + m[3] + (m[2] ? ' · ' + AREAS[m[2]] : '') + (m[4] ? ' · versión B' : '') + ' (' + p.nombre + ')' : p.nombre + ' · ' + p.categoria.toLowerCase();
+        if (!grupos[g]) { grupos[g] = []; orden.push(g); }
+        grupos[g].push('<option value="' + i + '">' + esc(et) + '</option>');
+      });
+      orden.sort(function(a, b){ var r = function(x){ return x === 'Otras plantillas' ? 2 : x === 'Open+3 anteriores' ? 1 : 0; }; return r(a) - r(b) || a.localeCompare(b); });
+      $('pSel').innerHTML = orden.map(function(g){ return '<optgroup label="' + esc(g) + '">' + grupos[g].join('') + '</optgroup>'; }).join('');
+      var actual = function(){ return ok[Number($('pSel').value)]; };
+      var vista = function(){
+        var p = actual(); var t = p.texto; var n = 0;
+        document.querySelectorAll('.pvar').forEach(function(inp){ n++; t = t.replace(/\{\{\s*[^}]+\s*\}\}/, inp.value || '[' + n + ']'); });
+        $('pVista').textContent = t;
+      };
+      var pintarVars = function(){
+        var p = actual(); var h = '';
+        for (var i = 1; i <= p.variables; i++) h += '<label>Variable ' + i + '<input class="pvar"></label>';
+        $('pVars').innerHTML = h;
+        document.querySelectorAll('.pvar').forEach(function(inp){ inp.oninput = vista; });
+        vista();
+      };
+      $('pSel').onchange = pintarVars; pintarVars(); $('pEnviar').disabled = false;
+      $('pEnviar').onclick = function(){
+        var p = actual(); var vars = []; var falta = false;
+        document.querySelectorAll('.pvar').forEach(function(inp){ if (!inp.value.trim()) falta = true; vars.push(inp.value.trim()); });
+        if (falta) { $('pErr').textContent = 'Llena todas las variables.'; return; }
+        var extra = { plantilla: p.nombre, idioma: p.idioma, variables: vars, vista: $('pVista').textContent, phone_id: desde() };
+        if (nuevo) {
+          var num = $('pNum').value.replace(/\D/g, '');
+          if (num.length < 10) { $('pErr').textContent = 'Escribe el número completo.'; return; }
+          extra.numero = num; extra.nombre = $('pNom').value.trim();
+        } else extra.wa_id = c.wa_id;
+        $('pEnviar').disabled = true; $('pErr').textContent = '';
+        api('plantilla', extra).then(function(j){
+          if (j.ok === false) { $('pErr').textContent = 'WhatsApp no la aceptó: ' + (j.error || ''); $('pEnviar').disabled = false; return; }
+          cerrar(); toast('Plantilla enviada');
+          return cargar().then(function(){ if (j.wa_id) abrir(j.wa_id); });
+        }).catch(function(e){ $('pErr').textContent = e.message; $('pEnviar').disabled = false; });
+      };
+    }).catch(function(e){ $('pErr').textContent = e.message; });
+  }
+
+  // ===== Configuracion (19 oct): solo lectura. Productos, plantillas y pendientes del bot. =====
+  // Los datos salen de /webhook/gr-portal-config: el catalogo del motor (el mismo de /gr/portal#productos),
+  // las fichas del bot y las plantillas de Meta con su estado.
+  var ESTADO_FICHA = { al_dia: 'Al día', atrasada: 'Atrasada', sin_pv: 'Sin PV', sin_ficha: 'Falta' };
+  var ESTADO_META = { APPROVED: 'Aprobada', PENDING: 'En revisión', REJECTED: 'Rechazada', PAUSED: 'Pausada', DISABLED: 'Desactivada' };
+  function cargarConf(){
+    return fetch(BASE + 'gr-portal-config', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ k: K }) })
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (!j.ok) throw new Error(j.error || 'No se pudo leer la configuración');
+        conf = j;
+        $('t-conf').innerHTML = 'Configuración' + (j.pendientes.length ? '<span class="num">' + j.pendientes.length + '</span>' : '');
+        pintarSelects();
+        pintarLista(); if (!$('conf').hidden) pintarConf();
+      }).catch(function(e){ if (!$('conf').hidden) $('conf').innerHTML = '<p class="error">' + esc(e.message) + '</p>'; });
+  }
+  function liga(o){ return o && o.url ? '<a href="' + esc(o.url) + '" target="_blank" rel="noopener">' + esc(o.nombre) + '</a>' : '<span class="estado-f falta">' + esc(o && o.nombre || 'Por definir') + '</span>'; }
+  // ===== Mejoras (homologado con intelligence.greatrevenue.com/gr/portal#mejoras) =====
+  // "Corregir" en un mensaje del bot guarda la correccion en la misma tabla del motor (MOTOR_correcciones, medio
+  // WhatsApp). Se decide en el portal de Great Revenue, pestana Mejoras de mensajes.
+  var TIPOS_CORR = [['tono', 'El tono'], ['dato', 'Un dato equivocado'], ['oferta', 'Lo que se ofrece'], ['destinatarios', 'A quién le llegó'], ['diseno', 'El diseño'], ['persona', 'Debió atenderlo una persona'], ['otro', 'Otra cosa']];
+  var ESTADOS_CORR = { pendiente: 'Pendiente', enviada: 'Enviada a corrección', resuelta: 'Resuelta', rechazada: 'Rechazada' };
+  var corrs = null;
+  function quienSoy(){ try { return localStorage.getItem('gr_wa_quien') || ''; } catch (e) { return ''; } }
+  function corregir(c, m){
+    var op = oporDe(c), lin = lineaDe(c);
+    modal('<h2>Corregir mensaje</h2><p class="tenue" style="margin:0">Llega a la pestaña <b>Mejoras de mensajes</b> del portal de Great Revenue, donde se decide y se corrige el bot, las plantillas o la base.</p>' +
+      '<div class="vista">' + esc(m.texto) + '</div>' +
+      '<label>¿Qué estuvo mal?<select id="cTipo">' + TIPOS_CORR.map(function(t){ return '<option value="' + t[0] + '">' + t[1] + '</option>'; }).join('') + '</select></label>' +
+      '<label>Cómo lo dirías tú<textarea id="cProp" rows="4" style="font:inherit;padding:8px 10px;border:1px solid var(--borde);border-radius:8px"></textarea></label>' +
+      '<label>Comentario<textarea id="cCom" rows="2" style="font:inherit;padding:8px 10px;border:1px solid var(--borde);border-radius:8px"></textarea></label>' +
+      '<label>Tu nombre<input id="cQuien" value="' + esc(quienSoy()) + '" maxlength="80"></label><div class="error" id="cErr"></div>' +
+      '<div class="pieModal"><button class="btn sec" id="cancelar">Cancelar</button><button class="btn" id="cOk">Enviar corrección</button></div>');
+    $('cancelar').onclick = cerrar;
+    $('cOk').onclick = function(){
+      var prop = $('cProp').value.trim(), com = $('cCom').value.trim(), quien = $('cQuien').value.trim();
+      if (!prop && !com) { $('cErr').textContent = 'Escribe cómo lo dirías tú o un comentario.'; return; }
+      try { localStorage.setItem('gr_wa_quien', quien); } catch (e) {}
+      this.disabled = true;
+      postJson('gr-portal-correccion', { quien: quien, producto: lin.nombre || '', empresa: op ? empresaDe(op.o, op.c) : (c.nombre || ''), referencia: c.wa_id + ' · ' + m.id, texto_motor: m.texto, tipo: $('cTipo').value, propuesta: prop, comentario: com })
+        .then(function(){ cerrar(); corrs = null; toast('Corrección enviada a Mejoras'); })
+        .catch(function(e){ $('cErr').textContent = e.message; $('cOk').disabled = false; });
+    };
+  }
+  function cargarCorrs(){
+    return postJson('gr-portal-correcciones', {}).then(function(j){ corrs = j.correcciones || []; }).catch(function(e){ corrs = { error: e.message }; })
+      .finally(function(){ if (!$('conf').hidden && confSub === 'mejoras') pintarConf(); });
+  }
+  function confMejoras(){
+    var liga = '<a href="https://intelligence.greatrevenue.com/gr/portal#mejoras" target="_blank" rel="noopener">intelligence.greatrevenue.com/gr/portal → Mejoras de mensajes</a>';
+    var cab = '<p class="nota">Igual que en el portal de Great Revenue: se reporta un mensaje del bot (botón <b>Corregir</b> en cada mensaje del chat), se decide y se corrige. Se decide en ' + liga + '. Aquí ves las del WhatsApp y en qué van.</p>';
+    if (!corrs) return tarjeta(5, 'Mejoras de mensajes', cab + '<p class="tenue">Cargando…</p>');
+    if (corrs.error) return tarjeta(5, 'Mejoras de mensajes', cab + '<p class="error">' + esc(corrs.error) + '</p>');
+    var tipo = {}; TIPOS_CORR.forEach(function(t){ tipo[t[0]] = t[1]; });
+    return tarjeta(5, 'Mejoras de mensajes', cab + (corrs.length ? corrs.map(function(x){
+      return '<div class="tarjeta"><b>' + esc(x.empresa || 'Conversación') + '</b> <span class="estado-apr ' + (x.estado === 'resuelta' ? 'procesada' : x.estado === 'rechazada' ? 'descartada' : 'en_cola') + '">' + esc(ESTADOS_CORR[x.estado] || x.estado) + '</span>' +
+        '<div class="tenue">' + esc(new Date(x.ts).toLocaleString('es-MX', { timeZone: TZ, dateStyle: 'medium', timeStyle: 'short' })) + ' · ' + esc(x.quien) + ' · ' + esc(x.producto) + ' · ' + esc(tipo[x.tipo] || x.tipo) + '</div>' +
+        '<div class="plantilla-texto">' + esc(x.texto_motor) + '</div>' + (x.propuesta ? '<div><b>Cómo lo diría:</b> ' + esc(x.propuesta) + '</div>' : '') + (x.comentario ? '<div class="tenue">' + esc(x.comentario) + '</div>' : '') +
+        (x.version_final ? '<div><b>Versión final:</b> ' + esc(x.version_final) + '</div>' : '') + (x.resolucion ? '<div><b>Qué se cambió:</b> ' + esc(x.resolucion) + '</div>' : '') + '</div>';
+    }).join('') : '<p class="tenue">Todavía no hay correcciones del WhatsApp. Usa <b>Corregir</b> en un mensaje del bot.</p>'), '<a class="btn sec" href="https://intelligence.greatrevenue.com/gr/portal#mejoras" target="_blank" rel="noopener" style="text-decoration:none">Decidir en el portal</a>');
+  }
+  // Nombres de reuniones (REA 8.4): asi debe llamarse cada evento para que el aprendizaje sepa de que linea es.
+  function confReuniones(){
+    var d = apr[aprLinea];
+    return tarjeta(6, 'Nombres de reuniones', '<p class="nota">El formato está definido en el REA (§8.4). Con él, cada reunión dice de qué cliente y de qué línea es, y el aprendizaje continuo la ubica sin adivinar. Hoy la mayoría no lo cumple' + (d && d.total ? ' (en ' + esc(aprLinea) + ': ' + d.fuera_de_formato + ' de ' + d.total + ' fuera de formato)' : '') + '. Aplica a las reuniones nuevas; las pasadas no se renombran porque el cambio les llegaría a los invitados.</p>' +
+      '<table class="tabla"><thead><tr><th>Reunión</th><th>Formato</th><th>Ejemplo</th></tr></thead><tbody>' +
+      [['Primera reunión con el cliente', 'Discovery | Cliente & GR / Producto', 'Discovery | Corporación Fabpsa & GR / IT Support'],
+       ['Reuniones siguientes', '<N>da reunión | Cliente & GR / Producto', '2da reunión | Corporación Fabpsa & GR / IT Support'],
+       ['Cliente activo (consultoría)', 'Consultoría | Cliente & GR / Producto', 'Consultoría | Grupo Peña Verde & GR / IT Support'],
+       ['Interna operativa', 'INT | Operativa - Tema', 'INT | Operativa - Pipeline'],
+       ['Interna de revisión', 'INT | Review - Tema', 'INT | Review - Semana 43'],
+       ['Con un partner, sin cliente', 'Tema | GR + Partner', 'Demo IT Support | GR + Roomie IT']].map(function(r){ return '<tr><td>' + esc(r[0]) + '</td><td><code>' + esc(r[1]) + '</code></td><td class="tenue">' + esc(r[2]) + '</td></tr>'; }).join('') + '</tbody></table>');
+  }
+
+  // Configuracion con la misma estructura del portal de cada compania (intelligence.greatrevenue.com/gr/portal):
+  // sub-pestanas y tarjetas numeradas. Productos, PV, ICP y responsables son los mismos datos de ese portal.
+  var confSub = 'productos', aprLinea = 'ITS', apr = {};
+  var SUBS = [['productos', 'Productos'], ['plantillas', 'Plantillas'], ['pendientes', 'Pendientes'], ['aprendizaje', 'Aprendizaje continuo'], ['mejoras', 'Mejoras de mensajes'], ['reuniones', 'Nombres de reuniones']];
+  function tarjeta(n, titulo, cuerpo, extra){ return '<div class="card"><div class="card-h"><h2><span class="n">' + n + '</span>' + esc(titulo) + '</h2>' + (extra || '') + '</div>' + cuerpo + '</div>'; }
+  function pintarConf(){
+    if (!conf) { $('conf').innerHTML = '<p class="tenue">Cargando configuración…</p>'; return; }
+    var h = '<nav class="subtabs">' + SUBS.map(function(x){ return '<button data-s="' + x[0] + '" class="' + (confSub === x[0] ? 'on' : '') + '">' + x[1] + (x[0] === 'pendientes' && conf.pendientes.length ? ' (' + conf.pendientes.length + ')' : '') + '</button>'; }).join('') + '</nav>';
+    if (confSub === 'productos') h += confProductos();
+    if (confSub === 'plantillas') h += confPlantillas();
+    if (confSub === 'pendientes') h += confPendientes();
+    if (confSub === 'aprendizaje') h += confAprendizaje();
+    if (confSub === 'mejoras') h += confMejoras();
+    if (confSub === 'reuniones') h += confReuniones();
+    $('conf').innerHTML = h;
+    $('conf').onclick = function(e){
+      var b = e.target.closest('button'); if (!b) return;
+      if (b.getAttribute('data-s')) { confSub = b.getAttribute('data-s'); pintarConf(); if ((confSub === 'aprendizaje' || confSub === 'reuniones') && !apr[aprLinea]) cargarApr(); if (confSub === 'mejoras' && !corrs) cargarCorrs(); return; }
+      if (b.getAttribute('data-tipo') !== null && b.closest('#resumen')) { confTipo = b.getAttribute('data-tipo'); pintarConf(); return; }
+      if (b.getAttribute('data-al')) { aprLinea = b.getAttribute('data-al'); aprSel = {}; pintarConf(); if (!apr[aprLinea]) cargarApr(); return; }
+      if (b.id === 'aprBuscar') { buscarNuevo(false); return; }
+      if (b.id === 'aprRecargar') { cargarApr(); return; }
+      if (b.getAttribute('data-av')) { aprVer = b.getAttribute('data-av'); pintarConf(); if (aprVer === 'insumos' && !kbBorr[aprLinea]) leerBorrador(aprLinea).then(pintarConf).catch(function(){}); return; }
+      if (b.getAttribute('data-af') !== null && b.classList.contains('chip') && b.hasAttribute('data-af')) { aprFiltro = b.getAttribute('data-af'); pintarConf(); return; }
+      if (b.id === 'aprCola') { cambiarCola('en_cola'); return; }
+      if (b.id === 'aprDesc') { cambiarCola('descartada'); return; }
+      if (b.id === 'aprAhora') { procesarAhora(); return; }
+      if (b.id === 'kbVer') { verBorrador(); return; }
+      if (b.hasAttribute('data-lt')) { aprLt = b.getAttribute('data-lt'); pintarConf(); return; }
+      if (b.hasAttribute('data-if')) { insF = b.getAttribute('data-if'); pintarConf(); return; }
+      if (b.getAttribute('data-ia')) {
+        var ia = b.getAttribute('data-ia'), iid = b.getAttribute('data-i'), ins = (apr[aprLinea].insumos || []).filter(function(x){ return x.id === iid; })[0];
+        if (!ins) return;
+        if (ia !== 'editar') { revisarInsumo(iid, ia, ins.texto); return; }
+        modal('<h2>Editar insumo</h2><p class="tenue" style="margin:0">' + esc(TIPO_INS[ins.tipo] || ins.tipo) + ' · ' + esc(ins.fecha) + '. Al guardar queda aprobado y así entra a la ficha.</p>' + (ins.cita ? '<div class="tenue">“' + esc(ins.cita) + '”</div>' : '') +
+          '<textarea id="insTxt" rows="5" style="width:100%;font:inherit">' + esc(ins.texto) + '</textarea><div class="pieModal"><button class="btn sec" id="cancelar">Cancelar</button><button class="btn" id="insOk">Guardar y aprobar</button></div>');
+        $('cancelar').onclick = cerrar;
+        $('insOk').onclick = function(){ var t = $('insTxt').value.trim(); if (!t) return; cerrar(); revisarInsumo(iid, 'editar', t); };
+        return;
+      }
+    };
+    $('conf').onchange = function(e){
+      var x = e.target; if (!x.classList.contains('aprchk')) return;
+      if (x.checked) aprSel[x.getAttribute('data-e')] = true; else delete aprSel[x.getAttribute('data-e')];
+      pintarConf();
+    };
+  }
+  function confProductos(){
+    return tarjeta(1, 'Productos', '<p class="nota">Los mismos productos del portal de Great Revenue. La propuesta de valor, el ICP, qué se ofrece y quién lo lidera se cambian en <a href="https://intelligence.greatrevenue.com/gr/portal#productos" target="_blank" rel="noopener">intelligence.greatrevenue.com/gr/portal → Productos</a> y aquí se ven al instante. Lo propio de WhatsApp es la ficha del bot y la plantilla.</p>' +
+      '<table class="tabla"><thead><tr><th>Producto</th><th>Qué se ofrece</th><th>Propuesta de valor vigente</th><th>ICP vigente</th><th>Quién lo lidera</th><th>Aviso del bot</th><th>Ficha del bot</th><th>Plantilla WhatsApp</th></tr></thead><tbody>' +
+      conf.productos.map(function(p){
+        var v = p.plantillas.filter(function(t){ return t.version === '2'; })[0];
+        return '<tr><td><b>' + esc(p.nombre.replace(/ \(.*\)$/, '')) + '</b><div class="tenue">' + esc(p.codigo) + '</div></td>' +
+          '<td>' + (/^por definir$/i.test(p.ofrece) || !p.ofrece ? '<span class="estado-f falta">Por definir</span>' : esc(p.ofrece)) + '</td>' +
+          '<td>' + liga(p.propuesta) + '</td><td>' + liga(p.icp) + '</td><td>' + esc(p.lidera) + '</td><td>' + esc(p.seguimiento_bot.join(', ') || '—') + '</td>' +
+          '<td><span class="estado-f ' + esc(p.ficha.estado) + '">' + esc(ESTADO_FICHA[p.ficha.estado] || p.ficha.estado) + '</span></td>' +
+          '<td>' + (v ? esc(v.nombre) + ' <span class="estado-f ' + esc(v.estado) + '">' + esc(ESTADO_META[v.estado] || v.estado) + '</span>' : '<span class="estado-f falta">Falta</span>') + '</td></tr>';
+      }).join('') + '</tbody></table>');
+  }
+  function confPlantillas(){
+    return tarjeta(2, 'Plantillas en Meta', '<p class="nota">Todas las plantillas de la cuenta de WhatsApp de Great Revenue con su estado en Meta. Las v2 son las vigentes de Open+3, una por línea.</p>' +
+      conf.plantillas.map(function(t){
+        return '<div class="tarjeta"><b>' + esc(t.nombre) + '</b> <span class="estado-f ' + esc(t.estado) + '">' + esc(ESTADO_META[t.estado] || t.estado) + '</span>' +
+          ' <span class="tenue">· ' + esc((t.categoria || '').toLowerCase()) + ' · ' + t.variables + ' variable' + (t.variables === 1 ? '' : 's') + (t.motivo ? ' · motivo: ' + esc(t.motivo) : '') + '</span>' +
+          '<details><summary class="tenue" style="cursor:pointer">Ver texto</summary><div class="plantilla-texto">' + esc(t.texto) + '</div></details></div>';
+      }).join(''), '<span class="tenue">' + conf.plantillas.length + ' plantillas</span>');
+  }
+  function confPendientes(){
+    var tipos = {}; conf.pendientes.forEach(function(p){ tipos[p.tipo] = (tipos[p.tipo] || 0) + 1; });
+    var pend = conf.pendientes.filter(function(p){ return !confTipo || p.tipo === confTipo; });
+    return tarjeta(3, 'Pendientes', '<p class="nota">Lo que está mal o falta para que el bot y las plantillas estén al día. Se recalcula cada vez que abres esta pestaña.</p>' +
+      '<div class="resumen" id="resumen"><button data-tipo="" class="' + (confTipo ? '' : 'on') + '">Todos</button>' +
+      Object.keys(tipos).map(function(t){ return '<button data-tipo="' + esc(t) + '" class="' + (confTipo === t ? 'on' : '') + '">' + esc(t) + ' (' + tipos[t] + ')</button>'; }).join('') + '</div>' +
+      '<table class="tabla"><thead><tr><th>Producto</th><th>Qué</th><th>Detalle</th><th>Lo resuelve</th></tr></thead><tbody>' +
+      pend.map(function(p){ return '<tr><td>' + esc(p.producto.replace(/ \(.*\)$/, '')) + '</td><td>' + esc(p.tipo) + '</td><td>' + esc(p.texto) + '</td><td>' + esc(p.quien) + '</td></tr>'; }).join('') + '</tbody></table>',
+      '<span class="tenue">' + conf.pendientes.length + ' pendientes</span>');
+  }
+
+  // Aprendizaje continuo: por linea, las reuniones de sus oportunidades (abiertas y cerradas), guardadas en n8n.
+  // Se leen al instante; "Buscar lo nuevo" revisa la agenda solo desde la ultima busqueda. Las que se eligen pasan a
+  // la cola, Claude saca sus insumos y quedan como "ya aporto". Las recientes pesan mas: la propuesta se va afinando.
+  var FRESCURA = { reciente: 'Reciente (90 días)', media: 'Media (3 a 6 meses)', antigua: 'Antigua (más de 6 meses)' };
+  var ESTADO_APR = { procesada: 'Ya aportó', por_procesar: 'Por procesar', en_cola: 'En cola', sin_transcript: 'Sin transcript', descartada: 'Descartada', error: 'Error' };
+  var TIPO_INS = { dolor: 'Dolores', pregunta: 'Preguntas', objecion: 'Objeciones', frase_cliente: 'Frases del cliente', caso_o_cifra: 'Casos y cifras', oferta: 'Qué se ofreció', siguiente_paso: 'Siguientes pasos', dato_tecnico: 'Datos técnicos', senal_interes: 'Señales de interés' };
+  var aprSel = {}, aprVer = 'reuniones', aprFiltro = '', aprLt = 'propia', insF = 'nuevo';
+  // Linea de cada reunion segun su nombre (formato REA: "Discovery | Cliente & GR / ITS"; o codigos y nombres sueltos:
+  // "TW_Grupo Saesa", "Legacy Systems Takeover_..."). La reunion se encontro por la oportunidad de la linea, pero si su
+  // nombre dice otra linea es de otra conversacion con la misma persona y no debe alimentar esta ficha.
+  var ALIAS_LINEA = { TW: ['talkwalker', 'tw'], HS: ['hootsuite', 'hs'], AM: ['amplemarket', 'am'], AEO: ['aeo', 'seo'], GenIA: ['genia', 'dwf', 'digital workforce'],
+    GENIARH: ['genia rh', 'geniarh'], GENIAVTA: ['genia ventas', 'geniavta'], GENIACOB: ['genia cobranza', 'geniacob'], SYN: ['synapsis', 'syn'],
+    ITS: ['its', 'it support', 'it', 'helpdesk', 'mesa de ayuda'], LT: ['legacy systems takeover', 'legacy', 'lt'], BD: ['blindaje digital', 'blindaje', 'bd'],
+    '360': ['360', 'marketing 3v', '3v'], WB: ['web development', 'wb', 'sitio web'], PT: ['pintaando'] };
+  function lineasTitulo(t){
+    var n = ' ' + String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[_|\/&+—│:,.()\[\]-]+/g, ' ').replace(/\s+/g, ' ') + ' ';
+    var ls = Object.keys(ALIAS_LINEA).filter(function(c){ return ALIAS_LINEA[c].some(function(a){ return n.indexOf(' ' + a + ' ') >= 0; }); });
+    if (ls.some(function(c){ return /^GENIA.+/.test(c); })) ls = ls.filter(function(c){ return c !== 'GenIA'; });
+    return ls;
+  }
+  function claseLinea(r){ var ls = lineasTitulo(r.titulo); return !ls.length ? 'sin' : ls.indexOf(aprLinea) >= 0 ? 'esta' : 'otra'; }
+  function nombreLinea(c){ var p = ((conf && conf.productos) || []).filter(function(x){ return x.codigo === c; })[0]; return p ? p.nombre.replace(/ \(.*\)$/, '') : c; }
+  var ESTADO_INS = { nuevo: 'Sin revisar', aprobado: 'Aprobado: va a la base', descartado: 'No aprobado', confirmado: 'Ya está en la base' };
+  // Que cambia en la base: cada propuesta de Claude contra la base vigente de la linea (GR_KB_<linea>), por seccion,
+  // con lo que hoy dice y como quedaria. Lo aprobado se lleva a una version nueva de la base con "Ver como quedaria".
+  var CLASE = { nuevo: ['Nuevo', 'La base no lo tiene'], corrige: ['Corrige', 'La base dice otra cosa'], contradice: ['Contradice', 'El cliente dijo lo contrario: decide el equipo'],
+    refuerza: ['Confirma', 'Ya está en la base; la reunión lo confirma'], fuera: ['Fuera de la base', 'No es para la base'], '': ['Sin comparar', 'Procesada antes de comparar contra la base'] };
+  var ORDEN_SEC = ['1. Qué es y para quién', '2. Dolores del prospecto', '3. Cómo lo resolvemos', '4. Diferenciales', '5. Pruebas que se pueden citar', '6. Preguntas frecuentes', '7. Objeciones', '8. Qué se ofrece', '9. Qué no decir', '10. Lenguaje del cliente y glosario', 'Pendiente de verificar', 'Fuera de la base'];
+  var kbBorr = {};   // linea -> ultimo borrador (preparando, listo, confirmado o error)
+  function baseDe(l){ var p = ((conf && conf.productos) || []).filter(function(x){ return x.codigo === l; })[0]; return p && p.kb && p.kb.url ? p.kb : null; }
+  function vistaCambios(d){
+    var kb = baseDe(aprLinea), ins = d.insumos || [];
+    var ver = ins.filter(function(x){ return !insF || x.estado === insF; });
+    var n = function(f){ return ins.filter(f).length; };
+    var porAplicar = ins.filter(function(x){ return x.estado === 'aprobado' && !x.aplicado && x.clase && x.clase !== 'fuera' && x.clase !== 'refuerza'; });
+    var h = '<div class="kb-cab">' + (kb ? 'Base vigente: <a href="' + esc(kb.url) + '" target="_blank" rel="noopener"><b>' + esc(kb.nombre) + '</b></a>. Cada propuesta compara la reunión contra este documento.'
+        : '<b>Esta línea todavía no tiene base de conocimiento</b> (hoy solo IT Support). Las propuestas se comparan contra la ficha del bot y lo que apruebes queda guardado para cuando exista su base.') + '</div>' +
+      '<div class="apr-res"><div class="ok"><b>' + n(function(x){ return x.clase === 'nuevo'; }) + '</b><span>nuevos</span></div><div class="pend"><b>' + n(function(x){ return x.clase === 'corrige'; }) + '</b><span>corrigen</span></div>' +
+      '<div class="mal"><b>' + n(function(x){ return x.clase === 'contradice'; }) + '</b><span>contradicen</span></div><div><b>' + n(function(x){ return x.clase === 'refuerza'; }) + '</b><span>confirman lo que ya está</span></div>' +
+      '<div><b>' + n(function(x){ return x.clase === 'fuera'; }) + '</b><span>fuera de la base</span></div><div><b>' + porAplicar.length + '</b><span>aprobados por llevar a la base</span></div></div>';
+    var b = kbBorr[aprLinea];
+    if (b && b.estado === 'confirmado') h += '<div class="kb-ok">Última versión creada: <a href="' + esc(b.url) + '" target="_blank" rel="noopener"><b>' + esc(b.nombre) + '</b></a> (antes ' + esc(b.anterior || '') + '). ' + esc(b.resumen || '') + '</div>';
+    // Solo consulta (decision de Mike, 25 oct): se aprueba y se lleva a la base en el tablero, pestana Conocimiento.
+    h += '<div class="kb-ok">Aquí solo se consulta. Las propuestas se aprueban y se llevan a la base en el tablero: <a href="https://intelligence.greatrevenue.com/?tab=conocimiento" target="_blank" rel="noopener"><b>Conocimiento</b></a>.</div>';
+    if (kb) h += '<div class="barra-apr"><b>' + porAplicar.length + ' aprobado' + (porAplicar.length === 1 ? '' : 's') + ' por llevar a la base</b><button class="btn" id="kbVer"' + (porAplicar.length || (b && b.estado === 'listo') ? '' : ' disabled') + '>' +
+      (b && b.estado === 'listo' && (b.ids || []).slice().sort().join(',') === porAplicar.map(function(x){ return x.id; }).sort().join(',') ? 'Ver el borrador listo' : b && b.estado === 'preparando' ? 'Preparando borrador…' : 'Ver cómo quedaría la base') + '</button></div>';
+    if (!ver.length) return h + '<p class="tenue">' + (ins.length ? 'Nada en este filtro.' : 'Todavía no hay propuestas en esta línea. Elige reuniones en "Reuniones" y ponlas en cola.') + '</p>';
+    var grupos = {}; ver.forEach(function(x){ var k = x.seccion || 'Sin sección'; (grupos[k] = grupos[k] || []).push(x); });
+    var secs = Object.keys(grupos).sort(function(a, z){ var ia = ORDEN_SEC.indexOf(a), iz = ORDEN_SEC.indexOf(z); return (ia < 0 ? 99 : ia) - (iz < 0 ? 99 : iz); });
+    return h + secs.map(function(sec){
+      return '<h3 class="apr-h3">' + esc(sec) + ' (' + grupos[sec].length + ')</h3>' + grupos[sec].map(function(x){
+        var c = CLASE[x.clase || ''] || CLASE[''];
+        return '<div class="insumo ins-' + esc(x.estado) + '"><div class="kchips"><span class="etq cl-' + esc(x.clase || 'sin') + '" title="' + esc(c[1]) + '">' + esc(c[0]) + '</span><span class="etq">' + esc(TIPO_INS[x.tipo] || x.tipo || '') + '</span><span class="etq">Reunión del ' + esc(x.fecha) + '</span>' +
+            '<span class="etq ' + (x.citable ? 'respondio' : 'sinresp') + '">' + (x.citable ? 'Se puede usar en público' : 'Solo interno') + '</span>' + (x.aplicado ? '<span class="etq respondio">Ya está en ' + esc(x.kb_version || 'la base') + '</span>' : '') + '</div>' +
+          (x.actual ? '<div class="kb-antes"><span>Hoy dice</span>' + esc(x.actual) + '</div>' : '') +
+          '<div class="kb-despues"><span>' + (x.clase === 'refuerza' ? 'La reunión lo confirma' : x.clase === 'contradice' ? 'El cliente dijo' : x.clase === 'fuera' ? 'Lo que salió' : x.actual ? 'Quedaría' : 'Se agrega') + '</span>' + esc(x.texto) + '</div>' +
+          (x.motivo ? '<div class="tenue">' + esc(x.motivo) + '</div>' : '') + (x.cita ? '<div class="tenue">Evidencia: “' + esc(x.cita) + '”</div>' : '') +
+          '<div class="ins-acc"><span class="etq ' + (x.estado === 'aprobado' ? 'respondio' : x.estado === 'descartado' ? 'nocontactar' : x.estado === 'confirmado' ? '' : 'pendopen') + '">' + esc(ESTADO_INS[x.estado] || x.estado) + '</span>' +
+            (x.estado !== 'aprobado' && x.clase !== 'refuerza' ? '<button class="btn sec" data-ia="aprobar" data-i="' + esc(x.id) + '">Aprobar</button>' : '') + (x.clase !== 'refuerza' ? '<button class="btn sec" data-ia="editar" data-i="' + esc(x.id) + '">Editar</button>' : '') +
+            (x.estado !== 'descartado' && x.clase !== 'refuerza' ? '<button class="btn sec" data-ia="descartar" data-i="' + esc(x.id) + '">No aprobar</button>' : '') + (x.estado === 'aprobado' || x.estado === 'descartado' ? '<button class="enlace" data-ia="reabrir" data-i="' + esc(x.id) + '">Regresar a sin revisar</button>' : '') + '</div></div>';
+      }).join('');
+    }).join('');
+  }
+  function leerBorrador(l){ return postJson('gr-portal-kb-borrador', { linea: l }).then(function(j){ kbBorr[l] = j.borrador || {}; return kbBorr[l]; }); }
+  var kbEspera = null;
+  function verBorrador(){
+    var l = aprLinea, b = kbBorr[l];
+    // El borrador sirve solo si se armo con exactamente lo que hoy esta aprobado; si cambio algo, se prepara de nuevo.
+    var hoy = ((apr[l] || {}).insumos || []).filter(function(x){ return x.estado === 'aprobado' && !x.aplicado && x.clase && x.clase !== 'fuera' && x.clase !== 'refuerza'; }).map(function(x){ return x.id; }).sort().join(',');
+    if (b && b.estado === 'listo' && (b.ids || []).slice().sort().join(',') === hoy) return modalBorrador(b);
+    postJson('gr-portal-kb-preparar', { linea: l }).then(function(){
+      kbBorr[l] = { estado: 'preparando' }; pintarConf();
+      modal('<h2>Preparando la versión nueva</h2><p class="tenue" id="kbMsg">Claude está integrando lo aprobado en la base. Tarda de 1 a 3 minutos; puedes cerrar esta ventana y volver.</p><div class="pieModal"><button class="btn sec" id="cancelar">Cerrar</button></div>');
+      $('cancelar').onclick = cerrar;
+      clearInterval(kbEspera); var vueltas = 0;
+      kbEspera = setInterval(function(){
+        if (++vueltas > 40) { clearInterval(kbEspera); return; }
+        leerBorrador(l).then(function(x){
+          if (x.estado === 'listo') { clearInterval(kbEspera); pintarConf(); if ($('kbMsg')) modalBorrador(x); }
+          if (x.estado === 'error') { clearInterval(kbEspera); pintarConf(); if ($('kbMsg')) $('kbMsg').textContent = 'No se pudo preparar: ' + x.error; }
+        }).catch(function(){});
+      }, 8000);
+    }).catch(function(e){ toast(e.message); });
+  }
+  function modalBorrador(b){
+    modal('<h2>Así quedaría ' + esc(b.siguiente) + '</h2><p class="tenue" style="margin:0">Se crea un documento nuevo junto a ' + esc(b.kb_nombre) + ' (que se conserva) y la ficha del portal apunta a él. De ahí salen el bot, el motor y las campañas.</p>' +
+      '<div class="kb-ok">' + esc(b.resumen || '') + '</div>' +
+      '<div class="envlista">' + (b.cambios || []).map(function(c){ return '<div class="envfila' + (c.aplicado ? '' : ' mal') + '"><b>' + (c.aplicado ? 'Entra' : 'No entra') + '</b> · ' + esc(c.seccion) + '<div class="tenue">' + esc(c.como) + '</div></div>'; }).join('') + '</div>' +
+      '<details><summary class="tenue" style="cursor:pointer">Ver el documento completo</summary><pre class="kb-md">' + esc(b.markdown || '') + '</pre></details>' +
+      '<div class="error" id="kbErr"></div><div class="pieModal"><button class="btn sec" id="cancelar">Todavía no</button><button class="btn sec" id="kbRehacer">Volver a preparar</button><button class="btn" id="kbOk">Confirmar y crear ' + esc(b.siguiente) + '</button></div>');
+    $('cancelar').onclick = cerrar;
+    $('kbRehacer').onclick = function(){ kbBorr[aprLinea] = {}; cerrar(); verBorrador(); };
+    $('kbOk').onclick = function(){
+      var btn = this; btn.disabled = true; btn.textContent = 'Creando…';
+      postJson('gr-portal-kb-confirmar', { linea: aprLinea }).then(function(j){
+        cerrar(); toast('Listo: ' + j.nombre + ' creada y ligada en la ficha del portal');
+        return leerBorrador(aprLinea).then(function(){ return Promise.all([cargarConf(), postJson('gr-portal-aprendizaje', { linea: aprLinea }).then(function(x){ apr[aprLinea] = x; })]); }).then(pintarConf);
+      }).catch(function(e){ btn.disabled = false; btn.textContent = 'Confirmar y crear ' + b.siguiente; $('kbErr').textContent = e.message; });
+    };
+  }
+  function revisarInsumo(id, accion, texto){
+    var ins = (apr[aprLinea].insumos || []).filter(function(x){ return x.id === id; })[0] || {};
+    postJson('gr-portal-insumo', { insumo_id: id, accion: accion, texto: texto, aplicado: !!ins.aplicado }).then(function(j){
+      (apr[aprLinea].insumos || []).forEach(function(x){ if (x.id === id) { x.estado = j.estado; x.texto = texto; if (accion === 'editar' || accion === 'descartar') x.aplicado = false; } });
+      toast(accion === 'descartar' ? 'No aprobado' : accion === 'reabrir' ? 'Regresado a sin revisar' : 'Aprobado: entra a la base cuando pulses "Ver cómo quedaría la base"');
+      pintarConf();
+    }).catch(function(e){ toast(e.message); });
+  }
+  function postJson(ruta, cuerpo){
+    return fetch(BASE + ruta, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(Object.assign({ k: K }, cuerpo)) })
+      .then(function(r){ return r.text().then(function(t){ var j = null; try { j = JSON.parse(t); } catch(e) {} if (!r.ok || !j || j.ok === false) throw new Error((j && (j.error || j.message)) || 'Error ' + r.status); return j; }); });
+  }
+  function cargarApr(){
+    var l = aprLinea;
+    return postJson('gr-portal-aprendizaje', { linea: l })
+      .then(function(j){ apr[l] = j; if (!j.ultima_busqueda && !j.total) return buscarNuevo(true); })
+      .catch(function(e){ apr[l] = { error: e.message }; })
+      .finally(function(){ if (!$('conf').hidden && confSub === 'aprendizaje') pintarConf(); });
+  }
+  function buscarNuevo(primera){
+    var l = aprLinea; apr[l] = Object.assign({}, apr[l] || {}, { buscando: true }); pintarConf();
+    return postJson('gr-portal-aprendizaje-actualizar', { linea: l })
+      .then(function(j){ toast((primera ? 'Primera búsqueda: ' : 'Búsqueda: ') + j.nuevas + ' reuniones nuevas, ' + j.transcripts_nuevos + ' con transcript nuevo'); return new Promise(function(ok){ setTimeout(ok, 4000); }); })
+      .then(function(){ return postJson('gr-portal-aprendizaje', { linea: l }).then(function(j){ apr[l] = j; }); })
+      .catch(function(e){ toast(e.message); if (apr[l]) apr[l].buscando = false; })
+      .finally(function(){ if (!$('conf').hidden && confSub === 'aprendizaje') pintarConf(); });
+  }
+  function cambiarCola(estado){
+    var ids = Object.keys(aprSel); if (!ids.length) return;
+    if (estado === 'en_cola') {
+      var otras = (apr[aprLinea].reuniones || []).filter(function(r){ return aprSel[r.event_id] && claseLinea(r) === 'otra'; });
+      if (otras.length) { toast(otras.length + ' de las elegidas son de otra línea por su nombre. Quítalas o descártalas: aportarían a la ficha equivocada.'); return; }
+    }
+    postJson('gr-portal-aprendizaje-cola', { event_ids: ids, estado: estado, linea: aprLinea }).then(function(j){
+      toast(estado === 'en_cola' ? j.cambiadas + ' en cola. Claude las procesa en la siguiente hora, o pulsa "Procesar ahora".' : j.cambiadas + ' marcadas como ' + (ESTADO_APR[estado] || estado).toLowerCase());
+      aprSel = {}; return postJson('gr-portal-aprendizaje', { linea: aprLinea }).then(function(x){ apr[aprLinea] = x; pintarConf(); });
+    }).catch(function(e){ toast(e.message); });
+  }
+  function procesarAhora(){
+    postJson('gr-portal-aprendizaje-procesar', {}).then(function(){ toast('Procesando hasta 3 reuniones de la cola. Tarda un par de minutos; luego pulsa ↻.'); }).catch(function(e){ toast(e.message); });
+  }
+  function personaFicha(c){
+    return '<div class="persona"><b>' + esc(c.nombre) + '</b>' + (c.linkedin ? ' <a href="' + esc(c.linkedin) + '" target="_blank" rel="noopener" class="li" title="LinkedIn">in</a>' : '') +
+      '<div class="tenue">' + esc([c.puesto, c.empresa].filter(Boolean).join(' · ')) + '</div></div>';
+  }
+  function confAprendizaje(){
+    var lineas = (conf.productos || []).map(function(p){ return [p.codigo, p.nombre.replace(/ \(.*\)$/, '')]; });
+    var d = apr[aprLinea];
+    var cab = '<details class="masf"><summary>Cómo funciona y dónde se modifica</summary><ol class="pasos-apr">' +
+      '<li><b>Buscar.</b> Para la línea elegida se toman sus oportunidades de HubSpot (abiertas y cerradas), sus contactos y, con su correo, las reuniones que ya pasaron en la agenda de Mike. Se guardan; "Buscar lo nuevo" solo revisa desde la última vez.</li>' +
+      '<li><b>Revisar la línea.</b> Una persona puede tener reuniones de varias líneas. Cada reunión dice qué línea trae en su nombre: <span class="estado-f lt-esta">De esta línea</span>, <span class="estado-f lt-otra">Es de otra línea</span> (no se puede poner en cola; descártala) o <span class="estado-f lt-sin">Sin línea en el nombre</span> (se ligó por la oportunidad; revisa antes de usarla). El nombre correcto es el formato REA: <i>Discovery | Cliente & GR / Producto</i>.</li>' +
+      '<li><b>Elegir.</b> Marca las que tienen transcript y deben aportar, y pulsa "Poner en cola". Las demás, "Descartar".</li>' +
+      '<li><b>Claude compara contra la base.</b> Cada hora (o con "Procesar ahora") lee hasta 3 transcripts de la cola junto con la <b>base de conocimiento</b> de la línea (GR_KB_…, el documento del REA del que salen el bot, el motor y las campañas) y dice qué cambiaría: <b>nuevo</b> (la base no lo tiene), <b>corrige</b> (dice otra cosa), <b>contradice</b> (el cliente dijo lo contrario), <b>confirma</b> (ya está) o <b>fuera de la base</b> (socios, tareas internas, cifras sin fuente).</li>' +
+      '<li><b>Revisar (aquí se modifica).</b> En "Qué cambia en la base" cada propuesta muestra la sección, lo que <b>hoy dice</b> y cómo <b>quedaría</b>, con su evidencia. La <b>apruebas</b>, la <b>editas</b> (queda aprobada) o <b>no la apruebas</b>.</li>' +
+      '<li><b>Llevar a la base.</b> "Ver cómo quedaría la base" arma con Claude la versión siguiente (por ejemplo, de vB a vC) con solo lo aprobado y te enseña qué entra y qué no. Al confirmar se crea el documento nuevo en Drive junto al anterior (que se conserva) y la ficha del portal apunta a él. Lo que el bot responde mal se corrige en la pestaña Mejoras.</li></ol>' +
+      '<p class="tenue">Primero las recientes: la propuesta se va afinando; lo antiguo sirve sobre todo para objeciones y lenguaje.</p></details>' +
+      '<div class="filters"><span class="flabel">Línea:</span>' + lineas.map(function(x){ return '<button class="chip' + (aprLinea === x[0] ? ' on' : '') + '" data-al="' + esc(x[0]) + '">' + esc(x[1]) + '</button>'; }).join('') + '</div>';
+    if (!d || (d.buscando && !d.reuniones)) return tarjeta(4, 'Aprendizaje continuo', cab + '<p class="tenue">' + (d && d.buscando ? 'Buscando en la agenda por primera vez (unos segundos)…' : 'Cargando…') + '</p>');
+    if (d.error) return tarjeta(4, 'Aprendizaje continuo', cab + '<p class="error">' + esc(d.error) + '</p>');
+    var ult = d.ultima_busqueda ? new Date(d.ultima_busqueda).toLocaleString('es-MX', { timeZone: TZ, dateStyle: 'medium', timeStyle: 'short' }) : 'nunca';
+    var res = '<div class="apr-res"><div><b>' + d.total + '</b><span>reuniones</span></div>' +
+      '<div class="ok"><b>' + d.procesadas + '</b><span>ya aportaron</span></div><div class="pend"><b>' + (d.por_procesar + d.en_cola) + '</b><span>por procesar' + (d.en_cola ? ' (' + d.en_cola + ' en cola)' : '') + '</span></div>' +
+      '<div><b>' + d.sin_transcript + '</b><span>sin transcript</span></div><div class="mal"><b>' + d.fuera_de_formato + '</b><span>nombre fuera de formato</span></div>' +
+      '<div><b>' + (d.insumos || []).length + '</b><span>insumos</span></div></div>';
+    var acc = '<div class="filters"><button class="chip' + (aprVer === 'reuniones' ? ' on' : '') + '" data-av="reuniones">Reuniones</button><button class="chip' + (aprVer === 'insumos' ? ' on' : '') + '" data-av="insumos">Qué cambia en la base (' + (d.insumos || []).filter(function(x){ return x.estado === 'nuevo'; }).length + ' por revisar)</button>' +
+      (aprVer === 'reuniones' ? '<span class="flabel" style="margin-left:10px">Ver:</span>' + [['', 'Todas'], ['por_procesar', 'Por procesar'], ['en_cola', 'En cola'], ['procesada', 'Ya aportaron'], ['sin_transcript', 'Sin transcript'], ['error', 'Error']].map(function(x){ return '<button class="chip' + (aprFiltro === x[0] ? ' on' : '') + '" data-af="' + x[0] + '">' + x[1] + '</button>'; }).join('') : '') +
+      '<span class="tenue" style="margin-left:auto">Última búsqueda: ' + esc(ult) + '</span></div>' +
+      (aprVer === 'reuniones' ? '<div class="filters"><span class="flabel">Por su nombre:</span>' + [['propia', 'De esta línea o sin línea'], ['esta', 'De esta línea'], ['sin', 'Sin línea en el nombre'], ['otra', 'De otra línea'], ['', 'Todas']].map(function(x){
+        var n = d.reuniones.filter(function(r){ var c = claseLinea(r); return !x[0] || (x[0] === 'propia' ? c !== 'otra' : c === x[0]); }).length;
+        return '<button class="chip' + (aprLt === x[0] ? ' on' : '') + (n ? '' : ' cero') + '" data-lt="' + x[0] + '">' + x[1] + ' (' + n + ')</button>'; }).join('') + '</div>'
+      : '<div class="filters"><span class="flabel">Revisión:</span>' + [['nuevo', 'Sin revisar'], ['aprobado', 'Aprobados'], ['descartado', 'No aprobados'], ['confirmado', 'Ya están en la base'], ['', 'Todos']].map(function(x){
+        var n = (d.insumos || []).filter(function(i){ return !x[0] || i.estado === x[0]; }).length;
+        return '<button class="chip' + (insF === x[0] ? ' on' : '') + '" data-if="' + x[0] + '">' + x[1] + ' (' + n + ')</button>'; }).join('') + '</div>');
+    var cuerpo;
+    if (aprVer === 'insumos') cuerpo = vistaCambios(d);
+    else {
+      var ls = d.reuniones.filter(function(r){ var c = claseLinea(r); return (!aprFiltro || r.estado === aprFiltro) && (!aprLt || (aprLt === 'propia' ? c !== 'otra' : c === aprLt)); });
+      var nSel = Object.keys(aprSel).length;
+      cuerpo = '<div class="barra-apr"><b>' + nSel + ' seleccionada' + (nSel === 1 ? '' : 's') + '</b><button class="btn" id="aprCola"' + (nSel ? '' : ' disabled') + '>Poner en cola para aprender</button><button class="btn sec" id="aprDesc"' + (nSel ? '' : ' disabled') + '>Descartar</button><button class="btn sec" id="aprAhora">Procesar ahora (' + d.en_cola + ' en cola)</button></div>' +
+        '<table class="tabla"><thead><tr><th></th><th>Fecha</th><th>Reunión</th><th>Personas</th><th>Oportunidad</th><th>Transcript</th><th>Conocimiento</th></tr></thead><tbody>' +
+        ls.map(function(r){
+          var elegible = r.transcript && (r.estado === 'por_procesar' || r.estado === 'error' || r.estado === 'descartada');
+          return '<tr><td>' + (elegible ? '<input type="checkbox" class="aprchk" data-e="' + esc(r.event_id) + '"' + (aprSel[r.event_id] ? ' checked' : '') + '>' : '') + '</td>' +
+            '<td>' + esc(r.fecha) + '<div><span class="estado-f fr-' + r.frescura + '">' + esc(FRESCURA[r.frescura]) + '</span></div></td>' +
+            '<td>' + (r.liga ? '<a href="' + esc(r.liga) + '" target="_blank" rel="noopener">' + esc(r.titulo || '(sin título)') + '</a>' : esc(r.titulo)) + (function(){ var c = claseLinea(r), ls2 = lineasTitulo(r.titulo);
+              return '<div><span class="estado-f lt-' + c + '">' + (c === 'esta' ? 'De esta línea' + (ls2.length > 1 ? ' (también ' + esc(ls2.filter(function(x){ return x !== aprLinea; }).map(nombreLinea).join(', ')) + ')' : '') : c === 'otra' ? 'Es de ' + esc(ls2.map(nombreLinea).join(', ')) : 'Sin línea en el nombre') + '</span>' +
+                (r.formato_ok ? '' : ' <span class="estado-f falta" title="Formato: Discovery | Cliente & GR / Producto">Nombre fuera de formato</span>') + '</div>'; })() + '</td>' +
+            '<td>' + r.contactos.map(personaFicha).join('') + '</td>' +
+            '<td>' + r.oportunidades.map(function(o){ return '<a href="' + esc(o.url) + '" target="_blank" rel="noopener">' + esc(o.nombre) + '</a><div class="tenue">' + esc(o.etapa) + '</div>'; }).join('') + '</td>' +
+            '<td>' + (r.transcript ? '<a href="' + esc(r.transcript.url) + '" target="_blank" rel="noopener">' + esc(r.transcript.titulo) + '</a>' : '<span class="tenue">No hay</span>') + '</td>' +
+            '<td><span class="estado-apr ' + r.estado + '">' + esc(ESTADO_APR[r.estado] || r.estado) + '</span>' + (r.insumos ? ' <span class="tenue">' + r.insumos + ' insumos</span>' : '') +
+            (r.resumen ? '<details><summary class="tenue">Resumen</summary><div class="plantilla-texto">' + esc(r.resumen) + '</div></details>' : '') + (r.nota ? '<div class="tenue">' + esc(r.nota) + '</div>' : '') + '</td></tr>';
+        }).join('') + '</tbody></table>';
+    }
+    return tarjeta(4, 'Aprendizaje continuo', cab + res + acc + cuerpo, '<span><button class="btn sec" id="aprBuscar">' + (d.buscando ? 'Buscando…' : 'Buscar lo nuevo en la agenda') + '</button> <button class="btn sec" id="aprRecargar">↻</button></span>');
+  }
+  $('tabs').onclick = function(e){
+    var b = e.target.closest('button'); if (!b) return;
+    var t = b.getAttribute('data-t');
+    document.querySelectorAll('#tabs button').forEach(function(x){ x.classList.toggle('on', x === b); });
+    $('conf').hidden = t !== 'conf'; $('opor').hidden = t !== 'opor'; $('app').hidden = t !== 'conv';
+    if (t === 'conf') { pintarConf(); cargarConf(); }
+    if (t === 'opor') { pintarOpor(); cargarOpor(); }
+  };
+
+  $('actualizar').onclick = actualizar;
+  $('nuevo').onclick = function(){ abrirPlantilla(null); };
+  $('buscar').oninput = pintarLista;
+  $('filtros').onclick = function(e){
+    var a = e.target.closest('[data-ayuda]');
+    if (a) { var ka = a.getAttribute('data-ayuda'); ayudaAbierta[ka] = !ayudaAbierta[ka]; pintarFiltros(); return; }
+    var b = e.target.closest('button[data-k]'); if (!b) return;
+    var k = b.getAttribute('data-k'), v = b.getAttribute('data-v');
+    F[k] = k === 'atiende' ? v : (F[k] === v ? '' : v);   // en las demas filas, volver a tocar el mismo boton lo quita
+    pintarLista();
+  };
+  $('ftog').onclick = function(){ var p = $('fpanel'); p.classList.toggle('cerrado'); this.textContent = p.classList.contains('cerrado') ? 'Filtros ▸' : 'Filtros ▾'; };
+  $('flimpiar').onclick = function(){ Object.keys(F).forEach(function(k){ F[k] = ''; }); F.atiende = 'todas'; pintarLista(); };
+  // Detalle de la oportunidad arriba del chat (en lugar de llevar a HubSpot).
+  document.addEventListener('click', function(e){ if (e.target.closest('#verOp')) { fichaAbierta = !fichaAbierta; pintarChat(false); } });
+  // Globo de explicacion para todo lo que trae data-tip (botones, filtros, etiquetas y la ficha).
+  (function(){
+    var tip = document.createElement('div'); tip.id = 'tip'; document.body.appendChild(tip); var actual = null;
+    document.addEventListener('mouseover', function(e){
+      var t = e.target.closest && e.target.closest('[data-tip]'); if (t === actual) return; actual = t;
+      if (!t) { tip.classList.remove('ver'); return; }
+      tip.textContent = t.getAttribute('data-tip'); tip.classList.add('ver');
+      var r = t.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+      var x = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), window.innerWidth - w - 8);
+      var y = r.bottom + 6 + h > window.innerHeight ? r.top - h - 6 : r.bottom + 6;
+      tip.style.left = x + 'px'; tip.style.top = y + 'px';
+    });
+  })();
+  $('items').onclick = function(e){ var it = e.target.closest('.item'); if (it) abrir(it.getAttribute('data-w')); };
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') cerrar(); });
+
+  if (enN8n && K) {
+    var aviso = document.createElement('div'); aviso.className = 'mudanza';
+    aviso.innerHTML = 'El portal cambió de dirección: <a href="' + NUEVA + '?k=' + encodeURIComponent(K) + '">intelligence.greatrevenue.com/gr/whatsapp</a>. Guarda la liga nueva; esta dejará de usarse. <button type="button" aria-label="Cerrar">×</button>';
+    aviso.querySelector('button').onclick = function(){ aviso.remove(); };
+    document.body.appendChild(aviso);
+  }
+  if (!K) { $('estado').textContent = 'Falta la clave en la liga (?k=…)'; $('items').innerHTML = '<div class="vacio">Abre el portal con la liga completa que incluye la clave.</div>'; }
+  else { cargar().then(function(){ if ((datos.numeros || []).some(function(n){ return n.hootsuite; })) actualizar(); }); cargarConf(); cargarOpor(); }
+})();
+</script>
 </body>
 </html>
