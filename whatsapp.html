@@ -174,7 +174,9 @@
   .clip{border:1px solid var(--borde);background:#fff;border-radius:50%;width:42px;height:42px;flex:0 0 auto;cursor:pointer;font-size:18px;color:var(--marca)}
   .clip:disabled{opacity:.4;cursor:default}
   .adjunto{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--texto);background:#fff;border:1px solid var(--borde);border-radius:8px;padding:6px 10px}
-  .adjunto button{border:0;background:none;color:var(--mal);cursor:pointer;font-size:12.5px}
+  .adjunto button{border:0;background:none;color:var(--mal);cursor:pointer;font-size:12.5px} .adjunto[hidden]{display:none}
+  .ficha-op{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:8px 16px;border-bottom:1px solid var(--borde);font-size:12px;color:var(--tenue);background:#fbfaff}
+  .ficha-op b{color:var(--texto);font-weight:600} .ficha-op a{color:inherit} .etq.toque{background:#efe7ff;color:#5b21b6} .etq.toque.mal{background:#fde8e8;color:#9b1c1c}
   .inicio{flex:1;display:flex;align-items:center;justify-content:center;color:var(--tenue);padding:24px;text-align:center}
   .modal{position:fixed;inset:0;background:rgba(10,20,17,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:5}
   .modal .caja-m{background:#fff;border-radius:12px;max-width:520px;width:100%;max-height:92vh;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
@@ -221,6 +223,8 @@
         <button data-f="respondio">Respondió a plantilla</button>
         <select id="f-linea" aria-label="Línea"><option value="">Todas las líneas</option></select>
         <select id="f-etapa" aria-label="Etapa"><option value="">Todas las etapas</option></select>
+        <select id="f-toque" aria-label="Toque de Open+3"><option value="">Todos los toques</option></select>
+        <select id="f-firma" aria-label="Quién envió la campaña"><option value="">Todos los remitentes</option></select>
       </div>
     </div>
     <div class="items" id="items"></div>
@@ -243,7 +247,7 @@
   var abrirPlantillaDesde = '';
   var pendiente = null;
   var sel = null, filtro = 'todas', plantillas = {}, ocupado = false, syncTimer = null;
-  var conf = null, confTipo = '', linea = '', etapaF = '';
+  var conf = null, confTipo = '', linea = '', etapaF = '', toqueF = '', firmaF = '';
   var opor = null, oporF = { fase: '', linea: '', persona: '', wa: '', pend: false, sem: '', origen: '', senal: '', monto: '', cierre: '', nuevas: '', tipo: '', q: '' };
   var $ = function(id){ return document.getElementById(id); };
 
@@ -348,6 +352,22 @@
     if (f === 'prospeccion' || f === 'venta') return op.o.etapa.fase === f;
     return op.o.etapa.id === f;
   }
+  // Toques de WhatsApp de Open+3 (GR — Open+3 Toques WhatsApp): en que toque va y si hubo problema.
+  var ESTADO_TOQUE = { no_entregado: 'No entregado', sin_whatsapp: 'Sin WhatsApp', sin_telefono: 'Sin celular', error: 'No se envió', excluido: 'País excluido', datos_faltantes: 'Faltan datos', respondio: 'Respondió', perdida: 'Perdida' };
+  function textoToque(o3){
+    if (!o3) return '';
+    if (o3.estado === 'activo') return 'Toque ' + o3.toque + ' de 3';
+    return (ESTADO_TOQUE[o3.estado] || o3.estado) + (o3.toque ? ' · toque ' + o3.toque + ' de 3' : '');
+  }
+  // Remitente: los del equipo llegan con su nombre corto (Martha, Migue); los de Hootsuite como correo (abraham.pablo).
+  function nombreRemitente(r){ r = String(r || ''); return r.indexOf('.') > 0 ? r.split('.')[0].charAt(0).toUpperCase() + r.split('.')[0].slice(1) + ' (Hootsuite)' : r; }
+  function coincideToque(op, f){
+    var o3 = op && op.o.o3;
+    if (f === 'sin') return !o3;
+    if (!o3) return false;
+    if (/^[123]$/.test(f)) return o3.estado === 'activo' && String(o3.toque) === f;
+    return o3.estado === f;
+  }
   function opcionesEtapa(todas){
     var et = (opor && opor.etapas) || [];
     var grupo = function(f, t){ return '<optgroup label="' + t + '"><option value="' + f + '">Toda la ' + t.toLowerCase() + '</option>' +
@@ -365,6 +385,13 @@
     $('f-linea').value = linea;
     $('f-etapa').innerHTML = opcionesEtapa('Todas las etapas') + '<option value="sin">Sin oportunidad en HubSpot</option>';
     $('f-etapa').value = etapaF;
+    $('f-toque').innerHTML = '<option value="">Todos los toques</option><option value="1">Toque 1 de 3</option><option value="2">Toque 2 de 3</option><option value="3">Toque 3 de 3</option>' +
+      '<option value="respondio">Respondió</option><option value="no_entregado">No entregado</option><option value="sin_whatsapp">Sin WhatsApp</option><option value="sin_telefono">Sin celular</option>' +
+      '<option value="error">No se envió</option><option value="sin">Sin toques de Open+3</option>';
+    $('f-toque').value = toqueF;
+    var firmas = [...new Set(((opor && opor.oportunidades) || []).map(function(o){ return o.remitente; }).filter(Boolean))].sort();
+    $('f-firma').innerHTML = '<option value="">Todos los remitentes</option>' + firmas.map(function(f){ return '<option value="' + esc(f) + '">Envió: ' + esc(nombreRemitente(f)) + '</option>'; }).join('');
+    $('f-firma').value = firmaF;
   }
 
   // Estado de cada contacto frente a WhatsApp. El numero es uno solo: el celular (es WhatsApp); si HubSpot solo
@@ -606,8 +633,11 @@
       if (filtro === 'respondio' && !(pi && pi.respondio)) return false;
       if (linea && lineaDe(c).codigo !== linea) return false;
       if (etapaF && !coincideEtapa(oporDe(c), etapaF)) return false;
+      if (toqueF && !coincideToque(oporDe(c), toqueF)) return false;
+      if (firmaF && !(oporDe(c) && oporDe(c).o.remitente === firmaF)) return false;
       if (!q) return true;
-      var txt = (c.nombre + ' ' + c.wa_id + ' ' + c.msgs.map(function(m){ return m.texto; }).join(' ')).toLowerCase();
+      var opq = oporDe(c);
+      var txt = (c.nombre + ' ' + c.wa_id + ' ' + (opq ? opq.o.nombre + ' ' + (opq.o.campana || '') : '') + ' ' + c.msgs.map(function(m){ return m.texto; }).join(' ')).toLowerCase();
       return txt.indexOf(q) >= 0;
     });
     if (!ls.length) { $('items').innerHTML = '<div class="vacio">' + (datos.convs.length ? 'Nada coincide con el filtro.' : 'Todavía no hay conversaciones. Cuando alguien escriba al número aparecerá aquí.') + '</div>'; return; }
@@ -625,6 +655,7 @@
         '<span class="etq ' + (v.abierta ? 'abierta' : 'cerrada') + '">' + (v.abierta ? 'Ventana abierta · quedan ' + horasVentana(c) + ' h' : 'Solo plantilla') + '</span>' +
         (lin.codigo ? '<span class="etq producto">' + esc(lin.nombre) + '</span>' : '') +
         (op ? '<span class="etq etapa ' + op.o.etapa.fase + '">' + esc(op.o.etapa.nombre) + '</span>' : '') +
+        (op && op.o.o3 ? '<span class="etq toque' + (op.o.o3.estado === 'activo' || op.o.o3.estado === 'respondio' ? '' : ' mal') + '">' + esc(textoToque(op.o.o3)) + '</span>' : '') +
         (pi ? '<span class="etq ' + (pi.respondio ? 'respondio' : 'sinresp') + '">' + (pi.respondio ? 'Respondió' : 'Sin respuesta') + '</span>' : '') +
         (c.origen && c.origen.indexOf('anuncio') === 0 ? '<span class="etq anuncio">Anuncio</span>' : '') +
         (variosNumeros() ? '<span class="etq">' + esc(nombreNumero(c.phone_id)) + '</span>' : '') +
@@ -651,6 +682,20 @@
     return enlazar(m.texto || '(' + m.tipo + ')');
   }
 
+  // Ficha de la oportunidad arriba del chat: producto, etapa (con liga a HubSpot), campana o senal, quien la envio y el toque.
+  function fichaOportunidad(c){
+    var op = oporDe(c), lin = lineaDe(c);
+    if (!op) return '<div class="ficha-op">' + (lin.codigo ? '<span><b>' + esc(lin.nombre) + '</b></span>' : '') + '<span>Sin oportunidad abierta en HubSpot</span></div>';
+    var o = op.o, o3 = o.o3, f = function(ts){ return ts ? nombreDia(ts).toLowerCase() + ' ' + hora(ts) : ''; };
+    var ult = o3 ? (o3.t3 || o3.t2 || o3.t1) : 0;
+    return '<div class="ficha-op"><span><b>' + esc(o.linea.nombre) + '</b></span>' +
+      '<span>Etapa: <a href="' + esc(o.url) + '" target="_blank" rel="noopener"><b>' + esc(o.etapa.nombre) + '</b></a></span>' +
+      (o.campana ? '<span>Campaña o señal: <b>' + esc(o.campana) + '</b></span>' : '') +
+      (o.senal ? '<span>Señal: <b>' + esc(o.senal) + '</b></span>' : '') +
+      (o.remitente ? '<span>Envió: <b>' + esc(nombreRemitente(o.remitente)) + '</b></span>' : '') +
+      (o3 ? '<span>WhatsApp: <b>' + esc(textoToque(o3)) + '</b>' + (ult ? ' · último ' + esc(f(ult)) : '') + (o3.estado !== 'activo' && o3.detalle ? ' · ' + esc(o3.detalle) : '') + '</span>' : '') +
+      '</div>';
+  }
   function pintarChat(bajar){
     var c = conv(sel); if (!c) return;
     var v = ventana(c);
@@ -661,11 +706,11 @@
       ' <button class="lapiz" id="renombrar" title="Cambiar nombre">✎</button></span>' +
       '<span class="m">' + esc(tel(c.wa_id)) + (variosNumeros() ? ' · por ' + esc(nombreNumero(c.phone_id)) : '') + (c.origen ? ' · ' + esc(c.origen) : '') + '</span></div><div class="acciones">' +
       (c.modo === 'bot' ? '<button class="btn tomar" id="tomar">Me encargo yo</button>' : '<button class="btn sec" id="devolver">Devolver al bot</button>') +
-      '</div></div>';
+      '</div></div>' + fichaOportunidad(c);
     html += c.modo === 'persona'
       ? '<div class="aviso persona">Una persona atiende esta conversación. El bot no contesta hasta que la devuelvas.</div>'
       : '<div class="aviso bot">El bot contesta esta conversación. Si escribes desde aquí, pasa a tu cargo.</div>';
-    if (!v.abierta) html += '<div class="aviso cerrada">Pasaron más de 24 h desde el último mensaje del cliente. WhatsApp solo deja escribirle con una plantilla aprobada.</div>';
+    if (!v.abierta) html += '<div class="aviso cerrada">' + (c.msgs.some(function(m){ return m.dir === 'entrante'; }) ? 'Pasaron más de 24 h desde el último mensaje del cliente.' : 'El contacto todavía no ha escrito.') + ' WhatsApp solo deja escribirle con una plantilla aprobada.</div>';
     else html += '<div class="aviso" style="font-size:12px;color:var(--tenue)">Puedes escribir texto libre hasta ' + nombreDia(v.fin).toLowerCase() + ' a las ' + hora(v.fin) + '.</div>';
     html += '<div class="msgs" id="msgs">';
     var ultimoDia = '';
@@ -676,7 +721,7 @@
       var desdeHs = (m.estado || '').indexOf('Hootsuite') >= 0;
       var autor = m.dir === 'nota' ? 'Nota interna' : (m.dir === 'saliente' ? (m.autor === 'bot' ? (desdeHs ? 'Agente virtual de Hootsuite' : 'Bot') : (m.tipo === 'plantilla' ? 'Plantilla' : (desdeHs ? 'Equipo · desde Hootsuite' : 'Equipo'))) : '');
       html += '<div class="m ' + cls + '">' + (autor ? '<div class="autor">' + autor + '</div>' : '') + cuerpoMsg(m) +
-        '<div class="pie">' + (m.dir === 'saliente' && m.autor === 'bot' && !desdeHs ? '<button class="enlace corregir" data-id="' + esc(m.id) + '" title="Reportar este mensaje del bot en Mejoras">Corregir</button>' : '') + ((m.estado || '').indexOf('fallido') === 0 ? '<span>' + esc(m.estado.replace('fallido: ', '')) + '</span>' : '') + '<span>' + hora(m.ts) + '</span>' + check(m) + '</div></div>';
+        '<div class="pie">' + (m.dir === 'saliente' ? '<button class="enlace corregir" data-id="' + esc(m.id) + '" title="Decir qué estuvo mal y cómo lo dirías tú (llega a Mejoras)">Corregir</button>' : '') + ((m.estado || '').indexOf('fallido') === 0 ? '<span>' + esc(m.estado.replace('fallido: ', '')) + '</span>' : '') + '<span>' + hora(m.ts) + '</span>' + check(m) + '</div></div>';
     });
     html += '</div><div class="caja"><div class="opciones"><label><input type="checkbox" id="comoNota"> Nota interna (el cliente no la ve)</label>' +
       '<button class="enlace" id="abrirPlantilla">Enviar plantilla</button></div>' +
@@ -810,7 +855,19 @@
     traerPlantillas(desde()).then(function(ls){
       var ok = ls.filter(function(p){ return p.soportada; });
       if (!ok.length) { $('pSel').innerHTML = '<option>No hay plantillas aprobadas</option>'; $('pErr').textContent = 'Crea y aprueba una plantilla en el WhatsApp Manager de Meta.'; return; }
-      $('pSel').innerHTML = ok.map(function(p, i){ return '<option value="' + i + '">' + esc(p.nombre) + ' · ' + esc(p.idioma) + ' · ' + esc(p.categoria.toLowerCase()) + '</option>'; }).join('');
+      // Agrupadas por linea: las de Open+3 (gr_o3_<linea>_...) con su toque y area; las demas al final.
+      var AREAS = { mkt: 'marketing', com: 'comunicación', cx: 'experiencia del cliente', redes: 'redes' };
+      var nomLinea = function(cod){ var x = ((conf && conf.productos) || []).find(function(q){ return String(q.codigo).toLowerCase() === cod; }); return x ? x.nombre.replace(/ \(.*\)$/, '') : cod.toUpperCase(); };
+      var grupos = {}, orden = [];
+      ok.forEach(function(p, i){
+        var m = /^gr_o3_([a-z0-9]+?)(?:_(mkt|com|cx|redes))?_t(\d)(b?)_v[a-z]$/.exec(p.nombre);
+        var g = m ? nomLinea(m[1]) : (/^gr_open3_/.test(p.nombre) ? 'Open+3 anteriores' : 'Otras plantillas');
+        var et = m ? 'Toque ' + m[3] + (m[2] ? ' · ' + AREAS[m[2]] : '') + (m[4] ? ' · versión B' : '') + ' (' + p.nombre + ')' : p.nombre + ' · ' + p.categoria.toLowerCase();
+        if (!grupos[g]) { grupos[g] = []; orden.push(g); }
+        grupos[g].push('<option value="' + i + '">' + esc(et) + '</option>');
+      });
+      orden.sort(function(a, b){ var r = function(x){ return x === 'Otras plantillas' ? 2 : x === 'Open+3 anteriores' ? 1 : 0; }; return r(a) - r(b) || a.localeCompare(b); });
+      $('pSel').innerHTML = orden.map(function(g){ return '<optgroup label="' + esc(g) + '">' + grupos[g].join('') + '</optgroup>'; }).join('');
       var actual = function(){ return ok[Number($('pSel').value)]; };
       var vista = function(){
         var p = actual(); var t = p.texto; var n = 0;
@@ -871,7 +928,7 @@
   function quienSoy(){ try { return localStorage.getItem('gr_wa_quien') || ''; } catch (e) { return ''; } }
   function corregir(c, m){
     var op = oporDe(c), lin = lineaDe(c);
-    modal('<h2>Corregir mensaje del bot</h2><p class="tenue" style="margin:0">Llega a la pestaña <b>Mejoras de mensajes</b> del portal de Great Revenue, donde se decide y se corrige el bot.</p>' +
+    modal('<h2>Corregir mensaje</h2><p class="tenue" style="margin:0">Llega a la pestaña <b>Mejoras de mensajes</b> del portal de Great Revenue, donde se decide y se corrige el bot, las plantillas o la base.</p>' +
       '<div class="vista">' + esc(m.texto) + '</div>' +
       '<label>¿Qué estuvo mal?<select id="cTipo">' + TIPOS_CORR.map(function(t){ return '<option value="' + t[0] + '">' + t[1] + '</option>'; }).join('') + '</select></label>' +
       '<label>Cómo lo dirías tú<textarea id="cProp" rows="4" style="font:inherit;padding:8px 10px;border:1px solid var(--borde);border-radius:8px"></textarea></label>' +
@@ -1203,7 +1260,9 @@
   };
   $('f-linea').onchange = function(){ linea = this.value; pintarLista(); };
   $('f-etapa').onchange = function(){ etapaF = this.value; pintarLista(); };
-  $('f-linea').onclick = $('f-etapa').onclick = function(e){ e.stopPropagation(); };
+  $('f-toque').onchange = function(){ toqueF = this.value; pintarLista(); };
+  $('f-firma').onchange = function(){ firmaF = this.value; pintarLista(); };
+  $('f-linea').onclick = $('f-etapa').onclick = $('f-toque').onclick = $('f-firma').onclick = function(e){ e.stopPropagation(); };
 
   $('actualizar').onclick = actualizar;
   $('nuevo').onclick = function(){ abrirPlantilla(null); };
