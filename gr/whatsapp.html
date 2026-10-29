@@ -563,8 +563,11 @@
   // Estado de la oportunidad en WhatsApp: el mas avanzado de sus contactos.
   function estadoOp(o){ var orden = ['falta', 'listo', 'enviada', 'conversa'], m = 0; o.contactos.forEach(function(ct){ m = Math.max(m, orden.indexOf(estadoContacto(ct).k)); }); return orden[m]; }
   function personasOp(o){ return [o.responsable, o.apoyo, o.dueno_corto].filter(Boolean); }
-  // Plantilla Open+3 vigente de cada linea (codigo del catalogo -> sufijo de gr_open3_*_v2).
-  var SUFIJO = { TW: 'tw', HS: 'hs', AM: 'am', AEO: 'aeo', GenIA: 'genia', GENIARH: 'rh', GENIAVTA: 'vta', GENIACOB: 'cob', SYN: 'syn', ITS: 'its', LT: 'lt', BD: 'bd', '360': '360', WB: 'wb' };
+  // Plantilla Open+3 vigente de cada linea: el toque 1 de la serie vF (29 oct 2026), gr_o3_<linea>_t1_vf. En Talkwalker,
+  // a mano sale el analisis competitivo (el reporte por defecto de la base §8.2). CAMPOS_T1: que dato va en cada numero
+  // (n nombre · f firma · e empresa · s sector), igual que plantillas/vF.json.
+  var SUFIJO = { TW: 'tw_comp', HS: 'hs', AM: 'am', AEO: 'aeo', GENIA: 'genia', GENIARH: 'geniarh', GENIAVTA: 'geniavta', GENIACOB: 'geniacob', SYN: 'syn', ITS: 'its', LT: 'lt', BD: 'bd', '360': '360', WB: 'wb' };
+  var CAMPOS_T1 = { tw_comp: 'nfes', hs: 'nfse', am: 'nfe', aeo: 'nfse', genia: 'nfse', geniarh: 'nfe', geniavta: 'nfe', geniacob: 'nfe', syn: 'nfe', its: 'nfe', lt: 'nf', bd: 'nfe', '360': 'nfe', wb: 'nfe' };
   var elegidos = {};   // contact_id -> { o, ct }
 
   function empresaDe(o, ct){
@@ -720,7 +723,8 @@
   }
 
   // Envio de la plantilla Open+3 de cada linea a los contactos elegidos. Usa el mismo envio del portal (uno por
-  // persona, uno por segundo). Variables: {{1}} nombre, {{2}} empresa, {{3}} firma (dueño de la oportunidad).
+  // persona, uno por segundo). Campos de cada plantilla en CAMPOS_T1; la firma es el responsable de la oportunidad
+  // «de Great Revenue» y el sector, «tu industria» (aqui no se sabe en palabras; el flujo automatico lo elige con la IA).
   var TOPE_ENVIO = 20;
   function enviarOpen3(){
     var sel = Object.keys(elegidos).map(function(k){ return elegidos[k]; });
@@ -728,8 +732,10 @@
     traerPlantillas((datos.numeros[0] || {}).phone_id).then(function(ls){
       var aprob = {}; ls.filter(function(t){ return t.soportada; }).forEach(function(t){ aprob[t.nombre] = t; });
       var filas = sel.map(function(x){
-        var nom = 'gr_open3_' + (SUFIJO[x.o.linea.codigo] || '') + '_v2', t = aprob[nom];
-        var vars = [String(x.ct.nombre || '').split(' ')[0], empresaDe(x.o, x.ct), (x.o.responsable || String(x.o.dueno || '').split(' ')[0])].slice(0, t ? t.variables : 0);
+        var suf = SUFIJO[codLinea(x.o.linea.codigo)] || '', nom = 'gr_o3_' + suf + '_t1_vf', t = aprob[nom];
+        var firma = (x.o.responsable || String(x.o.dueno || '').split(' ')[0]);
+        var valor = { n: String(x.ct.nombre || '').split(' ')[0], f: firma ? firma + ' de Great Revenue' : '', e: empresaDe(x.o, x.ct), s: 'tu industria' };
+        var vars = String(CAMPOS_T1[suf] || '').split('').map(function(c){ return valor[c]; }).slice(0, t ? t.variables : 0);
         var vista = t ? t.texto.replace(/\{\{(\d+)\}\}/g, function(m, i){ return vars[i - 1] || m; }) : '';
         return { x: x, t: t, nom: nom, vars: vars, vista: vista, ok: !!t && vars.every(Boolean) };
       });
@@ -1165,11 +1171,12 @@
       var ok = ls.filter(function(p){ return p.soportada; });
       if (!ok.length) { $('pSel').innerHTML = '<option>No hay plantillas aprobadas</option>'; $('pErr').textContent = 'Crea y aprueba una plantilla en el WhatsApp Manager de Meta.'; return; }
       // Agrupadas por linea: las de Open+3 (gr_o3_<linea>_...) con su toque y area; las demas al final.
-      var AREAS = { mkt: 'marketing', com: 'comunicación', cx: 'experiencia del cliente', redes: 'redes' };
+      var AREAS = { mkt: 'marketing', com: 'comunicación', cx: 'experiencia del cliente', redes: 'redes', comp: 'análisis competitivo', salud: 'salud de marca', crisis: 'crisis e hitos',
+        tend: 'tendencias', infl: 'influencers', perf: 'performance orgánica', empl: 'empleados y franquicias', camp: 'post campaña' };
       var nomLinea = function(cod){ var x = ((conf && conf.productos) || []).find(function(q){ return String(q.codigo).toLowerCase() === cod; }); return x ? x.nombre.replace(/ \(.*\)$/, '') : cod.toUpperCase(); };
       var grupos = {}, orden = [];
       ok.forEach(function(p, i){
-        var m = /^gr_o3_([a-z0-9]+?)(?:_(mkt|com|cx|redes))?_t(\d)(b?)_v[a-z]$/.exec(p.nombre);
+        var m = /^gr_o3_([a-z0-9]+?)(?:_(mkt|com|cx|redes|comp|salud|crisis|tend|infl|perf|empl|camp))?_t(\d)(b?)_v[a-z]$/.exec(p.nombre);
         var g = m ? nomLinea(m[1]) : (/^gr_open3_/.test(p.nombre) ? 'Open+3 anteriores' : 'Otras plantillas');
         var et = m ? 'Toque ' + m[3] + (m[2] ? ' · ' + AREAS[m[2]] : '') + (m[4] ? ' · versión B' : '') + ' (' + p.nombre + ')' : p.nombre + ' · ' + p.categoria.toLowerCase();
         if (!grupos[g]) { grupos[g] = []; orden.push(g); }
