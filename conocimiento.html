@@ -168,11 +168,19 @@
       ls.map(function(l){ return '<button class="chip' + (fProd === l.codigo ? ' on' : '') + (l.kb ? '' : ' sinbase') + '" data-fprod="' + esc(l.codigo) + '" title="' + esc(l.nombre + ' · lidera ' + l.lidera + (l.kb ? ' · base ' + l.kb.nombre : ' · sin base todavía')) + '">' + esc(corto(l.nombre)) + (l.kb ? '' : ' · sin base') + '</button>'; }).join('') + '</div></div>';
   }
 
+  // 29 oct: el borrador de cada base se lee al cargar. Antes «Ver cómo quedaría» siempre volvía a prepararlo y, si se
+  // cerraba la ventana, no quedaba a la vista; ahora el botón dice si está preparando, listo para revisar o con error.
+  var borr = {};
+  function leerBorradores(){
+    (datos.lineas || []).filter(function(l){ return l.kb && l.por_aplicar; }).forEach(function(l){
+      post('gr-portal-kb-borrador', { linea: l.codigo }).then(function(j){ borr[l.codigo] = j.borrador || {}; if (vista === 'resumen') pintar(); }).catch(function(){});
+    });
+  }
   function cargar(){
     return post('gr-conocimiento').then(function(j){ datos = j;
       if (fLid !== 'todos' && !(datos.lideres || []).some(function(x){ return x.nombre === fLid; })) fLid = 'todos';
       if (fProd !== 'todos' && !datos.lineas.some(function(l){ return l.codigo === fProd; })) fProd = 'todos';
-      pintar(); })
+      pintar(); leerBorradores(); })
       .catch(function(e){ $('main').innerHTML = '<p class="error">No se pudo cargar: ' + esc(e.message) + '. Vuelve a intentar.</p>'; });
   }
   // Pendientes de las bases agrupados por tema: cada base nombra distinto el mismo choque, asi que se agrupan en temas fijos
@@ -268,7 +276,11 @@
     return '<h2>Estado de cada base' + ay('Aprobar una propuesta no cambia la base. Lo aprobado entra cuando quien lidera presiona «Ver cómo quedaría», revisa la versión nueva y la confirma. Hasta entonces el bot, el motor y las campañas siguen con la base vigente.') + '</h2>' +
       '<div class="card tabla"><table class="t2"><tr><th>Producto</th><th>Base vigente</th><th title="Los documentos de ventas del producto, en su carpeta Documentos de Ventas de Drive">Documentos</th><th>Por decidir</th><th>Aprobadas que faltan entrar a la base</th><th>Paso siguiente</th></tr>' + xs.map(function(l){
         var n = { nuevo: 0, aprobado: 0 }; l.propuestas.forEach(function(x){ var g = grupoEst(x); if (n[g] != null) n[g]++; });
-        var paso = l.por_aplicar ? (puede(l.lidera) ? '<button class="btn" data-base="' + esc(l.codigo) + '" title="Claude integra lo aprobado y te muestra cómo quedaría la versión nueva antes de crearla">Ver cómo quedaría</button>' : '<span class="sub">Elige a ' + esc(l.lidera) + ' en el filtro de líder</span>') : (n.nuevo ? '<span class="sub">Revisar las propuestas</span>' : '<span class="sub">Al día</span>');
+        var b = borr[l.codigo] || {}, reciente = b.ts && Date.now() / 1000 - b.ts < 900;
+        var boton = b.estado === 'listo' ? '<button class="btn" data-verb="' + esc(l.codigo) + '" title="La versión nueva ya está preparada: revísala y confírmala">Revisar y confirmar ' + esc(b.siguiente || 'la versión nueva') + '</button><div class="sub" style="margin-top:4px">Preparada el ' + esc(fecha(b.ts)) + ' · <a href="#" data-base="' + esc(l.codigo) + '">volver a prepararla</a></div>'
+          : b.estado === 'preparando' && reciente ? '<span class="sub">Preparando la versión nueva (de 2 a 5 minutos)…</span>'
+          : (b.estado === 'error' ? '<div class="sub" style="color:var(--rojo,#e5484d)">La última vez falló: ' + esc(b.error || '') + '</div>' : '') + '<button class="btn" data-base="' + esc(l.codigo) + '" title="Claude integra lo aprobado y te muestra cómo quedaría la versión nueva antes de crearla">Ver cómo quedaría</button>';
+        var paso = l.por_aplicar ? (puede(l.lidera) ? boton : '<span class="sub">Elige a ' + esc(l.lidera) + ' en el filtro de líder</span>') : (n.nuevo ? '<span class="sub">Revisar las propuestas</span>' : '<span class="sub">Al día</span>');
         return '<tr><td>' + esc(corto(l.nombre)) + '<div class="sub">Lidera ' + esc(l.lidera) + '</div></td><td><a href="' + esc(l.kb.url) + '" target="_blank" rel="noopener">' + esc(l.kb.nombre) + '</a></td>' +
           '<td>' + (l.documentos || []).filter(function(d){ return d.tipo !== 'Base de conocimiento'; }).map(function(d){ return '<div><a href="' + esc(d.url) + '" target="_blank" rel="noopener" title="' + esc(d.nombre) + '">' + esc(d.tipo) + '</a></div>'; }).join('') + '</td>' +
           '<td class="celda" data-ir="' + esc(l.codigo + '|todas|todo') + '"><b>' + n.nuevo + '</b></td><td><b>' + l.por_aplicar + '</b></td><td>' + paso + '</td></tr>'; }).join('') + '</table></div>';
@@ -435,14 +447,15 @@
   function verBase(c){
     var l = datos.lineas.filter(function(x){ return x.codigo === c; })[0];
     post('gr-portal-kb-preparar', { linea: c }).then(function(){
-      modal('<h3>Preparando la versión nueva</h3><p class="nota" id="kbMsg">Claude está integrando lo aprobado y las decisiones en ' + esc(l.kb.nombre) + '. Tarda de 1 a 3 minutos; puedes cerrar esta ventana y volver.</p><div class="acc"><button class="btn sec" id="cerrar">Cerrar</button></div>');
-      $('cerrar').onclick = cerrar; clearInterval(espera); var n = 0;
+      modal('<h3>Preparando la versión nueva</h3><p class="nota" id="kbMsg">Claude está integrando lo aprobado y las decisiones en ' + esc(l.kb.nombre) + '. Tarda de 2 a 5 minutos. Puedes cerrar esta ventana: cuando esté lista, el botón de la tabla cambia a «Revisar y confirmar».</p><div class="acc"><button class="btn sec" id="cerrar">Cerrar</button></div>');
+      $('cerrar').onclick = cerrar; clearInterval(espera); var n = 0; borr[c] = { estado: 'preparando', ts: Date.now() / 1000 }; if (vista === 'resumen') pintar();
       espera = setInterval(function(){
-        if (++n > 40) { clearInterval(espera); return; }
+        if (++n > 50) { clearInterval(espera); return; }
         post('gr-portal-kb-borrador', { linea: c }).then(function(j){
           var x = j.borrador || {};
-          if (x.estado === 'listo') { clearInterval(espera); if ($('kbMsg')) verBorrador(l, x); }
-          if (x.estado === 'error') { clearInterval(espera); if ($('kbMsg')) $('kbMsg').textContent = 'No se pudo preparar: ' + (x.error || ''); }
+          if (x.estado === 'listo' || x.estado === 'error') { clearInterval(espera); borr[c] = x; if (vista === 'resumen' && !$('kbMsg')) pintar(); }
+          if (x.estado === 'listo' && $('kbMsg')) verBorrador(l, x);
+          if (x.estado === 'error' && $('kbMsg')) $('kbMsg').textContent = 'No se pudo preparar: ' + (x.error || '');
         }).catch(function(){});
       }, 8000);
     }).catch(function(e){ toast(e.message); });
@@ -472,7 +485,7 @@
   }
 
   document.addEventListener('click', function(e){
-    var t = e.target.closest('[data-v],[data-ayuda],[data-flid],[data-fprod],[data-zona],[data-ir],[data-fper],[data-fest],[data-fent],[data-facc],[data-freu],[data-ff],[data-ok],[data-otra],[data-guarda],[data-ia],[data-base]'); if (!t || !datos) return;
+    var t = e.target.closest('[data-v],[data-ayuda],[data-flid],[data-fprod],[data-zona],[data-ir],[data-fper],[data-fest],[data-fent],[data-facc],[data-freu],[data-ff],[data-ok],[data-otra],[data-guarda],[data-ia],[data-base],[data-verb]'); if (!t || !datos) return;
     var g = function(k){ return t.getAttribute(k); };
     if (t.hasAttribute('data-v')) { vista = g('data-v'); window.scrollTo(0, 0); return pintar(); }
     if (t.hasAttribute('data-ayuda')) return verAyuda();
@@ -487,7 +500,8 @@
     if (t.hasAttribute('data-facc')) { fAcc = g('data-facc'); return pintar(); }
     if (t.hasAttribute('data-freu')) { fReu = g('data-freu'); return pintar(); }
     if (t.hasAttribute('data-ff')) { fFij = g('data-ff'); return pintar(); }
-    if (t.hasAttribute('data-base')) return verBase(g('data-base'));
+    if (t.hasAttribute('data-base')) { e.preventDefault(); return verBase(g('data-base')); }
+    if (t.hasAttribute('data-verb')) { var lv = datos.lineas.filter(function(x){ return x.codigo === g('data-verb'); })[0]; return verBorrador(lv, borr[g('data-verb')] || {}); }
     if (t.hasAttribute('data-ok')) { t.disabled = true; return decidir(g('data-ok'), 'confirmo'); }
     if (t.hasAttribute('data-otra')) { var d = $('otra-' + g('data-otra').replace('|', '-')); d.hidden = !d.hidden; if (!d.hidden) d.querySelector('textarea').focus(); return; }
     if (t.hasAttribute('data-guarda')) { var c = g('data-guarda'), v = $('otra-' + c.replace('|', '-')).querySelector('textarea').value.trim(); if (!v) return toast('Escribe qué se decide'); t.disabled = true; return decidir(c, 'cambio', v); }
