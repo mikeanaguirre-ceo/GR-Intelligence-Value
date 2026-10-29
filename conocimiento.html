@@ -201,6 +201,9 @@
       o.lineas = o.items.map(function(i){ return i.l.codigo; }).filter(function(c, n, a){ return a.indexOf(c) === n; }).length; return o; })
       .sort(function(a, b){ return orden.indexOf(a.clave) - orden.indexOf(b.clave); });
   }
+  // 29 oct: «Ya revisadas» mezclaba lo aprobado con lo que resolvió solo el lote (confirmado, juntado). Se separa.
+  function grupoEst(x){ return x.estado === 'nuevo' ? 'nuevo' : x.estado === 'aprobado' ? 'aprobado' : x.estado === 'descartado' ? 'descartado' : 'auto'; }
+  var EST = [['nuevo', 'Por decidir', 'Nadie las ha revisado.'], ['aprobado', 'Aprobadas', 'Las aprobó el líder. Entran a la base cuando se crea la versión nueva («Ver cómo quedaría»).'], ['descartado', 'No aprobadas', 'El líder las rechazó.'], ['auto', 'Las resolvió el sistema', 'Nadie las revisó: el lote vio que la base ya lo dice (confirmadas) o las juntó en otra propuesta parecida.']];
   function porDecidir(){ var n = 0; lineasVista().forEach(function(l){ n += l.propuestas.filter(function(x){ return x.estado === 'nuevo'; }).length; }); return n; }
 
   var VISTAS = [['resumen', 'Resumen', 'La matriz de productos contra las 10 entradas de la Voz del mercado. Pica una celda para ver sus propuestas.'],
@@ -244,7 +247,8 @@
     var ls = lineasVista(), rz = (datos.rezago || []);
     var c = zona === 'semana' ? datos.lote : rz.filter(function(x){ return String(x.desde).slice(0, 10) === zona; })[0] || datos.lote;
     var h = '<h1>Resumen' + ay('Cada fila es un producto del catálogo; cada columna, una entrada de la Voz del mercado. Las celdas en cero también se evaluaron. Pica una celda con propuestas para verlas.') + '</h1>' +
-      '<p class="nota">Qué llegó de cada entrada y cuántas propuestas dejó, producto por producto.</p>' +
+      estadoBases(ls) +
+      '<h2>Qué llegó esta semana' + ay('Qué llegó de cada entrada y cuántas propuestas dejó, producto por producto.') + '</h2>' +
       '<div class="filtros"><span class="lbl">Periodo' + ay('La semana es el lote de cada lunes; las ventanas del rezago son lo pasado, de 30 en 30 días.') + '</span><button class="chip' + (zona === 'semana' ? ' on' : '') + '" data-zona="semana">Última semana</button>' +
       rz.filter(function(x){ return x.propuestas > 0 || true; }).map(function(x){ var k = String(x.desde).slice(0, 10); return '<button class="chip' + (zona === k ? ' on' : '') + '" data-zona="' + k + '" title="Rezago: ventana del ' + k + ' al ' + String(x.hasta).slice(0, 10) + '">' + dia(x.desde) + ' a ' + dia(x.hasta) + '</button>'; }).join('') + '</div>';
     if (!c) return $('main').innerHTML = h + '<p class="vacio">Todavía no hay corridas.</p>';
@@ -257,6 +261,17 @@
     h += '<details class="card"><summary class="cab" style="cursor:pointer;list-style:none"><span class="t">Qué dejó cada entrada' + ay('El resumen que escribió Claude de cada entrada analizada, con sus números.') + '</span></summary>' + resumenes(c, ls) + '</details>';
     $('main').innerHTML = h;
   }
+  // 29 oct: lo que falta de cada base, arriba y a la vista (antes solo estaba en Ronda, al final de una tabla ancha).
+  function estadoBases(ls){
+    var xs = ls.filter(function(l){ return l.kb; });
+    if (!xs.length) return '';
+    return '<h2>Estado de cada base' + ay('Aprobar una propuesta no cambia la base. Lo aprobado entra cuando quien lidera presiona «Ver cómo quedaría», revisa la versión nueva y la confirma. Hasta entonces el bot, el motor y las campañas siguen con la base vigente.') + '</h2>' +
+      '<div class="card tabla"><table class="t2"><tr><th>Producto</th><th>Base vigente</th><th>Por decidir</th><th>Aprobadas que faltan entrar a la base</th><th>Paso siguiente</th></tr>' + xs.map(function(l){
+        var n = { nuevo: 0, aprobado: 0 }; l.propuestas.forEach(function(x){ var g = grupoEst(x); if (n[g] != null) n[g]++; });
+        var paso = l.por_aplicar ? (puede(l.lidera) ? '<button class="btn" data-base="' + esc(l.codigo) + '" title="Claude integra lo aprobado y te muestra cómo quedaría la versión nueva antes de crearla">Ver cómo quedaría</button>' : '<span class="sub">Elige a ' + esc(l.lidera) + ' en el filtro de líder</span>') : (n.nuevo ? '<span class="sub">Revisar las propuestas</span>' : '<span class="sub">Al día</span>');
+        return '<tr><td>' + esc(corto(l.nombre)) + '<div class="sub">Lidera ' + esc(l.lidera) + '</div></td><td><a href="' + esc(l.kb.url) + '" target="_blank" rel="noopener">' + esc(l.kb.nombre) + '</a></td>' +
+          '<td class="celda" data-ir="' + esc(l.codigo + '|todas|todo') + '"><b>' + n.nuevo + '</b></td><td><b>' + l.por_aplicar + '</b></td><td>' + paso + '</td></tr>'; }).join('') + '</table></div>';
+  }
   function resumenes(c, ls){
     var r = (c.lineas || []).filter(function(x){ return ls.some(function(l){ return l.codigo === x.linea; }); }).map(function(x){
       var partes = (x.entradas || []).length ? x.entradas.map(function(y){ return '<div class="bloque"><span>' + esc(y.entrada + ' ' + (ENT[y.entrada] || [''])[0]) + ' · ' + y.n + ' leídos</span>' + esc(y.error ? 'No se pudo analizar: ' + y.error : y.resumen) + '</div>'; }).join('')
@@ -268,7 +283,7 @@
   // ---------- Por decidir ----------
   function filtradas(l){
     return l.propuestas.filter(function(x){
-      if (fEst === 'nuevo' ? x.estado !== 'nuevo' : x.estado === 'nuevo') return false;
+      if (grupoEst(x) !== fEst) return false;
       if (fPer === 'semana' && pasado(x)) return false;
       if (fPer === 'rezago' && !pasado(x)) return false;
       if (fEnt !== 'todas' && x.entrada !== fEnt) return false;
@@ -277,11 +292,11 @@
   }
   function pintarDecidir(){
     var ls = lineasVista().filter(function(l){ return l.kb || l.propuestas.length; });
-    var base = []; ls.forEach(function(l){ l.propuestas.forEach(function(x){ if ((fEst === 'nuevo') === (x.estado === 'nuevo') && (fPer === 'todo' || (fPer === 'rezago') === pasado(x))) base.push(x); }); });
+    var base = []; ls.forEach(function(l){ l.propuestas.forEach(function(x){ if (grupoEst(x) === fEst && (fPer === 'todo' || (fPer === 'rezago') === pasado(x))) base.push(x); }); });
     var cuentaE = {}, cuentaA = {}; base.forEach(function(x){ cuentaE[x.entrada] = (cuentaE[x.entrada] || 0) + 1; if (fEnt === 'todas' || x.entrada === fEnt) cuentaA[tipoAcc(x)] = (cuentaA[tipoAcc(x)] || 0) + 1; });
     var h = '<h1>Por decidir' + ay('Cada tarjeta dice qué pasó (con la evidencia real), qué significa y qué acción concreta se propone. Aprobar ejecuta esa acción: cambia la base o pone la prueba en la ronda.') + '</h1>' +
       '<div class="filtros"><span class="lbl">Periodo' + ay('Esta semana: el lote del lunes y las reuniones de los últimos 14 días. Rezago: lo pasado.') + '</span>' + [['semana', 'Esta semana'], ['rezago', 'Rezago'], ['todo', 'Todo']].map(function(f){ return '<button class="chip' + (fPer === f[0] ? ' on' : '') + '" data-fper="' + f[0] + '">' + f[1] + '</button>'; }).join('') +
-      '<span class="lbl" style="margin-left:10px">Mostrar</span>' + [['nuevo', 'Por decidir'], ['hechas', 'Ya revisadas']].map(function(f){ return '<button class="chip' + (fEst === f[0] ? ' on' : '') + '" data-fest="' + f[0] + '">' + f[1] + '</button>'; }).join('') + '</div>' +
+      '<span class="lbl" style="margin-left:10px">Mostrar</span>' + EST.map(function(f){ var n = 0; ls.forEach(function(l){ l.propuestas.forEach(function(x){ if (grupoEst(x) === f[0] && (fPer === 'todo' || (fPer === 'rezago') === pasado(x))) n++; }); }); return '<button class="chip' + (fEst === f[0] ? ' on' : '') + '" data-fest="' + f[0] + '" title="' + esc(f[2]) + '">' + f[1] + ' · ' + n + '</button>'; }).join('') + '</div>' +
       '<div class="filtros"><span class="lbl">Entrada' + ay('Las 10 entradas de la Voz del mercado. Las que dicen 0 también se evaluaron.') + '</span><button class="chip' + (fEnt === 'todas' ? ' on' : '') + '" data-fent="todas">Todas (' + base.length + ')</button>' +
       ENT_A.map(function(e){ return '<button class="chip' + (fEnt === e ? ' on' : '') + (cuentaE[e] ? '' : ' cero') + '" data-fent="' + e + '" title="' + esc(ENT[e][1]) + '">' + e + ' ' + esc(ENT[e][0]) + ' · ' + (cuentaE[e] || 0) + '</button>'; }).join('') + '</div>' +
       '<div class="filtros"><span class="lbl">Acción' + ay('Qué pasa si se aprueba.') + '</span><button class="chip' + (fAcc === 'todas' ? ' on' : '') + '" data-facc="todas">Todas</button>' +
