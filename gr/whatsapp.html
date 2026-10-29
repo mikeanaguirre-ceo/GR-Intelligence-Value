@@ -410,14 +410,19 @@
       et.filter(function(e){ return e.fase === f; }).map(function(e){ return '<option value="' + esc(e.id) + '">' + esc(e.nombre) + '</option>'; }).join('') + '</optgroup>'; };
     return '<option value="">' + todas + '</option>' + grupo('prospeccion', 'Prospección') + grupo('venta', 'Venta');
   }
-  // Pintaando (PT) es cliente y Excepciones (EX) no es producto: no son lineas de servicio de Great Revenue ni salen en los filtros.
-  var NO_LINEA = ['PT', 'SIN', 'EX'];
+  // Producto: los mismos nombres y en el mismo orden que el tablero. Salen del catalogo unico del sitio (catalogos.json,
+  // el mismo que usa el tablero); si no carga, la copia de abajo. Solo las lineas de Great Revenue (grupo GR): Pintaando
+  // e IMMMU tienen su propio portal y Excepciones no es producto.
+  var CATALOGO = 'https://intelligence.greatrevenue.com/catalogos.json';
+  var CAT = { productos: ['TW','AM','AEO','360','GenIA','GENIARH','GENIAVTA','GENIACOB','SYN','ITS','LT','BD','WB','HS'].map(function(id){ return { id: id, grupo: 'GR' }; }) };
+  fetch(CATALOGO, { cache: 'no-cache' }).then(function(r){ return r.json(); }).then(function(j){ if (j && j.productos) { CAT = j; pintarLista(); } }).catch(function(){});
   function lineasConocidas(){
-    var m = {};
-    ((conf && conf.productos) || []).forEach(function(p){ m[p.codigo] = p.nombre.replace(/ \(.*\)$/, ''); });
-    ((opor && opor.lineas) || []).forEach(function(l){ if (l.codigo !== 'SIN') m[l.codigo] = l.nombre; });
-    return Object.keys(m).filter(function(k){ return NO_LINEA.indexOf(k) < 0; }).map(function(k){ return { codigo: k, nombre: m[k] }; }).sort(function(a, b){ return a.nombre.localeCompare(b.nombre); });
+    return (CAT.productos || []).filter(function(p){ return p.grupo === 'GR'; }).map(function(p){
+      var cod = String(p.id).toUpperCase(), m = ((conf && conf.productos) || []).filter(function(x){ return codLinea(x.codigo) === cod; })[0];
+      return { codigo: cod, nombre: p.id, largo: m ? m.nombre.replace(/ \(.*\)$/, '') : (p.label || p.id) }; });
   }
+  // El codigo de la linea en HubSpot o en el bot, en mayusculas como el catalogo (GENIA = GenIA).
+  function codLinea(x){ return String(x || '').toUpperCase(); }
   function pintarSelects(){ pintarLista(); }
   // De donde llego la conversacion: la senal de su oportunidad en HubSpot (como el tablero) o, sin oportunidad, si llego
   // por un anuncio o escribio directo.
@@ -466,7 +471,7 @@
         ['libre', 'Puedo escribirle libre', 'El cliente escribió en las últimas 24 h: le puedes mandar cualquier texto'],
         ['plantilla', 'Solo plantilla', 'Nunca ha escrito o pasaron más de 24 h: WhatsApp solo deja mandarle una plantilla aprobada']] },
       { k: 'linea', t: 'Producto', ayuda: 'El producto de su oportunidad en HubSpot o, si no tiene, el que entendió el bot en la conversación.',
-        ops: lineasConocidas().map(function(l){ return [l.codigo, l.nombre, 'Conversaciones de ' + l.nombre]; }).concat([['SIN', 'Sin producto', 'No tiene oportunidad en HubSpot y el bot todavía no identifica el producto']]) },
+        ops: lineasConocidas().map(function(l){ return [l.codigo, l.nombre, 'Conversaciones de ' + l.largo]; }).concat([['SIN', 'Sin producto', 'No tiene oportunidad en HubSpot y el bot todavía no identifica el producto']]) },
       { k: 'etapa', t: 'Etapa', ayuda: 'La etapa de su oportunidad en HubSpot, con los mismos nombres del tablero. Prospección y Ventas juntan sus etapas.',
         ops: [['prospeccion', 'Prospección', 'Señal, Reply, Contactado y En Conversación']].concat(et.filter(function(e){ return e.fase === 'prospeccion'; }).map(function(e){ return [e.id, ETAPA_CORTA[e.id] || e.nombre, TIP_ETAPA[e.id] || e.nombre]; }),
           [['venta', 'Ventas', 'De Atracción en adelante']], et.filter(function(e){ return e.fase === 'venta'; }).map(function(e){ return [e.id, ETAPA_CORTA[e.id] || e.nombre, TIP_ETAPA[e.id] || e.nombre]; }),
@@ -511,7 +516,7 @@
     var op = oporDe(c), o3 = op && op.o.o3, pi;
     if (k === 'atiende') return v === 'sinleer' ? !!c.sin_leer : (v === 'atender' ? !!porAtender(c) : c.modo === v);
     if (k === 'ventana') return v === 'libre' ? ventana(c).abierta : !ventana(c).abierta;
-    if (k === 'linea') { var cod = lineaDe(c).codigo; return v === 'SIN' ? (!cod || cod === 'SIN') : cod === v; }
+    if (k === 'linea') { var cod = codLinea(lineaDe(c).codigo); return v === 'SIN' ? (!cod || cod === 'SIN') : cod === v; }
     if (k === 'etapa') return v === 'sin' ? !op : (!!op && (op.o.etapa.id === v || op.o.etapa.fase === v));
     if (k === 'senal') return v === 'open3' || v === 'reply' ? senalConv(c) === v : (!!op && senalConv(c) === 'reply' && op.o.como_llego === v);
     if (k === 'origen') return origenConv(c) === v;
@@ -597,7 +602,7 @@
     var PRUEBAS = {
       pend: function(o){ return pendienteOpen3(o); },
       fase: function(o, v){ return o.etapa.fase === v; },
-      linea: function(o, v){ return o.linea.codigo === v; },
+      linea: function(o, v){ return codLinea(o.linea.codigo) === v; },
       persona: function(o, v){ return v === 'Sin' ? !o.responsable : personasOp(o).indexOf(v) >= 0; },
       wa: function(o, v){ return estadoOp(o) === v; },
       sem: function(o, v){ return v === 'sin' ? !o.semaforo : o.semaforo === v; },
@@ -633,10 +638,10 @@
     };
     var pend = todas.filter(pendienteOpen3);
     var cts = [].concat.apply([], todas.map(function(o){ return o.contactos; }));
-    var lineasF = (opor.catalogo || opor.lineas).filter(function(l){ return NO_LINEA.indexOf(l.codigo) < 0; }).map(function(l){ return [l.codigo, esc(l.nombre)]; });
-    if (todas.some(function(o){ return o.linea.codigo === 'SIN'; })) lineasF.push(['SIN', 'Sin línea']);
+    var lineasF = lineasConocidas().map(function(l){ return [l.codigo, esc(l.nombre)]; });
+    if (todas.some(function(o){ return o.linea.codigo === 'SIN'; })) lineasF.push(['SIN', 'Sin producto']);
     var personasF = (opor.equipo || []).map(function(p){ return [p, esc(p)]; }).concat([['Sin', 'Sin responsable']]);
-    var principales = fila('linea', 'Línea:', lineasF) + fila('persona', 'Persona:', personasF, 'Todos') +
+    var principales = fila('linea', 'Producto:', lineasF) + fila('persona', 'Persona:', personasF, 'Todos') +
       fila('wa', 'WhatsApp:', [['falta', 'Falta celular'], ['listo', 'Con celular, sin escribir'], ['enviada', 'Plantilla enviada'], ['conversa', 'Ya conversa']]) +
       fila('sem', 'Semáforo:', [['rojo', '<span class="sem rojo"></span>Vencidas'], ['amarillo', '<span class="sem amarillo"></span>Próximas'], ['verde', '<span class="sem verde"></span>Al día'], ['aparcada', '<span class="sem aparcada"></span>Aparcadas'], ['sin', 'Sin semáforo']]) +
       fila('fase', 'Fase:', [['prospeccion', 'Prospección'], ['venta', 'Venta']]);
