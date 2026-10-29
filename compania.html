@@ -433,6 +433,35 @@
   function nombresDe(c) { try { return JSON.parse((c.datos || {}).equipo_nombres || '{}') || {}; } catch (e) { return {}; } }
   function quien(v, nm) { v = String(v || ''); if (!v || /^por definir$/i.test(v)) return PD; return nm[v.toLowerCase()] || v; }
   function valorCampo(p, k) { var v = p[k]; if (Array.isArray(v)) return v.join(', '); if (v === undefined || v === null) return ''; return String(v); }
+  // Ligas dentro de un texto: sin el punto, coma o dos puntos con que termina la frase.
+  var RX_LIGA = /https:\/\/[^\s)]+/g;
+  function ligaLimpia(u) { return u.replace(/[.,;:]+$/, ''); }
+  function nombreLiga(u) { return /\/document\//.test(u) ? 'Abrir documento' : /\/presentation\//.test(u) ? 'Abrir presentación' : /\/spreadsheets\//.test(u) ? 'Abrir hoja' : /\/folders\//.test(u) ? 'Abrir carpeta' : /drive\.google\.com\/file\//.test(u) ? 'Abrir archivo' : 'Abrir'; }
+  function conLigas(t) {
+    var out = '', ult = 0;
+    t.replace(RX_LIGA, function (u, pos) { var l = ligaLimpia(u); out += h(t.slice(ult, pos)) + '<a href="' + h(l) + '" target="_blank" rel="noopener">' + nombreLiga(l) + '</a>'; ult = pos + l.length; return u; });
+    return out + h(t.slice(ult));
+  }
+  // «Por revisar» ya viene en renglones: TAREAS / DECISIONES / PARA CONSULTA, cada tarea «(n) TÍTULO» con viñetas «• Hoy / • Qué hacer / • Quién / • Liga».
+  function textoRevisar(v) {
+    if (!String(v || '').trim()) return '<span class="vacio">Nada por revisar</span>';
+    return String(v).split('\n').map(function (r) {
+      var t = r.trim();
+      if (!t) return '<div class="rv-sp"></div>';
+      if (/^(TAREAS|DECISIONES|PARA CONSULTA)$/.test(t)) return '<div class="rv-s">' + h(t) + '</div>';
+      if (/^\(\d+\)/.test(t)) return '<div class="rv-t">' + conLigas(t) + '</div>';
+      if (/^•/.test(t)) return '<div class="rv-b">' + conLigas(t) + '</div>';
+      return '<div>' + conLigas(t) + '</div>';
+    }).join('');
+  }
+  // Lo que usa el motor: la base vigente con su liga cuando es la que el motor usa; si no, el texto tal cual.
+  function motorUsa(p) {
+    var v = valorCampo(p, 'motor_usa'), kb = valorCampo(p, 'kb_nombre'), u = valorCampo(p, 'kb_url');
+    if (!v) return PD;
+    var i = kb ? v.indexOf(kb) : -1;
+    if (i < 0 || !/^https:\/\//.test(u)) return h(v);
+    return h(v.slice(0, i)) + '<a href="' + h(u) + '" target="_blank" rel="noopener">' + h(kb) + '</a>' + h(v.slice(i + kb.length));
+  }
   // Bloque de precio de una ficha: tipo, precio por licencia, minimo, moneda y el monto que resulta.
   function bloquePrecio(p, i, adm) {
     var tipo = p.tipo === 'licencias' || p.tipo === 'cursos' ? p.tipo : '', mon = p.moneda || 'USD', esLic = tipo === 'licencias';
@@ -496,10 +525,13 @@
         return '<div id="' + id + '" class="pers">' + (todos.length ? todos.map(function (e) { return '<label><input type="checkbox" value="' + h(e) + '"' + (marcados.indexOf(e) >= 0 ? ' checked' : '') + '> <span>' + h(nm[e] || e) + (eq.indexOf(e) < 0 ? ' (sin alta en el portal)' : '') + '</span></label>'; }).join('') : '<span class="vacio">Da de alta a tu equipo en la pestaña Equipo.</span>') + '</div>';
       }
       if (f[2] === 'rev') {
-        var ligas = (v.match(/https:\/\/[^\s)]+/g) || []).map(function (u, j) { return '<a href="' + h(u) + '" target="_blank" rel="noopener" style="font-size:12px;margin-right:10px">Abrir ' + (j + 1) + '</a>'; }).join('');
-        return (adm ? '<textarea id="' + id + '" rows="3" style="width:100%;box-sizing:border-box;font:inherit;font-size:13px" placeholder="Nada por revisar">' + h(v) + '</textarea>' : '<div style="white-space:pre-wrap;font-size:13px">' + h(v || 'Nada por revisar') + '</div>') + (ligas ? '<div style="margin-top:4px">' + ligas + '</div>' : '');
+        var vista = '<div class="rv" id="' + id + '-v">' + textoRevisar(v) + '</div>';
+        if (!adm) return vista;
+        // Quien administra lo lee igual y lo cambia con «Editar»; el texto que se guarda es el del cuadro.
+        return vista + '<button type="button" class="rv-ed" data-rev="' + id + '">Editar</button>'
+          + '<textarea id="' + id + '" hidden rows="3" style="width:100%;box-sizing:border-box;font:inherit;font-size:13px;line-height:1.5;resize:vertical" placeholder="Nada por revisar">' + h(v) + '</textarea>';
       }
-      if (f[2] === 'ro') return h(v || PD) + (v && p.propuesta_nombre && v.indexOf(p.propuesta_nombre) === -1 ? ' <span class="prod-p">No es la vigente</span>' : '');
+      if (f[2] === 'ro') return f[0] === 'motor_usa' ? motorUsa(p) : h(v || PD);
       if (!adm) {
         if (f[2] === 'url') return v ? '<a href="' + h(v) + '" target="_blank" rel="noopener">Abrir</a>' +
           // GR: los pendientes y propuestas de la base se deciden en la pestana Conocimiento del tablero (25 oct 2026).
@@ -522,12 +554,14 @@
         }).join('') + '</div></div>';
       });
       grupos.splice(1, 0, bloquePrecio(p, i, adm));
+      if (adm) grupos.push('<div class="acciones prod-g"><button class="p" data-prod-guardar="' + i + '">Guardar</button><span class="msg" id="m-prod-' + i + '"></span></div>');
       return '<details class="prod"' + (i === 0 ? ' open' : '') + '><summary><span class="prod-t"><b>' + h(p.codigo) + '</b> · ' + h(p.nombre || '') + '</span> <span class="prod-m" id="pf-' + i + '-resumen">' + h(montoResumen(p)) + '</span>' + (p.pendiente ? ' <span class="prod-p">Pendiente</span>' : '') + (p.por_revisar ? ' <span class="prod-p" style="background:#ffe1d6;color:#8a2c0d">Por revisar</span>' : '') + (p.activo === false ? ' <span class="prod-p">Inactivo</span>' : '') + '</summary>' + grupos.join('') + '</details>';
     }).join('');
     // Mismo estilo que la pestana Fases: fichas a todo el ancho, dos columnas desde 760 px y una en el celular.
     var estilo = '<style>.prod{border:1px solid #e3e3e0;border-radius:10px;margin:0 0 12px;padding:0 14px 6px;background:#fff}.prod summary{cursor:pointer;padding:12px 0;font-size:15px;line-height:1.5}.prod-t{overflow-wrap:anywhere}.prod-m{color:#5c5c5c;font-size:13px;margin-left:4px}.prod-p{font-size:11px;background:#fff4d6;color:#7a5600;border-radius:8px;padding:2px 8px;margin-left:6px;white-space:nowrap}'
       + '.pf-g{border-top:1px solid #eee;padding:10px 0 12px}.pf-g h4{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#5c5c5c}'
       + '.pfs{display:grid;grid-template-columns:1fr;gap:10px 20px}.pf{min-width:0}.pf[hidden]{display:none}.pf-w{grid-column:1/-1}.pf-rev{background:#fff8e6;border:1px solid #f3d27a;border-radius:8px;padding:8px 10px}.pf>label{display:block;font-size:12px;color:#5c5c5c;margin-bottom:3px}'
+      + '.rv{font-size:13px;line-height:1.5;overflow-wrap:anywhere}.rv-s{font-weight:700;font-size:12px;letter-spacing:.04em;color:#7a5600;margin-top:2px}.rv-t{font-weight:600}.rv-b{padding-left:14px;text-indent:-10px}.rv-sp{height:6px}.rv a{white-space:nowrap}.rv-ed{margin-top:6px;font-size:12px}.rv-ed+textarea{margin-top:6px}.prod-g{border-top:1px solid #eee;padding:10px 0 8px}'
       + '.pf input[type=text],.pf input[type=number],.pf select{width:100%;box-sizing:border-box}.url-c{display:flex;gap:8px;align-items:center}.url-c input{flex:1}.url-c a{font-size:12px;flex:none}'
       + '.pers{display:grid;grid-template-columns:1fr;gap:4px 16px}.pers label{display:flex;gap:6px;align-items:flex-start;font-size:13px;min-width:0}.pers input{margin-top:3px;flex:none}.pers span{overflow-wrap:anywhere}'
       + '.monto-ayuda{margin:10px 0 0;padding:8px 12px;border-radius:8px;background:#f3f7f3;border:1px solid #d7e7d7;font-size:13px;color:#24502a}'
@@ -653,8 +687,18 @@
       $('pf-' + i + '-resumen').textContent = montoResumen({ tipo: tipo, precio_unitario: Number(v('precio_unitario')), minimo: Number(v('minimo')), monto: Number(v('monto')), moneda: v('moneda') });
     };
     Array.prototype.forEach.call(document.querySelectorAll('[data-precio]'), function (el) { el.oninput = el.onchange = function () { repintar(Number(el.getAttribute('data-precio'))); }; });
-    $('prod-guardar').onclick = function () {
-      var btn = this, mal = '';
+    // «Editar» de Por revisar: abre el cuadro a su alto y la vista se pone al dia mientras se escribe.
+    var alto = function (ta) { ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 4) + 'px'; };
+    Array.prototype.forEach.call(document.querySelectorAll('[data-rev]'), function (b) {
+      var ta = $(b.getAttribute('data-rev')), vista = $(b.getAttribute('data-rev') + '-v');
+      b.onclick = function () { ta.hidden = !ta.hidden; b.textContent = ta.hidden ? 'Editar' : 'Cerrar el editor'; if (!ta.hidden) { alto(ta); ta.focus(); } };
+      ta.oninput = function () { alto(ta); vista.innerHTML = textoRevisar(ta.value); };
+    });
+    // Guardar general y el de cada producto mandan la cartera completa (el motor de GR borra lo que no llega); cambia donde se ve el aviso.
+    $('prod-guardar').onclick = function () { guardarProductos(this, 'm-prod'); };
+    Array.prototype.forEach.call(document.querySelectorAll('[data-prod-guardar]'), function (b) { b.onclick = function () { guardarProductos(b, 'm-prod-' + b.getAttribute('data-prod-guardar')); }; });
+    function guardarProductos(btn, msg) {
+      var mal = '';
       var nuevos = l.map(function (p, i) {
         // Solo se mandan los campos que se ven; el motor conserva el resto de la ficha (campos del CRM y otros).
         var o = { codigo: p.codigo };
@@ -680,17 +724,17 @@
         }
         return o;
       });
-      if (mal) { P.msg('m-prod', 'bad', mal); return; }
-      P.msg('m-prod', '', 'Guardando...'); btn.disabled = true;
+      if (mal) { P.msg(msg, 'bad', mal); return; }
+      P.msg(msg, '', 'Guardando...'); btn.disabled = true;
       P.api({ accion: 'productos_guardar', sesion: ses(), tenant: c.tenant, productos: nuevos }).then(function (x) {
         btn.disabled = false;
         if (x._codigo === 401) { salir(x.error); return; }
-        if (!x.ok) { P.msg('m-prod', 'bad', x.error || 'No se pudo guardar.'); return; }
+        if (!x.ok) { P.msg(msg, 'bad', x.error || 'No se pudo guardar.'); return; }
         // Copia local: la ficha guardada mas lo cambiado (igual que hace el motor); lo vacio se quita.
         c.datos.productos = JSON.stringify(l.map(function (p, i) { var o = Object.assign({}, p, nuevos[i]); ['tipo', 'precio_unitario', 'minimo', 'moneda'].forEach(function (k) { if (o[k] === '') delete o[k]; }); return o; }));
-        P.msg('m-prod', 'ok', 'Guardado. Los motores usan estos datos y precios desde ahora.');
+        P.msg(msg, 'ok', 'Guardado (todos los productos). Los motores usan estos datos y precios desde ahora.');
       });
-    };
+    }
   }
   // Mejoras de mensajes: el equipo reporta un mensaje del motor que hay que corregir (desde la liga del correo o a mano)
   // y quien administra decide: pendiente, enviada a corrección, resuelta o rechazada. Registro MOTOR_correcciones.
