@@ -225,6 +225,8 @@
   .enlace{border:0;background:none;color:var(--azul);cursor:pointer;padding:0;font-size:12.5px}
   .clip{border:1px solid var(--borde);background:#fff;border-radius:50%;width:42px;height:42px;flex:0 0 auto;cursor:pointer;font-size:18px;color:var(--marca)}
   .clip:disabled{opacity:.4;cursor:default}
+  .emojis{display:flex;flex-wrap:wrap;gap:2px;background:#fff;border:1px solid var(--borde);border-radius:8px;padding:6px;max-height:150px;overflow-y:auto} .emojis[hidden]{display:none}
+  .emojis button{border:0;background:none;cursor:pointer;font-size:20px;width:36px;height:36px;border-radius:6px} .emojis button:hover{background:var(--borde)}
   .adjunto{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--texto);background:#fff;border:1px solid var(--borde);border-radius:8px;padding:6px 10px}
   .adjunto button{border:0;background:none;color:var(--mal);cursor:pointer;font-size:12.5px} .adjunto[hidden]{display:none}
   .ficha-op{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:8px 16px;border-bottom:1px solid var(--borde);font-size:12px;color:var(--tenue);background:#fbfaff}
@@ -294,6 +296,7 @@
   var datos = { convs: [], numeros: [], ahora: Math.floor(Date.now()/1000) };
   var abrirPlantillaDesde = '';
   var pendiente = null;
+  var EMOJIS = ['😊','😀','😉','🙂','😅','🤔','👍','👏','🙌','🙏','🤝','👋','💪','🎉','✅','❌','⭐','🔥','💡','📌','📎','📅','⏰','📞','📧','💬','📊','📈','🚀','🎯','💼','🏢'];
   var sel = null, filtro = 'todas', plantillas = {}, ocupado = false, syncTimer = null;
   var conf = null, confTipo = '';
   var F = { atiende: 'todas', ventana: '', linea: '', etapa: '', senal: '', origen: '', canal: '', toque: '', resultado: '', plantilla: '', firma: '' }, ayudaAbierta = {};
@@ -802,6 +805,8 @@
     if (m.media && m.tipo === 'audio') return '<audio controls preload="none" src="' + url + '"></audio>';
     if (m.media && m.tipo === 'video') return '<video controls preload="none" style="max-width:260px" src="' + url + '"></video>' + (m.texto ? '<div>' + enlazar(m.texto) + '</div>' : '');
     if (m.media) return '📎 <a href="' + url + '" target="_blank" rel="noopener">' + esc(m.texto || 'Abrir archivo') + '</a>';
+    // Tarjeta de contacto que manda el cliente (30 oct): nombre y numero a la vista de todo el equipo.
+    if (m.tipo === 'contacts') return '<b>📇 Contacto compartido</b><br>' + enlazar(String(m.texto || 'Sin datos').replace(/^Compart[ií]o? un contacto:?\s*/, '') || 'Sin datos: se recibió antes de guardar la tarjeta');
     return enlazar(m.texto || '(' + m.tipo + ')');
   }
 
@@ -942,10 +947,12 @@
             ['Apoyo · quién acompaña en reuniones', o.apoyo], ['Dueño en HubSpot', o.dueno], ['Creada', fechaCorta(o.creada)]]) + '</div></div></div>';
     }
     if (fichaTab === 'contacto') {
+      // El celular y el telefono salen de la oportunidad, que ya los trae por separado (30 oct: se veia solo el telefono).
+      var hsCt = (f.o.contactos || []).filter(function(c){ return String(c.id) === String(ct.id || f.ct.id); })[0] || f.ct;
       var otros = (f.contactos || []).filter(function(c){ return c !== ct; });
       var emps = e.empleados ? Number(e.empleados).toLocaleString('es-MX') + ' empleados' : '';
       h += '<div class="fgrid"><div class="fcol"><div class="fcard"><div class="fh">Contacto</div>' +
-          kv([['Persona', ct.nombre || f.ct.nombre], ['Teléfono', ct.telefono || f.ct.cel], ['Correo', ct.email || f.ct.correo]]) + '</div>' +
+          kv([['Persona', ct.nombre || f.ct.nombre], ['Celular (WhatsApp)', hsCt.celular || f.ct.cel], ['Teléfono', hsCt.telefono || ct.telefono], ['Correo', ct.email || f.ct.correo]]) + '</div>' +
         '<div class="fcard"><div class="fh">Persona <small>Etiquetas de Amplemarket</small></div>' + (ld ? '<div class="fnota">' + ld + '</div>' :
           kv([['Nombre', ct.nombre], ['Puesto', ct.puesto || f.ct.puesto], ['Área', or.area], ['Nivel', or.nivel], ['Ubicación', [ct.ciudad, or.pais || ct.pais].filter(Boolean).join(', ')], ['LinkedIn', ligaF(ct.linkedin, 'Abrir perfil'), true]])) + '</div>' +
           (otros.length ? '<div class="fcard"><div class="fh">Otros contactos de la empresa</div>' + otros.map(function(c){ return '<div class="fotro"><b>' + esc(c.nombre) + '</b>' + (c.puesto ? ' · ' + esc(c.puesto) : '') + (c.email ? '<br><small>' + esc(c.email) + '</small>' : '') + '</div>'; }).join('') + '</div>' : '') +
@@ -1020,7 +1027,8 @@
     html += '</div><div class="caja"><div class="opciones"><label><input type="checkbox" id="comoNota"> Nota interna (el cliente no la ve)</label>' +
       '<button class="enlace" id="abrirPlantilla">Enviar plantilla</button></div>' +
       '<div class="adjunto" id="adjunto" hidden><span id="adjNombre"></span><button id="quitarAdj" type="button">Quitar</button></div>' +
-      '<div class="fila"><button class="clip" id="clip" type="button" title="Adjuntar archivo" aria-label="Adjuntar archivo">📎</button><input type="file" id="archivo" hidden accept="image/jpeg,image/png,application/pdf,video/mp4,audio/*,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip"><textarea id="texto" rows="1" placeholder="Escribe un mensaje"></textarea><button class="btn" id="enviar">Enviar</button></div></div>';
+      '<div class="emojis" id="emojis" hidden>' + EMOJIS.map(function(x){ return '<button type="button" data-e="' + x + '">' + x + '</button>'; }).join('') + '</div>' +
+      '<div class="fila"><button class="clip" id="clip" type="button" title="Adjuntar archivo" aria-label="Adjuntar archivo">📎</button><button class="clip" id="abrirEmojis" type="button" title="Emojis" aria-label="Emojis">😊</button><input type="file" id="archivo" hidden accept="image/jpeg,image/png,application/pdf,video/mp4,audio/*,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip"><textarea id="texto" rows="1" placeholder="Escribe un mensaje"></textarea><button class="btn" id="enviar">Enviar</button></div></div>';
     $('chat').innerHTML = html;
     $('texto').value = borrador; $('comoNota').checked = esNota; ajustarCaja();
     ms = $('msgs'); if (bajar || alFinal) ms.scrollTop = ms.scrollHeight;
@@ -1032,6 +1040,13 @@
     $('abrirPlantilla').onclick = function(){ abrirPlantilla(c); };
     $('enviar').onclick = enviar;
     $('clip').onclick = function(){ $('archivo').click(); };
+    $('abrirEmojis').onclick = function(){ $('emojis').hidden = !$('emojis').hidden; };
+    $('emojis').onclick = function(e){
+      var b = e.target.closest('button'), t = $('texto'); if (!b || t.disabled) return;
+      var i = t.selectionStart, x = b.getAttribute('data-e');
+      t.value = t.value.slice(0, i) + x + t.value.slice(t.selectionEnd);
+      t.focus(); t.selectionStart = t.selectionEnd = i + x.length;
+    };
     $('archivo').onchange = function(){
       var f = this.files && this.files[0]; this.value = '';
       if (!f) return;
@@ -1058,6 +1073,7 @@
     t.disabled = !nota && !abierta;
     b.disabled = t.disabled;
     $('clip').disabled = nota || !abierta;
+    $('abrirEmojis').disabled = t.disabled; if (t.disabled) $('emojis').hidden = true;
     if (nota && pendiente) { pendiente = null; mostrarAdjunto(); }
     t.placeholder = nota ? 'Escribe una nota para el equipo' : (!abierta ? 'Ventana cerrada: usa “Enviar plantilla” o escribe una nota' : (pendiente ? 'Agrega un texto al archivo (opcional)' : 'Escribe un mensaje'));
     b.textContent = nota ? 'Guardar nota' : (pendiente ? 'Enviar archivo' : 'Enviar');
