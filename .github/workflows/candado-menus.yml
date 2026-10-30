@@ -1,0 +1,16 @@
+# Candado de menus: avisa si alguna pagina del sitio vuelve a traer una lista escrita a mano (productos, etapas, personas,
+# origenes...) en lugar de leer catalogos.json, o si al catalogo le falta un menu o el texto de ayuda de una opcion.
+name: Candado de menus
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  candado:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/candado_menus.js

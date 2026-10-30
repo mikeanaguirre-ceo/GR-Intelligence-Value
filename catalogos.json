@@ -6,7 +6,10 @@
       "alias": [
         "mike"
       ],
-      "tipo": "gr"
+      "tipo": "gr",
+      "orden": 1,
+      "correo": "mike.aguirre@greatrevenue.com",
+      "ayuda": "Director; lidera GenIA y GenIA Cobranza"
     },
     {
       "id": "Migue",
@@ -16,7 +19,10 @@
         "miguel"
       ],
       "ownerId": "77808624",
-      "tipo": "gr"
+      "tipo": "gr",
+      "orden": 2,
+      "correo": "miguel.villa@greatrevenue.com",
+      "ayuda": "Ventas; dueño en HubSpot de la mayoría de las oportunidades"
     },
     {
       "id": "Martha",
@@ -25,7 +31,10 @@
         "martha"
       ],
       "ownerId": "82004391",
-      "tipo": "gr"
+      "tipo": "gr",
+      "orden": 3,
+      "correo": "martha.lagunas@greatrevenue.com",
+      "ayuda": "Responsable de las tareas de seguimiento en HubSpot"
     },
     {
       "id": "Daniel",
@@ -34,7 +43,10 @@
         "daniel",
         "dani"
       ],
-      "tipo": "gr"
+      "tipo": "gr",
+      "orden": 4,
+      "correo": "daniel.bello@greatrevenue.com",
+      "ayuda": "Equipo Great Revenue"
     },
     {
       "id": "Fer",
@@ -43,7 +55,10 @@
         "fer",
         "fernanda"
       ],
-      "tipo": "gr"
+      "tipo": "gr",
+      "orden": 5,
+      "correo": "fernanda.aguirre@greatrevenue.com",
+      "ayuda": "Equipo Great Revenue"
     },
     {
       "id": "Mine",
@@ -52,7 +67,9 @@
         "mine",
         "minerva"
       ],
-      "tipo": "gr"
+      "tipo": "gr",
+      "orden": 6,
+      "ayuda": "Equipo Great Revenue"
     },
     {
       "id": "Manu",
@@ -61,7 +78,10 @@
         "manu",
         "manuel"
       ],
-      "tipo": "gr"
+      "tipo": "gr",
+      "orden": 7,
+      "correo": "manuel.mercadillo@greatrevenue.com",
+      "ayuda": "Equipo Great Revenue"
     },
     {
       "id": "Diana",
@@ -69,7 +89,9 @@
       "alias": [
         "diana"
       ],
-      "tipo": "gr"
+      "tipo": "gr",
+      "orden": 8,
+      "ayuda": "Equipo Great Revenue"
     },
     {
       "id": "Nico",
@@ -80,7 +102,9 @@
         "nicolás"
       ],
       "tipo": "partner",
-      "empresa": "Artool"
+      "empresa": "Artool",
+      "orden": 9,
+      "ayuda": "Partner de Artool"
     },
     {
       "id": "Sara",
@@ -88,7 +112,10 @@
       "alias": [
         "sara"
       ],
-      "tipo": "gr"
+      "tipo": "gr",
+      "orden": 10,
+      "correo": "sara.hernandez@greatrevenue.com",
+      "ayuda": "Equipo Great Revenue"
     },
     {
       "id": "Sabrina",
@@ -96,7 +123,10 @@
       "alias": [
         "sabrina"
       ],
-      "tipo": "gr"
+      "tipo": "gr",
+      "orden": 11,
+      "correo": "sabrina.tello@greatrevenue.com",
+      "ayuda": "Equipo Great Revenue"
     },
     {
       "id": "Valeria",
@@ -105,7 +135,9 @@
         "valeria",
         "vale"
       ],
-      "tipo": "gr"
+      "tipo": "gr",
+      "orden": 12,
+      "ayuda": "Equipo Great Revenue"
     },
     {
       "id": "Uri",
@@ -114,7 +146,9 @@
         "uri"
       ],
       "tipo": "partner",
-      "empresa": "Artool"
+      "empresa": "Artool",
+      "orden": 13,
+      "ayuda": "Partner de Artool"
     },
     {
       "id": "Verónica",
@@ -123,7 +157,9 @@
         "verónica"
       ],
       "tipo": "partner",
-      "empresa": "Artool"
+      "empresa": "Artool",
+      "orden": 14,
+      "ayuda": "Partner de Artool"
     },
     {
       "id": "Aldo",
@@ -132,7 +168,9 @@
         "aldo"
       ],
       "tipo": "partner",
-      "empresa": "Roomie IT"
+      "empresa": "Roomie IT",
+      "orden": 15,
+      "ayuda": "Partner de Roomie IT"
     },
     {
       "id": "Fernando",
@@ -141,7 +179,9 @@
         "fernando"
       ],
       "tipo": "partner",
-      "empresa": "Roomie IT"
+      "empresa": "Roomie IT",
+      "orden": 16,
+      "ayuda": "Partner de Roomie IT"
     },
     {
       "id": "Polo",
@@ -150,7 +190,9 @@
         "polo"
       ],
       "tipo": "partner",
-      "empresa": "Roomie IT"
+      "empresa": "Roomie IT",
+      "orden": 17,
+      "ayuda": "Partner de Roomie IT"
     },
     {
       "id": "Lenin",
@@ -159,7 +201,9 @@
         "lenin"
       ],
       "tipo": "partner",
-      "empresa": "Roomie IT"
+      "empresa": "Roomie IT",
+      "orden": 18,
+      "ayuda": "Partner de Roomie IT"
     },
     {
       "id": "Jacopo",
@@ -168,7 +212,9 @@
         "jacopo"
       ],
       "tipo": "partner",
-      "empresa": "Hootsuite"
+      "empresa": "Hootsuite",
+      "orden": 19,
+      "ayuda": "Partner de Hootsuite"
     },
     {
       "id": "Abraham",
@@ -177,7 +223,9 @@
         "abraham"
       ],
       "tipo": "partner",
-      "empresa": "Hootsuite"
+      "empresa": "Hootsuite",
+      "orden": 20,
+      "ayuda": "Partner de Hootsuite"
     },
     {
       "id": "Lissa",
@@ -186,154 +234,382 @@
         "lissa"
       ],
       "tipo": "partner",
-      "empresa": "Hootsuite"
+      "empresa": "Hootsuite",
+      "orden": 21,
+      "ayuda": "Partner de Hootsuite"
     }
   ],
   "productos": [
     {
       "id": "TW",
       "label": "TW",
+      "nombre": "Talkwalker (Discovery Marketing)",
       "prefijos": [
         "TW"
       ],
       "color": "azul",
-      "grupo": "GR"
+      "grupo": "GR",
+      "orden": 1,
+      "activo": true,
+      "lidera": "Daniel",
+      "partner": "Artool o Hootsuite",
+      "ayuda": "Talkwalker (Discovery Marketing) · Lidera Daniel · Partner: Artool o Hootsuite",
+      "alias": [
+        "talkwalker",
+        "tw"
+      ],
+      "plantillaO3": "tw_comp",
+      "monto": 40000,
+      "moneda": "USD"
+    },
+    {
+      "id": "HS",
+      "label": "HS",
+      "nombre": "Hootsuite",
+      "prefijos": [
+        "HS"
+      ],
+      "color": "azul",
+      "grupo": "GR",
+      "orden": 2,
+      "activo": true,
+      "lidera": "Migue",
+      "partner": "Hootsuite",
+      "ayuda": "Hootsuite · Lidera Migue · Partner: Hootsuite",
+      "alias": [
+        "hootsuite",
+        "hs"
+      ],
+      "plantillaO3": "hs",
+      "monto": 15000,
+      "moneda": "USD"
     },
     {
       "id": "AM",
       "label": "AM",
+      "nombre": "Amplemarket",
       "prefijos": [
         "AM"
       ],
       "color": "azul",
-      "grupo": "GR"
+      "grupo": "GR",
+      "orden": 3,
+      "activo": true,
+      "lidera": "Migue",
+      "partner": "Venta directa",
+      "ayuda": "Amplemarket · Lidera Migue · Partner: Venta directa",
+      "alias": [
+        "amplemarket",
+        "am"
+      ],
+      "plantillaO3": "am",
+      "monto": 10200,
+      "moneda": "USD"
     },
     {
       "id": "AEO",
       "label": "AEO",
+      "nombre": "AEO + SEO",
       "prefijos": [
         "AEO",
+        "AEO + SEO",
         "AEO+SEO",
         "AEO +SEO"
       ],
       "color": "azul",
-      "grupo": "GR"
+      "grupo": "GR",
+      "orden": 4,
+      "activo": true,
+      "lidera": "Daniel",
+      "partner": "Artool",
+      "ayuda": "AEO + SEO · Lidera Daniel · Partner: Artool",
+      "alias": [
+        "aeo",
+        "seo"
+      ],
+      "plantillaO3": "aeo",
+      "monto": 15000,
+      "moneda": "USD"
+    },
+    {
+      "id": "GenIA",
+      "label": "GenIA",
+      "nombre": "GenIA Digital Workforce Factory",
+      "prefijos": [
+        "GENIA",
+        "GEN IA"
+      ],
+      "color": "azul",
+      "grupo": "GR",
+      "orden": 5,
+      "activo": true,
+      "lidera": "Mike",
+      "partner": "Roomie IT",
+      "ayuda": "GenIA Digital Workforce Factory · Lidera Mike · Partner: Roomie IT",
+      "alias": [
+        "genia",
+        "dwf",
+        "digital workforce"
+      ],
+      "plantillaO3": "genia",
+      "monto": 20000,
+      "moneda": "USD"
+    },
+    {
+      "id": "GENIARH",
+      "label": "GenIA RH",
+      "nombre": "GenIA RH",
+      "prefijos": [
+        "GENIARH",
+        "GENIA RH",
+        "GEN IA_RH",
+        "GENIA_VIP-HR",
+        "GEN IA_LAT_VIP-VP HR"
+      ],
+      "color": "azul",
+      "grupo": "GR",
+      "orden": 6,
+      "activo": true,
+      "lidera": "Daniel",
+      "partner": "Roomie IT",
+      "ayuda": "GenIA RH · Lidera Daniel · Partner: Roomie IT",
+      "alias": [
+        "genia rh",
+        "geniarh"
+      ],
+      "plantillaO3": "geniarh",
+      "monto": 50000,
+      "moneda": "USD"
+    },
+    {
+      "id": "GENIAVTA",
+      "label": "GenIA Ventas",
+      "nombre": "GenIA Ventas",
+      "prefijos": [
+        "GENIAVTA",
+        "GENIA VTA"
+      ],
+      "color": "azul",
+      "grupo": "GR",
+      "orden": 7,
+      "activo": true,
+      "lidera": "Migue",
+      "partner": "Roomie IT",
+      "ayuda": "GenIA Ventas · Lidera Migue · Partner: Roomie IT",
+      "alias": [
+        "genia ventas",
+        "geniavta"
+      ],
+      "plantillaO3": "geniavta",
+      "monto": 15000,
+      "moneda": "USD"
+    },
+    {
+      "id": "GENIACOB",
+      "label": "GenIA Cobranza",
+      "nombre": "GenIA Cobranza",
+      "prefijos": [
+        "GENIACOB",
+        "GENIA COB"
+      ],
+      "color": "azul",
+      "grupo": "GR",
+      "orden": 8,
+      "activo": true,
+      "lidera": "Mike",
+      "partner": "Roomie IT",
+      "ayuda": "GenIA Cobranza · Lidera Mike · Partner: Roomie IT",
+      "alias": [
+        "genia cobranza",
+        "geniacob"
+      ],
+      "plantillaO3": "geniacob",
+      "monto": 50000,
+      "moneda": "USD"
+    },
+    {
+      "id": "SYN",
+      "label": "Synapsis",
+      "nombre": "Synapsis (marketing)",
+      "prefijos": [
+        "SYN",
+        "GEN IA_MKT SYNAPSIS",
+        "SYNAPSIS"
+      ],
+      "color": "azul",
+      "grupo": "GR",
+      "orden": 9,
+      "activo": true,
+      "lidera": "Migue",
+      "partner": "Artool o Hootsuite",
+      "ayuda": "Synapsis (marketing) · Lidera Migue · Partner: Artool o Hootsuite",
+      "alias": [
+        "synapsis",
+        "syn"
+      ],
+      "plantillaO3": "syn",
+      "monto": 10000,
+      "moneda": "USD"
+    },
+    {
+      "id": "ITS",
+      "label": "ITS",
+      "nombre": "IT Support",
+      "prefijos": [
+        "ITS",
+        "ITS_MUL",
+        "ITS_MULT",
+        "ITS_VIP-IT",
+        "IT SUPPORT"
+      ],
+      "color": "azul",
+      "grupo": "GR",
+      "orden": 10,
+      "activo": true,
+      "lidera": "Migue",
+      "partner": "Roomie IT",
+      "ayuda": "IT Support · Lidera Migue · Partner: Roomie IT",
+      "alias": [
+        "its",
+        "it support",
+        "it",
+        "helpdesk",
+        "mesa de ayuda"
+      ],
+      "plantillaO3": "its",
+      "monto": 100000,
+      "moneda": "USD"
+    },
+    {
+      "id": "LT",
+      "label": "LT",
+      "nombre": "Legacy Systems Takeover",
+      "prefijos": [
+        "LT"
+      ],
+      "color": "azul",
+      "grupo": "GR",
+      "orden": 11,
+      "activo": true,
+      "lidera": "Daniel",
+      "partner": "Roomie IT",
+      "ayuda": "Legacy Systems Takeover · Lidera Daniel · Partner: Roomie IT",
+      "alias": [
+        "legacy systems takeover",
+        "legacy",
+        "lt"
+      ],
+      "plantillaO3": "lt",
+      "monto": 50000,
+      "moneda": "USD"
+    },
+    {
+      "id": "BD",
+      "label": "BD",
+      "nombre": "Blindaje Digital",
+      "prefijos": [
+        "BD"
+      ],
+      "color": "azul",
+      "grupo": "GR",
+      "orden": 12,
+      "activo": true,
+      "lidera": "Migue",
+      "partner": "Artool",
+      "ayuda": "Blindaje Digital · Lidera Migue · Partner: Artool",
+      "alias": [
+        "blindaje digital",
+        "blindaje",
+        "bd"
+      ],
+      "plantillaO3": "bd",
+      "monto": 35000,
+      "moneda": "USD"
     },
     {
       "id": "360",
       "label": "360",
+      "nombre": "Marketing 3V / 360",
       "prefijos": [
         "360",
         "3V",
         "3V/360"
       ],
       "color": "azul",
-      "grupo": "GR"
-    },
-    {
-      "id": "GenIA",
-      "label": "GenIA",
-      "prefijos": [
-        "GENIA",
-        "GEN IA"
+      "grupo": "GR",
+      "orden": 13,
+      "activo": true,
+      "lidera": "Daniel",
+      "partner": "Interno",
+      "ayuda": "Marketing 3V / 360 · Lidera Daniel · Partner: Interno",
+      "alias": [
+        "360",
+        "marketing 3v",
+        "3v"
       ],
-      "color": "azul",
-      "grupo": "GR"
-    },
-    {
-      "id": "GENIARH",
-      "label": "GenIA RH",
-      "prefijos": [
-        "GENIARH",
-        "GENIA RH"
-      ],
-      "color": "azul",
-      "grupo": "GR"
-    },
-    {
-      "id": "GENIAVTA",
-      "label": "GenIA Ventas",
-      "prefijos": [
-        "GENIAVTA",
-        "GENIA VTA"
-      ],
-      "color": "azul",
-      "grupo": "GR"
-    },
-    {
-      "id": "GENIACOB",
-      "label": "GenIA Cobranza",
-      "prefijos": [
-        "GENIACOB",
-        "GENIA COB"
-      ],
-      "color": "azul",
-      "grupo": "GR"
-    },
-    {
-      "id": "SYN",
-      "label": "Synapsis",
-      "prefijos": [
-        "SYN",
-        "SYNAPSIS"
-      ],
-      "color": "azul",
-      "grupo": "GR"
-    },
-    {
-      "id": "ITS",
-      "label": "ITS",
-      "prefijos": [
-        "ITS",
-        "IT SUPPORT"
-      ],
-      "color": "azul",
-      "grupo": "GR"
-    },
-    {
-      "id": "LT",
-      "label": "LT",
-      "prefijos": [
-        "LT"
-      ],
-      "color": "azul",
-      "grupo": "GR"
-    },
-    {
-      "id": "BD",
-      "label": "BD",
-      "prefijos": [
-        "BD"
-      ],
-      "color": "azul",
-      "grupo": "GR"
+      "plantillaO3": "360",
+      "monto": 1700,
+      "moneda": "USD"
     },
     {
       "id": "WB",
       "label": "WB",
+      "nombre": "Web Development",
       "prefijos": [
         "WB"
       ],
       "color": "azul",
-      "grupo": "GR"
-    },
-    {
-      "id": "HS",
-      "label": "HS",
-      "prefijos": [
-        "HS"
+      "grupo": "GR",
+      "orden": 14,
+      "activo": true,
+      "lidera": "Daniel",
+      "partner": "Interno",
+      "ayuda": "Web Development · Lidera Daniel · Partner: Interno",
+      "alias": [
+        "web development",
+        "wb",
+        "sitio web"
       ],
-      "color": "azul",
-      "grupo": "GR"
+      "plantillaO3": "wb",
+      "monto": 10000,
+      "moneda": "USD"
     },
     {
       "id": "PT",
       "label": "PT",
+      "nombre": "Pintaando",
       "prefijos": [
         "PT"
       ],
       "color": "morado",
-      "grupo": "PT"
+      "grupo": "PT",
+      "orden": 15,
+      "activo": true,
+      "lidera": "Diana",
+      "partner": "Por definir",
+      "ayuda": "Pintaando · Lidera Diana",
+      "alias": [
+        "pintaando"
+      ],
+      "monto": 0,
+      "moneda": "USD"
+    },
+    {
+      "id": "EX",
+      "label": "EX",
+      "nombre": "Excepciones",
+      "prefijos": [
+        "EX"
+      ],
+      "color": "gris",
+      "grupo": "INTERNO",
+      "orden": 16,
+      "activo": true,
+      "lidera": "Mike",
+      "partner": "Por definir",
+      "ayuda": "Excepciones · Lidera Mike",
+      "monto": 0,
+      "moneda": "USD"
     },
     {
       "id": "IMMMU",
@@ -343,21 +619,30 @@
         "IMMMU"
       ],
       "color": "verde",
-      "grupo": "IMMMU"
+      "grupo": "IMMMU",
+      "orden": 17,
+      "activo": true,
+      "ayuda": "IMMMU"
     },
     {
       "id": "Interno",
       "label": "Interno",
       "prefijos": [],
       "color": "gris",
-      "grupo": "INTERNO"
+      "grupo": "INTERNO",
+      "orden": 18,
+      "activo": true,
+      "ayuda": "Interno"
     },
     {
       "id": "Otro",
       "label": "Otro",
       "prefijos": [],
       "color": "gris",
-      "grupo": "INTERNO"
+      "grupo": "INTERNO",
+      "orden": 19,
+      "activo": true,
+      "ayuda": "Otro"
     }
   ],
   "stages": [
@@ -367,7 +652,12 @@
       "label": "Señal",
       "corto": "Señal",
       "color": "rojo",
-      "prioridad": 1
+      "prioridad": 1,
+      "fase": "prospeccion",
+      "nombre": "Señal Detectada",
+      "ayuda": "Detectamos la señal (abrió el correo 3 veces o más, contestó, DUO) y todavía no le llega el primer WhatsApp",
+      "orden": 1,
+      "plazoDias": 2
     },
     {
       "id": "1332596062",
@@ -375,7 +665,12 @@
       "label": "Reply",
       "corto": "Reply",
       "color": "rojo",
-      "prioridad": 2
+      "prioridad": 2,
+      "fase": "prospeccion",
+      "nombre": "Reply Recibido",
+      "ayuda": "Contestó un correo (Reply) y todavía no se le escribe",
+      "orden": 2,
+      "plazoDias": 2
     },
     {
       "id": "1332596063",
@@ -383,7 +678,12 @@
       "label": "Contactado",
       "corto": "Contactado",
       "color": "rojo",
-      "prioridad": 3
+      "prioridad": 3,
+      "fase": "prospeccion",
+      "nombre": "Contactado",
+      "ayuda": "Ya le llegó el primer toque por WhatsApp. Tiene 10 días hábiles para contestar",
+      "orden": 3,
+      "plazoDias": 10
     },
     {
       "id": "1332596064",
@@ -391,7 +691,12 @@
       "label": "En Conv.",
       "corto": "En Conv.",
       "color": "amarillo",
-      "prioridad": 4
+      "prioridad": 4,
+      "fase": "prospeccion",
+      "nombre": "En Conversación",
+      "ayuda": "Contestó: el bot conversa con él para llevarlo a la reunión",
+      "orden": 4,
+      "plazoDias": 10
     },
     {
       "id": "appointmentscheduled",
@@ -399,7 +704,12 @@
       "label": "Atracción",
       "corto": "Atracción",
       "color": "verde",
-      "prioridad": 5
+      "prioridad": 5,
+      "fase": "venta",
+      "nombre": "Atracción",
+      "ayuda": "Tiene reunión agendada",
+      "orden": 5,
+      "plazoDias": 7
     },
     {
       "id": "qualifiedtobuy",
@@ -407,7 +717,11 @@
       "label": "Educación",
       "corto": "Educación",
       "color": "verde",
-      "prioridad": 6
+      "prioridad": 6,
+      "fase": "venta",
+      "nombre": "Educación",
+      "ayuda": "Ya tuvo la reunión: el Motor hace la minuta y el siguiente paso",
+      "orden": 6
     },
     {
       "id": "presentationscheduled",
@@ -415,7 +729,11 @@
       "label": "Propuesta",
       "corto": "Propuesta Env.",
       "color": "verde",
-      "prioridad": 7
+      "prioridad": 7,
+      "fase": "venta",
+      "nombre": "Propuesta Enviada",
+      "ayuda": "Ya se le mandó la propuesta",
+      "orden": 7
     },
     {
       "id": "decisionmakerboughtin",
@@ -423,7 +741,11 @@
       "label": "Aprobación",
       "corto": "Aprob. Verbal",
       "color": "azul",
-      "prioridad": 8
+      "prioridad": 8,
+      "fase": "venta",
+      "nombre": "Aprobación Verbal",
+      "ayuda": "Dijo que sí de palabra",
+      "orden": 8
     },
     {
       "id": "contractsent",
@@ -431,7 +753,11 @@
       "label": "Contract Sent",
       "corto": "Contract Sent",
       "color": "azul",
-      "prioridad": 9
+      "prioridad": 9,
+      "fase": "venta",
+      "nombre": "Contract Sent",
+      "ayuda": "Se le mandó el contrato",
+      "orden": 9
     },
     {
       "id": "closedwon",
@@ -439,7 +765,11 @@
       "label": "Won",
       "corto": "Ganada",
       "color": "azul",
-      "prioridad": 10
+      "prioridad": 10,
+      "fase": "ganada",
+      "nombre": "Ganada",
+      "ayuda": "Firmó: oportunidad ganada",
+      "orden": 10
     },
     {
       "id": "1355589932",
@@ -447,7 +777,11 @@
       "label": "Renovación",
       "corto": "Renovación",
       "color": "morado",
-      "prioridad": 11
+      "prioridad": 11,
+      "fase": "venta",
+      "nombre": "Renovación",
+      "ayuda": "Cliente en renovación",
+      "orden": 11
     },
     {
       "id": "1092009814",
@@ -455,7 +789,11 @@
       "label": "Perdida",
       "corto": "Perdida",
       "color": "gris",
-      "prioridad": 99
+      "prioridad": 99,
+      "fase": "perdida",
+      "nombre": "Perdida",
+      "ayuda": "Se cerró sin venta (o pasaron 10 días hábiles sin respuesta en prospección)",
+      "orden": 99
     }
   ],
   "segmentos": [
@@ -463,31 +801,41 @@
       "id": "GR",
       "label": "GR",
       "linea": "GR",
-      "naturaleza": "cliente"
+      "naturaleza": "cliente",
+      "orden": 1,
+      "ayuda": "Oportunidades de los productos de Great Revenue"
     },
     {
       "id": "PT",
       "label": "PT",
       "linea": "PT",
-      "naturaleza": "cliente"
+      "naturaleza": "cliente",
+      "orden": 2,
+      "ayuda": "Pintaando"
     },
     {
       "id": "IMMMU",
       "label": "IMMMU",
       "linea": "IMMMU",
-      "naturaleza": "cliente"
+      "naturaleza": "cliente",
+      "orden": 3,
+      "ayuda": "IMMMU"
     },
     {
       "id": "GR_INTERNO",
       "label": "GR Interno",
       "linea": "GR",
-      "naturaleza": "interno"
+      "naturaleza": "interno",
+      "orden": 4,
+      "ayuda": "Pendientes internos de Great Revenue"
     },
     {
       "id": "PT_INTERNO",
       "label": "PT Interno",
       "linea": "PT",
-      "naturaleza": "interno"
+      "naturaleza": "interno",
+      "orden": 5,
+      "ayuda": "Pendientes internos de Pintaando"
     }
   ],
   "paleta": {
@@ -502,54 +850,71 @@
     {
       "id": "vencida",
       "label": "Vencidas",
-      "color": "rojo"
+      "color": "rojo",
+      "orden": 1,
+      "ayuda": "Ya pasó su fecha"
     },
     {
       "id": "hoy",
       "label": "Hoy",
-      "color": "amarillo"
+      "color": "amarillo",
+      "orden": 2,
+      "ayuda": "Vencen hoy"
     },
     {
       "id": "proxima",
       "label": "Próximas",
-      "color": "azul"
+      "color": "azul",
+      "orden": 3,
+      "ayuda": "Vencen en los próximos días"
     },
     {
       "id": "futura",
       "label": "Futuras",
-      "color": "gris"
+      "color": "gris",
+      "orden": 4,
+      "ayuda": "Vencen más adelante"
     }
   ],
   "categoriasAlerta": [
     {
       "id": "Cerrar",
       "label": "Cerrar",
-      "color": "rojo"
+      "color": "rojo",
+      "orden": 1,
+      "ayuda": "Oportunidades avanzadas que hay que empujar al cierre"
     },
     {
       "id": "ReActivar",
       "label": "ReActivar",
-      "color": "amarillo"
+      "color": "amarillo",
+      "orden": 2,
+      "ayuda": "Oportunidades detenidas que hay que retomar"
     },
     {
       "id": "Higienizar",
       "label": "Higienizar",
-      "color": "azul"
+      "color": "azul",
+      "orden": 3,
+      "ayuda": "Oportunidades con datos incompletos en HubSpot"
     }
   ],
   "sorts": {
     "pendientes": [
       {
         "id": "urgency",
-        "label": "Urgencia"
+        "label": "🎯 Urgencia",
+        "orden": 1
       },
       {
         "id": "date_asc",
-        "label": "Fecha ↑"
+        "label": "📅 Fecha ↑",
+        "orden": 2
       },
       {
         "id": "date_desc",
-        "label": "Fecha ↓"
+        "label": "📅 Fecha ↓",
+        "orden": 3
       }
     ],
     "alertas": [
@@ -607,5 +972,496 @@
   "semaforo": {
     "dealDiasAmarillo": 30,
     "tareaDiasAmarillo": 3
-  }
+  },
+  "grupos": [
+    {
+      "id": "GR",
+      "label": "GR",
+      "orden": 1,
+      "ayuda": "Productos de Great Revenue"
+    },
+    {
+      "id": "PT",
+      "label": "PT",
+      "orden": 2,
+      "ayuda": "Pintaando"
+    },
+    {
+      "id": "IMMMU",
+      "label": "IMMMU",
+      "orden": 3,
+      "ayuda": "IMMMU"
+    },
+    {
+      "id": "INTERNO",
+      "label": "Interno",
+      "orden": 4,
+      "ayuda": "Oportunidades internas o sin producto"
+    }
+  ],
+  "canales": [
+    {
+      "id": "correo",
+      "label": "Correo",
+      "orden": 1,
+      "ayuda": "Contestó por correo"
+    },
+    {
+      "id": "linkedin",
+      "label": "LinkedIn",
+      "orden": 2,
+      "ayuda": "Contestó por LinkedIn"
+    },
+    {
+      "id": "whatsapp",
+      "label": "WhatsApp",
+      "orden": 3,
+      "ayuda": "Contestó por WhatsApp"
+    },
+    {
+      "id": "llamada",
+      "label": "Llamada",
+      "orden": 4,
+      "ayuda": "Se habló por teléfono"
+    },
+    {
+      "id": "otro",
+      "label": "Otro",
+      "orden": 5,
+      "ayuda": "Otro medio"
+    }
+  ],
+  "origenesConversacion": [
+    {
+      "id": "secuencia",
+      "label": "Secuencia",
+      "orden": 1,
+      "ayuda": "Venía en una secuencia de Amplemarket (Sequence)"
+    },
+    {
+      "id": "duo",
+      "label": "DUO",
+      "orden": 2,
+      "ayuda": "Amplemarket detectó una señal de la persona (publicación, cambio de puesto, contratación) y le escribió"
+    },
+    {
+      "id": "referido",
+      "label": "Referido",
+      "orden": 3,
+      "ayuda": "Nos lo recomendaron"
+    },
+    {
+      "id": "otra",
+      "label": "Otra oportunidad",
+      "orden": 4,
+      "ayuda": "Oportunidad de HubSpot con otro camino (evento, cliente actual, sitio web) o sin dato"
+    },
+    {
+      "id": "anuncio",
+      "label": "Anuncio",
+      "orden": 5,
+      "ayuda": "Escribió desde un anuncio de Meta, sin oportunidad en HubSpot"
+    },
+    {
+      "id": "directo",
+      "label": "Escribió directo",
+      "orden": 6,
+      "ayuda": "Escribió al número sin oportunidad en HubSpot ni anuncio"
+    }
+  ],
+  "resultadosToque": [
+    {
+      "id": "activo",
+      "label": "Esperando respuesta",
+      "orden": 1,
+      "ayuda": "Le llegó el toque y todavía no contesta; el siguiente sale solo"
+    },
+    {
+      "id": "respondio",
+      "label": "Contestó",
+      "orden": 2,
+      "ayuda": "Escribió después de un toque: pasó a En Conversación y ya no recibe más toques"
+    },
+    {
+      "id": "perdida",
+      "label": "Perdida",
+      "orden": 3,
+      "ayuda": "Pasaron 10 días hábiles sin respuesta"
+    },
+    {
+      "id": "fallo",
+      "label": "No le llegó",
+      "orden": 4,
+      "ayuda": "WhatsApp no lo entregó o no se pudo mandar (pago de Meta, faltan datos, país excluido). Se reintenta solo"
+    },
+    {
+      "id": "sin_whatsapp",
+      "label": "Número sin WhatsApp",
+      "orden": 5,
+      "ayuda": "Meta dice que ese número no tiene WhatsApp. No se reintenta"
+    }
+  ],
+  "estadosToque": [
+    {
+      "id": "activo",
+      "label": "Esperando respuesta",
+      "orden": 1,
+      "ayuda": "Le llegó el toque y todavía no contesta",
+      "resultado": "activo"
+    },
+    {
+      "id": "respondio",
+      "label": "Respondió",
+      "orden": 2,
+      "ayuda": "Escribió después de un toque",
+      "resultado": "respondio"
+    },
+    {
+      "id": "perdida",
+      "label": "Perdida",
+      "orden": 3,
+      "ayuda": "10 días hábiles sin respuesta",
+      "resultado": "perdida"
+    },
+    {
+      "id": "no_entregado",
+      "label": "No entregado",
+      "orden": 4,
+      "ayuda": "WhatsApp no lo entregó",
+      "resultado": "fallo"
+    },
+    {
+      "id": "error",
+      "label": "No se envió",
+      "orden": 5,
+      "ayuda": "No se pudo mandar (por ejemplo, pago de Meta)",
+      "resultado": "fallo"
+    },
+    {
+      "id": "datos_faltantes",
+      "label": "Faltan datos",
+      "orden": 6,
+      "ayuda": "Falta un dato para llenar la plantilla",
+      "resultado": "fallo"
+    },
+    {
+      "id": "excluido",
+      "label": "País excluido",
+      "orden": 7,
+      "ayuda": "El país del número no recibe toques",
+      "resultado": "fallo"
+    },
+    {
+      "id": "sin_whatsapp",
+      "label": "Sin WhatsApp",
+      "orden": 8,
+      "ayuda": "El número no tiene WhatsApp",
+      "resultado": "sin_whatsapp"
+    },
+    {
+      "id": "sin_telefono",
+      "label": "Sin celular",
+      "orden": 9,
+      "ayuda": "La oportunidad no tiene celular",
+      "resultado": "sin_whatsapp"
+    }
+  ],
+  "ayudas": {
+    "origenes": {
+      "respuesta": "Contestó un correo de la secuencia de Amplemarket",
+      "senal": "Señal de DUO en Amplemarket (publicación, cambio de puesto, contratación)",
+      "open3": "Abrió el correo de la secuencia 3 veces o más",
+      "referido": "Nos lo recomendaron",
+      "evento": "Lo conocimos en un evento",
+      "cliente_actual": "Ya es cliente de Great Revenue",
+      "sitio_web": "Llegó por el sitio web",
+      "otro": "Otro camino"
+    },
+    "comoLlego": {
+      "interested": "Contestó con interés",
+      "meeting_booked": "Agendó la reunión desde la secuencia",
+      "forwarded_to_the_right_person": "Nos pasó con la persona correcta",
+      "introduction": "Nos presentó con otra persona",
+      "asked_to_circle_back_later": "Pidió que le escribamos más adelante",
+      "not_interested": "Dijo que no le interesa",
+      "not_the_right_person": "No es la persona indicada",
+      "hard_no": "Pidió que no lo contactemos",
+      "ooo": "Respuesta automática de fuera de la oficina"
+    },
+    "tiposOportunidad": {
+      "cliente_nuevo": "Empresa que todavía no es cliente",
+      "venta_adicional": "Más licencias o servicio del mismo producto a un cliente",
+      "venta_cruzada": "Otro producto a un cliente actual",
+      "renovacion": "Renovación de un contrato vigente"
+    },
+    "partners": {
+      "artool": "Se vende con Artool",
+      "hootsuite": "Se vende con Hootsuite",
+      "roomie_it": "Se vende con Roomie IT",
+      "venta_directa": "Great Revenue vende directo",
+      "interno": "Producto propio de Great Revenue"
+    },
+    "tiposSenal": {
+      "reply": "Contestó un correo o un mensaje de la secuencia",
+      "open3": "Abrió el correo de la secuencia 3 veces o más sin contestar"
+    },
+    "tiposInteres": {
+      "reapertura": "Volvió a abrir un correo viejo",
+      "interes_maduro": "Ya había mostrado interés antes",
+      "interes_en_curso": "Está abriendo la secuencia actual"
+    },
+    "motivosPerdida": {}
+  },
+  "fuente": {
+    "configuracion": "intelligence.greatrevenue.com/gr/portal (n8n ITERA_configuracion, tenant GR): productos, origenes, comoLlego, tiposOportunidad, partners, tiposSenal, tiposInteres, motivosPerdida. Se copian solas al guardar.",
+    "catalogo": "Este archivo: stages, personas, segmentos, grupos, canales, origenesConversacion, resultadosToque, estadosToque, urgencias, categoriasAlerta."
+  },
+  "origenes": [
+    {
+      "id": "respuesta",
+      "label": "Sequence",
+      "orden": 1,
+      "ayuda": "Contestó un correo de la secuencia de Amplemarket",
+      "origenConversacion": "secuencia"
+    },
+    {
+      "id": "senal",
+      "label": "DUO",
+      "orden": 2,
+      "ayuda": "Señal de DUO en Amplemarket (publicación, cambio de puesto, contratación)",
+      "origenConversacion": "duo"
+    },
+    {
+      "id": "open3",
+      "label": "Open+3",
+      "orden": 3,
+      "ayuda": "Abrió el correo de la secuencia 3 veces o más",
+      "origenConversacion": "secuencia"
+    },
+    {
+      "id": "referido",
+      "label": "Referido",
+      "orden": 4,
+      "ayuda": "Nos lo recomendaron",
+      "origenConversacion": "referido"
+    },
+    {
+      "id": "evento",
+      "label": "Evento",
+      "orden": 5,
+      "ayuda": "Lo conocimos en un evento",
+      "origenConversacion": "otra"
+    },
+    {
+      "id": "cliente_actual",
+      "label": "Cliente actual",
+      "orden": 6,
+      "ayuda": "Ya es cliente de Great Revenue",
+      "origenConversacion": "otra"
+    },
+    {
+      "id": "sitio_web",
+      "label": "Sitio web",
+      "orden": 7,
+      "ayuda": "Llegó por el sitio web",
+      "origenConversacion": "otra"
+    },
+    {
+      "id": "otro",
+      "label": "Otro",
+      "orden": 8,
+      "ayuda": "Otro camino",
+      "origenConversacion": "otra"
+    }
+  ],
+  "comoLlego": [
+    {
+      "id": "interested",
+      "label": "Interested",
+      "orden": 1,
+      "ayuda": "Contestó con interés",
+      "prioridad": "alta"
+    },
+    {
+      "id": "meeting_booked",
+      "label": "Meeting Booked",
+      "orden": 2,
+      "ayuda": "Agendó la reunión desde la secuencia",
+      "prioridad": "alta"
+    },
+    {
+      "id": "forwarded_to_the_right_person",
+      "label": "Forwarded to the right person",
+      "orden": 3,
+      "ayuda": "Nos pasó con la persona correcta",
+      "prioridad": "alta"
+    },
+    {
+      "id": "introduction",
+      "label": "Introduction",
+      "orden": 4,
+      "ayuda": "Nos presentó con otra persona",
+      "prioridad": "alta"
+    },
+    {
+      "id": "asked_to_circle_back_later",
+      "label": "Asked to circle back later",
+      "orden": 5,
+      "ayuda": "Pidió que le escribamos más adelante",
+      "prioridad": "media",
+      "claveReply": "circle_back"
+    },
+    {
+      "id": "not_interested",
+      "label": "Not interested",
+      "orden": 6,
+      "ayuda": "Dijo que no le interesa",
+      "prioridad": "descartado"
+    },
+    {
+      "id": "not_the_right_person",
+      "label": "Not the right person",
+      "orden": 7,
+      "ayuda": "No es la persona indicada",
+      "prioridad": "descartado"
+    },
+    {
+      "id": "hard_no",
+      "label": "Hard no",
+      "orden": 8,
+      "ayuda": "Pidió que no lo contactemos",
+      "prioridad": "descartado"
+    },
+    {
+      "id": "ooo",
+      "label": "Out of the Office",
+      "orden": 9,
+      "ayuda": "Respuesta automática de fuera de la oficina",
+      "prioridad": "media"
+    }
+  ],
+  "tiposOportunidad": [
+    {
+      "id": "cliente_nuevo",
+      "label": "Cliente nuevo",
+      "orden": 1,
+      "ayuda": "Empresa que todavía no es cliente"
+    },
+    {
+      "id": "venta_adicional",
+      "label": "Venta adicional",
+      "orden": 2,
+      "ayuda": "Más licencias o servicio del mismo producto a un cliente"
+    },
+    {
+      "id": "venta_cruzada",
+      "label": "Venta cruzada",
+      "orden": 3,
+      "ayuda": "Otro producto a un cliente actual"
+    },
+    {
+      "id": "renovacion",
+      "label": "Renovación",
+      "orden": 4,
+      "ayuda": "Renovación de un contrato vigente"
+    }
+  ],
+  "partners": [
+    {
+      "id": "artool",
+      "label": "Artool",
+      "orden": 1,
+      "ayuda": "Se vende con Artool"
+    },
+    {
+      "id": "hootsuite",
+      "label": "Hootsuite",
+      "orden": 2,
+      "ayuda": "Se vende con Hootsuite"
+    },
+    {
+      "id": "roomie_it",
+      "label": "Roomie IT",
+      "orden": 3,
+      "ayuda": "Se vende con Roomie IT"
+    },
+    {
+      "id": "venta_directa",
+      "label": "Venta directa",
+      "orden": 4,
+      "ayuda": "Great Revenue vende directo"
+    },
+    {
+      "id": "interno",
+      "label": "Interno",
+      "orden": 5,
+      "ayuda": "Producto propio de Great Revenue"
+    }
+  ],
+  "tiposSenal": [
+    {
+      "id": "reply",
+      "label": "Reply",
+      "orden": 1,
+      "ayuda": "Contestó un correo o un mensaje de la secuencia"
+    },
+    {
+      "id": "open3",
+      "label": "Open+3",
+      "orden": 2,
+      "ayuda": "Abrió el correo de la secuencia 3 veces o más sin contestar"
+    }
+  ],
+  "tiposInteres": [
+    {
+      "id": "reapertura",
+      "label": "Reapertura",
+      "orden": 1,
+      "ayuda": "Volvió a abrir un correo viejo"
+    },
+    {
+      "id": "interes_maduro",
+      "label": "Interés maduro",
+      "orden": 2,
+      "ayuda": "Ya había mostrado interés antes"
+    },
+    {
+      "id": "interes_en_curso",
+      "label": "Interés en curso",
+      "orden": 3,
+      "ayuda": "Está abriendo la secuencia actual"
+    }
+  ],
+  "motivosPerdida": [
+    {
+      "id": "Precio",
+      "label": "Precio",
+      "orden": 1,
+      "ayuda": "Precio"
+    },
+    {
+      "id": "Competencia",
+      "label": "Competencia",
+      "orden": 2,
+      "ayuda": "Competencia"
+    },
+    {
+      "id": "Sin prioridad",
+      "label": "Sin prioridad",
+      "orden": 3,
+      "ayuda": "Sin prioridad"
+    },
+    {
+      "id": "No respondió",
+      "label": "No respondió",
+      "orden": 4,
+      "ayuda": "No respondió"
+    },
+    {
+      "id": "No califica",
+      "label": "No califica",
+      "orden": 5,
+      "ayuda": "No califica"
+    }
+  ]
 }

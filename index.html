@@ -777,7 +777,6 @@ const TAREAS_URL = 'https://mikea.app.n8n.cloud/webhook/gr-tareas';
 const BORRAR_PERDIDA_URL = 'https://mikea.app.n8n.cloud/webhook/gr-borrar-perdida';
 const CUENTA_DETALLE_URL = 'https://mikea.app.n8n.cloud/webhook/gr-cuenta-detalle';
 // Responsables conocidos (ownerId HubSpot -> nombre). Ampliable.
-const OWNERS = { '77808624': 'Migue', '82004391': 'Martha' };
 let AM_DATA = null;
 let PROSPECCION_DATA = null;
 let EMPRESAS_DATA = null;
@@ -831,38 +830,32 @@ const ACTIVE_CLIENTS = {
 // --- State ---
 let DATA = null;
 
-// ==== CATÁLOGOS (fuente única): live desde DATA.catalogos; fallback embebido de respaldo ====
-const CAT_FALLBACK = {
-  personas: [
-    {id:'Mike',label:'Mike'},{id:'Migue',label:'Migue',ownerId:'77808624'},{id:'Martha',label:'Martha',ownerId:'82004391'},
-    {id:'Daniel',label:'Daniel'},{id:'Fer',label:'Fer'},{id:'Mine',label:'Mine'},{id:'Manu',label:'Manu'},
-    {id:'Diana',label:'Diana'},{id:'Nico',label:'Nico'},{id:'Sara',label:'Sara'},
-    {id:'Sabrina',label:'Sabrina'},{id:'Valeria',label:'Valeria'},{id:'Uri',label:'Uri'}
-  ],
-  paleta: { morado:'#7D2AE4', azul:'#02ADBA', verde:'#62D175', amarillo:'#FFCD00', rojo:'#DB0540', gris:'#6B7280' },
-  segmentos: [
-    {id:'GR',label:'GR',linea:'GR',naturaleza:'cliente'},{id:'PT',label:'PT',linea:'PT',naturaleza:'cliente'},
-    {id:'IMMMU',label:'IMMMU',linea:'IMMMU',naturaleza:'cliente'},
-    {id:'GR_INTERNO',label:'GR Interno',linea:'GR',naturaleza:'interno'},{id:'PT_INTERNO',label:'PT Interno',linea:'PT',naturaleza:'interno'}
-  ],
-  stages: [
-    {id:'1332596061',label:'Señal',color:'rojo',prioridad:1},{id:'1332596062',label:'Reply',color:'rojo',prioridad:2},
-    {id:'1332596063',label:'Contactado',color:'rojo',prioridad:3},{id:'1332596064',label:'En Conv.',color:'amarillo',prioridad:4},
-    {id:'appointmentscheduled',label:'Atracción',color:'verde',prioridad:5},{id:'qualifiedtobuy',label:'Educación',color:'verde',prioridad:6},
-    {id:'presentationscheduled',label:'Propuesta',color:'verde',prioridad:7},{id:'decisionmakerboughtin',label:'Aprobación',color:'azul',prioridad:8},
-    {id:'closedwon',label:'Won',color:'azul',prioridad:10},{id:'1092009814',label:'Perdida',color:'gris',prioridad:99}
-  ],
-  productos: [
-    {id:'TW',grupo:'GR'},{id:'AM',grupo:'GR'},{id:'AEO',grupo:'GR'},{id:'360',grupo:'GR'},{id:'GenIA',grupo:'GR'},
-    {id:'ITS',grupo:'GR'},{id:'LT',grupo:'GR'},{id:'BD',grupo:'GR'},{id:'WB',grupo:'GR'},{id:'HS',grupo:'GR'},
-    {id:'PT',grupo:'PT'},{id:'IMMMU',grupo:'IMMMU'},{id:'Interno',grupo:'INTERNO'},{id:'Otro',grupo:'INTERNO'}
-  ]
-};
-function CAT(){ return (typeof DATA !== 'undefined' && DATA && DATA.catalogos) ? DATA.catalogos : CAT_FALLBACK; }
+// ==== CATÁLOGOS (fuente única, 29oct2026): /catalogos.json del sitio, el mismo que copia Configuración (/gr/portal) al guardar.
+// No hay lista escrita aquí: la página lo lee al abrir; DATA.catalogos (gr-dashboard) solo agrega lo que arma n8n (accionesAlerta).
+// El candado (scripts/candado_menus.js) rechaza cualquier lista de productos, etapas o personas escrita en las páginas.
+let CAT_SITIO = { personas:[], productos:[], stages:[], segmentos:[], grupos:[], paleta:{}, canales:[], tiposSenal:[], categoriasAlerta:[], sorts:{} };
+const CAT_LISTO = fetch('/catalogos.json', { cache:'no-cache' }).then(function(r){ return r.json(); }).then(function(j){ if(j && Array.isArray(j.productos)) CAT_SITIO = j; }).catch(function(e){ console.warn('catalogos.json no cargó', e); });
+var _catMemo = { de:null, sitio:null, v:null };
+function CAT(){
+  var d = (typeof DATA !== 'undefined' && DATA && DATA.catalogos) ? DATA.catalogos : null;
+  if (_catMemo.de !== d || _catMemo.sitio !== CAT_SITIO) _catMemo = { de:d, sitio:CAT_SITIO, v:Object.assign({}, d || {}, CAT_SITIO) };
+  return _catMemo.v;
+}
+// Ayudas para leer el catálogo
+function catLista(k){ var l=(CAT()[k])||[]; return l.slice().sort(function(a,b){ return (a.orden||0)-(b.orden||0); }); }
+function catEtapasFase(f){ return ((CAT().stages)||[]).filter(function(s){ return s.fase===f; }).sort(function(a,b){ return a.prioridad-b.prioridad; }); }
+function catIds(l){ return l.map(function(x){ return String(x.id); }); }
+function catOwnerNombre(id){ var p=((CAT().personas)||[]).filter(function(x){ return String(x.ownerId||'')===String(id||''); })[0]; return p ? p.id : ''; }
+function catOwnersMapa(){ var m={}; ((CAT().personas)||[]).forEach(function(p){ if(p.ownerId) m[p.ownerId]=p.id; }); return m; }
+// Texto de ayuda («?» al pasar el mouse) de una opción de menú, desde el catálogo.
+var CAT_AYUDA_DE={prod:'productos',producto:'productos',stage:'stages',etapa:'stages',grupo:'grupos',categoria:'categoriasAlerta',tipo:'tiposSenal',persona:'personas',owner:'personas',responsable:'personas',lider:'personas',apoyo:'personas',urgencia:'urgencias',segmento:'segmentos',canal:'canales',origen:'origenes',partner:'partners'};
+function catAyuda(k,v){ var l=CAT()[CAT_AYUDA_DE[k]]; if(!Array.isArray(l)) return ''; v=String(v); var x=l.filter(function(o){ return String(o.id)===v||o.idCli===v||o.label===v; })[0]; return x&&x.ayuda?x.ayuda:''; }
+function catTitulo(k,v,extra){ if(extra&&/title=/.test(extra)) return ''; var a=catAyuda(k,v); return a?' title="'+grEsc(a)+'"':''; }
+function catEtiquetas(k){ var m={}; catLista(k).forEach(function(x){ m[x.id]=x.label; }); return m; }
 function grEsc(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtFecha(s){ if(!s||s==='null') return ''; var d=new Date(s); if(isNaN(d)) return ''; var M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; return d.getUTCDate()+' '+M[d.getUTCMonth()]+' '+d.getUTCFullYear(); }
-function grStagesForSelect(){ var st=((CAT().stages)||CAT_FALLBACK.stages||[]).slice().sort(function(a,b){return a.prioridad-b.prioridad;}); var noP=st.filter(function(x){return !/Perdida/i.test(x.label);}); var pd=st.filter(function(x){return /Perdida/i.test(x.label);}); return noP.concat(pd); }
-var GR_OWNERS={'77808624':'Migue','82004391':'Martha'};
+function grStagesForSelect(){ var st=((CAT().stages)||CAT_SITIO.stages||[]).slice().sort(function(a,b){return a.prioridad-b.prioridad;}); var noP=st.filter(function(x){return !/Perdida/i.test(x.label);}); var pd=st.filter(function(x){return /Perdida/i.test(x.label);}); return noP.concat(pd); }
+var GR_OWNERS=new Proxy({},{get:function(o,k){ return catOwnersMapa()[k]; }});
 // Prospeccion: el nombre entre parentesis es quien FIRMA el mensaje, no quien hace la tarea.
 // Estas tareas son de Martha, que es ademas quien las tiene asignadas en HubSpot.
 // "firma=" en el sufijo significa quien firma el mensaje al prospecto. Nunca al responsable.
@@ -976,7 +969,7 @@ function grmdPintarOrigen(op, emp){
   // Reply lleva "Como llego" (etiqueta de Amplemarket); Open+3 lleva su tipo de interes y aperturas.
   window.__grOrigen=op||null; window.__grEmpresa=emp||null; window.__grEmpresaFull=null; op=op||{};
   var parcial=!!op._parcial;
-  var CANAL={correo:'Correo',linkedin:'LinkedIn',whatsapp:'WhatsApp',llamada:'Llamada',otro:'Otro'};
+  var CANAL=catEtiquetas('canales');
   var cargando=!window.__grOrigen;
   var put=function(id,v,vacio){ var el=document.getElementById(id); if(!el) return; if(!v && vacio==='\u0001'){ el.innerHTML='<a href="#" onclick="grmdTab(\'contacto\');return false;" style="color:#FFCD00;text-decoration:none;">Falta · ver qué falta</a>'; el.style.color=''; return; } el.textContent=v||vacio||'—'; el.style.color=v?'':'#6B7280'; };
   var faltan=cargando?'Cargando…':'\u0001';
@@ -994,7 +987,7 @@ function grmdPintarOrigen(op, emp){
   var mh=document.getElementById('grmd-mensaje-h'); if(mh) mh.textContent=esOpen?'Correo nuestro que abrió':'Mensaje nuestro que contestó';
   put('grmd-mensaje', op.mensaje||'', (cargando||parcial)?'Cargando…':'\u0001');
   put('grmd-respuesta', op.respuesta||'', (cargando||parcial)?'Cargando…':(esOpen?'No contestó: abrió los correos sin responder.':'Sin respuesta registrada.'));
-  var camino=op.camino==='senal'?'DUO':(op.camino==='respuesta'?'Sequence':(op.camino?grmdEtiqueta('origen',op.camino):''));
+  var camino=op.camino?(catEtiquetas('origenes')[op.camino]||grmdEtiqueta('origen',op.camino)):'';
   var _od=document.getElementById('grmd-origen-detalle'); if(_od){ _od.textContent=op.camino==='senal'?'DUO: Amplemarket detectó una señal de la persona (publicación, cambio de puesto, contratación) y le escribió.':(op.camino==='respuesta'?'Sequence: la persona venía en una secuencia de Amplemarket.':''); }
   // Linea de origen en el encabezado: "DUO · Reply · Interested · hace 3 dias"
   var linea=[camino, tipoTxt, esOpen?(op.tipo_interes?grmdEtiqueta('tipo_interes',op.tipo_interes):''):(op.como_llego?grmdEtiqueta('como_llego',op.como_llego):''), dias].filter(Boolean).join(' · ');
@@ -1224,11 +1217,12 @@ window.__grContactos=[];
 // En prospeccion el reloj lo lleva la etapa, no la fecha de cierre: los plazos ya estan
 // definidos y son los mismos para todos. Dejar editar la fecha ahi solo confunde los dos
 // relojes. En cuanto la oportunidad sale de prospeccion, la fecha se abre: ahi si se mueve.
-var GRMD_PROSPECCION={'1332596061':['Senal Detectada',2],'1332596062':['Reply Recibido',2],'1332596063':['Contactado',10],'1332596064':['En Conversacion',10],'appointmentscheduled':['Atraccion',7]};
+// Plazo de cada etapa de prospección (días hábiles): campo plazoDias del catálogo.
+function GRMD_PROSPECCION_(){ var m={}; ((CAT().stages)||[]).forEach(function(e){ if(e.plazoDias) m[e.id]=[e.idCli,e.plazoDias]; }); return m; }
 function grmdProspCfg(stage){
   var e=((pipeCfg()||{}).etapas||[]).filter(function(x){return x&&String(x.id)===String(stage||'');})[0];
   if((pipeCfg()||{}).etapas&&(pipeCfg().etapas.length)) return (e && Number(e.probabilidad)===0) ? [e.label, e.plazo] : null;
-  return GRMD_PROSPECCION[String(stage||'')]||null;
+  return GRMD_PROSPECCION_()[String(stage||'')]||null;
 }
 function grmdEsProspeccion(stage){ return !!grmdProspCfg(stage); }
 function grmdAplicarBloqueo(){
@@ -1319,16 +1313,16 @@ async function guardarDealGR(){
     btn.disabled=false;
   }catch(e){ stt.textContent='No se guardó: '+e.message; stt.style.color='#DB0540'; btn.disabled=false; }
 }
-function catPersonaIds(){ return (CAT().personas || CAT_FALLBACK.personas).map(function(p){return p.id;}); }
-function catColor(name){ return (CAT().paleta || CAT_FALLBACK.paleta)[name] || '#6B7280'; }
-function catStagesAct(){ return ((CAT().stages)||CAT_FALLBACK.stages).filter(function(s){return s.prioridad<=8;}); }
+function catPersonaIds(){ return (CAT().personas || CAT_SITIO.personas).map(function(p){return p.id;}); }
+function catColor(name){ return (CAT().paleta || CAT_SITIO.paleta)[name] || '#6B7280'; }
+function catStagesAct(){ return ((CAT().stages)||CAT_SITIO.stages).filter(function(s){return s.prioridad<=8;}); }
 function catStageLabelsAct(){ return catStagesAct().map(function(s){return s.label;}); }
-function catStageColHex(){ var m={},pal=(CAT().paleta||CAT_FALLBACK.paleta); catStagesAct().forEach(function(s){m[s.label]=pal[s.color];}); return m; }
+function catStageColHex(){ var m={},pal=(CAT().paleta||CAT_SITIO.paleta); catStagesAct().forEach(function(s){m[s.label]=pal[s.color];}); return m; }
 // 20oct2026 — Productos para los filtros: todo el catalogo (catalogos.json) mas lo que traigan los datos, sin duplicar
 // por mayusculas. Se usa el valor de los datos cuando existe, para que el filtro coincida.
 function prodsConCatalogo(presentes){
   var excl={'INTERNO':1,'OTRO':1,'P-OTRO':1};
-  var cat=((CAT().productos)||CAT_FALLBACK.productos||[]).filter(function(p){return p&&p.id&&p.grupo!=='INTERNO';}).map(function(p){return p.id;});
+  var cat=((CAT().productos)||CAT_SITIO.productos||[]).filter(function(p){return p&&p.id&&p.grupo!=='INTERNO';}).map(function(p){return p.id;});
   var porK={}; (presentes||[]).filter(Boolean).forEach(function(x){ porK[String(x).toUpperCase()]=x; });
   var out=[], vistos={};
   cat.forEach(function(id){ var k=String(id).toUpperCase(); if(vistos[k]) return; vistos[k]=1; out.push(porK[k]||id); });
@@ -1336,7 +1330,7 @@ function prodsConCatalogo(presentes){
   return out;
 }
 function catProdsPresentes(){
-  var orden=((CAT().productos)||CAT_FALLBACK.productos||[]).map(function(p){return p.id;});
+  var orden=((CAT().productos)||CAT_SITIO.productos||[]).map(function(p){return p.id;});
   var excl={'Interno':1,'Otro':1};
   var pres=[...new Set(((typeof DATA!=='undefined'&&DATA&&DATA.deals)?DATA.deals:[]).map(function(d){return d.prod;}).filter(Boolean))].filter(function(p){return !excl[p];});
   pres.sort(function(a,b){var ia=orden.indexOf(a),ib=orden.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
@@ -1381,16 +1375,16 @@ async function cargarCerradas(){
   CERRADAS_CARGANDO = false;
   try{ renderCurrentTab(); }catch(e){}
 }
-function catProdMap(){ var m={}; ((CAT().productos)||CAT_FALLBACK.productos||[]).forEach(function(p){ m[p.id]=p; }); return m; }
+function catProdMap(){ var m={}; ((CAT().productos)||CAT_SITIO.productos||[]).forEach(function(p){ m[p.id]=p; }); return m; }
 function grupoDeProd(prod){ var p=catProdMap()[prod]; if(p&&p.grupo) return p.grupo; if(prod==='Interno'||prod==='Otro'||prod==='P-Otro') return 'INTERNO'; return 'GR'; }
-var GRUPOS_ORDEN=['ALL','GR','PT','IMMMU','INTERNO'];
-function grupoLabel(g){ return g==='ALL'?'All':(g==='INTERNO'?'Interno':g); }
+function GRUPOS_ORDEN_(){ return ['ALL'].concat(catIds(catLista('grupos'))); }
+function grupoLabel(g){ if(g==='ALL') return 'All'; var x=catLista('grupos').filter(function(y){return y.id===g;})[0]; return x?x.label:g; }
 // Semáforo de tiempo (uno solo): rojo=vencida, amarillo=hoy/próx 3d, verde=al día/futura
 function semList(menu){ var b=[ {id:'ALL',label:'Todos'},{id:'rojo',label:'🔴 Vencidas'},{id:'amarillo',label:'🟡 Próximas'},{id:'verde',label:'🟢 Al día'} ]; if(menu==='pendientes'){ b.splice(1,0,{id:'cerradas',label:'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6B7280;margin-right:5px;vertical-align:middle;"></span>Cerradas ('+CERRADAS_DIAS+'d)'}); } return b; }
 function semDeItem(it,kind){ if(it&&it.semaforo) return it.semaforo; return 'gris'; }
 // Producto canónico presente en un arreglo dado (excluye Interno/Otro), en orden de catálogo
 function prodsPresentesDe(arr){
-  var orden=((CAT().productos)||CAT_FALLBACK.productos||[]).map(function(p){return p.id;});
+  var orden=((CAT().productos)||CAT_SITIO.productos||[]).map(function(p){return p.id;});
   var excl={'Interno':1,'Otro':1,'P-Otro':1};
   var pres=[...new Set((arr||[]).map(function(x){return x.prod;}).filter(Boolean))].filter(function(p){return !excl[p];});
   pres.sort(function(a,b){var ia=orden.indexOf(a),ib=orden.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
@@ -1410,9 +1404,9 @@ function personasDeItem(it){
   if(it&&it.accion&&it.dealId){ var d=grDealPorId(it.dealId); if(d){ var r2=grRespDe(d); return r2?[r2]:[]; } }
   if(it&&Array.isArray(it.personas)) return it.personas; if(it&&it.persona) return [it.persona]; return []; }
 // ===== Render de filtros unificado =====
-function _chip(menu,k,v,label,active,extra){ return '<button class="chip '+(active?'active':'')+'" data-f="'+menu+'" data-k="'+k+'" data-v="'+v+'"'+(extra||'')+'>'+label+'</button>'; }
+function _chip(menu,k,v,label,active,extra){ return '<button class="chip '+(active?'active':'')+'" data-f="'+menu+'" data-k="'+k+'" data-v="'+v+'"'+(extra||'')+catTitulo(k,v,extra)+'>'+label+'</button>'; }
 function _stagesPresentes(arr){
-  var st=((CAT().stages)||CAT_FALLBACK.stages||[]).slice().sort(function(a,b){return a.prioridad-b.prioridad;});
+  var st=((CAT().stages)||CAT_SITIO.stages||[]).slice().sort(function(a,b){return a.prioridad-b.prioridad;});
   var labelsPres=[...new Set((arr||[]).map(function(d){return d.stageLabel||d.stage;}).filter(Boolean))];
   return st.filter(function(x){return labelsPres.indexOf(x.label)>=0;});
 }
@@ -1437,7 +1431,7 @@ function filtrosHTML(menu, arr, kind){
   }
   // Grupo (todos)
   H+='<div class="filters"><span class="filter-label">Grupo:</span>';
-  GRUPOS_ORDEN.forEach(function(g){ H+=_chip(menu,'grupo',g,grupoLabel(g), (f.grupo||'ALL')===g); });
+  GRUPOS_ORDEN_().forEach(function(g){ H+=_chip(menu,'grupo',g,grupoLabel(g), (f.grupo||'ALL')===g); });
   H+='</div>';
   // Producto (todos) canónico, presente
   var prods=prodsConCatalogo(prodsPresentesDe(arr));
@@ -1451,7 +1445,7 @@ function filtrosHTML(menu, arr, kind){
   if(kind==='deal'||kind==='alerta'){
     var stgs;
     if(menu==='alertas'){
-      stgs=((CAT().stages)||CAT_FALLBACK.stages||[]).slice().sort(function(a,b){return a.prioridad-b.prioridad;});
+      stgs=((CAT().stages)||CAT_SITIO.stages||[]).slice().sort(function(a,b){return a.prioridad-b.prioridad;});
     } else { stgs=_stagesPresentes(arr); }
     if(!stgs.some(function(x){return x.label==='Perdida';})) stgs=stgs.concat([{label:'Perdida'}]);
     var _sc={}; (arr||[]).forEach(function(it){ var l=(it&&(it.stageLabel||it.stage))||''; if(l) _sc[l]=(_sc[l]||0)+1; });
@@ -1467,7 +1461,7 @@ function filtrosHTML(menu, arr, kind){
   // Categoría (solo alertas). En "Arreglar" manda el menu por objeto, no esta fila.
   if(menu==='alertas' && FIX_NIVEL1==='vender'){
     H+='<div class="filters"><span class="filter-label">Categoría:</span>';
-    [['ALL','Todas'],['Cerrar','Cerrar'],['ReActivar','ReActivar']].forEach(function(o){ H+=_chip(menu,'categoria',o[0],o[1], (f.categoria||'ALL')===o[0]); });
+    [['ALL','Todas']].concat(catLista('categoriasAlerta').map(function(c){ return [c.id,c.label]; })).forEach(function(o){ H+=_chip(menu,'categoria',o[0],o[1], (f.categoria||'ALL')===o[0]); });
     H+='</div>';
   }
   return H;
@@ -1642,6 +1636,7 @@ async function loadData() {
     
     try {
       DATA = JSON.parse(dealsText);
+      await CAT_LISTO;
     } catch (parseErr) {
       throw new Error('INVALID_JSON');
     }
@@ -2342,7 +2337,7 @@ function renderOverview() {
 // 23oct2026 (Mike): perfil de Amplemarket que envio la campana o la senal; el nombre sale del equipo del portal.
 function grNombreEquipo(email){ var e=String(email||'').trim().toLowerCase(); if(!e) return ''; var c=pipeCfg()||{}; var p=(c.equipo||[]).find(function(x){ return String(x.email||'').toLowerCase()===e; }); if(p) return p.nombre; var u=e.split('@'), dom=(u[1]||'').split('.')[0]; return u[0].split(/[._-]+/).map(function(w){ return w.charAt(0).toUpperCase()+w.slice(1); }).join(' ')+(dom?' ('+dom.charAt(0).toUpperCase()+dom.slice(1)+')':''); }
 function pipeCfg(){ return (typeof DATA!=='undefined' && DATA && DATA.pipelineCfg) ? DATA.pipelineCfg : null; }
-function _catStageById(id){ return (((CAT().stages)||CAT_FALLBACK.stages||[]).filter(function(s){return String(s.id)===String(id);})[0])||null; }
+function _catStageById(id){ return (((CAT().stages)||CAT_SITIO.stages||[]).filter(function(s){return String(s.id)===String(id);})[0])||null; }
 function stageOrder(){
   var e=((pipeCfg()||{}).etapas||[]).filter(function(x){return x&&x.id;});
   if(e.length) return e.map(function(x){ var c=_catStageById(x.id); return {key:x.id,id:x.id,label:(c&&c.label)||x.label,plazo:x.plazo||null,probabilidad:x.probabilidad}; });
@@ -2433,7 +2428,7 @@ var GR_CAMPOS_REQ=[['gr_producto','Producto'],['gr_responsable','Responsable'],[
 function camposFaltan(d){ var c=d.campos||{}; return GR_CAMPOS_REQ.filter(function(x){ return !c[x[0]]; }).map(function(x){ return x[1]; }); }
 function faltanPasa(d){ return !FILT.pipeline.faltan || camposFaltan(d).length>0; }
 function metaNuevas(goal){
-  var prioMap={}; ((typeof CAT==='function'?CAT().stages:null)||CAT_FALLBACK.stages||[]).forEach(function(s){prioMap[s.id]=s.prioridad;});
+  var prioMap={}; ((typeof CAT==='function'?CAT().stages:null)||CAT_SITIO.stages||[]).forEach(function(s){prioMap[s.id]=s.prioridad;});
   var now=new Date();
   var _ss=FILT.pipeline.stage,_sm=FILT.pipeline.sem,_sn=FILT.pipeline.nueva; FILT.pipeline.stage='ALL'; FILT.pipeline.sem='ALL'; FILT.pipeline.nueva='ALL';
   var eduPlus=(DATA.deals||[]).filter(function(d){ var p=prioMap[d.stage]; if(p===undefined||p<6||p>10) return false; var f=grFechaObj(d.createdate); if(isNaN(f)||f.getMonth()!==now.getMonth()||f.getFullYear()!==now.getFullYear()) return false; if(FILT.pipeline.excludeP&&d.name&&d.name.startsWith('P_')) return false; return pasaFiltro('pipeline',d,'deal'); }).length;
@@ -2478,9 +2473,10 @@ function nuevaPasaTask(t,val,am){ if(val==='ALL') return true; var ids=t.matched
 var GR_CITA_OPC = [['ALL','Todas'],['agendada','Agendada'],['realizada','Realizada'],['no_realizada','No se realizó'],['sin','Sin cita']];
 // Oportunidades anteriores al registro de citas (23oct2026) no tienen fecha: la etapa lo dice (REA vF: Atraccion = cita
 // agendada; Educacion o posterior = cita realizada).
-var GR_ETAPAS_CITA_REALIZADA=['qualifiedtobuy','presentationscheduled','decisionmakerboughtin','contractsent'];
+// Cita realizada: etapas de venta después de Atracción (las abiertas: hasta Contract Sent).
+function GR_ETAPAS_CITA_REALIZADA_(){ return catIds(catEtapasFase('venta').filter(function(s){ return s.id!=='appointmentscheduled' && s.prioridad<=9; })); }
 function grCitaDe(d){ var c=(d&&d.campos)||{}; if(c.gr_cita_realizada) return 'realizada'; if(c.gr_cita_estado==='no_realizada') return 'no_realizada'; if(c.gr_cita_fecha) return 'agendada';
-  if(d&&d.stage==='appointmentscheduled') return 'agendada'; if(d&&GR_ETAPAS_CITA_REALIZADA.indexOf(d.stage)>=0) return 'realizada'; return 'sin'; }
+  if(d&&d.stage==='appointmentscheduled') return 'agendada'; if(d&&GR_ETAPAS_CITA_REALIZADA_().indexOf(d.stage)>=0) return 'realizada'; return 'sin'; }
 function grCitaPasa(d){ var f=FILT.pipeline.cita||'ALL'; return f==='ALL' || grCitaDe(d)===f; }
 function grCitaLinea(d){
   var c=(d&&d.campos)||{}, e=grCitaDe(d); if(e==='sin') return '';
@@ -2575,8 +2571,9 @@ function grPintarReuPendientes(){
 // 25oct2026 (Mike) — Filtros de Pipeline aprobados uno por uno: Etapa (Prospeccion / Ventas), Responsable, Lider,
 // Semaforo de tiempos, Producto, Fecha (una sola, cronologica), Cita (solo citas registradas, igual que el recuadro),
 // Faltan datos y Buscar. Las oportunidades internas no aparecen en Pipeline.
-var GR_ETAPAS_PROSP=['1332596061','1332596062','1332596063','1332596064'];
-var GR_ETAPAS_VENTAS=['appointmentscheduled','qualifiedtobuy','presentationscheduled','decisionmakerboughtin','contractsent'];
+// Grupos de etapas (fase del catálogo). Ventas: las abiertas de venta (Renovación va aparte).
+function GR_ETAPAS_PROSP_(){ return catIds(catEtapasFase('prospeccion')); }
+function GR_ETAPAS_VENTAS_(){ return catIds(catEtapasFase('venta').filter(function(s){ return s.prioridad<=9; })); }
 var GR_FECHA_OPC=[['todo','Todo'],['u30','Últimos 30 días'],['u7','Últimos 7 días'],['ayer','Ayer'],['hoy','Hoy'],['p7','Próximos 7 días'],['p30','Próximos 30 días'],['rango','Rango']];
 var GR_TIEMPO_OPC=[['ALL','Todos',''],['fuera','Fuera de plazo','Etapa'],['porvencer','Por vencer','Etapa'],['enplazo','En plazo','Etapa'],['cierrevencido','Cierre vencido','Cierre'],['sincierre','Sin fecha de cierre','Cierre']];
 var GR_CITA_REG_OPC=[['ALL','Todas'],['agendada','Agendada'],['realizada','Realizada'],['no_realizada','No se realizó'],['sin','Sin cita registrada']];
@@ -2599,7 +2596,7 @@ function grFechaDe(d){ var c=d.campos||{}, ci=FILT.pipeline.cita||'ALL';
   if(ci==='agendada'||ci==='no_realizada') return c.gr_cita_fecha?grDiaDe(c.gr_cita_fecha):'';
   return grDiaDe(d.createdate); }
 function grPipePasa(d, excepto){ var f=FILT.pipeline, ex=function(k){ return excepto && excepto.indexOf(k)>=0; };
-  if(!ex('etapa')){ var st=f.stage||'ALL'; if(st==='G:prosp'){ if(GR_ETAPAS_PROSP.indexOf(String(d.stage))<0) return false; } else if(st==='G:ventas'){ if(GR_ETAPAS_VENTAS.indexOf(String(d.stage))<0) return false; } else if(st!=='ALL' && grStageLabel(d)!==st) return false; }
+  if(!ex('etapa')){ var st=f.stage||'ALL'; if(st==='G:prosp'){ if(GR_ETAPAS_PROSP_().indexOf(String(d.stage))<0) return false; } else if(st==='G:ventas'){ if(GR_ETAPAS_VENTAS_().indexOf(String(d.stage))<0) return false; } else if(st!=='ALL' && grStageLabel(d)!==st) return false; }
   if(!ex('persona') && f.persona && f.persona!=='Todos'){ var ps=personasDeItem(d); if(f.persona==='Otro'){ if(ps.length) return false; } else if(ps.indexOf(f.persona)<0) return false; }
   if(!ex('lider') && f.lider && f.lider!=='ALL' && grLiderDe(d)!==f.lider) return false;
   if(!ex('apoyo') && f.apoyo && f.apoyo!=='ALL'){ var ap=grApoyoDe(d); if(f.apoyo==='SIN'){ if(ap.length) return false; } else if(ap.indexOf(f.apoyo)<0) return false; }
@@ -2613,16 +2610,16 @@ function grPipePasa(d, excepto){ var f=FILT.pipeline, ex=function(k){ return exc
 function grPipeFiltrosHTML(pool){
   var f=FILT.pipeline, H_APOYO='';
   var cuenta=function(k, prueba){ return pool.filter(function(d){ return grPipePasa(d,[k]) && prueba(d); }).length; };
-  var chip=function(k,v,label,n,extra){ var on=String(f[k]||'')===String(v); return '<button class="chip '+(on?'active':'')+'" data-f="pipeline" data-k="'+k+'" data-v="'+grEsc(v)+'"'+(extra||'')+'>'+grEsc(label)+(n===null||n===undefined?'':' '+n)+'</button>'; };
+  var chip=function(k,v,label,n,extra){ var on=String(f[k]||'')===String(v); return '<button class="chip '+(on?'active':'')+'" data-f="pipeline" data-k="'+k+'" data-v="'+grEsc(v)+'"'+(extra||'')+catTitulo(k,v,extra)+'>'+grEsc(label)+(n===null||n===undefined?'':' '+n)+'</button>'; };
   var fila=function(titulo, info, cuerpo){ return '<div class="filters"><span class="filter-label">'+titulo+' '+grI(info)+'</span>'+cuerpo+'</div>'; };
   var H='';
   // Etapa
   var et=chip('stage','ALL','Todos',cuenta('etapa',function(){return true;}));
-  et+=chip('stage','G:prosp','Prospección',cuenta('etapa',function(d){ return GR_ETAPAS_PROSP.indexOf(String(d.stage))>=0; }),' style="border-color:#DB054080;"');
-  stageOrder().filter(function(x){ return GR_ETAPAS_PROSP.indexOf(String(x.id))>=0; }).forEach(function(x){ var n=cuenta('etapa',function(d){ return String(d.stage)===String(x.id); }); if(n||f.stage===x.label) et+=chip('stage',x.label,x.label,n); });
-  et+=chip('stage','G:ventas','Ventas',cuenta('etapa',function(d){ return GR_ETAPAS_VENTAS.indexOf(String(d.stage))>=0; }),' style="border-color:#62D17580;"');
-  stageOrder().filter(function(x){ return GR_ETAPAS_VENTAS.indexOf(String(x.id))>=0; }).forEach(function(x){ var n=cuenta('etapa',function(d){ return String(d.stage)===String(x.id); }); if(n||f.stage===x.label) et+=chip('stage',x.label,x.label,n); });
-  stageOrderK().filter(function(x){ return GR_ETAPAS_PROSP.indexOf(String(x.id))<0 && GR_ETAPAS_VENTAS.indexOf(String(x.id))<0; }).forEach(function(x){ var n=cuenta('etapa',function(d){ return String(d.stage)===String(x.id); }); if(n) et+=chip('stage',x.label,x.label,n); });
+  et+=chip('stage','G:prosp','Prospección',cuenta('etapa',function(d){ return GR_ETAPAS_PROSP_().indexOf(String(d.stage))>=0; }),' style="border-color:#DB054080;"');
+  stageOrder().filter(function(x){ return GR_ETAPAS_PROSP_().indexOf(String(x.id))>=0; }).forEach(function(x){ var n=cuenta('etapa',function(d){ return String(d.stage)===String(x.id); }); if(n||f.stage===x.label) et+=chip('stage',x.label,x.label,n); });
+  et+=chip('stage','G:ventas','Ventas',cuenta('etapa',function(d){ return GR_ETAPAS_VENTAS_().indexOf(String(d.stage))>=0; }),' style="border-color:#62D17580;"');
+  stageOrder().filter(function(x){ return GR_ETAPAS_VENTAS_().indexOf(String(x.id))>=0; }).forEach(function(x){ var n=cuenta('etapa',function(d){ return String(d.stage)===String(x.id); }); if(n||f.stage===x.label) et+=chip('stage',x.label,x.label,n); });
+  stageOrderK().filter(function(x){ return GR_ETAPAS_PROSP_().indexOf(String(x.id))<0 && GR_ETAPAS_VENTAS_().indexOf(String(x.id))<0; }).forEach(function(x){ var n=cuenta('etapa',function(d){ return String(d.stage)===String(x.id); }); if(n) et+=chip('stage',x.label,x.label,n); });
   var _ren=pool.filter(function(d){ return String(d.stage)==='1355589932'; }).length; if(_ren && et.indexOf('data-v="Renovación"')<0) et+=chip('stage',grStageLabel({stage:'1355589932'}),grStageLabel({stage:'1355589932'}),cuenta('etapa',function(d){ return String(d.stage)==='1355589932'; }));
   H+=fila('Etapa','Prospección: Señal, Reply, Contactado y En Conversación (aún sin cita). Ventas: Atracción, Educación, Propuesta y Aprobación (ya hay o hubo cita). Elige el grupo o una etapa.',et);
   // Responsable
@@ -2678,8 +2675,8 @@ function grGenEtapaPasa(it,d,st){
   if(st==='G:internas') return grItemInterno(it,d);
   if(grItemInterno(it,d)) return false;
   var s=String(d?d.stage:(it.stage||''));
-  if(st==='G:prosp') return GR_ETAPAS_PROSP.indexOf(s)>=0;
-  if(st==='G:ventas') return GR_ETAPAS_VENTAS.indexOf(s)>=0;
+  if(st==='G:prosp') return GR_ETAPAS_PROSP_().indexOf(s)>=0;
+  if(st==='G:ventas') return GR_ETAPAS_VENTAS_().indexOf(s)>=0;
   if(st==='G:renov') return s==='1355589932';
   return (d?grStageLabel(d):(it.stageLabel||it.stage))===st;
 }
@@ -2715,15 +2712,15 @@ function grGenFiltrosHTML(menu, pool, kind){
   var f=FILT[menu], esP=(menu==='pendientes');
   // En Pendientes > Cerradas el universo ya viene filtrado por cierre; el semaforo no se vuelve a aplicar al contar.
   var cuenta=function(k,prueba){ return pool.filter(function(it){ return grGenPasa(menu,it,kind,[k]) && (menu!=='alertas' || grNivel1Pasa(it)) && prueba(it); }).length; };
-  var chip=function(k,v,label,n,extra){ var on=String(f[k]||'')===String(v); return '<button class="chip '+(on?'active':'')+'" data-f="'+menu+'" data-k="'+k+'" data-v="'+grEsc(v)+'"'+(extra||'')+'>'+label+(n===null||n===undefined?'':' '+n)+'</button>'; };
+  var chip=function(k,v,label,n,extra){ var on=String(f[k]||'')===String(v); return '<button class="chip '+(on?'active':'')+'" data-f="'+menu+'" data-k="'+k+'" data-v="'+grEsc(v)+'"'+(extra||'')+catTitulo(k,v,extra)+'>'+label+(n===null||n===undefined?'':' '+n)+'</button>'; };
   var fila=function(titulo,info,cuerpo){ return '<div class="filters"><span class="filter-label">'+titulo+' '+grI(info)+'</span>'+cuerpo+'</div>'; };
   var H='';
   // Etapa
   var et=chip('stage','ALL','Todos',cuenta('etapa',function(){return true;}));
   et+=chip('stage','G:prosp','Prospección',cuenta('etapa',function(it){ return grGenEtapaPasa(it,grDealDeItem(it),'G:prosp'); }),' style="border-color:#DB054080;"');
-  if(!esP) stageOrder().filter(function(x){ return GR_ETAPAS_PROSP.indexOf(String(x.id))>=0; }).forEach(function(x){ var n=cuenta('etapa',function(it){ return grGenEtapaPasa(it,grDealDeItem(it),x.label); }); if(n||f.stage===x.label) et+=chip('stage',x.label,x.label,n); });
+  if(!esP) stageOrder().filter(function(x){ return GR_ETAPAS_PROSP_().indexOf(String(x.id))>=0; }).forEach(function(x){ var n=cuenta('etapa',function(it){ return grGenEtapaPasa(it,grDealDeItem(it),x.label); }); if(n||f.stage===x.label) et+=chip('stage',x.label,x.label,n); });
   et+=chip('stage','G:ventas','Ventas',cuenta('etapa',function(it){ return grGenEtapaPasa(it,grDealDeItem(it),'G:ventas'); }),' style="border-color:#62D17580;"');
-  if(!esP) stageOrder().filter(function(x){ return GR_ETAPAS_VENTAS.indexOf(String(x.id))>=0; }).forEach(function(x){ var n=cuenta('etapa',function(it){ return grGenEtapaPasa(it,grDealDeItem(it),x.label); }); if(n||f.stage===x.label) et+=chip('stage',x.label,x.label,n); });
+  if(!esP) stageOrder().filter(function(x){ return GR_ETAPAS_VENTAS_().indexOf(String(x.id))>=0; }).forEach(function(x){ var n=cuenta('etapa',function(it){ return grGenEtapaPasa(it,grDealDeItem(it),x.label); }); if(n||f.stage===x.label) et+=chip('stage',x.label,x.label,n); });
   var nRen=cuenta('etapa',function(it){ return grGenEtapaPasa(it,grDealDeItem(it),'G:renov'); }); if(nRen||f.stage==='G:renov') et+=chip('stage','G:renov',grStageLabel({stage:'1355589932'}),nRen);
   if(esP) et+=chip('stage','G:internas','Internas',cuenta('etapa',function(it){ return grItemInterno(it,grDealDeItem(it)); }));
   H+=fila('Etapa', esP?'Etapa de la oportunidad de la tarea. Prospección: Señal, Reply, Contactado y En Conversación. Ventas: Atracción, Educación, Propuesta y Aprobación. Internas: tareas del equipo sin cliente.':'Prospección: Señal, Reply, Contactado y En Conversación (aún sin cita). Ventas: Atracción, Educación, Propuesta y Aprobación (ya hay o hubo cita). Elige el grupo o una etapa.', et);
@@ -2781,7 +2778,7 @@ function renderPipeline() {
     }
   });
   const _uniqP=[...new Set(DATA.deals.map(d => d.prod).filter(Boolean))];
-  const _ORD=((CAT().productos)||CAT_FALLBACK.productos||[]).map(p=>p.id);
+  const _ORD=((CAT().productos)||CAT_SITIO.productos||[]).map(p=>p.id);
   _uniqP.sort((a,b)=>{const ia=_ORD.indexOf(a),ib=_ORD.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
   let _grp=_uniqP; if(pipelineFilters.group!=='ALL'){ _grp=_uniqP.filter(p=>grupoDeProd(p)===pipelineFilters.group); }
   const prods = ['ALL', ..._grp];
@@ -3347,9 +3344,7 @@ function renderPendientes() {
     ${filtrosHTML('pendientes', allT, 'task')}
     <div class="filters">
       <span class="filter-label">Ordenar por:</span>
-      <button class="chip ${sortMode === 'urgency' ? 'active' : ''}" data-f="pendientes" data-k="sort" data-v="urgency">🎯 Urgencia</button>
-      <button class="chip ${sortMode === 'date_asc' ? 'active' : ''}" data-f="pendientes" data-k="sort" data-v="date_asc">📅 Fecha ↑</button>
-      <button class="chip ${sortMode === 'date_desc' ? 'active' : ''}" data-f="pendientes" data-k="sort" data-v="date_desc">📅 Fecha ↓</button>
+      ${(CAT().sorts&&CAT().sorts.pendientes||[]).map(o => `<button class="chip ${sortMode === o.id ? 'active' : ''}" data-f="pendientes" data-k="sort" data-v="${o.id}">${o.label}</button>`).join('')}
     </div>
     <div class="section-title">
       <span class="section-count">${filtered.length} tareas</span>
@@ -3443,7 +3438,7 @@ function renderPendientes() {
 
 // ====== EDITOR DE TAREAS v3 (campos controlados + calendario propio + nueva en blanco) ======
 const PERSONAS = catPersonaIds(); // centralizado en catálogo (CAT)
-const EARLY_STAGES = ['Señal','Reply','Contactado','En Conv.'];
+function EARLY_STAGES_(){ return catEtapasFase('prospeccion').map(function(s){ return s.label; }); }
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MESES_CORTO = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
@@ -3485,7 +3480,7 @@ function buildSubject(ctx, prod, accion, responsable) {
 function computeOwner(ctx) {
   if (ctx.internal) return '77808624';
   const stages = (ctx.stages || []).filter(Boolean);
-  if (stages.some(s => EARLY_STAGES.includes(s))) return '82004391';
+  if (stages.some(s => EARLY_STAGES_().includes(s))) return '82004391';
   return ctx.oid || '77808624';
 }
 
@@ -4387,9 +4382,7 @@ const CAT_STYLES = {
 
 // Mapeo ownerId → persona (igual que en backend)
 function ownerIdToPersona(ownerId) {
-  if (ownerId === '82004391') return 'Martha';
-  if (ownerId === '77808624') return 'Migue';
-  return 'Otro';
+  return catOwnerNombre(ownerId) || 'Otro';
 }
 
 function applyAlertasFilters(alertas) {
@@ -4403,7 +4396,7 @@ function applyAlertasFilters(alertas) {
     if (sortMode === 'dias_desc') return (b.days || 0) - (a.days || 0);
     if (sortMode === 'urgencia') {
       // Cerrar > ReActivar > Higienizar
-      const order = { Cerrar: 0, ReActivar: 1, Higienizar: 2 };
+      const order = {}; catLista('categoriasAlerta').forEach(function(c){ order[c.id] = c.orden; });
       const c = (order[a.categoria] || 9) - (order[b.categoria] || 9);
       if (c !== 0) return c;
       return (b.amount || 0) - (a.amount || 0);
@@ -4828,10 +4821,11 @@ let amFilters = { canal: 'todos', tipo: 'todos', producto: 'todos' };
 let prospProducto = 'ALL', prospGrupo = 'ALL', prospCanal = 'ALL', prospSem = 'ALL', prospStage = 'ALL', prospResp = 'Todos', prospTipo = 'ALL', prospQ = '';
 // 26oct2026 (Mike): Prospeccion con los nombres de Pipeline. Etapa agrupa Prospeccion y Ventas y suma Sin oportunidad;
 // Responsable es el de la oportunidad del evento; Tipo de senal es Reply u Open+3. Grupo y Semaforo ya no existen.
-var GR_PM_PROSP=['Senal Detectada','Reply Recibido','Contactado','En Conversacion'];
-var GR_PM_VENTAS=['Atraccion','Educacion','Propuesta Enviada','Aprobacion Verbal','Contract Sent'];
+// Prospección: las etapas llegan con su nombre sin acentos (idCli del catálogo).
+function GR_PM_PROSP_(){ return catEtapasFase('prospeccion').map(function(s){ return s.idCli; }); }
+function GR_PM_VENTAS_(){ return catEtapasFase('venta').filter(function(s){ return s.prioridad<=9; }).map(function(s){ return s.idCli; }); }
 function prospRespDe(e){ var id=e&&(e.deal_id||e.dealId); var d=id?grDealPorId(id):null; return d?grRespDe(d):''; }
-function prospEtapaPasa(e,st){ var et=String(e.etapa||''); if(st==='G:prosp') return GR_PM_PROSP.indexOf(et)>=0; if(st==='G:ventas') return GR_PM_VENTAS.indexOf(et)>=0; if(st==='G:sin') return !et && !(e.deal_id||e.dealId); return et===st; }
+function prospEtapaPasa(e,st){ var et=String(e.etapa||''); if(st==='G:prosp') return GR_PM_PROSP_().indexOf(et)>=0; if(st==='G:ventas') return GR_PM_VENTAS_().indexOf(et)>=0; if(st==='G:sin') return !et && !(e.deal_id||e.dealId); return et===st; }
 function prospQPasa(e){ var q=_pipeNorm(prospQ||'').trim(); if(!q) return true; var t=_pipeNorm([e.empresa,e.prospecto,e.puesto,e.secuencia,e.campana,e.producto].join(' ')); return q.split(/\s+/).every(function(w){ return t.indexOf(w)>=0; }); }
 var _prospQT=null;
 function prospBuscar(v){ clearTimeout(_prospQT); _prospQT=setTimeout(function(){ prospQ=v; renderProspeccion(); var el=document.getElementById('prosp-q'); if(el){ el.focus(); try{ el.setSelectionRange(el.value.length,el.value.length); }catch(e){} } },250); }
@@ -5074,12 +5068,6 @@ function renderDuoGeneratedDrilldown() {
 
 // === RENDER PRINCIPAL ===
 // ====== PESTAÑA PROSPECCIÓN (embudo + señales) ======
-const PROSPECT_STAGES = [
-  { id: '1332596061', label: 'Señal', prob: 5 },
-  { id: '1332596062', label: 'Reply', prob: 10 },
-  { id: '1332596063', label: 'Contactado', prob: 15 },
-  { id: '1332596064', label: 'En Conversación', prob: 20 }
-];
 const BENCH = { open: 0.50, reply: 0.03, duoSeq: 0.80 };
 
 function proAgeDays(ds) {
@@ -5295,12 +5283,12 @@ function renderProspeccion() {
   var GR_PRODS=(function(){
     var cat=(PROSPECCION_DATA&&Array.isArray(PROSPECCION_DATA.catalogo))?PROSPECCION_DATA.catalogo:null;
     if(cat&&cat.length) return cat.filter(function(r){return r.activo!==false;}).map(function(r){return String(r.codigo||'');}).filter(Boolean);
-    return ['TW','AM','AEO','360','GenIA','ITS','LT','BD','WB','HS'];
+    return ((CAT().productos)||[]).filter(function(p){ return p.grupo==='GR' && p.activo!==false; }).map(function(p){ return p.id; });
   })();
   var activeProd=prodsConCatalogo(GR_PRODS.filter(function(p){ return PEV.some(function(e){return (e.producto||'')===p;}); }));
-  var _cf=function(field,val,lbl,cur){ return '<button class="chip'+(cur===val?' active':'')+'" data-pf="'+field+'" data-pv="'+encodeURIComponent(val)+'" style="font-size:11px;padding:5px 11px;border-radius:18px;">'+lbl+'</button>'; };
+  var _cf=function(field,val,lbl,cur){ return '<button class="chip'+(cur===val?' active':'')+'" data-pf="'+field+'" data-pv="'+encodeURIComponent(val)+'"'+catTitulo(field,val)+' style="font-size:11px;padding:5px 11px;border-radius:18px;">'+lbl+'</button>'; };
   var _row=function(label,inner){ return '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px;"><span style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-right:2px;min-width:62px;">'+label+'</span>'+inner+'</div>'; };
-  var GRUPOS_PRES=['GR','PT','IMMMU'].filter(function(g){ return activeProd.some(function(p){return grupoDeProd(p)===g;}); });
+  var GRUPOS_PRES=catIds(catLista('grupos')).filter(function(g){ return g!=='INTERNO'; }).filter(function(g){ return activeProd.some(function(p){return grupoDeProd(p)===g;}); });
   var prodShown = prospGrupo==='ALL'?activeProd:activeProd.filter(function(p){return grupoDeProd(p)===prospGrupo;});
   var canalesPres=Array.from(new Set(PEV_n.map(function(e){return e.canal;}).filter(Boolean)));
   var chips='';
@@ -5311,10 +5299,10 @@ function renderProspeccion() {
   // Etapa
   var et=_cfn('stage','ALL','Todos',prospStage,_n('etapa',function(){return true;}));
   et+=_cfn('stage','G:prosp','Prospección',prospStage,_n('etapa',function(e){ return prospEtapaPasa(e,'G:prosp'); }));
-  GR_PM_PROSP.forEach(function(x){ var n=_n('etapa',function(e){ return (e.etapa||'')===x; }); if(n||prospStage===x) et+=_cfn('stage',x,(GR_ETAPA_LABEL[x]||x),prospStage,n); });
+  GR_PM_PROSP_().forEach(function(x){ var n=_n('etapa',function(e){ return (e.etapa||'')===x; }); if(n||prospStage===x) et+=_cfn('stage',x,(GR_ETAPA_LABEL_()[x]||x),prospStage,n); });
   et+=_cfn('stage','G:ventas','Ventas',prospStage,_n('etapa',function(e){ return prospEtapaPasa(e,'G:ventas'); }));
-  GR_PM_VENTAS.forEach(function(x){ var n=_n('etapa',function(e){ return (e.etapa||'')===x; }); if(n||prospStage===x) et+=_cfn('stage',x,(GR_ETAPA_LABEL[x]||x),prospStage,n); });
-  ['Ganada','Perdida','Renovacion','Otra etapa'].forEach(function(x){ var n=_n('etapa',function(e){ return (e.etapa||'')===x; }); if(n||prospStage===x) et+=_cfn('stage',x,(GR_ETAPA_LABEL[x]||x),prospStage,n); });
+  GR_PM_VENTAS_().forEach(function(x){ var n=_n('etapa',function(e){ return (e.etapa||'')===x; }); if(n||prospStage===x) et+=_cfn('stage',x,(GR_ETAPA_LABEL_()[x]||x),prospStage,n); });
+  ((CAT().stages)||[]).filter(function(s){ return s.fase!=='prospeccion' && !(s.fase==='venta'&&s.prioridad<=9); }).sort(function(a,b){return a.prioridad-b.prioridad;}).map(function(s){ return s.idCli; }).concat(['Otra etapa']).forEach(function(x){ var n=_n('etapa',function(e){ return (e.etapa||'')===x; }); if(n||prospStage===x) et+=_cfn('stage',x,(GR_ETAPA_LABEL_()[x]||x),prospStage,n); });
   et+=_cfn('stage','G:sin','Sin oportunidad',prospStage,_n('etapa',function(e){ return prospEtapaPasa(e,'G:sin'); }));
   chips+=_rowI('Etapa','Etapa de la oportunidad del prospecto. Prospección: Señal, Reply, Contactado y En Conversación. Ventas: Atracción, Educación, Propuesta y Aprobación. Sin oportunidad: el evento todavía no tiene oportunidad.',et);
   // Responsable
@@ -5330,7 +5318,7 @@ function renderProspeccion() {
   catP.forEach(function(p){ pr+=_cfn('prod',p,p,prospProducto,_n('prod',function(e){ return String(e.producto||'').toUpperCase()===p.toUpperCase(); })); });
   chips+=_rowI('Producto','Línea de servicio. Aparecen todas las del catálogo del portal, aunque hoy no tengan eventos.',pr);
   // Tipo de senal
-  chips+=_rowI('Tipo de señal','Reply: el prospecto contestó. Open+3: abrió tres veces o más sin contestar. Es el mismo campo de la ficha de la oportunidad.',_cfn('tipo','ALL','Todos',prospTipo,_n('tipo',function(){return true;}))+_cfn('tipo','reply','Reply',prospTipo,_n('tipo',function(e){ return e.tipo==='reply'; }))+_cfn('tipo','open3','Open+3',prospTipo,_n('tipo',function(e){ return e.tipo==='open3'; })));
+  chips+=_rowI('Tipo de señal','Reply: el prospecto contestó. Open+3: abrió tres veces o más sin contestar. Es el mismo campo de la ficha de la oportunidad.',_cfn('tipo','ALL','Todos',prospTipo,_n('tipo',function(){return true;}))+catLista('tiposSenal').map(function(o){ return _cfn('tipo',o.id,o.label,prospTipo,_n('tipo',function(e){ return e.tipo===o.id; })); }).join(''));
   if(canalesPres.length){ chips+=_rowI('Canal','Por dónde llegó el evento.',_cfn('canal','ALL','Todos',prospCanal,_n('canal',function(){return true;}))+canalesPres.map(function(c){return _cfn('canal',c,c,prospCanal,_n('canal',function(e){ return (e.canal||'')===c; }));}).join('')); }
   (function(){ var r=prospPerVista(), hoy=_diaLocal(new Date()); var est='background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;padding:6px 9px;border-radius:8px;font:inherit;font-size:12px;color-scheme:dark;cursor:pointer;'; var ab='onclick="try{this.showPicker&&this.showPicker()}catch(e){}"';
     var opc=[['todo','Todo'],['30','Últimos 30 días'],['7','Últimos 7 días'],['ayer','Ayer'],['hoy','Hoy'],['rango','Rango']];
@@ -5344,12 +5332,12 @@ function renderProspeccion() {
   var t1='<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;">'+H1+'<tbody>';
   // Sección DUO en replies (contactos DUO que respondieron)
   if(duoReplies.length){ t1+=secH('DUO — SEÑAL CONDUCTUAL + REPLY · corte por origen, estas respuestas tambien aparecen abajo en su clasificacion','#7C3AED','rgba(124,58,237,.08)'); var wDR=winOf(duoRepliesCnt); t1+='<tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#7C3AED;margin-right:7px;vertical-align:middle;"></span>DUO Reply</td>'+wc(wDR.hoy,'hoy','__DUO_REPLY__',0)+wc(wDR.d7,'d7','__DUO_REPLY__',0)+wc(wDR.d30,'d30','__DUO_REPLY__',0)+wc(wDR.d90,'d90','__DUO_REPLY__',0)+wc(wDR.total,'total','__DUO_REPLY__',1)+'</tr>'; }
-  t1+=secH('ALTA PRIORIDAD — ATENDER YA','#10B981','rgba(16,185,129,.08)');
-  t1+=rowC('interested','#10B981')+rowC('meeting_booked','#10B981')+rowC('forwarded_to_the_right_person','#10B981')+rowC('introduction','#10B981');
-  t1+=secH('MEDIA — PENDIENTE / RETOMAR','#F59E0B','rgba(245,158,11,.08)');
-  t1+=rowC('circle_back','#F59E0B')+rowC('ooo','#F59E0B');
-  t1+=secH('DESCARTADO — YA NO INTERESA','#6B7280','rgba(107,114,128,.08)');
-  t1+=rowC('not_the_right_person','#6B7280')+rowC('not_interested','#6B7280')+rowC('hard_no','#6B7280');
+  // Secciones por prioridad del catálogo (comoLlego[].prioridad); la clave de Amplemarket es claveReply o el id.
+  var _clReply=function(x){ return x.claveReply||x.id; };
+  [['alta','ALTA PRIORIDAD — ATENDER YA','#10B981','rgba(16,185,129,.08)'],['media','MEDIA — PENDIENTE / RETOMAR','#F59E0B','rgba(245,158,11,.08)'],['descartado','DESCARTADO — YA NO INTERESA','#6B7280','rgba(107,114,128,.08)']].forEach(function(g){
+    t1+=secH(g[1],g[2],g[3]);
+    catLista('comoLlego').filter(function(x){ return x.prioridad===g[0]; }).forEach(function(x){ t1+=rowC(_clReply(x),g[2]); });
+  });
   /* POR REVISAR — es un CORTE, no una clasificacion nueva: estas mismas respuestas ya estan
      contadas arriba en su categoria. Junta en un solo lugar lo que el motor no pudo resolver
      solo, para que deje de descubrirse revisando a mano semanas despues. */
@@ -5361,7 +5349,7 @@ function renderProspeccion() {
   };
   var _sinProducto=function(e){ return e.producto_revisar===true || !String(e.producto||'').trim(); };
   var _dudaEtiqueta=function(e){ return e.revisar_etiqueta===true; };
-  var CLAS_POSITIVA=new Set(['interested','meeting_booked','forwarded_to_the_right_person','introduction','circle_back']);
+  var CLAS_POSITIVA=new Set(catLista('comoLlego').filter(function(x){ return x.prioridad==='alta'; }).map(_clReply));
   var _noLeVendemos=function(e){ return String(e.fit_comercial||'')==='no' && CLAS_POSITIVA.has(normClasP(e.clasificacion||'')); };
   var _revisables=repliesCnt.filter(function(e){ return _sinProducto(e)||_dudaEtiqueta(e)||_noLeVendemos(e); });
   if(_revisables.length){
@@ -5370,7 +5358,7 @@ function renderProspeccion() {
     t1+=rowP('Etiqueta en duda','__DUDA_ETIQUETA__','#02ADBA',_dudaEtiqueta,'Amplemarket y el motor no coinciden');
     t1+=rowP('Sin producto','__SIN_PRODUCTO__','#02ADBA',_sinProducto,'el motor no supo cual es');
   }
-  var known=new Set(['interested','meeting_booked','forwarded_to_the_right_person','introduction','circle_back','ooo','not_the_right_person','not_interested','hard_no']);
+  var known=new Set(catLista('comoLlego').map(_clReply));
   var seen={}; repliesArr.forEach(function(e){ var c=e.clasificacion||''; if(c&&!known.has(c)&&!seen[c]){seen[c]=true;t1+=rowC(c,'#6B7280');} });
   if(!repliesArr.length) t1+='<tr><td colspan="6" style="font-size:12px;color:var(--text-mute);padding:12px;">Sin replies para este filtro.</td></tr>';
   var wT=winOf(repliesCnt);
@@ -5846,9 +5834,10 @@ function funnelRow(steps) {
 
 
 // ── PIPELINE METRICS GR ──
-var GR_ETAPAS_ORDER_PM=['Senal Detectada','Reply Recibido','Contactado','En Conversacion','Atraccion','Educacion','Propuesta Enviada','Aprobacion Verbal','Contract Sent','Ganada','Perdida','Renovacion'];
-var GR_ETAPA_COLORES={'Senal Detectada':'#DB0540','Reply Recibido':'#DB0540','Contactado':'#DB0540','En Conversacion':'#FFCD00','Atraccion':'#62D175','Educacion':'#62D175','Propuesta Enviada':'#62D175','Aprobacion Verbal':'#62D175','Contract Sent':'#02ADBA','Ganada':'#02ADBA','Perdida':'#6B7280','Renovacion':'#7D2AE4','Otra etapa':'#6B7280'};
-var GR_ETAPA_LABEL={'Senal Detectada':'Señal Detectada','Reply Recibido':'Reply Recibido','Contactado':'Contactado','En Conversacion':'En Conversación','Atraccion':'Atracción','Educacion':'Educación','Propuesta Enviada':'Propuesta Env.','Aprobacion Verbal':'Aprob. Verbal','Contract Sent':'Contract Sent','Ganada':'Ganada','Perdida':'Perdida','Renovacion':'Renovación','Otra etapa':'Otra etapa'};
+// Etapas de Prospección por idCli: orden, color y nombre corto salen del catálogo.
+function GR_ETAPAS_ORDER_PM_(){ return ((CAT().stages)||[]).slice().sort(function(a,b){return a.prioridad-b.prioridad;}).map(function(s){ return s.idCli; }); }
+function GR_ETAPA_COLORES_(){ var m={'Otra etapa':'#6B7280'}; ((CAT().stages)||[]).forEach(function(s){ m[s.idCli]=catColor(s.color); }); return m; }
+function GR_ETAPA_LABEL_(){ var m={'Otra etapa':'Otra etapa'}; ((CAT().stages)||[]).forEach(function(s){ m[s.idCli]=s.corto||s.label; }); return m; }
 
 function renderPipelineMetricsGR(pool){
   var box=document.getElementById('pipeline-metrics-gr'); if(!box) return;
@@ -5872,7 +5861,7 @@ function renderPipelineMetricsGR(pool){
     }
   }
   var allKeys=Object.keys(dbs);
-  var ordered=[].concat(GR_ETAPAS_ORDER_PM.filter(function(k){return allKeys.indexOf(k)!==-1;}),allKeys.filter(function(k){return GR_ETAPAS_ORDER_PM.indexOf(k)===-1;}));
+  var ordered=[].concat(GR_ETAPAS_ORDER_PM_().filter(function(k){return allKeys.indexOf(k)!==-1;}),allKeys.filter(function(k){return GR_ETAPAS_ORDER_PM_().indexOf(k)===-1;}));
   var mainEtapas=ordered.filter(function(k){return !/Perdida/i.test(k);});
   var perdidaEtapas=ordered.filter(function(k){return /Perdida/i.test(k);});
   var totalActivos=mainEtapas.reduce(function(s,k){return s+(dbs[k]||[]).length;},0);
@@ -5886,8 +5875,8 @@ function renderPipelineMetricsGR(pool){
   h+='<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;">';
   mainEtapas.forEach(function(k){
     var deals=dbs[k]||[]; if(!deals.length) return;
-    var col=GR_ETAPA_COLORES[k]||'#6B7280';
-    var lbl=GR_ETAPA_LABEL[k]||k;
+    var col=GR_ETAPA_COLORES_()[k]||'#6B7280';
+    var lbl=GR_ETAPA_LABEL_()[k]||k;
     var pct=totalActivos>0?Math.round(deals.length/totalActivos*100):0;
     h+='<div class="pcell" data-ptype="etapa" data-pval="'+encodeURIComponent(k)+'" data-pwin="total" title="Ver los contactos en '+lbl+'" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;background:'+col+'18;border:1px solid '+col+'44;border-radius:14px;padding:10px 16px;min-width:80px;">'+
       '<div style="font-size:22px;font-weight:800;color:'+col+';line-height:1;">'+deals.length+'</div>'+
@@ -5976,7 +5965,7 @@ function renderProspDetalle(ptype, pval, pwin) {
       pool=pool.filter(function(e){ return e.tipo!=='open3' && isDUOf(e); });
     } else if(pval==='__SIN_FIT__'){
       // Sigue contando como interes, pero pidio algo que no vendemos. Sobre un rechazo no aporta.
-      var _CP=new Set(['interested','meeting_booked','forwarded_to_the_right_person','introduction','circle_back']);
+      var _CP=new Set(catLista('comoLlego').filter(function(x){ return x.prioridad==='alta'; }).map(function(x){ return x.claveReply||x.id; }));
       pool=pool.filter(function(e){ return e.tipo!=='open3' && String(e.fit_comercial||'')==='no' && _CP.has(String(e.clasificacion||'').toLowerCase()); });
     } else if(pval==='__DUDA_ETIQUETA__'){
       // La etiqueta de Amplemarket y la lectura del motor no coinciden.
@@ -5996,7 +5985,7 @@ function renderProspDetalle(ptype, pval, pwin) {
       if(pval!=='__ALL_SENALES__') pool=pool.filter(function(e){return (e.producto||'(sin producto)')===pval;});
     }
   }
-  var ETAPAS_GR_ORDER=['Senal Detectada','Reply Recibido','Contactado','En Conversacion','Atraccion','Educacion','Propuesta Enviada','Aprobacion Verbal','Contract Sent','Ganada','Perdida','Renovacion'];
+  var ETAPAS_GR_ORDER=GR_ETAPAS_ORDER_PM_();
   var etapaIdxGR=function(k){var i=ETAPAS_GR_ORDER.indexOf(k);return i===-1?50:i;};
   pool.sort(function(a,b){
     var ea=etapaIdxGR(a.etapa||''),eb=etapaIdxGR(b.etapa||'');
@@ -6749,7 +6738,8 @@ var GRF_ACTIVITY='https://mikea.app.n8n.cloud/webhook/gr-deal-activity';
 var GRF_MARK='https://mikea.app.n8n.cloud/webhook/gr-mark-borrar';
 
 /* Monto sugerido por producto (REA). Editable siempre. */
-var GRF_MONTO={TW:40000,AEO:15000,HS:15000,'360':1700,WB:10000,AM:10200,GenIA:20000,ITS:100000,LT:50000,BD:10000,PT:10000};
+// Monto sugerido de cada producto: el de su ficha en Configuración (catálogo, campo monto).
+function GRF_MONTO_(){ var m={}; ((CAT().productos)||[]).forEach(function(p){ if(p.monto) m[p.id]=p.monto; }); return m; }
 
 var GRF={accion:null,dealId:null,ctx:null,data:null};
 
@@ -6826,7 +6816,7 @@ function grfWireCandidatas(accion, extra){
 }
 
 function grfDealDe(id){ var d=null; ((typeof DATA!=='undefined'&&DATA&&DATA.deals)?DATA.deals:[]).forEach(function(x){ if(String(x.id)===String(id)) d=x; }); return d; }
-function grfProductos(){ try{ return ((CAT().productos)||[]).map(function(p){return p.id;}); }catch(e){ return ['TW','AM','AEO','360','GenIA','ITS','LT','BD','WB','HS','PT']; } }
+function grfProductos(){ return ((CAT().productos)||[]).filter(function(p){ return p.activo!==false; }).map(function(p){return p.id;}); }
 
 /* nombre del deal con el producto sustituido: P_XX_Empresa_Persona o XX_Empresa_Persona */
 function grfNombreConProducto(nombre,prod){
@@ -6857,7 +6847,7 @@ async function abrirFixGR(accion,dealId,extra){
   }
   if(accion==='definirMonto'){
     var prod=(d&&d.prod)||'';
-    var sug=GRF_MONTO[prod]||0;
+    var sug=GRF_MONTO_()[prod]||0;
     grfSet('Definir monto',
       '<div style="color:#9CA3AF;margin-bottom:10px">Monto sugerido según el producto <b>'+grfEsc(prod||'—')+'</b> (puedes cambiarlo).</div>'
       +'<div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase">Monto (USD)</div>'
