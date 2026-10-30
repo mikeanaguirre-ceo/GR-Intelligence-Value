@@ -396,7 +396,8 @@
     return p ? { codigo: p.codigo, nombre: p.nombre.replace(/ \(.*\)$/, '') } : { codigo: '', nombre: '' };
   }
   // Toques de WhatsApp de Open+3 (GR — Open+3 Toques WhatsApp): en que toque va y si hubo problema.
-  var ESTADO_TOQUE = { no_entregado: 'No entregado', sin_whatsapp: 'Sin WhatsApp', sin_telefono: 'Sin celular', error: 'No se envió', excluido: 'País excluido', datos_faltantes: 'Faltan datos', respondio: 'Respondió', perdida: 'Perdida' };
+  // Etiquetas de los estados del toque: catalogo unico (estadosToque).
+  var ESTADO_TOQUE = {};
   function textoToque(o3){
     if (!o3) return '';
     if (o3.estado === 'activo') return 'Toque ' + o3.toque + ' de 3';
@@ -414,10 +415,22 @@
   // el mismo que usa el tablero); si no carga, la copia de abajo. Solo las lineas de Great Revenue (grupo GR): Pintaando
   // e IMMMU tienen su propio portal y Excepciones no es producto.
   var CATALOGO = 'https://intelligence.greatrevenue.com/catalogos.json';
-  var CAT = { productos: ['TW','AM','AEO','360','GenIA','GENIARH','GENIAVTA','GENIACOB','SYN','ITS','LT','BD','WB','HS'].map(function(id){ return { id: id, grupo: 'GR' }; }) };
-  fetch(CATALOGO, { cache: 'no-cache' }).then(function(r){ return r.json(); }).then(function(j){ if (j && j.productos) { CAT = j; pintarLista(); } }).catch(function(){});
+  // Todas las listas de menus salen de aqui (catalogos.json); no hay copia escrita en la pagina. Lo que manda Configuracion
+  // (/gr/portal: productos, origen, tipo, partner, como llego) se copia solo a ese archivo al guardar.
+  var CAT = { productos: [], stages: [] };
+  var mapa = function(k){ var m = {}; (CAT[k] || []).forEach(function(x){ m[x.id] = x.label; }); return m; };
+  var opsDe = function(k){ return (CAT[k] || []).slice().sort(function(a, b){ return (a.orden || 0) - (b.orden || 0); }).map(function(x){ return [x.id, x.label, x.ayuda || x.label]; }); };
+  function armarListas(){
+    ESTADO_TOQUE = mapa('estadosToque');
+    FALLO_TOQUE = (CAT.estadosToque || []).filter(function(x){ return x.resultado === 'fallo'; }).map(function(x){ return x.id; });
+    COMO_LLEGO = mapa('comoLlego'); TIPO_INTERES = mapa('tiposInteres'); CAMINO = mapa('origenes'); CANAL = mapa('canales');
+    TIPO_OP = mapa('tiposOportunidad'); PARTNER = mapa('partners');
+    ETAPA_CORTA = {}; TIP_ETAPA = {}; (CAT.stages || []).forEach(function(e){ ETAPA_CORTA[e.id] = e.corto || e.label; TIP_ETAPA[e.id] = e.ayuda || e.nombre; });
+    SUFIJO = {}; ALIAS_LINEA = {}; (CAT.productos || []).forEach(function(p){ if (p.plantillaO3) SUFIJO[codLinea(p.id)] = p.plantillaO3; if (p.alias && p.alias.length) ALIAS_LINEA[p.id] = p.alias; });
+  }
+  var CAT_LISTO = fetch(CATALOGO, { cache: 'no-cache' }).then(function(r){ return r.json(); }).then(function(j){ if (j && j.productos) { CAT = j; armarListas(); pintarLista(); } }).catch(function(e){ console.warn('catalogos.json no cargo', e); });
   function lineasConocidas(){
-    return (CAT.productos || []).filter(function(p){ return p.grupo === 'GR'; }).map(function(p){
+    return (CAT.productos || []).filter(function(p){ return p.grupo === 'GR' && p.activo !== false; }).map(function(p){
       var cod = String(p.id).toUpperCase(), m = ((conf && conf.productos) || []).filter(function(x){ return codLinea(x.codigo) === cod; })[0];
       return { codigo: cod, nombre: p.id, largo: m ? m.nombre.replace(/ \(.*\)$/, '') : (p.label || p.id) }; });
   }
@@ -430,33 +443,15 @@
   function senalConv(c){ var op = oporDe(c); if (!op) return ''; var o = op.o; return o.tipo_senal === 'open3' || o.senal === 'Open+3' ? 'open3' : (o.tipo_senal === 'reply' || o.senal === 'Reply' ? 'reply' : ''); }
   function origenConv(c){
     var op = oporDe(c);
-    if (op) { var k = op.o.camino; return k === 'respuesta' || k === 'open3' ? 'secuencia' : (k === 'senal' ? 'duo' : (k === 'referido' ? 'referido' : 'otra')); }
+    // El catalogo dice a que origen de conversacion corresponde cada camino de la oportunidad (origenes[].origenConversacion).
+    if (op) { var o = (CAT.origenes || []).filter(function(x){ return x.id === op.o.camino; })[0]; return (o && o.origenConversacion) || 'otra'; }
     return c.origen && c.origen.indexOf('anuncio') === 0 ? 'anuncio' : 'directo';
   }
   // Canal por el que contesto (gr_canal_respuesta); si contesto a un toque de Open+3, WhatsApp.
   function canalConv(c){ var op = oporDe(c); if (!op) return ''; return op.o.canal || (op.o.o3 && op.o.o3.estado === 'respondio' ? 'whatsapp' : ''); }
-  var FALLO_TOQUE = ['no_entregado', 'error', 'datos_faltantes', 'excluido'];
-  // Etiquetas del tablero (pipelineCfg.campos de gr-dashboard).
-  var COMO_LLEGO = { interested: 'Interested', meeting_booked: 'Meeting Booked', forwarded_to_the_right_person: 'Forwarded to the right person', introduction: 'Introduction',
-    asked_to_circle_back_later: 'Asked to circle back later', not_interested: 'Not interested', not_the_right_person: 'Not the right person', hard_no: 'Hard no', ooo: 'Out of the Office' };
-  var TIPO_INTERES = { reapertura: 'Reapertura', interes_maduro: 'Interés maduro', interes_en_curso: 'Interés en curso' };
-  var CAMINO = { respuesta: 'Sequence', senal: 'DUO', open3: 'Open+3', referido: 'Referido', evento: 'Evento', cliente_actual: 'Cliente actual', sitio_web: 'Sitio web', otro: 'Otro' };
-  var CANAL = { correo: 'Correo', linkedin: 'LinkedIn', whatsapp: 'WhatsApp', llamada: 'Llamada', otro: 'Otro' };
-  var TIPO_OP = { cliente_nuevo: 'Cliente nuevo', venta_adicional: 'Venta adicional', venta_cruzada: 'Venta cruzada', renovacion: 'Renovación' };
-  var PARTNER = { artool: 'Artool', hootsuite: 'Hootsuite', roomie_it: 'Roomie IT', venta_directa: 'Venta directa', interno: 'Interno' };
-  // Nombres cortos de las etapas, como los chips del tablero.
-  var ETAPA_CORTA = { '1332596061': 'Señal', '1332596062': 'Reply', '1332596063': 'Contactado', '1332596064': 'En Conv.', appointmentscheduled: 'Atracción',
-    qualifiedtobuy: 'Educación', presentationscheduled: 'Propuesta', decisionmakerboughtin: 'Aprobación', contractsent: 'Contract Sent', '1355589932': 'Renovación' };
-  var TIP_ETAPA = {
-    '1332596061': 'Detectamos la señal (abrió el correo 3 veces o más, contestó, DUO) y todavía no le llega el primer WhatsApp',
-    '1332596062': 'Contestó un correo (Reply) y todavía no se le escribe',
-    '1355589932': 'Cliente en renovación',
-    '1332596063': 'Ya le llegó el primer toque por WhatsApp. Tiene 10 días hábiles para contestar',
-    '1332596064': 'Contestó: el bot conversa con él para llevarlo a la reunión',
-    'appointmentscheduled': 'Tiene reunión agendada',
-    'qualifiedtobuy': 'Ya tuvo la reunión: el Motor hace la minuta y el siguiente paso',
-    'presentationscheduled': 'Ya se le mandó la propuesta', 'decisionmakerboughtin': 'Dijo que sí de palabra', 'contractsent': 'Se le mandó el contrato'
-  };
+  var FALLO_TOQUE = [];
+  // Etiquetas de las listas (catalogo unico; se llenan en armarListas).
+  var COMO_LLEGO = {}, TIPO_INTERES = {}, CAMINO = {}, CANAL = {}, TIPO_OP = {}, PARTNER = {}, ETAPA_CORTA = {}, TIP_ETAPA = {};
   function filasFiltro(){
     var et = ((opor && opor.etapas) || []).filter(function(e){ return e.id !== '1332596062'; });
     var firmas = [...new Set(((opor && opor.oportunidades) || []).map(function(o){ return o.remitente; }).filter(Boolean))].sort();
@@ -473,36 +468,18 @@
       { k: 'linea', t: 'Producto', ayuda: 'El producto de su oportunidad en HubSpot o, si no tiene, el que entendió el bot en la conversación.',
         ops: lineasConocidas().map(function(l){ return [l.codigo, l.nombre, 'Conversaciones de ' + l.largo]; }).concat([['SIN', 'Sin producto', 'No tiene oportunidad en HubSpot y el bot todavía no identifica el producto']]) },
       { k: 'etapa', t: 'Etapa', ayuda: 'La etapa de su oportunidad en HubSpot, con los mismos nombres del tablero. Prospección y Ventas juntan sus etapas.',
-        ops: [['prospeccion', 'Prospección', 'Señal, Reply, Contactado y En Conversación']].concat(et.filter(function(e){ return e.fase === 'prospeccion'; }).map(function(e){ return [e.id, ETAPA_CORTA[e.id] || e.nombre, TIP_ETAPA[e.id] || e.nombre]; }),
+        ops: [['prospeccion', 'Prospección', 'Etapas de prospección: ' + (CAT.stages || []).filter(function(e){ return e.fase === 'prospeccion'; }).map(function(e){ return e.corto || e.label; }).join(', ')]].concat(et.filter(function(e){ return e.fase === 'prospeccion'; }).map(function(e){ return [e.id, ETAPA_CORTA[e.id] || e.nombre, TIP_ETAPA[e.id] || e.nombre]; }),
           [['venta', 'Ventas', 'De Atracción en adelante']], et.filter(function(e){ return e.fase === 'venta'; }).map(function(e){ return [e.id, ETAPA_CORTA[e.id] || e.nombre, TIP_ETAPA[e.id] || e.nombre]; }),
           [['sin', 'Sin oportunidad', 'El número no está en ninguna oportunidad abierta de HubSpot (escribió directo, anuncio…)']]) },
-      { k: 'senal', t: 'Señal', ayuda: 'Qué hizo el prospecto para volverse oportunidad: abrió el correo 3 veces o más (Open+3) o contestó (Reply). El Reply lleva la etiqueta de Amplemarket de cómo contestó.', ops: [
-        ['open3', 'Open+3', 'Abrió el correo de la secuencia 3 veces o más sin contestar'],
-        ['reply', 'Reply (todos)', 'Contestó un correo o un mensaje de la secuencia'],
-        ['interested', 'Interested', 'Contestó con interés'],
-        ['meeting_booked', 'Meeting Booked', 'Agendó la reunión desde la secuencia'],
-        ['introduction', 'Introduction', 'Nos presentó con otra persona'],
-        ['forwarded_to_the_right_person', 'Forwarded to the right person', 'Nos pasó con la persona correcta'],
-        ['asked_to_circle_back_later', 'Asked to circle back later', 'Pidió que le escribamos más adelante']] },
-      { k: 'origen', t: 'Origen', ayuda: 'El camino por el que llegó: la secuencia de correo, una señal de DUO, un referido; o, sin oportunidad, un anuncio o escribió directo.', ops: [
-        ['secuencia', 'Secuencia', 'Venía en una secuencia de Amplemarket (Sequence)'],
-        ['duo', 'DUO', 'Amplemarket detectó una señal de la persona (publicación, cambio de puesto, contratación) y le escribió'],
-        ['referido', 'Referido', 'Nos lo recomendaron'],
-        ['otra', 'Otra oportunidad', 'Oportunidad de HubSpot con otro camino (evento, cliente actual, sitio web) o sin dato'],
-        ['anuncio', 'Anuncio', 'Escribió desde un anuncio de Meta, sin oportunidad en HubSpot'],
-        ['directo', 'Escribió directo', 'Escribió al número sin oportunidad en HubSpot ni anuncio']] },
-      { k: 'canal', t: 'Canal', ayuda: 'Por dónde contestó el prospecto (campo Canal de la oportunidad). Si contestó a un toque de WhatsApp, WhatsApp.', ops: [
-        ['correo', 'Correo', 'Contestó por correo'], ['linkedin', 'LinkedIn', 'Contestó por LinkedIn'], ['whatsapp', 'WhatsApp', 'Contestó por WhatsApp']] },
+      { k: 'senal', t: 'Señal', ayuda: 'Qué hizo el prospecto para volverse oportunidad: abrió el correo 3 veces o más (Open+3) o contestó (Reply). El Reply lleva la etiqueta de Amplemarket de cómo contestó.',
+        ops: opsDe('tiposSenal').map(function(o){ return o[0] === 'reply' ? [o[0], o[1] + ' (todos)', o[2]] : o; }).concat(opsDe('comoLlego')) },
+      { k: 'origen', t: 'Origen', ayuda: 'El camino por el que llegó: la secuencia de correo, una señal de DUO, un referido; o, sin oportunidad, un anuncio o escribió directo.', ops: opsDe('origenesConversacion') },
+      { k: 'canal', t: 'Canal', ayuda: 'Por dónde contestó el prospecto (campo Canal de la oportunidad). Si contestó a un toque de WhatsApp, WhatsApp.', ops: opsDe('canales') },
       { k: 'toque', t: 'Toque de Open+3', ayuda: 'En qué toque va: toque 1 al detectar la señal, toque 2 al 3er día hábil y toque 3 (despedida) al 7º. Se combina con «Resultado del toque»: por ejemplo Toque 1 + Contestó.', ops: [
         ['1', 'Toque 1', 'Su último WhatsApp automático fue el toque 1'],
         ['2', 'Toque 2', 'Su último WhatsApp automático fue el toque 2'],
         ['3', 'Toque 3', 'Su último WhatsApp automático fue el toque 3 (despedida)']] },
-      { k: 'resultado', t: 'Resultado del toque', ayuda: 'Qué pasó con los toques de Open+3. Si no contesta, al 10º día hábil la oportunidad pasa a Perdida.', ops: [
-        ['activo', 'Esperando respuesta', 'Le llegó el toque y todavía no contesta; el siguiente sale solo'],
-        ['respondio', 'Contestó', 'Escribió después de un toque: pasó a En Conversación y ya no recibe más toques'],
-        ['perdida', 'Perdida', 'Pasaron 10 días hábiles sin respuesta'],
-        ['fallo', 'No le llegó', 'WhatsApp no lo entregó o no se pudo mandar (pago de Meta, faltan datos, país excluido). Se reintenta solo'],
-        ['sin_whatsapp', 'Número sin WhatsApp', 'Meta dice que ese número no tiene WhatsApp. No se reintenta']] },
+      { k: 'resultado', t: 'Resultado del toque', ayuda: 'Qué pasó con los toques de Open+3. Si no contesta, al 10º día hábil la oportunidad pasa a Perdida.', ops: opsDe('resultadosToque') },
       { k: 'plantilla', t: 'Plantillas', ayuda: 'Cualquier plantilla aprobada que se le haya mandado (toques de Open+3 o enviadas a mano).', ops: [
         ['mando', 'Se le mandó', 'Recibió al menos una plantilla'],
         ['contesto', 'Contestó', 'Escribió después de la primera plantilla'],
@@ -566,7 +543,8 @@
   // Plantilla Open+3 vigente de cada linea: el toque 1 de la serie vF (29 oct 2026), gr_o3_<linea>_t1_vf. En Talkwalker,
   // a mano sale el analisis competitivo (el reporte por defecto de la base §8.2). CAMPOS_T1: que dato va en cada numero
   // (n nombre · f firma · e empresa · s sector), igual que plantillas/vF.json.
-  var SUFIJO = { TW: 'tw_comp', HS: 'hs', AM: 'am', AEO: 'aeo', GENIA: 'genia', GENIARH: 'geniarh', GENIAVTA: 'geniavta', GENIACOB: 'geniacob', SYN: 'syn', ITS: 'its', LT: 'lt', BD: 'bd', '360': '360', WB: 'wb' };
+  // Sufijo de la plantilla de cada producto: campo plantillaO3 del catalogo (se llena en armarListas).
+  var SUFIJO = {};
   var CAMPOS_T1 = { tw_comp: 'nfes', hs: 'nfse', am: 'nfe', aeo: 'nfse', genia: 'nfse', geniarh: 'nfe', geniavta: 'nfe', geniacob: 'nfe', syn: 'nfe', its: 'nfe', lt: 'nf', bd: 'nfe', '360': 'nfe', wb: 'nfe' };
   var elegidos = {};   // contact_id -> { o, ct }
 
@@ -648,7 +626,7 @@
       fila('wa', 'WhatsApp:', [['falta', 'Falta celular'], ['listo', 'Con celular, sin escribir'], ['enviada', 'Plantilla enviada'], ['conversa', 'Ya conversa']]) +
       fila('sem', 'Semáforo:', [['rojo', '<span class="sem rojo"></span>Vencidas'], ['amarillo', '<span class="sem amarillo"></span>Próximas'], ['verde', '<span class="sem verde"></span>Al día'], ['aparcada', '<span class="sem aparcada"></span>Aparcadas'], ['sin', 'Sin semáforo']]) +
       fila('fase', 'Fase:', [['prospeccion', 'Prospección'], ['venta', 'Venta']]);
-    var mas = fila('origen', 'Llegó por:', [['Sequence', 'Sequence'], ['DUO', 'DUO'], ['Referido', 'Referido'], ['sin', 'Sin dato']], 'Todos') +
+    var mas = fila('origen', 'Llegó por:', (CAT.origenes || []).map(function(x){ return [x.label, x.label]; }).concat([['sin', 'Sin dato']]), 'Todos') +
       fila('senal', 'Señal:', [['Reply', 'Reply (contestó)'], ['Open+3', 'Open+3 (abrió 3 o más veces)'], ['sin', 'Sin dato']], 'Todas') +
       fila('monto', 'Monto:', [['10000', '≥ $10K'], ['50000', '≥ $50K'], ['100000', '≥ $100K']], 'Todos') +
       fila('cierre', 'Cierre:', [['vencida', 'Vencidas'], ['mes', 'Este mes'], ['prox', 'Próximo mes'], ['trim', 'Este trimestre'], ['sin', 'Sin fecha']], 'Todas') +
@@ -849,7 +827,8 @@
   // gr-historial-secuencia (la secuencia de Amplemarket). Nada se edita desde aqui.
   var fichaTab = 'estado', fichaDatos = null, reunionesProm = null;
   // Plazos de prospeccion del tablero (GRMD_PROSPECCION): en esas etapas la fecha de cierre no aplica.
-  var PLAZO_PROSP = { '1332596061': 2, '1332596062': 2, '1332596063': 10, '1332596064': 10, appointmentscheduled: 7 };
+  // Plazo de cada etapa de prospeccion (dias habiles): campo plazoDias del catalogo.
+  var PLAZO_PROSP = new Proxy({}, { get: function(o, k){ var e = (CAT.stages || []).filter(function(x){ return x.id === k; })[0]; return e ? e.plazoDias : undefined; } });
   var DOM_PERSONAL = ['gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'yahoo.com.mx', 'live.com', 'icloud.com', 'prodigy.net.mx', 'hotmail.es', 'outlook.es', 'msn.com', 'me.com', 'protonmail.com'];
   function postAbierto(ruta, body){ return fetch(N8N + '/webhook/' + ruta, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }).then(function(r){ return r.json(); }); }
   function fechaCorta(x){
@@ -1380,10 +1359,8 @@
   // Linea de cada reunion segun su nombre (formato REA: "Discovery | Cliente & GR / ITS"; o codigos y nombres sueltos:
   // "TW_Grupo Saesa", "Legacy Systems Takeover_..."). La reunion se encontro por la oportunidad de la linea, pero si su
   // nombre dice otra linea es de otra conversacion con la misma persona y no debe alimentar esta ficha.
-  var ALIAS_LINEA = { TW: ['talkwalker', 'tw'], HS: ['hootsuite', 'hs'], AM: ['amplemarket', 'am'], AEO: ['aeo', 'seo'], GenIA: ['genia', 'dwf', 'digital workforce'],
-    GENIARH: ['genia rh', 'geniarh'], GENIAVTA: ['genia ventas', 'geniavta'], GENIACOB: ['genia cobranza', 'geniacob'], SYN: ['synapsis', 'syn'],
-    ITS: ['its', 'it support', 'it', 'helpdesk', 'mesa de ayuda'], LT: ['legacy systems takeover', 'legacy', 'lt'], BD: ['blindaje digital', 'blindaje', 'bd'],
-    '360': ['360', 'marketing 3v', '3v'], WB: ['web development', 'wb', 'sitio web'], PT: ['pintaando'] };
+  // Nombres con que se reconoce cada producto: campo alias del catalogo (se llena en armarListas).
+  var ALIAS_LINEA = {};
   function lineasTitulo(t){
     var n = ' ' + String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[_|\/&+—│:,.()\[\]-]+/g, ' ').replace(/\s+/g, ' ') + ' ';
     var ls = Object.keys(ALIAS_LINEA).filter(function(c){ return ALIAS_LINEA[c].some(function(a){ return n.indexOf(' ' + a + ' ') >= 0; }); });
