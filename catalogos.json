@@ -9,7 +9,9 @@
       "tipo": "gr",
       "orden": 1,
       "correo": "mike.aguirre@greatrevenue.com",
-      "ayuda": "Director; lidera GenIA y GenIA Cobranza"
+      "ayuda": "Director; lidera GenIA y GenIA Cobranza",
+      "hubspotOwner": "77808624",
+      "remitente": true
     },
     {
       "id": "Migue",
@@ -22,7 +24,10 @@
       "tipo": "gr",
       "orden": 2,
       "correo": "miguel.villa@greatrevenue.com",
-      "ayuda": "Ventas; dueño en HubSpot de la mayoría de las oportunidades"
+      "ayuda": "Ventas; dueño en HubSpot de la mayoría de las oportunidades",
+      "hubspotOwner": "77808624",
+      "firma": "Miguel",
+      "remitente": true
     },
     {
       "id": "Martha",
@@ -34,7 +39,9 @@
       "tipo": "gr",
       "orden": 3,
       "correo": "martha.lagunas@greatrevenue.com",
-      "ayuda": "Responsable de las tareas de seguimiento en HubSpot"
+      "ayuda": "Responsable de las tareas de seguimiento en HubSpot",
+      "hubspotOwner": "82004391",
+      "remitente": true
     },
     {
       "id": "Daniel",
@@ -46,7 +53,9 @@
       "tipo": "gr",
       "orden": 4,
       "correo": "daniel.bello@greatrevenue.com",
-      "ayuda": "Equipo Great Revenue"
+      "ayuda": "Equipo Great Revenue",
+      "hubspotOwner": "77808624",
+      "remitente": true
     },
     {
       "id": "Fer",
@@ -58,7 +67,10 @@
       "tipo": "gr",
       "orden": 5,
       "correo": "fernanda.aguirre@greatrevenue.com",
-      "ayuda": "Equipo Great Revenue"
+      "ayuda": "Equipo Great Revenue",
+      "hubspotOwner": "77808624",
+      "firma": "Fernanda",
+      "remitente": true
     },
     {
       "id": "Mine",
@@ -69,7 +81,8 @@
       ],
       "tipo": "gr",
       "orden": 6,
-      "ayuda": "Equipo Great Revenue"
+      "ayuda": "Equipo Great Revenue",
+      "hubspotOwner": "82004391"
     },
     {
       "id": "Manu",
@@ -81,7 +94,9 @@
       "tipo": "gr",
       "orden": 7,
       "correo": "manuel.mercadillo@greatrevenue.com",
-      "ayuda": "Equipo Great Revenue"
+      "ayuda": "Equipo Great Revenue",
+      "hubspotOwner": "82004391",
+      "firma": "Manuel"
     },
     {
       "id": "Diana",
@@ -104,7 +119,8 @@
       "tipo": "partner",
       "empresa": "Artool",
       "orden": 9,
-      "ayuda": "Partner de Artool"
+      "ayuda": "Partner de Artool",
+      "hubspotOwner": "77808624"
     },
     {
       "id": "Sara",
@@ -115,7 +131,8 @@
       "tipo": "gr",
       "orden": 10,
       "correo": "sara.hernandez@greatrevenue.com",
-      "ayuda": "Equipo Great Revenue"
+      "ayuda": "Equipo Great Revenue",
+      "hubspotOwner": "77808624"
     },
     {
       "id": "Sabrina",
@@ -126,7 +143,8 @@
       "tipo": "gr",
       "orden": 11,
       "correo": "sabrina.tello@greatrevenue.com",
-      "ayuda": "Equipo Great Revenue"
+      "ayuda": "Equipo Great Revenue",
+      "hubspotOwner": "77808624"
     },
     {
       "id": "Valeria",
@@ -148,7 +166,8 @@
       "tipo": "partner",
       "empresa": "Artool",
       "orden": 13,
-      "ayuda": "Partner de Artool"
+      "ayuda": "Partner de Artool",
+      "hubspotOwner": "77808624"
     },
     {
       "id": "Verónica",
@@ -260,7 +279,9 @@
       ],
       "plantillaO3": "tw_comp",
       "monto": 40000,
-      "moneda": "USD"
+      "moneda": "USD",
+      "slug": "talkwalker",
+      "sufijoBot": "tw"
     },
     {
       "id": "HS",
@@ -282,7 +303,9 @@
       ],
       "plantillaO3": "hs",
       "monto": 15000,
-      "moneda": "USD"
+      "moneda": "USD",
+      "slug": "hootsuite",
+      "sufijoBot": "hs"
     },
     {
       "id": "AM",
@@ -304,7 +327,9 @@
       ],
       "plantillaO3": "am",
       "monto": 10200,
-      "moneda": "USD"
+      "moneda": "USD",
+      "slug": "amplemarket",
+      "sufijoBot": "am"
     },
     {
       "id": "AEO",
@@ -329,7 +354,9 @@
       ],
       "plantillaO3": "aeo",
       "monto": 15000,
-      "moneda": "USD"
+      "moneda": "USD",
+      "slug": "aeo-seo",
+      "sufijoBot": "aeo"
     },
     {
       "id": "GenIA",
@@ -353,7 +380,9 @@
       ],
       "plantillaO3": "genia",
       "monto": 20000,
-      "moneda": "USD"
+      "moneda": "USD",
+      "slug": "genia",
+      "sufijoBot": "genia"
     },
     {
       "id": "GENIARH",
@@ -379,7 +408,9 @@
       ],
       "plantillaO3": "geniarh",
       "monto": 50000,
-      "moneda": "USD"
+      "moneda": "USD",
+      "slug": "genia-rh",
+      "sufijoBot": "rh"
     },
     {
       "id": "GENIAVTA",
@@ -402,7 +433,9 @@
       ],
       "plantillaO3": "geniavta",
       "monto": 15000,
-      "moneda": "USD"
+      "moneda": "USD",
+      "slug": "genia-ventas",
+      "sufijoBot": "vta"
     },
     {
       "id": "GENIACOB",
@@ -425,7 +458,9 @@
       ],
       "plantillaO3": "geniacob",
       "monto": 50000,
-      "moneda": "USD"
+      "moneda": "USD",
+      "slug": "genia-cobranza",
+      "sufijoBot": "cob"
     },
     {
       "id": "SYN",
@@ -449,7 +484,9 @@
       ],
       "plantillaO3": "syn",
       "monto": 10000,
-      "moneda": "USD"
+      "moneda": "USD",
+      "slug": "synapsis",
+      "sufijoBot": "syn"
     },
     {
       "id": "ITS",
@@ -478,7 +515,9 @@
       ],
       "plantillaO3": "its",
       "monto": 100000,
-      "moneda": "USD"
+      "moneda": "USD",
+      "slug": "it-support",
+      "sufijoBot": "its"
     },
     {
       "id": "LT",
@@ -501,7 +540,9 @@
       ],
       "plantillaO3": "lt",
       "monto": 50000,
-      "moneda": "USD"
+      "moneda": "USD",
+      "slug": "legacy-takeover",
+      "sufijoBot": "lt"
     },
     {
       "id": "BD",
@@ -524,7 +565,9 @@
       ],
       "plantillaO3": "bd",
       "monto": 35000,
-      "moneda": "USD"
+      "moneda": "USD",
+      "slug": "blindaje-digital",
+      "sufijoBot": "bd"
     },
     {
       "id": "360",
@@ -549,7 +592,9 @@
       ],
       "plantillaO3": "360",
       "monto": 1700,
-      "moneda": "USD"
+      "moneda": "USD",
+      "slug": "marketing-360",
+      "sufijoBot": "360"
     },
     {
       "id": "WB",
@@ -572,7 +617,9 @@
       ],
       "plantillaO3": "wb",
       "monto": 10000,
-      "moneda": "USD"
+      "moneda": "USD",
+      "slug": "web",
+      "sufijoBot": "wb"
     },
     {
       "id": "PT",
@@ -696,7 +743,10 @@
       "nombre": "En Conversación",
       "ayuda": "Contestó: el bot conversa con él para llevarlo a la reunión",
       "orden": 4,
-      "plazoDias": 10
+      "plazoDias": 10,
+      "aliasPostReunion": [
+        "en conversacion"
+      ]
     },
     {
       "id": "appointmentscheduled",
@@ -709,7 +759,10 @@
       "nombre": "Atracción",
       "ayuda": "Tiene reunión agendada",
       "orden": 5,
-      "plazoDias": 7
+      "plazoDias": 7,
+      "aliasPostReunion": [
+        "atrac"
+      ]
     },
     {
       "id": "qualifiedtobuy",
@@ -721,7 +774,10 @@
       "fase": "venta",
       "nombre": "Educación",
       "ayuda": "Ya tuvo la reunión: el Motor hace la minuta y el siguiente paso",
-      "orden": 6
+      "orden": 6,
+      "aliasPostReunion": [
+        "educ"
+      ]
     },
     {
       "id": "presentationscheduled",
@@ -733,7 +789,10 @@
       "fase": "venta",
       "nombre": "Propuesta Enviada",
       "ayuda": "Ya se le mandó la propuesta",
-      "orden": 7
+      "orden": 7,
+      "aliasPostReunion": [
+        "propuesta"
+      ]
     },
     {
       "id": "decisionmakerboughtin",
@@ -745,7 +804,11 @@
       "fase": "venta",
       "nombre": "Aprobación Verbal",
       "ayuda": "Dijo que sí de palabra",
-      "orden": 8
+      "orden": 8,
+      "aliasPostReunion": [
+        "aprob"
+      ],
+      "cierre": true
     },
     {
       "id": "contractsent",
@@ -757,7 +820,11 @@
       "fase": "venta",
       "nombre": "Contract Sent",
       "ayuda": "Se le mandó el contrato",
-      "orden": 9
+      "orden": 9,
+      "aliasPostReunion": [
+        "contract"
+      ],
+      "cierre": true
     },
     {
       "id": "closedwon",
@@ -769,7 +836,11 @@
       "fase": "ganada",
       "nombre": "Ganada",
       "ayuda": "Firmó: oportunidad ganada",
-      "orden": 10
+      "orden": 10,
+      "aliasPostReunion": [
+        "closed won",
+        "won"
+      ]
     },
     {
       "id": "1355589932",
@@ -793,7 +864,10 @@
       "fase": "perdida",
       "nombre": "Perdida",
       "ayuda": "Se cerró sin venta (o pasaron 10 días hábiles sin respuesta en prospección)",
-      "orden": 99
+      "orden": 99,
+      "aliasPostReunion": [
+        "perdid"
+      ]
     }
   ],
   "segmentos": [
@@ -1462,6 +1536,19 @@
       "label": "No califica",
       "orden": 5,
       "ayuda": "No califica"
+    }
+  ],
+  "firmasExtra": {
+    "argenesis": "Argénesis"
+  },
+  "duenosHubspot": [
+    {
+      "id": "77808624",
+      "nombre": "Miguel Villa"
+    },
+    {
+      "id": "82004391",
+      "nombre": "Martha Lagunas"
     }
   ]
 }
