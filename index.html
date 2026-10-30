@@ -2614,7 +2614,7 @@ function grPipeFiltrosHTML(pool){
   var fila=function(titulo, info, cuerpo){ return '<div class="filters"><span class="filter-label">'+titulo+' '+grI(info)+'</span>'+cuerpo+'</div>'; };
   var H='';
   // Etapa
-  var et=chip('stage','ALL','Todos',cuenta('etapa',function(){return true;}));
+  var et=chip('stage','ALL','Todos',cuenta('etapa',function(d){return !esStagePerdida(d.stage);}));
   et+=chip('stage','G:prosp','Prospección',cuenta('etapa',function(d){ return GR_ETAPAS_PROSP_().indexOf(String(d.stage))>=0; }),' style="border-color:#DB054080;"');
   stageOrder().filter(function(x){ return GR_ETAPAS_PROSP_().indexOf(String(x.id))>=0; }).forEach(function(x){ var n=cuenta('etapa',function(d){ return String(d.stage)===String(x.id); }); if(n||f.stage===x.label) et+=chip('stage',x.label,x.label,n); });
   et+=chip('stage','G:ventas','Ventas',cuenta('etapa',function(d){ return GR_ETAPAS_VENTAS_().indexOf(String(d.stage))>=0; }),' style="border-color:#62D17580;"');
@@ -2784,7 +2784,8 @@ function renderPipeline() {
   const prods = ['ALL', ..._grp];
   const owners = ['ALL', ...new Set(DATA.deals.map(d => d.owner).filter(Boolean))];
 
-  const poolPipe = DATA.deals.filter(d => d.stage !== 'closedwon' && !grEsInterna(d));
+  // Las perdidas vienen aparte en DATA.perdidas: se suman para que la columna Perdida las muestre (30 oct).
+  const poolPipe = DATA.deals.concat(DATA.perdidas || []).filter(d => d.stage !== 'closedwon' && !grEsInterna(d));
   const filtered = poolPipe.filter(d => grPipePasa(d));
 
   const activos = filtered.filter(d => d.stage !== '1092009814');
@@ -2801,7 +2802,7 @@ function renderPipeline() {
     else otros.push(d);
   });
   // Ordenar dentro de cada columna por monto descendente
-  Object.values(byStage).forEach(arr => arr.sort((a, b) => (b.amount || 0) - (a.amount || 0)));
+  Object.values(byStage).forEach(arr => arr.sort((a, b) => (b.amount || 0) - (a.amount || 0) || String(b.createdate || '').localeCompare(String(a.createdate || ''))));
   otros.sort((a, b) => (b.amount || 0) - (a.amount || 0));
 
   let html = `
