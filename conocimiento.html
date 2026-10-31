@@ -277,8 +277,10 @@
       '<div class="card tabla"><table class="t2"><tr><th>Producto</th><th>Base vigente</th><th title="Los documentos de ventas del producto, en su carpeta Documentos de Ventas de Drive">Documentos</th><th>Por decidir</th><th>Aprobadas que faltan entrar a la base</th><th>Paso siguiente</th></tr>' + xs.map(function(l){
         var n = { nuevo: 0, aprobado: 0 }; l.propuestas.forEach(function(x){ var g = grupoEst(x); if (n[g] != null) n[g]++; });
         var b = borr[l.codigo] || {}, reciente = b.ts && Date.now() / 1000 - b.ts < 900;
-        var boton = b.estado === 'listo' ? '<button class="btn" data-verb="' + esc(l.codigo) + '" title="La versión nueva ya está preparada: revísala y confírmala">Revisar y confirmar ' + esc(b.siguiente || 'la versión nueva') + '</button><div class="sub" style="margin-top:4px">Preparada el ' + esc(fecha(b.ts)) + ' · <a href="#" data-base="' + esc(l.codigo) + '">volver a prepararla</a></div>'
+        var boton = b.estado === 'listo' ? '<button class="btn" data-verb="' + esc(l.codigo) + '" title="La versión nueva ya está preparada: revísala y confírmala">Revisar y confirmar ' + esc(b.siguiente || 'la versión nueva') + '</button><div class="sub" style="margin-top:4px">Preparada el ' + esc(fecha(b.ts)) + ' · <a href="#" data-permiso="' + esc(l.codigo) + '">pedir permiso para volver a prepararla</a></div>'
           : b.estado === 'preparando' && reciente ? '<span class="sub">Preparando la versión nueva (de 2 a 5 minutos)…</span>'
+          : b.estado === 'bloqueada' ? '<button class="btn" disabled>Bloqueada esta semana</button><div class="sub" style="margin-top:4px"><a href="#" data-permiso="' + esc(l.codigo) + '">Es urgente: pedir permiso a Mike</a></div>'
+          : b.estado === 'confirmado' && b.ts && Date.now() / 1000 - b.ts < 7 * 86400 ? '<button class="btn" disabled title="Cada línea se actualiza máximo una vez cada 7 días">Disponible el ' + esc(fecha(b.ts + 7 * 86400)) + '</button><div class="sub" style="margin-top:4px"><a href="#" data-permiso="' + esc(l.codigo) + '">Es urgente: pedir permiso a Mike</a></div>'
           : (b.estado === 'error' ? '<div class="sub" style="color:var(--rojo,#e5484d)">La última vez falló: ' + esc(b.error || '') + '</div>' : '') + '<button class="btn" data-base="' + esc(l.codigo) + '" title="Claude integra lo aprobado y te muestra cómo quedaría la versión nueva antes de crearla">Ver cómo quedaría</button>';
         var paso = l.por_aplicar ? (puede(l.lidera) ? boton : '<span class="sub">Elige a ' + esc(l.lidera) + ' en el filtro de líder</span>') : (n.nuevo ? '<span class="sub">Revisar las propuestas</span>' : '<span class="sub">Al día</span>');
         return '<tr><td>' + esc(corto(l.nombre)) + '<div class="sub">Lidera ' + esc(l.lidera) + '</div></td><td><a href="' + esc(l.kb.url) + '" target="_blank" rel="noopener">' + esc(l.kb.nombre) + '</a></td>' +
@@ -444,9 +446,14 @@
   }
 
   // ---------- Acciones ----------
+  var kbEnviando = {};
   function verBase(c){
     var l = datos.lineas.filter(function(x){ return x.codigo === c; })[0];
+    // Cada corrida cuesta dinero: el botón se bloquea al primer clic (el 29 oct, seis clics en 2 segundos costaron $2.75).
+    if (kbEnviando[c]) return; kbEnviando[c] = true;
+    borr[c] = { estado: 'preparando', ts: Date.now() / 1000 }; if (vista === 'resumen') pintar();
     post('gr-portal-kb-preparar', { linea: c }).then(function(){
+      kbEnviando[c] = false;
       modal('<h3>Preparando la versión nueva</h3><p class="nota" id="kbMsg">Claude está integrando lo aprobado y las decisiones en ' + esc(l.kb.nombre) + '. Tarda de 2 a 5 minutos. Puedes cerrar esta ventana: cuando esté lista, el botón de la tabla cambia a «Revisar y confirmar».</p><div class="acc"><button class="btn sec" id="cerrar">Cerrar</button></div>');
       $('cerrar').onclick = cerrar; clearInterval(espera); var n = 0; borr[c] = { estado: 'preparando', ts: Date.now() / 1000 }; if (vista === 'resumen') pintar();
       espera = setInterval(function(){
@@ -457,8 +464,15 @@
           if (x.estado === 'listo' && $('kbMsg')) verBorrador(l, x);
           if (x.estado === 'error' && $('kbMsg')) $('kbMsg').textContent = 'No se pudo preparar: ' + (x.error || '');
         }).catch(function(){});
-      }, 8000);
-    }).catch(function(e){ toast(e.message); });
+      }, 30000);
+    }).catch(function(e){
+      kbEnviando[c] = false; borr[c] = { estado: 'bloqueada' }; if (vista === 'resumen') pintar();
+      modal('<h3>Esta línea no se puede actualizar ahora</h3><p class="nota">' + esc(e.message) + '</p><div class="acc"><button class="btn sec" id="cerrar">Cerrar</button><button class="btn" id="kbPide">Pedir permiso a Mike</button></div>');
+      $('cerrar').onclick = cerrar; $('kbPide').onclick = function(){ pedirPermiso(c); };
+    });
+  }
+  function pedirPermiso(c){
+    post('gr-portal-kb-pedir-permiso', { linea: c, por: actor() }).catch(function(){ return {}; }).then(function(){ cerrar(); toast('Listo: le avisamos a Mike. Cuando lo autorice, el botón vuelve a funcionar.'); });
   }
   function verBorrador(l, b){
     modal('<h3>Así quedaría ' + esc(b.siguiente) + '</h3><p class="nota">Se crea un documento nuevo junto a ' + esc(b.kb_nombre) + ' (que se conserva) y el catálogo apunta a él.</p><div class="decidido">' + esc(b.resumen || '') + '</div>' +
@@ -485,7 +499,7 @@
   }
 
   document.addEventListener('click', function(e){
-    var t = e.target.closest('[data-v],[data-ayuda],[data-flid],[data-fprod],[data-zona],[data-ir],[data-fper],[data-fest],[data-fent],[data-facc],[data-freu],[data-ff],[data-ok],[data-otra],[data-guarda],[data-ia],[data-base],[data-verb]'); if (!t || !datos) return;
+    var t = e.target.closest('[data-v],[data-ayuda],[data-flid],[data-fprod],[data-zona],[data-ir],[data-fper],[data-fest],[data-fent],[data-facc],[data-freu],[data-ff],[data-ok],[data-otra],[data-guarda],[data-ia],[data-base],[data-permiso],[data-verb]'); if (!t || !datos) return;
     var g = function(k){ return t.getAttribute(k); };
     if (t.hasAttribute('data-v')) { vista = g('data-v'); window.scrollTo(0, 0); return pintar(); }
     if (t.hasAttribute('data-ayuda')) return verAyuda();
@@ -500,6 +514,7 @@
     if (t.hasAttribute('data-facc')) { fAcc = g('data-facc'); return pintar(); }
     if (t.hasAttribute('data-freu')) { fReu = g('data-freu'); return pintar(); }
     if (t.hasAttribute('data-ff')) { fFij = g('data-ff'); return pintar(); }
+    if (t.hasAttribute('data-permiso')) { e.preventDefault(); return pedirPermiso(g('data-permiso')); }
     if (t.hasAttribute('data-base')) { e.preventDefault(); return verBase(g('data-base')); }
     if (t.hasAttribute('data-verb')) { var lv = datos.lineas.filter(function(x){ return x.codigo === g('data-verb'); })[0]; return verBorrador(lv, borr[g('data-verb')] || {}); }
     if (t.hasAttribute('data-ok')) { t.disabled = true; return decidir(g('data-ok'), 'confirmo'); }
