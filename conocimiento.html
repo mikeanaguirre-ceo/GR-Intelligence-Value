@@ -74,6 +74,7 @@
   .fila-f{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:3px 0}
   .lbl{font-size:11px;font-weight:700;color:var(--text-mute);text-transform:uppercase;letter-spacing:.8px;margin-right:4px;display:inline-flex;align-items:center}
   .chip.sinbase{border-style:dashed} .chip.cero{opacity:.55}
+  .wa-msg{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13.5px;line-height:1.45;background:var(--bg-3);border-radius:10px;padding:10px 12px;margin:6px 0 10px;max-width:640px}
   details.prod{background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:10px}
   details.prod>summary{cursor:pointer;list-style:none;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   details.prod .card{background:var(--bg);margin-top:10px}
@@ -218,7 +219,8 @@
     ['decidir', 'Por decidir', 'Las propuestas de cambio de la semana y del rezago, con su evidencia y la acción concreta.'],
     ['reuniones', 'Reuniones', 'Cada reunión analizada (D5), agrupada por producto, con su resumen, su transcript y sus propuestas.'],
     ['marca', 'Voz de la marca', 'Las entradas fijas (E1 a E9) y sus choques con lo que dice el mercado.'],
-    ['ronda', 'Ronda', 'Lo que está en prueba, qué versión de la base usa cada salida y los resultados (D8 a D10).']];
+    ['ronda', 'Ronda', 'Lo que está en prueba, qué versión de la base usa cada salida y los resultados (D8 a D10).'],
+    ['versiones', 'Últimas versiones', 'Lo vigente de cada producto: base, propuesta de valor, ICP, presentación, template, ficha del bot y mensajes de WhatsApp como los ve el cliente.']];
   function pintar(){
     guardado('gr_con_vista', vista); guardado('gr_con_lider', fLid); guardado('gr_con_prod', fProd);
     var n = { decidir: porDecidir(), marca: grupos().filter(function(g){ return g.abiertos; }).length };
@@ -230,6 +232,7 @@
     if (vista === 'reuniones') return pintarReuniones();
     if (vista === 'marca') return pintarMarca();
     if (vista === 'ronda') return pintarRonda();
+    if (vista === 'versiones') return pintarVersiones();
     return pintarResumen();
   }
 
@@ -363,6 +366,32 @@
       (x.estado !== 'nuevo' ? '<button class="enlace" data-ia="reabrir" data-i="' + esc(x.id) + '">Regresar a sin revisar</button>' : '') + '</div>';
     else if (!x.aplicado && x.estado === 'nuevo') h += '<div class="sub" style="margin-top:8px">Para aprobarla elige en el filtro de líder a ' + esc(x.decide) + ' (o «Todos» si eres Mike).</div>';
     return h + '</div>';
+  }
+
+  // ---------- Ultimas versiones (31 oct): lo mismo que Configuracion, de consulta. Se carga solo al abrir esta vista. ----------
+  var versiones = null, cargandoV = false;
+  function pintarVersiones(){
+    if (!versiones) {
+      $('main').innerHTML = '<h1>Últimas versiones</h1><p class="sub">Cargando…</p>';
+      if (!cargandoV) { cargandoV = true; post('gr-conocimiento-documentos').then(function(j){ versiones = j; cargandoV = false; if (vista === 'versiones') pintarVersiones(); })
+        .catch(function(e){ cargandoV = false; if (vista === 'versiones') $('main').innerHTML = '<p class="error">No se pudo cargar: ' + esc(e.message) + '. Vuelve a intentar.</p>'; }); }
+      return;
+    }
+    var cod = lineasVista().map(function(l){ return l.codigo; });
+    var ls = versiones.lineas.filter(function(l){ return cod.indexOf(l.codigo) >= 0; });
+    var ej = versiones.ejemplo || {};
+    $('main').innerHTML = '<h1>Últimas versiones' + ay('Se lee de Configuración, de la ficha del bot y de Meta. Aquí solo se consulta; los documentos se cambian en Configuración → Productos.') + '</h1>' +
+      '<p class="sub">Mensajes con un ejemplo: ' + esc(ej.n) + ', de ' + esc(ej.e) + ', ' + esc(ej.s) + '; firma ' + esc(ej.f) + '; lo refirió ' + esc(ej.r) + '.</p>' +
+      (ls.length ? ls.map(function(l){
+        var grupos = {}; l.mensajes.forEach(function(m){ (grupos[m.grupo] = grupos[m.grupo] || []).push(m); });
+        var fe = l.ficha_estado || {};
+        return '<details class="prod"' + (ls.length === 1 ? ' open' : '') + '><summary><span class="t">' + esc(corto(l.nombre)) + '</span> <span class="sub">Se ofrece: ' + esc(l.ofrece || 'Por definir') + '</span> <span class="etq" title="Mensajes de WhatsApp de este producto">' + l.mensajes.length + ' mensajes</span></summary>' +
+          '<div class="bloque"><span>Documentos</span>' + l.docs.map(function(d){ return '<div>' + esc(d.tipo) + ': ' + (d.url ? '<a href="' + esc(d.url) + '" target="_blank" rel="noopener">' + esc(d.nombre || 'Abrir') + '</a>' : '<span style="display:inline;font:inherit;text-transform:none;letter-spacing:0;color:var(--text-mute)">Por definir</span>') + '</div>'; }).join('') + '</div>' +
+          (l.ficha ? '<details class="reu"><summary><b>Ficha del bot</b>' + (fe.base ? ' <span class="sub">' + esc(fe.base) + (fe.fecha ? ' · ' + esc(fe.fecha) : '') + '</span>' : '') + '</summary><div class="wa-msg">' + esc(l.ficha) + '</div></details>' : '') +
+          Object.keys(grupos).map(function(g){ return '<div class="bloque"><span>Mensajes de WhatsApp · ' + esc(g) + '</span>' + grupos[g].map(function(m){
+            return '<details class="reu"><summary><b>' + esc(m.titulo) + '</b> <span class="etq' + (m.aprobada ? ' ok' : ' corrige') + '" title="' + (m.aprobada ? 'Meta ya la aprobó' : 'Mientras no se apruebe, sale la anterior aprobada') + '">' + esc(m.estado) + '</span></summary><div class="wa-msg">' + esc(m.texto) + '</div></details>'; }).join('') + '</div>'; }).join('') +
+          '</details>';
+      }).join('') : '<p class="sub">Sin productos con este filtro.</p>');
   }
 
   // ---------- Reuniones (D5) por producto ----------
