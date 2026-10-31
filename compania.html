@@ -406,6 +406,22 @@
       ['kb_nombre', 'Base de conocimiento vigente (una sola por producto)', 'txt'], ['kb_url', 'Liga a la base de conocimiento', 'url']]],
     ['Lo que usa el motor', [['motor_usa', 'Lo que usa hoy el motor al escribir', 'ro'], ['pendiente', 'Pendiente', 'txt'], ['por_revisar', 'Por revisar: versiones encontradas en Drive (quien revisa elige, corrige arriba y borra este texto)', 'rev']]]
   ];
+  // GR: la ficha que usa el bot se consulta desde aqui, con el estado de su ultima actualizacion (31 oct 2026).
+  var SLUG_FICHA = { TW: 'talkwalker', AM: 'amplemarket', HS: 'hootsuite', AEO: 'aeo-seo', GenIA: 'genia', GENIARH: 'genia-rh', GENIAVTA: 'genia-ventas', GENIACOB: 'genia-cobranza', SYN: 'synapsis', ITS: 'it-support', LT: 'legacy-takeover', BD: 'blindaje-digital', '360': 'marketing-360' };
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest && ev.target.closest('[data-ficha-bot]');
+    if (!b) return;
+    var cod = b.getAttribute('data-ficha-bot'), m = $('m-ficha-' + cod);
+    m.textContent = 'Abriendo…';
+    fetch('https://mikea.app.n8n.cloud/webhook/gr-bot-kb-leer', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sesion: ses() }) }).then(function (r) { return r.json(); }).then(function (d) {
+      var txt = (d.fichas || {})[SLUG_FICHA[cod]];
+      if (!txt) { m.textContent = d.error || 'Este producto no tiene ficha.'; return; }
+      var e = (d.estado || {})[cod] || {};
+      var est = e.estado === 'al_dia' ? 'Al día con ' + e.base + ' (' + e.fecha + ')' : e.estado === 'fallo' ? 'La última actualización de ' + e.base + ' no se publicó (' + e.fecha + '). El bot sigue con este texto. Motivos: ' + (e.problemas || []).join(' · ') : 'Sin actualización automática todavía' + (e.base ? ' (' + e.base + ')' : '');
+      P.abrirHtml('<title>Ficha del bot · ' + h(cod) + '</title><body style="font:15px/1.55 system-ui,sans-serif;max-width:860px;margin:24px auto;padding:0 16px"><h2>Ficha del bot · ' + h(cod) + '</h2><p style="background:#f4f4f1;padding:10px 12px;border-radius:8px">' + h(est) + '</p><p>' + txt.length.toLocaleString('es-MX') + ' caracteres</p><pre style="white-space:pre-wrap;font:inherit">' + h(txt) + '</pre></body>');
+      m.textContent = '';
+    }).catch(function () { m.textContent = 'No se pudo abrir la ficha.'; });
+  });
   var PROD_CAMPOS = [].concat.apply([], PROD_GRUPOS.map(function (g) { return g[1]; }));
   var TIPOS_PROD = [['licencias', 'Licencias por persona'], ['cursos', 'Cursos (suma de cursos por participantes)'], ['', 'Monto fijo por oportunidad']];
   // Lo que la compania aun no define se ve como "Por definir", nunca vacio ni en cero.
@@ -554,6 +570,7 @@
         }).join('') + '</div></div>';
       });
       grupos.splice(1, 0, bloquePrecio(p, i, adm));
+      if (c.tenant === 'GR' && SLUG_FICHA[p.codigo]) grupos.push('<div class="pf-g"><h4>Ficha del bot de WhatsApp</h4><div class="pfs"><div class="pf pf-w"><div>Es el resumen de la base que usa el bot para contestar. <button type="button" data-ficha-bot="' + h(p.codigo) + '">Ver ficha</button> <span class="msg" id="m-ficha-' + h(p.codigo) + '"></span></div></div></div></div>');
       if (adm) grupos.push('<div class="acciones prod-g"><button class="p" data-prod-guardar="' + i + '">Guardar</button><span class="msg" id="m-prod-' + i + '"></span></div>');
       return '<details class="prod"' + (i === 0 ? ' open' : '') + '><summary><span class="prod-t"><b>' + h(p.codigo) + '</b> · ' + h(p.nombre || '') + '</span> <span class="prod-m" id="pf-' + i + '-resumen">' + h(montoResumen(p)) + '</span>' + (p.pendiente ? ' <span class="prod-p">Pendiente</span>' : '') + (p.por_revisar ? ' <span class="prod-p" style="background:#ffe1d6;color:#8a2c0d">Por revisar</span>' : '') + (p.activo === false ? ' <span class="prod-p">Inactivo</span>' : '') + '</summary>' + grupos.join('') + '</details>';
     }).join('');
