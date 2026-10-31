@@ -1439,12 +1439,12 @@
       $('cancelar').onclick = cerrar;
       clearInterval(kbEspera); var vueltas = 0;
       kbEspera = setInterval(function(){
-        if (++vueltas > 40) { clearInterval(kbEspera); return; }
+        if (++vueltas > 20) { clearInterval(kbEspera); return; }
         leerBorrador(l).then(function(x){
           if (x.estado === 'listo') { clearInterval(kbEspera); pintarConf(); if ($('kbMsg')) modalBorrador(x); }
           if (x.estado === 'error') { clearInterval(kbEspera); pintarConf(); if ($('kbMsg')) $('kbMsg').textContent = 'No se pudo preparar: ' + x.error; }
         }).catch(function(){});
-      }, 8000);
+      }, 30000);
     }).catch(function(e){ toast(e.message); });
   }
   function modalBorrador(b){
