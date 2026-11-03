@@ -76,7 +76,17 @@
   var BASE = 'https://mikea.app.n8n.cloud/webhook/';
   var K = new URLSearchParams(location.search).get('k') || '';   // sin clave; si una liga trae ?k= se manda igual
   if (window.self !== window.top) document.documentElement.classList.add('en-tablero');
-  var PERSONAS = ['Todos', 'Mike', 'Migue', 'Daniel', 'Martha', 'Fer'];
+  // Personas: las que tienen secuencia de respuestas en LinkedIn (vienen del servidor, perfiles) con el nombre y el orden
+  // del catalogo unico del sitio (catalogos.json); "Todos" va primero.
+  var CAT = null;
+  fetch('/catalogos.json', { cache: 'no-cache' }).then(function(r){ return r.json(); }).then(function(j){ CAT = j; if (datos) pintar(); }).catch(function(){});
+  function personas(){
+    var lista = ((datos && datos.perfiles) || []).map(function(x){ return x.corto; });
+    var orden = ((CAT && CAT.personas) || []).map(function(x){ return x.id; });
+    lista.sort(function(a, b){ var i = orden.indexOf(a), j = orden.indexOf(b); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j); });
+    return ['Todos'].concat(lista);
+  }
+  function etiqueta(id){ var x = ((CAT && CAT.personas) || []).filter(function(p){ return p.id === id; })[0]; return x ? x.label : id; }
   var ESTADOS = [['por_aprobar', 'Por aprobar', 'Borradores que esperan que alguien los apruebe, los edite o los marque como No contestar.'],
     ['enviadas', 'Enviadas', 'Ya salieron (o están saliendo) desde el perfil de LinkedIn del dueño.'],
     ['descartadas', 'Descartadas', 'Marcadas como No contestar, o reemplazadas porque la persona volvió a escribir.'],
@@ -110,8 +120,8 @@
   function pintarFiltros(){
     var base = filasPersona(), pend = (datos.filas || []).filter(function(f){ return f.estado === 'pendiente'; });
     var h = '<div class="fila-f"><span class="lbl">Persona ' + ay('Muestra las respuestas de los prospectos de esa persona. Quien elijas aquí es quien aprueba (con Todos, Mike).') + '</span>';
-    PERSONAS.forEach(function(p){ var n = p === 'Todos' ? pend.length : pend.filter(function(f){ return f.dueno === p; }).length;
-      h += '<button class="op' + (fPer === p ? ' on' : '') + '" data-per="' + p + '">' + p + (n ? '<span class="n">' + n + '</span>' : '') + '</button>'; });
+    personas().forEach(function(p){ var n = p === 'Todos' ? pend.length : pend.filter(function(f){ return f.dueno === p; }).length;
+      h += '<button class="op' + (fPer === p ? ' on' : '') + '" data-per="' + esc(p) + '">' + esc(etiqueta(p)) + (n ? '<span class="n">' + n + '</span>' : '') + '</button>'; });
     h += '</div><div class="fila-f"><span class="lbl">Estado ' + ay('En qué va cada respuesta.') + '</span>';
     ESTADOS.forEach(function(e){ var n = base.filter(function(f){ return GRUPO(f) === e[0]; }).length;
       h += '<button class="op' + (fEst === e[0] ? ' on' : '') + '" data-est="' + e[0] + '" title="' + esc(e[2]) + '">' + e[1] + '<span class="n">' + n + '</span></button>'; });
