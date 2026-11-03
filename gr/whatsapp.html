@@ -451,8 +451,12 @@
     if (op) { var o = (CAT.origenes || []).filter(function(x){ return x.id === op.o.camino; })[0]; return (o && o.origenConversacion) || 'otra'; }
     return c.origen && c.origen.indexOf('anuncio') === 0 ? 'anuncio' : 'directo';
   }
-  // Canal por el que contesto (gr_canal_respuesta); si contesto a un toque de Open+3, WhatsApp.
-  function canalConv(c){ var op = oporDe(c); if (!op) return ''; return op.o.canal || (op.o.o3 && op.o.o3.estado === 'respondio' ? 'whatsapp' : ''); }
+  // Canal real de la conversacion (correccion de Mike, 3 nov): el canal por el que de verdad se le escribio o escribio,
+  // no el campo Canal de la oportunidad (gr_canal_respuesta, que dice por donde contesto a la secuencia original) ni que
+  // tenga correo en HubSpot. Todo lo que hay en este portal son mensajes de WhatsApp (enviados o recibidos), asi que una
+  // conversacion con al menos un mensaje es WhatsApp. Correo, LinkedIn y Llamada solo cuentan cuando haya mensajes
+  // registrados de ese canal; hoy el portal no tiene ninguno, por eso marcan 0.
+  function canalConv(c){ return (c.msgs || []).some(function(m){ return m.dir === 'saliente' || m.dir === 'entrante'; }) ? 'whatsapp' : ''; }
   var FALLO_TOQUE = [];
   // Etiquetas de las listas (catalogo unico; se llenan en armarListas).
   var COMO_LLEGO = {}, TIPO_INTERES = {}, CAMINO = {}, CANAL = {}, TIPO_OP = {}, PARTNER = {}, ETAPA_CORTA = {}, TIP_ETAPA = {};
@@ -478,7 +482,7 @@
       { k: 'senal', t: 'Señal', ayuda: 'Qué hizo el prospecto para volverse oportunidad: abrió el correo 3 veces o más (Open+3) o contestó (Reply). El Reply lleva la etiqueta de Amplemarket de cómo contestó.',
         ops: opsDe('tiposSenal').map(function(o){ return o[0] === 'reply' ? [o[0], o[1] + ' (todos)', o[2]] : o; }).concat(opsDe('comoLlego')) },
       { k: 'origen', t: 'Origen', ayuda: 'El camino por el que llegó: la secuencia de correo, una señal de DUO, un referido; o, sin oportunidad, un anuncio o escribió directo.', ops: opsDe('origenesConversacion') },
-      { k: 'canal', t: 'Canal', ayuda: 'Por dónde contestó el prospecto (campo Canal de la oportunidad). Si contestó a un toque de WhatsApp, WhatsApp.', ops: opsDe('canales') },
+      { k: 'canal', t: 'Canal', ayuda: 'Por dónde se le escribió de verdad en esta conversación (los mensajes enviados o recibidos), no el campo Canal de HubSpot ni que tenga correo registrado. Hoy todo lo que hay aquí es WhatsApp.', ops: opsDe('canales') },
       { k: 'toque', t: 'Toque de Open+3', ayuda: 'En qué toque va: toque 1 al detectar la señal, toque 2 al 3er día hábil y toque 3 (despedida) al 7º. Se combina con «Resultado del toque»: por ejemplo Toque 1 + Contestó.', ops: [
         ['1', 'Toque 1', 'Su último WhatsApp automático fue el toque 1'],
         ['2', 'Toque 2', 'Su último WhatsApp automático fue el toque 2'],
@@ -966,7 +970,7 @@
       var sq = f.secuencia;
       h += '<div class="fgrid"><div class="fcol"><div class="fcard"><div class="fh">Cómo llegó</div>' +
           kv([['Tipo de señal', tipoTxt], [esOpen ? 'Tipo de interés' : 'Cómo llegó', como + (esOpen && (or.aperturas || o.aperturas) ? ' · ' + (or.aperturas || o.aperturas) + ' aperturas' : '')],
-            ['Canal', CANAL[or.canal || o.canal] || or.canal || o.canal], ['Campaña', String(or.campana || o.campana || '').trim()], ['Quién la envió', nombreRemitente(o.remitente)],
+            ['Canal con que contestó a la campaña', CANAL[or.canal || o.canal] || or.canal || o.canal], ['Campaña', String(or.campana || o.campana || '').trim()], ['Quién la envió', nombreRemitente(o.remitente)],
             ['Fecha de la señal', fSen ? fechaCorta(fSen) + ' · ' + haceDias(fSen) : ''], ['Camino', CAMINO[camino] || camino]]) +
           (camino === 'senal' ? '<div class="fnota">DUO: Amplemarket detectó una señal de la persona (publicación, cambio de puesto, contratación) y le escribió.</div>' : (camino === 'respuesta' ? '<div class="fnota">Sequence: la persona venía en una secuencia de Amplemarket.</div>' : '')) + '</div>' +
         '<div class="fcard"><div class="fh">' + (esOpen ? 'Correo nuestro que abrió' : 'Mensaje nuestro que contestó') + '</div><div class="ftexto">' + esc(or.mensaje || ld || 'Falta') + '</div></div>' +
