@@ -413,6 +413,8 @@
   function textoToque(o3){
     if (!o3) return '';
     if (o3.estado === 'activo') return 'Toque ' + o3.toque + ' de 3';
+    // No entregado (revision del 2 nov): el toque que fallo, igual en todos los casos («Toque 2 de 3 no entregado»).
+    if ((o3.estado === 'no_entregado' || o3.estado === 'sin_whatsapp') && o3.toque) return 'Toque ' + o3.toque + ' de 3 no entregado' + (o3.estado === 'sin_whatsapp' ? ' · ' + (ESTADO_TOQUE[o3.estado] || 'sin WhatsApp') : '');
     return (ESTADO_TOQUE[o3.estado] || o3.estado) + (o3.toque ? ' · toque ' + o3.toque + ' de 3' : '');
   }
   // Remitente: los del equipo llegan con su nombre corto (Martha, Migue); los de Hootsuite como correo (abraham.pablo).
@@ -830,13 +832,14 @@
     var op = oporDe(c), lin = lineaDe(c);
     if (!op) return '<div class="ficha-op">' + (lin.codigo ? '<span data-tip="Producto que entendió el bot en la conversación"><b>' + esc(lin.nombre) + '</b></span>' : '') + '<span data-tip="Este número no está en ninguna oportunidad abierta de HubSpot">Sin oportunidad abierta en HubSpot</span></div>';
     var o = op.o, o3 = o.o3, f = function(ts){ return ts ? nombreDia(ts).toLowerCase() + ' ' + hora(ts) : ''; };
-    var ult = o3 ? (o3.t3 || o3.t2 || o3.t1) : 0;
+    var falla = o3 && (o3.estado === 'no_entregado' || o3.estado === 'sin_whatsapp');
+    var ult = o3 ? (falla ? (o3.intento_ts || 0) : (o3.t3 || o3.t2 || o3.t1)) : 0;
     return '<div class="ficha-op"><span data-tip="Línea de servicio de la oportunidad"><b>' + esc(o.linea.nombre) + '</b></span>' +
       '<span>Etapa: <button class="verop" id="verOp" data-tip="Ver la ficha de la oportunidad, como en el tablero (solo lectura)"><b>' + esc(o.etapa.nombre) + '</b> ▾</button></span>' +
       (o.campana ? '<span data-tip="Secuencia de correo o señal de donde salió la oportunidad">Campaña: <b>' + esc(o.campana) + '</b></span>' : '') +
       (o.senal ? '<span data-tip="Open+3: abrió el correo 3 veces o más. Reply: contestó el correo">Señal: <b>' + esc(o.senal) + '</b></span>' : '') +
       (o.remitente ? '<span data-tip="Quién mandó la campaña de correo; su nombre firma los WhatsApp">Envió: <b>' + esc(nombreRemitente(o.remitente)) + '</b></span>' : '') +
-      (o3 ? '<span data-tip="Toques automáticos de Open+3 por WhatsApp">WhatsApp: <b>' + esc(textoToque(o3)) + '</b>' + (ult ? ' · último ' + esc(f(ult)) : '') + (o3.estado !== 'activo' && o3.detalle ? ' · ' + esc(o3.detalle) : '') + '</span>' : '') +
+      (o3 ? '<span data-tip="Toques automáticos de Open+3 por WhatsApp">WhatsApp: <b>' + esc(textoToque(o3)) + '</b>' + (ult ? (falla ? ' · intento ' : ' · último ') + esc(f(ult)) : '') + (o3.estado !== 'activo' && o3.detalle ? ' · ' + esc(o3.detalle) : '') + '</span>' : '') +
       '</div>';
   }
   // Ficha de la oportunidad (28 oct, Mike): la misma informacion de la ventana de editar del tablero, en solo lectura,
