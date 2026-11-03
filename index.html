@@ -850,7 +850,27 @@ function catOwnersMapa(){ var m={}; ((CAT().personas)||[]).forEach(function(p){ 
 // Texto de ayuda («?» al pasar el mouse) de una opción de menú, desde el catálogo.
 var CAT_AYUDA_DE={prod:'productos',producto:'productos',stage:'stages',etapa:'stages',grupo:'grupos',categoria:'categoriasAlerta',tipo:'tiposSenal',persona:'personas',owner:'personas',responsable:'personas',lider:'personas',apoyo:'personas',urgencia:'urgencias',segmento:'segmentos',canal:'canales',origen:'origenes',partner:'partners'};
 function catAyuda(k,v){ var l=CAT()[CAT_AYUDA_DE[k]]; if(!Array.isArray(l)) return ''; v=String(v); var x=l.filter(function(o){ return String(o.id)===v||o.idCli===v||o.label===v; })[0]; return x&&x.ayuda?x.ayuda:''; }
-function catTitulo(k,v,extra){ if(extra&&/title=/.test(extra)) return ''; var a=catAyuda(k,v); return a?' title="'+grEsc(a)+'"':''; }
+function catTitulo(k,v,extra){ if(extra&&/title=/.test(extra)) return ''; var a=catAyuda(k,v)||grAyudaOpcion(k,v); return a?' title="'+grEsc(a)+'"':''; }
+// 3nov2026 (documento de Martha, Error 4): letrero de cada opcion de los filtros de Pipeline, Pendientes y Alertas.
+var GR_AYUDA_ETAPA={'Señal':'El prospecto dio una señal de interés (abrió, hizo clic o visitó) y todavía no contesta.','Reply':'El prospecto contestó la secuencia.','Contactado':'Ya le escribimos o llamamos después de su señal o su respuesta.','En Conv.':'Hay conversación con el prospecto y todavía no hay cita.','Atracción':'Tiene una cita agendada.','Educación':'Ya se realizó la primera cita.','Propuesta':'Se presentó o está por presentarse la propuesta.','Aprobación':'El cliente está revisando la propuesta para aprobarla.','Renovación':'Clientes que ya compraron y tienen una renovación en curso.','Perdida':'Se cerró sin venta.'};
+var GR_AYUDA_FIJA={
+  stage:{ALL:'Todas las oportunidades de Pipeline, menos las perdidas.','G:prosp':'Prospección: Señal, Reply, Contactado y En Conversación. Todavía no hay cita.','G:ventas':'Ventas: Atracción, Educación, Propuesta y Aprobación. Ya hay o hubo cita.','G:renov':'Clientes con una renovación en curso.'},
+  persona:{Todos:'Todas, sin importar quién lleva la cuenta.',Otro:'Oportunidades que no tienen responsable.'},
+  lider:{ALL:'Todas, sin importar quién lidera el producto.'},
+  apoyo:{ALL:'Todas, tengan o no apoyo.',SIN:'Oportunidades donde nadie más acompaña en las reuniones.'},
+  tiempo:{ALL:'Todas, vayan o no en tiempo.',fuera:'Lleva en su etapa más días que el plazo de esa etapa.',porvencer:'Está por llegar al plazo de su etapa.',enplazo:'Va dentro del plazo de su etapa.',cierrevencido:'La fecha en que esperamos firmar ya pasó y sigue abierta.',sincierre:'No tiene fecha en que esperamos firmar.'},
+  prod:{ALL:'Todas las líneas de servicio.'},
+  fper:{todo:'Sin límite de fechas.',u30:'Los últimos 30 días, hoy incluido.',u7:'Los últimos 7 días, hoy incluido.',ayer:'Solo ayer.',hoy:'Solo hoy.',p7:'De hoy a los próximos 7 días.',p30:'De hoy a los próximos 30 días.',rango:'Elige el día inicial y el final.'},
+  cita:{ALL:'Con un rango de fechas: todas las citas del rango, agendadas, realizadas y no realizadas, de cualquier etapa, Discovery o Siguientes pasos. Es la suma de las tres. Sin rango: todas las oportunidades.',agendada:'La cita todavía no ocurre, o ya pasó y falta confirmar que se realizó.',realizada:'Hubo prueba de que se realizó: grabación, envío de siguientes pasos o confirmación del equipo.',no_realizada:'La cita no ocurrió y está pendiente de reagendar.',sin:'Oportunidades sin ninguna cita registrada: a quién falta agendar, o una cita que el motor no registró. Con un rango de fechas se usa el día en que se creó la oportunidad.'},
+  faltan:{toggle:'Solo las oportunidades a las que les falta Responsable, origen, tipo o partner.'}
+};
+function grAyudaOpcion(k,v){ v=String(v); var f=(GR_AYUDA_FIJA[k]||{})[v]; if(f) return f;
+  if(k==='stage') return GR_AYUDA_ETAPA[v]||('Oportunidades en la etapa '+v+'.');
+  if(k==='persona') return 'Oportunidades cuya cuenta lleva '+v+'.';
+  if(k==='lider') return 'Oportunidades de los productos que lidera '+v+'.';
+  if(k==='apoyo') return 'Oportunidades donde '+v+' acompaña en las reuniones.';
+  if(k==='prod') return 'Oportunidades de la línea '+v+'.';
+  return ''; }
 function catEtiquetas(k){ var m={}; catLista(k).forEach(function(x){ m[x.id]=x.label; }); return m; }
 function grEsc(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtFecha(s){ if(!s||s==='null') return ''; var d=new Date(s); if(isNaN(d)) return ''; var M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; return d.getUTCDate()+' '+M[d.getUTCMonth()]+' '+d.getUTCFullYear(); }
@@ -894,7 +914,7 @@ async function cargarActividadesGR(dealId,containerId,pre){
   }catch(err){ box.innerHTML='<div style="color:#DB0540;font-size:12px">No se pudieron cargar las actividades.</div>'; if(nbox) nbox.innerHTML='<div style="color:#DB0540;font-size:12px">No se pudieron cargar las notas.</div>'; }
 }
 function abrirEditarDealGR(dealId){
-  var d=null; (DATA.deals||[]).forEach(function(x){ if(String(x.id)===String(dealId)) d=x; });
+  var d=null; (DATA.deals||[]).concat(DATA.perdidas||[]).forEach(function(x){ if(!d && String(x.id)===String(dealId)) d=x; });
   if(!d){ alert('Deal no encontrado en los datos actuales.'); return; }
   window.__grEditId=String(dealId);
   document.getElementById('grmd-title').textContent=d.cliente||d.name||'Deal';
@@ -921,12 +941,19 @@ function abrirEditarDealGR(dealId){
   (function(){ var el=document.getElementById('grmd-cita'); if(!el) return; var c=d.campos||{}; var PR={grabacion:'grabación de la reunión',seguimiento:'envío de siguientes pasos',confirmada:'confirmada por el equipo'};
     var fh=c.gr_cita_fecha?new Date(c.gr_cita_fecha):null; var fhT=(fh&&!isNaN(fh))?fh.toLocaleString('es-MX',{weekday:'short',day:'numeric',month:'short',hour:'numeric',minute:'2-digit',timeZone:'America/Mexico_City'}):'';
     var t='', col='';
-    if(c.gr_cita_realizada){ t='Realizada el '+fmtFecha(c.gr_cita_realizada+'T12:00:00Z')+(PR[c.gr_cita_prueba]?(' · '+PR[c.gr_cita_prueba]):''); col='#62D175'; }
+    var e=grCitaReg(d), sig=c.gr_cita_tipo==='siguientes'?'Siguientes pasos · ':(c.gr_cita_tipo==='discovery'?'Discovery · ':'');
+    if(e==='realizada'){ var dr=(c.gr_cita_estado==='realizada'&&c.gr_cita_fecha)?grDiaDe(c.gr_cita_fecha):String(c.gr_cita_realizada||'').slice(0,10); t=sig+'Realizada el '+fmtFecha(dr+'T12:00:00Z')+(PR[c.gr_cita_prueba]?(' · '+PR[c.gr_cita_prueba]):'')+(c.gr_cita_realizada&&String(c.gr_cita_realizada).slice(0,10)!==dr?(' · primera cita '+fmtFecha(String(c.gr_cita_realizada).slice(0,10)+'T12:00:00Z')):''); col='#62D175'; }
     else if(c.gr_cita_estado==='no_realizada'){ t='No se realizó · pendiente de reagendar'+(fhT?(' (era '+fhT+')'):''); col='#FCA5A5'; }
-    else if(fhT){ t='Agendada · '+fhT; col='#FFCD00'; }
+    else if(fhT){ t=sig+'Agendada · '+fhT; col='#FFCD00'; }
     else if(grCitaDe(d)==='realizada'){ t='Realizada (antes del registro de citas)'; col='#62D175'; }
     else if(grCitaDe(d)==='agendada'){ t='Agendada · sin fecha registrada'; col='#FFCD00'; }
-    el.textContent=t||'Sin cita'; el.style.color=col||'#6B7280'; })();
+    el.textContent=t||'Sin cita'; el.style.color=col||'#6B7280';
+    // 3nov2026 (documento de Martha): las tres fechas de la oportunidad en Origen y secuencia.
+    var F=function(id,txt){ var x=document.getElementById(id); if(x) x.textContent=txt||'—'; };
+    F('grmd-f-creada', d.createdate?fmtFecha(String(d.createdate)):'');
+    var ag=String(c.gr_cita_agendada_el||'').slice(0,10), at=String(c.gr_cita||'').slice(0,10);
+    F('grmd-f-agendada', ag?fmtFecha(ag+'T12:00:00Z'):(at&&c.gr_cita_fecha?(fmtFecha(at+'T12:00:00Z')+' (día en que pasó a Atracción)'):''));
+    F('grmd-f-cita', fhT?fhT:(c.gr_cita_realizada?fmtFecha(String(c.gr_cita_realizada).slice(0,10)+'T12:00:00Z'):'')); })();
   document.getElementById('grmd-auto-msg').textContent=''; document.getElementById('grmd-am-msg').textContent=''; var _tm=document.getElementById('grmd-tel-msg'); if(_tm) _tm.textContent=''; window.__grFaltaMano={};
   grmdPintarCampos(d);
   grmdCargarContactos(dealId, d.cliente||d.name||'');
@@ -2348,7 +2375,10 @@ function stagePerdidas(){
   if(!p.length) p=[{id:'1092009814',label:'Perdida'}];
   return p.map(function(x){ var c=_catStageById(x.id); return {key:x.id,id:x.id,label:(c&&c.label)||x.label}; });
 }
-function stageOrderK(){ return stageOrder().concat(stagePerdidas()); }
+// 3nov2026 (Mike): Renovacion va en el tablero de arriba, justo antes de Perdida, aunque no este en las etapas del portal.
+var GR_STAGE_RENOV='1355589932';
+function stageRenovacion(){ var e=stageOrder(); if(e.some(function(x){ return String(x.id)===GR_STAGE_RENOV; })) return []; var c=_catStageById(GR_STAGE_RENOV); return [{key:GR_STAGE_RENOV,id:GR_STAGE_RENOV,label:(c&&c.label)||'Renovación',plazo:null}]; }
+function stageOrderK(){ return stageOrder().concat(stageRenovacion(), stagePerdidas()); }
 function esStagePerdida(id){ return stagePerdidas().some(function(x){return String(x.id)===String(id);}); }
 // Busqueda libre del pipeline: cliente, oportunidad, contacto o persona.
 function _pipeNorm(x){ return String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
@@ -2440,28 +2470,34 @@ function metaNuevas(goal){
 }
 // 23oct2026 (bloque 2, D6 del documento de Martha): una cita cuenta cuando hay prueba de asistencia (grabacion, envio de
 // siguientes pasos o confirmacion del equipo) y se cuenta en la fecha de la reunion, aunque despues la oportunidad avance o se pierda.
-// Obedece el periodo y los filtros de grupo y producto del Pipeline. Las agendadas son las que aun no ocurren.
+// 3nov2026 (documento de Martha "Errores del Dashboard – Pipeline"): el recuadro cuenta las mismas citas que la fila Cita del
+// Pipeline (mismas oportunidades, mismos filtros, mismo dia de la cita): totales, nuevas (Discovery) y de siguientes pasos.
+// Sin rango de fechas: todas las realizadas y las agendadas que aun no ocurren.
 function grCitas(){
-  var r=grFechaRango(FILT.pipeline), hoy=_diaLocal(new Date()), vistos={}, real=[], agen=[];
-  ((DATA&&DATA.deals)||[]).concat((DATA&&DATA.won)||[],(DATA&&DATA.perdidas)||[]).forEach(function(d){
-    if(vistos[d.id]) return; vistos[d.id]=1; var c=d.campos||{};
-    if(String(c.gr_prueba)==='true'||grEsInterna(d)) return;
-    if(!grPipePasa(d,['etapa','fecha','cita'])) return;
-    var f=String(c.gr_cita_realizada||'').slice(0,10);
-    if(f){ if(!r[0]||(f>=r[0]&&f<=r[1])) real.push(d); return; }
-    if(c.gr_cita_estado==='no_realizada') return;
-    var fa=c.gr_cita_fecha?grDiaDe(c.gr_cita_fecha):'';
-    if(fa && (r[0] ? (fa>=r[0]&&fa<=r[1]) : fa>=hoy)) agen.push(d);
+  var rg=grRangoPipe(), hoy=_diaLocal(new Date()), real=[], agen=[], pasadas=[], noR=[];
+  ((DATA&&DATA.deals)||[]).concat((DATA&&DATA.perdidas)||[]).forEach(function(d){
+    var c=d.campos||{};
+    if(d.stage==='closedwon'||String(c.gr_prueba)==='true'||grEsInterna(d)) return;
+    if(!grPipePasa(d,['cita'])) return;
+    grCitasEnRango(d,rg).forEach(function(x){
+      if(x.estado==='realizada') real.push(x);
+      else if(x.estado==='no_realizada') noR.push(x);
+      else if(x.dia>=hoy) agen.push(x);
+      else pasadas.push(x);
+    });
   });
-  return {real:real, agen:agen};
+  if(!rg){ noR=[]; }
+  var todas=real.concat(agen,pasadas,noR);
+  return {real:real, agen:agen, pasadas:pasadas, noR:noR, todas:todas,
+    nuevas:todas.filter(function(x){ return x.tipo==='discovery'; }).length,
+    siguientes:todas.filter(function(x){ return x.tipo==='siguientes'; }).length};
 }
 function grCitasLista(){ var el=document.getElementById('gr-citas-lista'); if(!el) return; if(el.style.display==='block'){ el.style.display='none'; return; }
-  var x=grCitas(), fmt=function(d){ var c=d.campos||{}; return '<div style="display:flex;gap:10px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px;"><span style="color:#9CA3AF;min-width:86px;">'+grEsc(fmtFecha((c.gr_cita_realizada||String(c.gr_cita_fecha||'').slice(0,10))+'T12:00:00Z'))+'</span><span style="flex:1;color:#E5E7EB;">'+grEsc(d.cliente||d.name)+'</span><span style="color:#C4A5F0;">'+grEsc(d.prod||'')+'</span></div>'; };
-  var porProd={}; x.real.forEach(function(d){ var k=d.prod||'Sin producto'; porProd[k]=(porProd[k]||0)+1; });
-  el.innerHTML='<div style="font-weight:800;color:#F3F4F6;font-size:13px;margin-bottom:4px;">Citas realizadas · '+x.real.length+'</div>'
-    +'<div style="color:#9CA3AF;font-size:12px;margin-bottom:6px;">'+Object.keys(porProd).sort(function(a,b){return porProd[b]-porProd[a];}).map(function(k){return grEsc(k)+' '+porProd[k];}).join(' · ')+'</div>'
-    +x.real.slice().sort(function(a,b){ return String((b.campos||{}).gr_cita_realizada).localeCompare(String((a.campos||{}).gr_cita_realizada)); }).map(fmt).join('')
-    +(x.agen.length?('<div style="font-weight:800;color:#F3F4F6;font-size:13px;margin:10px 0 4px;">Agendadas, aún no ocurren · '+x.agen.length+'</div>'+x.agen.slice().sort(function(a,b){ return String((a.campos||{}).gr_cita_fecha).localeCompare(String((b.campos||{}).gr_cita_fecha)); }).map(fmt).join('')):'');
+  var x=grCitas(), fmt=function(z){ var d=z.d; return '<div style="display:flex;gap:10px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px;"><span style="color:#9CA3AF;min-width:86px;">'+grEsc(fmtFecha(z.dia+'T12:00:00Z'))+'</span><span style="flex:1;color:#E5E7EB;cursor:pointer;" onclick="abrirEditarDealGR(\''+d.id+'\')">'+grEsc(grNombreOp(d))+'</span><span style="color:'+(z.tipo==='siguientes'?'#02ADBA':'#C4A5F0')+';min-width:110px;text-align:right;">'+(z.tipo==='siguientes'?'Siguientes pasos':'Discovery')+'</span></div>'; };
+  var orden=function(a,b){ return a.dia.localeCompare(b.dia); };
+  var sec=function(t,l){ return l.length?('<div style="font-weight:800;color:#F3F4F6;font-size:13px;margin:10px 0 4px;">'+t+' · '+l.length+'</div>'+l.slice().sort(orden).map(fmt).join('')):''; };
+  el.innerHTML='<div style="color:#9CA3AF;font-size:12px;margin-bottom:4px;">Citas totales '+x.todas.length+' · nuevas (Discovery) '+x.nuevas+' · de siguientes pasos '+x.siguientes+'</div>'
+    +sec('Realizadas',x.real)+sec('Agendadas, aún no ocurren',x.agen)+sec('Ya pasaron y falta confirmar que se realizaron',x.pasadas)+sec('No se realizaron',x.noR);
   el.style.display='block';
 }
 function nuevaCol(d){ var f=grFechaObj(d.createdate); if(isNaN(f)) return 'transparent'; var age=Math.floor((new Date()-f)/86400000); return age<=7?'#10B981':age<=15?'#34d399':age<=30?'#FFCD00':age<=45?'#F59E0B':age<=90?'#F97316':'#6B7280'; }
@@ -2475,7 +2511,7 @@ var GR_CITA_OPC = [['ALL','Todas'],['agendada','Agendada'],['realizada','Realiza
 // agendada; Educacion o posterior = cita realizada).
 // Cita realizada: etapas de venta después de Atracción (las abiertas: hasta Contract Sent).
 function GR_ETAPAS_CITA_REALIZADA_(){ return catIds(catEtapasFase('venta').filter(function(s){ return s.id!=='appointmentscheduled' && s.prioridad<=9; })); }
-function grCitaDe(d){ var c=(d&&d.campos)||{}; if(c.gr_cita_realizada) return 'realizada'; if(c.gr_cita_estado==='no_realizada') return 'no_realizada'; if(c.gr_cita_fecha) return 'agendada';
+function grCitaDe(d){ var rg=grCitaReg(d); if(rg!=='sin') return rg;
   if(d&&d.stage==='appointmentscheduled') return 'agendada'; if(d&&GR_ETAPAS_CITA_REALIZADA_().indexOf(d.stage)>=0) return 'realizada'; return 'sin'; }
 function grCitaPasa(d){ var f=FILT.pipeline.cita||'ALL'; return f==='ALL' || grCitaDe(d)===f; }
 function grCitaLinea(d){
@@ -2484,10 +2520,11 @@ function grCitaLinea(d){
   var corto=ok?fh.toLocaleString('es-MX',{day:'numeric',month:'short',timeZone:'America/Mexico_City'}):'';
   var hora=ok?fh.toLocaleString('es-MX',{hour:'numeric',minute:'2-digit',timeZone:'America/Mexico_City'}):'';
   var t='', col='#FFCD00';
-  if(e==='realizada'){ t=c.gr_cita_realizada?('Cita realizada '+fmtFecha(c.gr_cita_realizada+'T12:00:00Z')):'Cita realizada'; col='#62D175'; }
+  var sig=c.gr_cita_tipo==='siguientes'?'Siguientes pasos ':'';
+  if(e==='realizada'){ var dr=(c.gr_cita_estado==='realizada'&&ok)?grDiaDe(c.gr_cita_fecha):String(c.gr_cita_realizada||'').slice(0,10); t=(sig?'Cita de siguientes pasos':'Cita')+' realizada'+(dr?(' '+fmtFecha(dr+'T12:00:00Z')):''); col='#62D175'; }
   else if(e==='no_realizada'){ t='Cita no se realizó'+(corto?(' · era '+corto):'')+' · reagendar'; col='#FCA5A5'; }
   else if(!ok){ t='Cita agendada · sin fecha registrada'; }
-  else { var pasada=ok&&fh<new Date(); t=(pasada?'Cita '+corto+' · sin confirmar':'Cita '+corto+(hora?(' · '+hora):'')); col=pasada?'#F59E0B':'#FFCD00'; }
+  else { var pasada=ok&&fh<new Date(); t=(pasada?'Cita '+sig.toLowerCase()+corto+' · sin confirmar':'Cita '+sig.toLowerCase()+corto+(hora?(' · '+hora):'')); col=pasada?'#F59E0B':'#FFCD00'; }
   return '<div style="margin-top:5px;font-size:10.5px;font-weight:700;color:'+col+';">'+grEsc(t)+'</div>';
 }
 // Reuniones de la bitacora ligadas a la oportunidad por el correo o el dominio de sus contactos.
@@ -2582,7 +2619,20 @@ function grIVer(el){ var f=el.closest('.filters')||el.parentNode; var b=f.queryS
 function grEsInterna(d){ var n=String((d&&d.name)||'').toUpperCase(); return /^(GR|PT)_INTERNO/.test(n) || grupoDeProd(d&&d.prod)==='INTERNO' || String(((d&&d.campos)||{}).gr_interno)==='true'; }
 function grStageLabel(d){ var m={}; stageOrderK().forEach(function(x){ m[x.id]=x.label; }); if(m[d.stage]) return m[d.stage]; if(d.stageLabel) return d.stageLabel; var o=((typeof DATA!=='undefined'&&DATA&&DATA.deals)||[]).filter(function(x){ return String(x.stage)===String(d.stage) && x.stageLabel; })[0]; return o?o.stageLabel:d.stage; }
 function grLiderDe(d){ var pr=((pipeCfg()||{}).productos)||[], k=String((d&&d.prod)||'').toUpperCase(); for(var i=0;i<pr.length;i++){ if(String(pr[i].codigo||'').toUpperCase()===k) return grEquipoNombre(pr[i].lidera); } return ''; }
-function grCitaReg(d){ var c=(d&&d.campos)||{}; if(c.gr_cita_realizada) return 'realizada'; if(c.gr_cita_estado==='no_realizada') return 'no_realizada'; if(c.gr_cita_fecha) return 'agendada'; return 'sin'; }
+// 3nov2026 (documento de Martha "Errores del Dashboard – Pipeline", aprobado por Mike): cada cita se mide por el dia en que
+// se lleva a cabo. Una oportunidad trae hasta dos: la cita en curso (Fecha y hora de la cita, con su estado y su tipo) y, si
+// es otra, la primera cita realizada (Cita realizada, que no se borra). Tipo: discovery = primera cita; siguientes = seguimiento.
+function grCitasDe(d){ var c=(d&&d.campos)||{}, out=[], pri=String(c.gr_cita_realizada||'').slice(0,10);
+  var dia=c.gr_cita_fecha?grDiaDe(c.gr_cita_fecha):'';
+  var est=c.gr_cita_estado==='realizada'||c.gr_cita_estado==='no_realizada'||c.gr_cita_estado==='agendada'?c.gr_cita_estado:(pri&&(!dia||dia===pri)?'realizada':(dia?'agendada':''));
+  if(dia) out.push({d:d,dia:dia,estado:est,tipo:c.gr_cita_tipo==='siguientes'?'siguientes':'discovery',hora:c.gr_cita_fecha});
+  if(pri && pri!==dia) out.push({d:d,dia:pri,estado:'realizada',tipo:'discovery',hora:''});
+  if(!dia && pri && !out.length) out.push({d:d,dia:pri,estado:'realizada',tipo:c.gr_cita_tipo==='siguientes'?'siguientes':'discovery',hora:''});
+  return out; }
+function grCitaReg(d){ var cs=grCitasDe(d); return cs.length?cs[0].estado:'sin'; }
+// Citas de la oportunidad dentro del rango del filtro Fecha (sin rango, todas) y, si se pide, con un estado.
+function grCitasEnRango(d, r, estado){ return grCitasDe(d).filter(function(x){ return (!estado||estado==='ALL'||x.estado===estado) && (!r||(x.dia>=r[0]&&x.dia<=r[1])); }); }
+function grNombreOp(d){ return String((d&&(d.name||d.cliente))||'').replace(/^P_/i,''); }
 function grTiempoDe(d, v){ if(v==='fuera') return d.semaforo==='rojo'; if(v==='porvencer') return d.semaforo==='amarillo'; if(v==='enplazo') return d.semaforo==='verde';
   var cd=(d.closedate&&d.closedate!=='null')?String(d.closedate).slice(0,10):''; if(v==='sincierre') return !cd; if(v==='cierrevencido') return !!cd && cd<_diaLocal(new Date()); return true; }
 function grFechaRango(f){ var h=_diaLocal(new Date()), p=(f&&f.fper)||'todo';
@@ -2590,11 +2640,9 @@ function grFechaRango(f){ var h=_diaLocal(new Date()), p=(f&&f.fper)||'todo';
   if(p==='u7') return [_diaMas(h,-6),h]; if(p==='u30') return [_diaMas(h,-29),h];
   if(p==='p7') return [h,_diaMas(h,6)]; if(p==='p30') return [h,_diaMas(h,29)];
   if(p==='rango'){ var a=f.fdesde||_diaMas(h,-6), b=f.fhasta||h; return a<=b?[a,b]:[b,a]; } return ['','']; }
-// La fecha la decide lo que se mira: la oportunidad por su creacion; con el filtro Cita, la cita por su dia.
-function grFechaDe(d){ var c=d.campos||{}, ci=FILT.pipeline.cita||'ALL';
-  if(ci==='realizada') return String(c.gr_cita_realizada||'').slice(0,10);
-  if(ci==='agendada'||ci==='no_realizada') return c.gr_cita_fecha?grDiaDe(c.gr_cita_fecha):'';
-  return grDiaDe(d.createdate); }
+// 3nov2026: la Fecha se aplica al dia en que se lleva a cabo la cita, con cualquier opcion de Cita. Sin cita registrada no hay
+// cita con que comparar: se usa el dia en que se creo la oportunidad.
+function grRangoPipe(){ var f=FILT.pipeline; return (f.fper&&f.fper!=='todo')?grFechaRango(f):null; }
 function grPipePasa(d, excepto){ var f=FILT.pipeline, ex=function(k){ return excepto && excepto.indexOf(k)>=0; };
   if(!ex('etapa')){ var st=f.stage||'ALL'; if(st==='G:prosp'){ if(GR_ETAPAS_PROSP_().indexOf(String(d.stage))<0) return false; } else if(st==='G:ventas'){ if(GR_ETAPAS_VENTAS_().indexOf(String(d.stage))<0) return false; } else if(st!=='ALL' && grStageLabel(d)!==st) return false; }
   if(!ex('persona') && f.persona && f.persona!=='Todos'){ var ps=personasDeItem(d); if(f.persona==='Otro'){ if(ps.length) return false; } else if(ps.indexOf(f.persona)<0) return false; }
@@ -2602,8 +2650,9 @@ function grPipePasa(d, excepto){ var f=FILT.pipeline, ex=function(k){ return exc
   if(!ex('apoyo') && f.apoyo && f.apoyo!=='ALL'){ var ap=grApoyoDe(d); if(f.apoyo==='SIN'){ if(ap.length) return false; } else if(ap.indexOf(f.apoyo)<0) return false; }
   if(!ex('tiempo') && f.tiempo && f.tiempo!=='ALL' && !grTiempoDe(d,f.tiempo)) return false;
   if(!ex('prod') && f.prod && f.prod!=='ALL' && d.prod!==f.prod) return false;
-  if(!ex('cita') && f.cita && f.cita!=='ALL' && grCitaReg(d)!==f.cita) return false;
-  if(!ex('fecha') && f.fper && f.fper!=='todo'){ var r=grFechaRango(f), v=grFechaDe(d); if(!v||v<r[0]||v>r[1]) return false; }
+  var ci=ex('cita')?'ALL':(f.cita||'ALL'), rg=ex('fecha')?null:grRangoPipe();
+  if(ci==='sin'){ if(grCitasDe(d).length) return false; if(rg){ var vc=grDiaDe(d.createdate); if(!vc||vc<rg[0]||vc>rg[1]) return false; } }
+  else if((ci!=='ALL'||rg) && !grCitasEnRango(d,rg,ci).length) return false;
   if(!ex('faltan') && !faltanPasa(d)) return false;
   if(!ex('q') && !pipeQPasa(d)) return false;
   return true; }
@@ -2611,7 +2660,7 @@ function grPipeFiltrosHTML(pool){
   var f=FILT.pipeline, H_APOYO='';
   var cuenta=function(k, prueba){ return pool.filter(function(d){ return grPipePasa(d,[k]) && prueba(d); }).length; };
   var chip=function(k,v,label,n,extra){ var on=String(f[k]||'')===String(v); return '<button class="chip '+(on?'active':'')+'" data-f="pipeline" data-k="'+k+'" data-v="'+grEsc(v)+'"'+(extra||'')+catTitulo(k,v,extra)+'>'+grEsc(label)+(n===null||n===undefined?'':' '+n)+'</button>'; };
-  var fila=function(titulo, info, cuerpo){ return '<div class="filters"><span class="filter-label">'+titulo+' '+grI(info)+'</span>'+cuerpo+'</div>'; };
+  var fila=function(titulo, info, cuerpo){ return '<div class="filters"><span class="filter-label" title="'+grEsc(info)+'">'+titulo+' '+grI(info)+'</span>'+cuerpo+'</div>'; };
   var H='';
   // Etapa
   var et=chip('stage','ALL','Todos',cuenta('etapa',function(d){return !esStagePerdida(d.stage);}));
@@ -2620,7 +2669,6 @@ function grPipeFiltrosHTML(pool){
   et+=chip('stage','G:ventas','Ventas',cuenta('etapa',function(d){ return GR_ETAPAS_VENTAS_().indexOf(String(d.stage))>=0; }),' style="border-color:#62D17580;"');
   stageOrder().filter(function(x){ return GR_ETAPAS_VENTAS_().indexOf(String(x.id))>=0; }).forEach(function(x){ var n=cuenta('etapa',function(d){ return String(d.stage)===String(x.id); }); if(n||f.stage===x.label) et+=chip('stage',x.label,x.label,n); });
   stageOrderK().filter(function(x){ return GR_ETAPAS_PROSP_().indexOf(String(x.id))<0 && GR_ETAPAS_VENTAS_().indexOf(String(x.id))<0; }).forEach(function(x){ var n=cuenta('etapa',function(d){ return String(d.stage)===String(x.id); }); if(n) et+=chip('stage',x.label,x.label,n); });
-  var _ren=pool.filter(function(d){ return String(d.stage)==='1355589932'; }).length; if(_ren && et.indexOf('data-v="Renovación"')<0) et+=chip('stage',grStageLabel({stage:'1355589932'}),grStageLabel({stage:'1355589932'}),cuenta('etapa',function(d){ return String(d.stage)==='1355589932'; }));
   H+=fila('Etapa','Prospección: Señal, Reply, Contactado y En Conversación (aún sin cita). Ventas: Atracción, Educación, Propuesta y Aprobación (ya hay o hubo cita). Elige el grupo o una etapa.',et);
   // Responsable
   var resp=chip('persona','Todos','Todos',cuenta('persona',function(){return true;}));
@@ -2655,12 +2703,17 @@ function grPipeFiltrosHTML(pool){
   // Fecha
   var fe=GR_FECHA_OPC.map(function(o){ return chip('fper',o[0],o[1],null); }).join('');
   if(f.fper==='rango'){ var rr=grFechaRango(f), est='background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;padding:7px 10px;border-radius:8px;font:inherit;font-size:13px;color-scheme:dark;'; fe+='<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><span style="color:var(--text-dim);font-size:12px;">del</span><input type="date" id="pipe-desde" value="'+rr[0]+'" onchange="pipePeriodoFecha()" style="'+est+'"><span style="color:var(--text-dim);font-size:12px;">al</span><input type="date" id="pipe-hasta" value="'+rr[1]+'" onchange="pipePeriodoFecha()" style="'+est+'"></span>'; }
-  H+=fila('Fecha','Del pasado al futuro. Se aplica al día en que se creó la oportunidad; si eliges una Cita, se aplica al día de la cita. Próximos 7 y 30 días sirven para las citas agendadas.',fe);
+  H+=fila('Fecha','Se aplica al día en que se lleva a cabo la cita, con cualquier opción de Cita. Con Sin cita registrada se aplica al día en que se creó la oportunidad. Próximos 7 y 30 días sirven para ver las citas que vienen.',fe);
   // Cita
-  var ci=GR_CITA_REG_OPC.map(function(o){ return chip('cita',o[0],o[1],o[0]==='ALL'?null:cuenta('cita',function(d){ return grCitaReg(d)===o[0]; })); }).join('');
-  H+=fila('Cita','Solo las citas que el motor registró con su fecha (desde el 23 de octubre): agendada, realizada con prueba (grabación, siguientes pasos o confirmación) o no realizada. Cuenta igual que el recuadro Citas.',ci);
+  var rgC=grRangoPipe(), baseC=pool.filter(function(d){ return grPipePasa(d,['cita']); });
+  var nC=function(e){ return baseC.reduce(function(s,d){ return s+grCitasEnRango(d,rgC,e).length; },0); };
+  var nCita={agendada:nC('agendada'),realizada:nC('realizada'),no_realizada:nC('no_realizada')};
+  nCita.sin=pool.filter(function(d){ if(!grPipePasa(d,['cita','fecha'])||grCitasDe(d).length) return false; if(!rgC) return true; var v=grDiaDe(d.createdate); return !!v&&v>=rgC[0]&&v<=rgC[1]; }).length;
+  nCita.ALL=rgC?(nCita.agendada+nCita.realizada+nCita.no_realizada):null;
+  var ci=GR_CITA_REG_OPC.map(function(o){ return chip('cita',o[0],o[1],nCita[o[0]]); }).join('');
+  H+=fila('Cita','Citas por el día en que se llevan a cabo. Con un rango de fechas, Todas son todas las citas del rango (agendadas, realizadas y no realizadas, de cualquier etapa, Discovery o Siguientes pasos) y es la suma de las tres. Cuenta igual que el recuadro Citas. Sin cita registrada: oportunidades sin ninguna cita, por el día en que se crearon.',ci);
   // Faltan datos
-  H+=fila('Faltan datos','Oportunidades a las que les falta Responsable, origen, tipo o partner.','<button class="chip '+(f.faltan?'active':'')+'" data-f="pipeline" data-k="faltan" data-v="toggle">Solo las que les faltan datos '+cuenta('faltan',function(d){ return camposFaltan(d).length>0; })+'</button>');
+  H+=fila('Faltan datos','Oportunidades a las que les falta Responsable, origen, tipo o partner.','<button class="chip '+(f.faltan?'active':'')+'" data-f="pipeline" data-k="faltan" data-v="toggle" title="'+grEsc(GR_AYUDA_FIJA.faltan.toggle)+'">Solo las que les faltan datos '+cuenta('faltan',function(d){ return camposFaltan(d).length>0; })+'</button>');
   // Acciones
   H+='<div class="filters" style="border-top:1px solid #2A3142;padding-top:8px;"><span class="filter-label">Acciones:</span><button class="chip" onclick="pipeCompletarTodas(this)" title="El motor llena lo vacío de todas las oportunidades; nunca cambia lo que ya tiene valor" style="border-color:#02ADBA80;color:#02ADBA;">Completar datos de todas</button>'+(hayFiltrosPipeline()?'<button class="chip" onclick="quitarFiltrosPipeline()" style="border-color:#DB054080;">Quitar filtros</button>':'')+'</div>';
   return H;
@@ -2713,7 +2766,7 @@ function grGenFiltrosHTML(menu, pool, kind){
   // En Pendientes > Cerradas el universo ya viene filtrado por cierre; el semaforo no se vuelve a aplicar al contar.
   var cuenta=function(k,prueba){ return pool.filter(function(it){ return grGenPasa(menu,it,kind,[k]) && (menu!=='alertas' || grNivel1Pasa(it)) && prueba(it); }).length; };
   var chip=function(k,v,label,n,extra){ var on=String(f[k]||'')===String(v); return '<button class="chip '+(on?'active':'')+'" data-f="'+menu+'" data-k="'+k+'" data-v="'+grEsc(v)+'"'+(extra||'')+catTitulo(k,v,extra)+'>'+label+(n===null||n===undefined?'':' '+n)+'</button>'; };
-  var fila=function(titulo,info,cuerpo){ return '<div class="filters"><span class="filter-label">'+titulo+' '+grI(info)+'</span>'+cuerpo+'</div>'; };
+  var fila=function(titulo,info,cuerpo){ return '<div class="filters"><span class="filter-label" title="'+grEsc(info)+'">'+titulo+' '+grI(info)+'</span>'+cuerpo+'</div>'; };
   var H='';
   // Etapa
   var et=chip('stage','ALL','Todos',cuenta('etapa',function(){return true;}));
@@ -2971,10 +3024,8 @@ function renderPipelineMetricsPipeline(){
     });
   }
   var _ct=grCitas(), _ctC='#7C3AED';
-  var _pr={}; _ct.real.forEach(function(d){ var k=d.prod||'Sin producto'; _pr[k]=(_pr[k]||0)+1; });
-  var _abiertas={}; ((DATA&&DATA.deals)||[]).forEach(function(d){ if(d.stage!=='closedwon') _abiertas[d.id]=1; }); var _cerr=_ct.real.filter(function(d){ return !_abiertas[d.id]; }).length;
-  var _tt='Citas que el motor registró con su fecha, con los filtros y la fecha de abajo'+(_cerr?(' (incluye '+_cerr+' de oportunidades ya ganadas o perdidas, que el filtro Cita no muestra porque ya no están en Pipeline)'):'')+'. Realizadas: '+(Object.keys(_pr).map(function(k){return k+' '+_pr[k];}).join(', ')||'ninguna')+'. Agendadas: '+_ct.agen.length+'. Toca para ver la lista.';
-  h+='<div onclick="grCitasLista()" title="'+grEsc(_tt)+'" style="cursor:pointer;margin-left:auto;display:flex;flex-direction:column;align-items:center;gap:2px;background:'+_ctC+'1f;border:1px solid '+_ctC+'66;border-radius:14px;padding:10px 16px;min-width:96px;"><div style="font-size:22px;font-weight:800;color:#C4A5F0;line-height:1;">'+_ct.real.length+'</div><div style="font-size:10px;font-weight:700;color:#F3F4F6;text-align:center;line-height:1.3;">Citas realizadas</div>'+(_cerr?'<div style="font-size:10px;color:#9CA3AF;">'+_cerr+' ya cerrada'+(_cerr!==1?'s':'')+'</div>':'')+'<div style="font-size:11px;font-weight:700;color:#FFCD00;margin-top:2px;">'+_ct.agen.length+' agendadas</div></div>';
+  var _tt='Citas por el día en que se llevan a cabo, con los mismos filtros y fecha de abajo (es el mismo número que la fila Cita). Totales: '+_ct.todas.length+'. Nuevas (Discovery, primera cita con el prospecto): '+_ct.nuevas+'. De siguientes pasos (ya hubo una cita antes o ya es cliente): '+_ct.siguientes+'. Realizadas '+_ct.real.length+', agendadas '+_ct.agen.length+(_ct.pasadas.length?(', ya pasaron sin confirmar '+_ct.pasadas.length):'')+(_ct.noR.length?(', no se realizaron '+_ct.noR.length):'')+'. Toca para ver la lista.';
+  h+='<div onclick="grCitasLista()" title="'+grEsc(_tt)+'" style="cursor:pointer;margin-left:auto;display:flex;flex-direction:column;align-items:center;gap:2px;background:'+_ctC+'1f;border:1px solid '+_ctC+'66;border-radius:14px;padding:10px 16px;min-width:110px;"><div style="font-size:22px;font-weight:800;color:#C4A5F0;line-height:1;">'+_ct.todas.length+'</div><div style="font-size:10px;font-weight:700;color:#F3F4F6;text-align:center;line-height:1.3;">Citas</div><div style="font-size:11px;font-weight:700;color:#C4A5F0;margin-top:2px;">'+_ct.nuevas+' nuevas</div><div style="font-size:11px;font-weight:700;color:#02ADBA;">'+_ct.siguientes+' siguientes pasos</div></div>';
   h+='</div><div id="gr-citas-lista" style="display:none;margin-top:10px;padding:12px 14px;border:1px solid #2A3142;border-radius:12px;background:#0d111a;max-height:320px;overflow:auto;"></div>';
   box.innerHTML=h;
 }
@@ -6697,6 +6748,11 @@ if (document.readyState === 'loading') {
               <label class="md-lbl" style="margin-top:6px;">Campaña o señal</label><div id="grmd-campana" class="md-val">—</div>
               <label class="md-lbl" style="margin-top:6px;">Quién la envió</label><div id="grmd-remitente" class="md-val">—</div>
               <label class="md-lbl" style="margin-top:6px;">Fecha de la señal</label><div id="grmd-fecha-senal" class="md-val">—</div>
+              <div class="md-2" style="margin-top:6px;">
+                <div><label class="md-lbl" title="Día en que se creó la oportunidad en HubSpot">Oportunidad creada</label><div id="grmd-f-creada" class="md-val">—</div></div>
+                <div><label class="md-lbl" title="Día en que se mandó la invitación de la cita">Cita agendada el</label><div id="grmd-f-agendada" class="md-val">—</div></div>
+                <div><label class="md-lbl" title="Día y hora en que se lleva a cabo la cita (la más reciente)">Cita se lleva a cabo</label><div id="grmd-f-cita" class="md-val">—</div></div>
+              </div>
               <div id="grmd-origen-detalle" class="md-nota"></div>
             </div>
           </div>
