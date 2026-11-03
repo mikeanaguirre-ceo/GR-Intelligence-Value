@@ -135,6 +135,13 @@
   .filtros button.on{background:#fff;color:var(--marca);border-color:#fff}
   .filtros button.cero{opacity:.45}
   .fpanel.cerrado .cf-fila{display:none}
+  /* Pestana Correo (3 nov 2026): Open+3 por correo y todo lo enviado por canal. */
+  #co .tabla{display:block;overflow-x:auto} #co td{font-size:12.5px}
+  .ic{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--tenue);color:var(--tenue);font:700 9.5px Arial;margin-left:4px;cursor:help;vertical-align:1px}
+  .co-res{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 14px} .co-res div{background:#fff;border:1px solid var(--borde);border-radius:10px;padding:9px 14px;min-width:190px;display:flex;flex-direction:column;gap:2px}
+  .co-res b{font:900 22px var(--disp)} .co-res span{font-size:12px;color:var(--tenue)} .co-res .t{font-weight:700;font-size:12.5px;color:var(--texto)}
+  .co-f{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:4px 0} .co-f .lbl{font-size:12px;color:var(--tenue);min-width:70px}
+  .co-c{white-space:nowrap;font-size:12px} .co-si{color:var(--ok);font-weight:700} .co-no{color:var(--tenue)} .co-mal{color:var(--mal);font-weight:700}
   /* Globo de explicacion para todo lo que trae data-tip. */
   #tip{position:fixed;z-index:30;max-width:280px;background:#14201c;color:#fff;font-size:12px;line-height:1.4;padding:6px 9px;border-radius:7px;pointer-events:none;opacity:0;transition:opacity .12s}
   #tip.ver{opacity:1}
@@ -263,10 +270,11 @@
 </style>
 </head>
 <body>
-<nav class="tabs" id="tabs"><span class="logo"><img src="https://intelligence.greatrevenue.com/logos/gr.png" alt="Great Revenue"><b>WhatsApp</b></span><button data-t="conv" class="on">Conversaciones</button><button data-t="opor" id="t-opor">Oportunidades</button><button data-t="li" id="t-li">LinkedIn</button><button data-t="conf" id="t-conf">Configuración</button></nav>
+<nav class="tabs" id="tabs"><span class="logo"><img src="https://intelligence.greatrevenue.com/logos/gr.png" alt="Great Revenue"><b>WhatsApp</b></span><button data-t="conv" class="on">Conversaciones</button><button data-t="opor" id="t-opor">Oportunidades</button><button data-t="li" id="t-li">LinkedIn</button><button data-t="co" id="t-co">Correo</button><button data-t="conf" id="t-conf">Configuración</button></nav>
 <section class="conf" id="conf" hidden></section>
 <section class="conf" id="opor" hidden></section>
 <section class="conf" id="li" hidden style="padding:0;overflow:hidden"></section>
+<section class="conf" id="co" hidden></section>
 <div class="app" id="app">
   <aside class="lista">
     <div class="cab">
@@ -1564,11 +1572,80 @@
     }
     return tarjeta(4, 'Aprendizaje continuo', cab + res + acc + cuerpo, '<span><button class="btn sec" id="aprBuscar">' + (d.buscando ? 'Buscando…' : 'Buscar lo nuevo en la agenda') + '</button> <button class="btn sec" id="aprRecargar">↻</button></span>');
   }
+  // Correo (3 nov 2026, Mike): quien va por correo porque no tiene celular o WhatsApp (secuencias «_Open+3 sin WhatsApp_» de
+  // Amplemarket) y, arriba, todo lo enviado por canal. Los datos los arma /webhook/gr-portal-correo (solo lectura). Se
+  // cargan al abrir la pestana y con el boton Actualizar; no se refresca sola.
+  var co = null, coCargando = false, coF = { q: '', firma: '', producto: '', estado: '' };
+  var ic = function(t){ return '<span class="ic" data-tip="' + esc(t) + '">i</span>'; };
+  var coFecha = function(s){ if (!s) return ''; var d = new Date(s); return isNaN(d) ? '' : d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }); };
+  function cargarCo(){
+    coCargando = true; pintarCo();
+    return fetch(BASE + 'gr-portal-correo', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ k: K }) })
+      .then(function(r){ if (!r.ok) throw new Error('El servidor no contestó (' + r.status + ')'); return r.json(); })
+      .then(function(j){ co = j; })
+      .catch(function(e){ co = { error: e.message, personas: [], pendientes: [] }; })
+      .then(function(){ coCargando = false; pintarCo(); });
+  }
+  var CO_ESTADOS = [['abrio', 'Abrió', 'Abrió al menos uno de los correos enviados'], ['sin_abrir', 'Sin abrir', 'Ya se le mandó al menos un correo y no lo ha abierto'],
+    ['contesto', 'Contestó', 'Contestó algún correo: la secuencia se detiene sola y hay que atenderlo'], ['reboto', 'Rebotó', 'Algún correo rebotó: la dirección no existe o el servidor lo rechazó'],
+    ['espera', 'Sin enviar', 'Inscrita, su primer correo todavía está programado']];
+  var coPasa = function(p, k){ return k === 'abrio' ? p.abrio : k === 'sin_abrir' ? p.enviados > 0 && !p.abrio : k === 'contesto' ? p.contesto : k === 'reboto' ? p.reboto : k === 'espera' ? p.enviados === 0 : true; };
+  function pintarCo(){
+    var el = $('co');
+    var cab = '<div class="barra-apr"><b>Correo · Open+3 sin WhatsApp</b> <button class="btn sec" id="coAct" data-tip="Vuelve a leer Amplemarket y las tablas. La página no se actualiza sola">' + (coCargando ? 'Leyendo…' : '↻ Actualizar') + '</button>' +
+      (co && co.generado ? '<span class="tenue">Leído ' + esc(coFecha(co.generado)) + '</span>' : '') + '</div>';
+    if (!co) { el.innerHTML = cab + '<p class="tenue">' + (coCargando ? 'Leyendo Amplemarket…' : '') + '</p>'; return; }
+    if (co.error && !(co.personas || []).length) { el.innerHTML = cab + '<p class="error">' + esc(co.error) + '</p>'; return; }
+    var r = co.resumen || {}, wa = r.whatsapp || {}, li = r.linkedin || {}, cr = r.correo || {};
+    var res = '<div class="apr-h3">Todo lo enviado ' + ic('Lo que ya salió por cada canal, contado desde que existe cada flujo. No incluye lo que solo está programado') + '</div><div class="co-res">' +
+      '<div data-tip="Toques de WhatsApp de Open+3 que salieron (tabla gr_o3_toques). Si Meta no entregó un toque, no cuenta"><span class="t">WhatsApp</span><b>' + (wa.toques || 0) + '</b><span>toques a ' + (wa.personas || 0) + ' personas · T1 ' + ((wa.por_toque || [])[0] || 0) + ' · T2 ' + ((wa.por_toque || [])[1] || 0) + ' · T3 ' + ((wa.por_toque || [])[2] || 0) + '</span></div>' +
+      '<div data-tip="Respuestas de LinkedIn aprobadas y enviadas desde la pestaña LinkedIn (tabla gr_li_respuestas)"><span class="t">LinkedIn</span><b>' + (li.mensajes || 0) + '</b><span>mensajes a ' + (li.personas || 0) + ' personas' + (li.automaticos ? ' · ' + li.automaticos + ' automáticos' : '') + '</span></div>' +
+      '<div data-tip="Correos de las secuencias Open+3 sin WhatsApp que ya salieron, según Amplemarket"><span class="t">Correo</span><b>' + (cr.enviados || 0) + '</b><span>correos a ' + (cr.personas || 0) + ' personas · abrieron ' + (cr.abrieron || 0) + ' · contestaron ' + (cr.contestaron || 0) + ' · rebotaron ' + (cr.rebotaron || 0) + '</span></div></div>' +
+      (co.error ? '<p class="error">Amplemarket no contestó completo: ' + esc(co.error) + '</p>' : '') + (co.cortado ? '<p class="tenue">Se muestran los primeros 200 correos.</p>' : '');
+    var ps = co.personas || [];
+    var uniq = function(k){ var v = {}; ps.forEach(function(p){ if (p[k]) v[p[k]] = 1; }); return Object.keys(v).sort(); };
+    var filtra = function(p, salvo){
+      var q = coF.q.trim().toLowerCase();
+      return (salvo === 'q' || !q || (p.nombre + ' ' + p.empresa + ' ' + p.correo).toLowerCase().indexOf(q) >= 0) && (salvo === 'firma' || !coF.firma || p.firma === coF.firma) &&
+        (salvo === 'producto' || !coF.producto || p.producto === coF.producto) && (salvo === 'estado' || !coF.estado || coPasa(p, coF.estado));
+    };
+    var chipsCo = function(k, ops){ return ops.map(function(o){ var n = ps.filter(function(p){ return filtra(p, k) && (o[0] === '' || (k === 'estado' ? coPasa(p, o[0]) : p[k] === o[0])); }).length;
+      return '<button class="chip' + (coF[k] === o[0] ? ' on' : '') + (n ? '' : ' cero') + '" data-cok="' + k + '" data-cov="' + esc(o[0]) + '"' + (o[2] ? ' data-tip="' + esc(o[2]) + '"' : '') + '>' + esc(o[1]) + ' (' + n + ')</button>'; }).join(''); };
+    var fil = '<div class="co-f"><span class="lbl">Buscar ' + ic('Busca por nombre, empresa o correo') + '</span><input id="coQ" value="' + esc(coF.q) + '" placeholder="Nombre, empresa o correo" style="font:inherit;font-size:12.5px;padding:5px 8px;border:1px solid var(--borde);border-radius:8px"></div>' +
+      '<div class="co-f"><span class="lbl">Firma ' + ic('Quién firma los correos: sale de su buzón en Amplemarket (la misma persona que firmó la campaña original)') + '</span>' + chipsCo('firma', [['', 'Todas']].concat(uniq('firma').map(function(x){ return [x, x]; }))) + '</div>' +
+      '<div class="co-f"><span class="lbl">Producto ' + ic('Producto de la secuencia en la que está inscrita') + '</span>' + chipsCo('producto', [['', 'Todos']].concat(uniq('producto').map(function(x){ return [x, x]; }))) + '</div>' +
+      '<div class="co-f"><span class="lbl">Estado ' + ic('Qué ha pasado con sus correos') + '</span>' + chipsCo('estado', [['', 'Todos']].concat(CO_ESTADOS)) + '</div>';
+    var vis = ps.filter(function(p){ return filtra(p); });
+    var si = function(v, t){ return v ? '<span class="co-si" data-tip="' + esc(t) + '">Sí</span>' : '<span class="co-no">No</span>'; };
+    var filas = vis.map(function(p){
+      var cs = p.correos.filter(function(c){ return c.enviado || c.estado === 'failed'; }).map(function(c){
+        return '<div class="co-c">Paso ' + c.paso + ' · ' + esc(coFecha(c.fecha)) + (c.reboto ? ' <span class="co-mal">rebotó</span>' : c.estado === 'failed' ? ' <span class="co-mal">falló</span>' : '') + (c.abrio ? ' · abrió ' + c.abrio : '') + (c.contesto ? ' · <span class="co-si">contestó</span>' : '') + '</div>'; }).join('');
+      return '<tr><td><b>' + esc(p.nombre) + '</b><div class="tenue">' + esc(p.empresa || p.correo) + '</div></td><td>' + esc(p.producto) + (p.area ? '<div class="tenue">' + esc(p.area) + '</div>' : '') + '</td>' +
+        '<td>' + esc(p.firma || '') + '<div class="tenue">' + esc(p.buzon) + '</div></td>' +
+        '<td>' + (p.paso_actual ? 'Paso ' + p.paso_actual : 'Por empezar') + (p.siguiente ? '<div class="tenue">Sigue paso ' + p.siguiente.paso + ' · ' + esc(coFecha(p.siguiente.fecha)) + '</div>' : '') + '</td>' +
+        '<td>' + (cs || '<span class="tenue">Aún no sale</span>') + '</td><td>' + si(p.abrio, p.aperturas + ' aperturas') + '</td><td>' + si(p.contesto, 'Contestó: revisa su respuesta en el buzón de quien firma') + '</td><td>' + (p.reboto ? '<span class="co-mal">Sí</span>' : '<span class="co-no">No</span>') + '</td></tr>';
+    }).join('');
+    var th = function(t, a){ return '<th>' + t + ic(a) + '</th>'; };
+    var tabla = '<table class="tabla"><thead><tr>' + th('Persona', 'Nombre y empresa del prospecto (de la tabla del Open+3; si no está ahí, el correo)') + th('Producto', 'Producto y área de la secuencia. Talkwalker elige el área por el puesto: Marketing, Comunicación o CX') +
+      th('Firma', 'Quién firma y desde qué buzón salen los correos') + th('Paso actual', 'Último paso que ya salió y el siguiente programado. El paso 3 es la invitación de LinkedIn, que no es correo') +
+      th('Correos enviados', 'Fecha y hora de cada correo que salió, con aperturas y si contestó o rebotó') + th('Abrió', 'Abrió al menos un correo') + th('Contestó', 'Contestó algún correo; Amplemarket detiene la secuencia') + th('Rebotó', 'Algún correo no llegó: la dirección no existe o la rechazaron') +
+      '</tr></thead><tbody>' + (filas || '<tr><td colspan="8" class="tenue">' + (ps.length ? 'Nadie con estos filtros.' : 'Todavía no hay nadie inscrito.') + '</td></tr>') + '</tbody></table>';
+    var pend = (co.pendientes || []).map(function(x){ return '<tr><td><b>' + esc(x.nombre) + '</b><div class="tenue">' + esc(x.empresa) + '</div></td><td>' + esc(x.producto) + '</td><td>' + esc(x.firma) + '</td><td>' + esc(x.detalle) + '</td></tr>'; }).join('');
+    var pendT = pend ? '<div class="apr-h3">Van por correo pero no han entrado ' + ic('Oportunidades sin celular o sin WhatsApp que la regla intentó inscribir y no entraron. Se reintenta sola en la corrida de las 9:05 (L-V) sin forzar nada') + '</div>' +
+      '<table class="tabla"><thead><tr><th>Persona</th><th>Producto</th><th>Firma</th><th>Por qué</th></tr></thead><tbody>' + pend + '</tbody></table>' : '';
+    el.innerHTML = cab + res + '<div class="apr-h3">Inscritas en las secuencias de correo ' + ic('Personas en las secuencias Open+3 sin WhatsApp de Amplemarket') + ' · ' + vis.length + ' de ' + ps.length + '</div>' + fil + tabla + pendT;
+  }
+  $('co').addEventListener('click', function(e){
+    if (e.target.closest('#coAct')) { if (!coCargando) cargarCo(); return; }
+    var b = e.target.closest('[data-cok]'); if (b) { var k = b.getAttribute('data-cok'), v = b.getAttribute('data-cov'); coF[k] = coF[k] === v ? '' : v; pintarCo(); }
+  });
+  $('co').addEventListener('input', function(e){ if (e.target.id === 'coQ') { coF.q = e.target.value; var pos = e.target.selectionStart; pintarCo(); var q = $('coQ'); q.focus(); q.setSelectionRange(pos, pos); } });
   $('tabs').onclick = function(e){
     var b = e.target.closest('button'); if (!b) return;
     var t = b.getAttribute('data-t');
     document.querySelectorAll('#tabs button').forEach(function(x){ x.classList.toggle('on', x === b); });
-    $('conf').hidden = t !== 'conf'; $('opor').hidden = t !== 'opor'; $('app').hidden = t !== 'conv'; $('li').hidden = t !== 'li';
+    $('conf').hidden = t !== 'conf'; $('opor').hidden = t !== 'opor'; $('app').hidden = t !== 'conv'; $('li').hidden = t !== 'li'; $('co').hidden = t !== 'co';
+    if (t === 'co' && !co && !coCargando) cargarCo(); else if (t === 'co') pintarCo();
     if (t === 'conf') { pintarConf(); cargarConf(); }
     if (t === 'opor') { pintarOpor(); cargarOpor(); }
     // LinkedIn (3 nov 2026, decision de Mike: va aqui y no en el tablero): respuestas de LinkedIn con aprobacion.
@@ -1576,6 +1653,7 @@
     if (t === 'li' && !$('li').firstChild) $('li').innerHTML = '<iframe src="https://intelligence.greatrevenue.com/linkedin.html" title="Respuestas de LinkedIn" style="width:100%;height:100%;border:0;background:#f6f6f4"></iframe>';
   };
   if (/[?&]tab=linkedin\b/.test(location.search)) document.querySelector('#tabs [data-t="li"]').click();
+  if (/[?&]tab=correo\b/.test(location.search)) document.querySelector('#tabs [data-t="co"]').click();
 
   $('actualizar').onclick = actualizar;
   $('nuevo').onclick = function(){ abrirPlantilla(null); };
