@@ -720,6 +720,7 @@ body {
     <button class="tab" data-tab="forecast">Forecast</button>
     <button class="tab" data-tab="metricas">Métricas</button>
     <button class="tab" data-tab="conocimiento">Conocimiento</button>
+    <button class="tab" data-tab="linkedin">LinkedIn</button>
     <button class="tab" data-tab="chat">💬 Chat</button>
   </nav>
 
@@ -737,6 +738,7 @@ body {
     <section class="panel" id="p-forecast"></section>
     <section class="panel" id="p-metricas"></section>
     <section class="panel" id="p-conocimiento"></section>
+    <section class="panel" id="p-linkedin"></section>
     <section class="panel" id="p-chat"></section>
   </main>
 
@@ -1839,6 +1841,13 @@ function renderCurrentTab() {
   // principal no deje la pestana en blanco.
   // Conocimiento (25 oct 2026): pagina de equipo de las bases GR_KB por linea. Vive en /conocimiento.html y se carga
   // aqui en un marco la primera vez que se abre la pestana; no depende de los datos del tablero.
+  // LinkedIn (3 nov 2026): respuestas de LinkedIn con aprobacion. Vive en /linkedin.html y se carga en un marco la primera
+  // vez que se abre la pestana; no depende de los datos del tablero ni se refresca sola.
+  if (currentTab === 'linkedin') {
+    var pl = document.getElementById('p-linkedin');
+    if (pl && !pl.firstChild) pl.innerHTML = '<iframe src="/linkedin.html" title="Respuestas de LinkedIn" style="width:100%;height:calc(100vh - 150px);min-height:600px;border:0;border-radius:12px;background:#f6f6f4"></iframe>';
+    return;
+  }
   if (currentTab === 'conocimiento') {
     var pc = document.getElementById('p-conocimiento');
     if (pc && !pc.firstChild) pc.innerHTML = '<iframe src="/conocimiento.html" title="Conocimiento" style="width:100%;height:calc(100vh - 150px);min-height:600px;border:0;border-radius:12px;background:#f6f6f4"></iframe>';
@@ -6558,6 +6567,8 @@ function init() {
   loadData();
   // Liga directa a la pestana de conocimiento (?tab=conocimiento).
   if (/[?&]tab=conocimiento\b/.test(location.search)) switchTab('conocimiento');
+  // Liga directa a respuestas de LinkedIn (?tab=linkedin), la que llega en el aviso por correo.
+  if (/[?&]tab=linkedin\b/.test(location.search)) switchTab('linkedin');
   // 25oct2026 (Mike): la pestana Reuniones se quito; sus reuniones viven en la ficha (Pipeline) y en Pendientes.
   if (/[?&]tab=reuniones\b/.test(location.search)) switchTab('pendientes');
   // Auto-refresh DESACTIVADO — solo manual via botón "Actualizar" para conservar ejecuciones de n8n

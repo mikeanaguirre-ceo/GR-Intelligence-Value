@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Respuestas LinkedIn Great Revenue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/portal_comun.css">
+<style>
+  /* Respuestas de LinkedIn con aprobacion (3 nov 2026): pestana del tablero (?tab=linkedin). Sin clave, sin refresco
+     automatico (solo el boton Actualizar). Datos: GR — LinkedIn Respuestas (webhooks gr-li-lista, -decidir, -categoria). */
+  body{font-size:14.5px}
+  main{max-width:1180px;padding:16px}
+  .en-tablero .top{display:none}
+  .barra{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .barra h1{font-family:var(--disp);font-size:18px;margin:0}
+  .filtros{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:14px;display:grid;gap:6px}
+  .fila-f{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .lbl{font:700 11px var(--disp);color:var(--g);text-transform:uppercase;letter-spacing:.06em;min-width:92px;display:inline-flex;align-items:center;gap:6px}
+  .op{border:1px solid var(--line);background:#fff;border-radius:16px;padding:4px 12px;font:inherit;font-size:13px;cursor:pointer;color:var(--osc)}
+  .op.on{background:var(--prim);border-color:var(--prim);color:#fff}
+  .op .n{font-size:11px;opacity:.8;margin-left:4px}
+  select.cat{padding:5px 8px;font-size:13px}
+  .card{gap:10px}
+  .card.op1{border-left:4px solid var(--prim)}
+  .cab{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start}
+  .cab h3{font-size:15px}
+  .sub{color:var(--g);font-size:13px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .etq{display:inline-block;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:700;background:var(--bg);color:var(--g);border:1px solid var(--line)}
+  .etq.opo{background:#f1eafe;color:#5b21b6;border-color:#d9c8fb}
+  .etq.ok{background:#e6f4ea;color:#1e6b34;border-color:#bfe0c8}
+  .etq.mal{background:#fde4df;color:#8c1d16;border-color:#f5c2b9}
+  .etq.pend{background:#fff4e5;color:#7a4a00;border-color:#f3d39b}
+  .bloque span.t{display:block;font:700 10.5px var(--disp);color:var(--g);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+  .contesto{background:#f8f8f6;border-left:3px solid var(--osc);border-radius:6px;padding:8px 10px;white-space:pre-wrap;font-size:14px}
+  details#panelCats summary{list-style:none;margin:0}
+  details#panelCats[open] summary{margin-bottom:10px}
+  details.hist summary{cursor:pointer;color:var(--prim);font-size:13px}
+  .hist pre{white-space:pre-wrap;font:12.5px/1.45 var(--body);background:#fafaf8;border:1px solid var(--line);border-radius:8px;padding:8px;max-height:320px;overflow:auto;margin:6px 0 0}
+  textarea.borr{width:100%;min-height:130px;font-size:14px;line-height:1.45}
+  .acc{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .acc .desde{font-size:12.5px;color:var(--g);margin-left:auto}
+  button.p{background:var(--prim)} button.p:hover{filter:brightness(1.08)}
+  button.d{background:#fff;color:var(--bad);border:1px solid #f0c6c0;border-radius:8px;padding:8px 14px;font:inherit;cursor:pointer}
+  .aviso-motivo{font-size:12.5px;color:var(--g)}
+  .rev{font-size:12.5px;color:#7a4a00}
+  .enviado{background:#e6f4ea;border-radius:8px;padding:8px 10px;white-space:pre-wrap;font-size:13.5px}
+  table.cats{width:100%;border-collapse:collapse;font-size:13px}
+  table.cats th{text-align:left;font:700 10.5px var(--disp);color:var(--g);text-transform:uppercase;letter-spacing:.06em;padding:6px 8px;border-bottom:1px solid var(--line)}
+  table.cats td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+  .tabla{overflow-x:auto}
+  .vacio{color:var(--g);padding:14px 0}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--osc);color:#fff;padding:9px 16px;border-radius:9px;font-size:13px;z-index:30;max-width:90vw}
+  .fondo{position:fixed;inset:0;background:rgba(17,24,39,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
+  .modal{background:#fff;border-radius:12px;padding:18px 20px;max-width:560px;width:100%;display:grid;gap:12px}
+  .modal pre{white-space:pre-wrap;font:13.5px/1.45 var(--body);background:#f8f8f6;border-radius:8px;padding:10px;margin:0;max-height:40vh;overflow:auto}
+  @media(max-width:620px){ .lbl{min-width:0;width:100%} .acc .desde{margin-left:0;width:100%} }
+</style>
+</head>
+<body>
+<header class="top"><div class="marca"><b>Great Revenue · Respuestas de LinkedIn</b></div><span class="quien">Se aprueba aquí y sale desde el perfil de cada quien</span></header>
+<main>
+  <div class="barra">
+    <h1>Respuestas de LinkedIn <span class="ayuda" tabindex="0" data-ayuda="Cuando un prospecto contesta en LinkedIn, el bot lee todo el hilo y su perfil, la clasifica y deja un borrador. Nada sale sin que alguien lo apruebe, salvo las categorías que Mike libere.">i</span></h1>
+    <div class="acc"><span id="hora" class="sub"></span><button class="s" id="act">Actualizar</button> <span class="ayuda" tabindex="0" data-ayuda="La página no se actualiza sola: usa este botón para traer lo nuevo.">i</span></div>
+  </div>
+  <section class="filtros" id="filtros"></section>
+  <details class="card" id="panelCats"></details>
+  <section id="lista"><p class="vacio">Cargando…</p></section>
+</main>
+<script>
+(function(){
+  var BASE = 'https://mikea.app.n8n.cloud/webhook/';
+  var K = new URLSearchParams(location.search).get('k') || '';   // sin clave; si una liga trae ?k= se manda igual
+  if (window.self !== window.top) document.documentElement.classList.add('en-tablero');
+  var PERSONAS = ['Todos', 'Mike', 'Migue', 'Daniel', 'Martha', 'Fer'];
+  var ESTADOS = [['por_aprobar', 'Por aprobar', 'Borradores que esperan que alguien los apruebe, los edite o los marque como No contestar.'],
+    ['enviadas', 'Enviadas', 'Ya salieron (o están saliendo) desde el perfil de LinkedIn del dueño.'],
+    ['descartadas', 'Descartadas', 'Marcadas como No contestar, o reemplazadas porque la persona volvió a escribir.'],
+    ['error', 'Error', 'Amplemarket no pudo enviarlas. Se pueden volver a aprobar.']];
+  var datos = null, fPer = leer('gr_li_per') || 'Todos', fEst = 'por_aprobar', fCat = 'todas';
+  var $ = function(id){ return document.getElementById(id); };
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function ay(t){ return '<span class="ayuda" tabindex="0" data-ayuda="' + esc(t) + '">i</span>'; }
+  function leer(k, v){ try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v); } catch (e) { return ''; } }
+  function toast(t){ var d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(function(){ d.remove(); }, 3800); }
+  function fecha(iso){ return iso ? new Date(iso).toLocaleString('es-MX', { timeZone: 'America/Mexico_City', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''; }
+  // Quien aprueba: la persona elegida en el filtro; con "Todos", Mike.
+  function actor(){ return fPer !== 'Todos' ? fPer : 'Mike'; }
+  function post(ruta, cuerpo){
+    return fetch(BASE + ruta, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign(K ? { k: K } : {}, cuerpo || {})) })
+      .then(function(r){ return r.text().then(function(t){
+        var j = null; try { j = JSON.parse(t); } catch (e) {}
+        if (!r.ok || !j) throw new Error((j && (j.error || j.message)) || ('Error ' + r.status));
+        return j;
+      }); });
+  }
+  function cargar(){
+    $('act').disabled = true;
+    post('gr-li-lista', {}).then(function(j){ datos = j; $('hora').textContent = 'Actualizado ' + fecha(j.ahora); pintar(); })
+      .catch(function(e){ $('lista').innerHTML = '<p class="msg bad">No se pudo cargar: ' + esc(e.message) + '</p>'; })
+      .then(function(){ $('act').disabled = false; });
+  }
+  function nombreCat(c){ var x = (datos.categorias || []).filter(function(k){ return k.clave === c; })[0]; return x ? x.nombre : c; }
+  function GRUPO(f){ return f.grupo || ({ pendiente: 'por_aprobar', enviando: 'enviadas', enviado: 'enviadas', enviado_auto: 'enviadas', descartado: 'descartadas', reemplazado: 'descartadas', error: 'error' })[f.estado] || 'otro'; }
+  function filasPersona(){ return (datos.filas || []).filter(function(f){ return fPer === 'Todos' || f.dueno === fPer; }); }
+  function pintarFiltros(){
+    var base = filasPersona(), pend = (datos.filas || []).filter(function(f){ return f.estado === 'pendiente'; });
+    var h = '<div class="fila-f"><span class="lbl">Persona ' + ay('Muestra las respuestas de los prospectos de esa persona. Quien elijas aquí es quien aprueba (con Todos, Mike).') + '</span>';
+    PERSONAS.forEach(function(p){ var n = p === 'Todos' ? pend.length : pend.filter(function(f){ return f.dueno === p; }).length;
+      h += '<button class="op' + (fPer === p ? ' on' : '') + '" data-per="' + p + '">' + p + (n ? '<span class="n">' + n + '</span>' : '') + '</button>'; });
+    h += '</div><div class="fila-f"><span class="lbl">Estado ' + ay('En qué va cada respuesta.') + '</span>';
+    ESTADOS.forEach(function(e){ var n = base.filter(function(f){ return GRUPO(f) === e[0]; }).length;
+      h += '<button class="op' + (fEst === e[0] ? ' on' : '') + '" data-est="' + e[0] + '" title="' + esc(e[2]) + '">' + e[1] + '<span class="n">' + n + '</span></button>'; });
+    h += '</div><div class="fila-f"><span class="lbl">Categoría ' + ay('Cómo clasificó el bot lo que contestó la persona. Las de oportunidad (pide información, interesado, intercambio, referido) salen arriba y avisan por correo.') + '</span><select class="cat" id="fCat"><option value="todas">Todas</option>';
+    (datos.categorias || []).forEach(function(c){ var n = base.filter(function(f){ return GRUPO(f) === fEst && f.categoria === c.clave; }).length;
+      h += '<option value="' + c.clave + '"' + (fCat === c.clave ? ' selected' : '') + '>' + esc(c.nombre) + ' (' + n + ')</option>'; });
+    h += '</select><span class="sub">Aprueba: <b>' + esc(actor()) + '</b></span></div>';
+    $('filtros').innerHTML = h;
+  }
+  function pintarCats(){
+    var abierto = $('panelCats').open;
+    var lis = (datos.categorias || []).filter(function(c){ return c.liberable && c.madurez && c.madurez.lista && c.modo !== 'auto'; }).length;
+    var h = '<summary class="card-h" style="cursor:pointer"><h2>Categorías y envío automático ' + ay('Todo empieza con aprobación. Solo No gracias, Ya tiene y Ya no trabaja ahí se pueden liberar a envío automático, y solo cuando llevan 7 días desde su primera aprobación, 10 aprobadas sin editar y ninguna editada en los últimos 7 días. Las de reunión, Neutro y No es la persona siempre se aprueban; No contestar nunca se envía.') + '</h2><span class="sub">' + (lis ? '<b>' + lis + ' lista(s) para liberar</b> · ' : '') + 'Modelo: ' + esc(datos.modelo) + ' · clic para ver</span></summary>';
+    h += '<div class="tabla"><table class="cats"><thead><tr><th>Categoría</th><th>Por aprobar ' + ay('Borradores de esa categoría que esperan aprobación.') + '</th><th>Enviadas</th><th>Modo ' + ay('Aprobación: alguien la revisa antes de salir. Automático: sale sola en cuanto llega.') + '</th><th>Avance para liberar ' + ay('Días desde la primera aprobación / aprobadas sin editar / editadas en los últimos 7 días.') + '</th><th></th></tr></thead><tbody>';
+    (datos.categorias || []).forEach(function(c){
+      var m = c.madurez, av = '—', btn = '';
+      if (c.liberable && m) {
+        av = m.dias_desde_primera + ' de 7 días · ' + m.sin_editar + ' de 10 sin editar · ' + m.editadas_7d + ' editadas';
+        if (c.modo === 'auto') btn = '<button class="s" data-modo="aprobacion" data-cat="' + c.clave + '" title="Vuelve a pedir aprobación antes de enviar">Regresar a aprobación</button>';
+        else if (m.lista) btn = '<button class="p" data-modo="auto" data-cat="' + c.clave + '" title="Desde ahora esta categoría se envía sola, sin pasar por aprobación">Liberar</button>';
+        else btn = '<span class="sub">Aún no está lista</span>';
+      } else if (c.clave === 'no_contestar') av = 'Nunca se envía';
+      else av = 'Siempre con aprobación';
+      h += '<tr><td>' + esc(c.nombre) + (c.oportunidad ? ' <span class="etq opo">oportunidad</span>' : '') + '</td><td>' + (c.pendientes || 0) + '</td><td>' + (c.enviadas || 0) + '</td><td>' +
+        (c.modo === 'auto' ? '<span class="etq ok">Automático</span>' : '<span class="etq">Aprobación</span>') + '</td><td class="sub">' + av + '</td><td>' + btn + '</td></tr>';
+    });
+    h += '</tbody></table></div>';
+    $('panelCats').innerHTML = h;
+    $('panelCats').open = abierto;
+  }
+  function tarjeta(f){
+    var quien = [f.puesto, f.empresa, f.pais].filter(Boolean).map(esc).join(' · ');
+    var est = f.estado === 'pendiente' ? '<span class="etq pend">Por aprobar</span>' : f.estado === 'error' ? '<span class="etq mal">Error</span>' :
+      /enviad/.test(f.estado) ? '<span class="etq ok">' + (f.estado === 'enviado_auto' ? 'Enviada sola' : f.estado === 'enviando' ? 'Enviando' : 'Enviada') + '</span>' : '<span class="etq">' + (f.estado === 'reemplazado' ? 'Reemplazada' : 'No contestar') + '</span>';
+    var h = '<article class="card' + (f.oportunidad ? ' op1' : '') + '" data-id="' + esc(f.evento_id) + '">';
+    h += '<div class="cab"><div><h3>' + (f.linkedin_url ? '<a href="' + esc(f.linkedin_url) + '" target="_blank" rel="noopener">' + esc(f.prospecto || 'Sin nombre') + '</a>' : esc(f.prospecto || 'Sin nombre')) + '</h3><div class="sub">' + (quien || 'Sin puesto ni empresa en Amplemarket') + '</div></div>' +
+      '<div class="chips">' + est + (f.oportunidad ? '<span class="etq opo">Oportunidad</span>' : '') + '<span class="etq" title="Categoría que puso el bot">' + esc(nombreCat(f.categoria)) + '</span><span class="etq" title="Cuándo contestó">' + esc(fecha(f.recibido_ts)) + '</span></div></div>';
+    h += '<div class="chips">' + (f.producto ? '<span class="etq" title="Producto (sale del nombre de la secuencia o de lo que se le escribió)">' + esc(f.producto) + '</span>' : '') +
+      (f.senal ? '<span class="etq" title="Señal de la secuencia">' + esc(f.senal) + '</span>' : '') + '<span class="etq" title="Secuencia de Amplemarket">' + esc(f.secuencia || 'Sin secuencia') + '</span></div>';
+    h += '<div class="bloque"><span class="t">Lo que contestó ' + ay('Texto tal cual lo escribió la persona en LinkedIn.') + '</span><div class="contesto">' + esc(f.contesto) + '</div></div>';
+    h += '<details class="hist" data-id="' + esc(f.evento_id) + '"><summary>Ver todo el hilo</summary><pre>Cargando…</pre></details>';
+    if (f.gancho) h += '<div class="bloque"><span class="t">Gancho ' + ay('Qué de su perfil o de la señal usó el bot para personalizar.') + '</span><div class="sub">' + esc(f.gancho) + '</div></div>';
+    if (f.motivo) h += '<div class="aviso-motivo' + (/\[Revisar/.test(f.motivo) ? ' rev' : '') + '">' + esc(f.motivo) + '</div>';
+    if (f.estado === 'pendiente' || f.estado === 'error') {
+      if (f.error) h += '<p class="msg bad">' + esc(f.error) + '</p>';
+      var opts = (datos.categorias || []).map(function(c){ return '<option value="' + c.clave + '"' + (c.clave === f.categoria ? ' selected' : '') + '>' + esc(c.nombre) + '</option>'; }).join('');
+      h += '<div class="bloque"><span class="t">Borrador ' + ay('Puedes editarlo. Si lo cambias, usa Guardar cambios y aprobar.') + '</span><textarea class="borr">' + esc(f.texto_final || f.borrador) + '</textarea></div>';
+      h += '<div class="acc"><label class="sub" style="display:flex;gap:6px;align-items:center">Categoría <select class="cat selcat">' + opts + '</select> ' + ay('Si el bot se equivocó, cámbiala antes de aprobar; sirve para medir cada categoría.') + '</label></div>';
+      h += '<div class="acc"><button class="p" data-acc="aprobar" title="Envía el borrador tal cual">Aprobar</button><button class="s" data-acc="editar" title="Envía el texto como quedó en el cuadro">Guardar cambios y aprobar</button>' +
+        '<button class="d" data-acc="descartar" title="No se le contesta nada">No contestar</button><span class="desde">Sale desde el perfil de LinkedIn de <b>' + esc(f.dueno) + '</b> ' + ay('Se envía con la secuencia de respuestas de Amplemarket de esa persona.') + '</span></div>';
+    } else if (/enviad/.test(f.estado)) {
+      h += '<div class="bloque"><span class="t">Lo que se envió' + (f.editado ? ' (editado)' : '') + '</span><div class="enviado">' + esc(f.texto_final || f.borrador) + '</div></div>';
+      h += '<div class="sub">Desde el perfil de ' + esc(f.dueno) + (f.revisado_por ? ' · aprobó ' + esc(f.revisado_por) : '') + (f.enviado_ts ? ' · ' + esc(fecha(f.enviado_ts)) : '') + '</div>';
+    } else {
+      if (f.borrador) h += '<div class="bloque"><span class="t">Borrador que no se envió</span><div class="sub" style="white-space:pre-wrap">' + esc(f.borrador) + '</div></div>';
+      h += '<div class="acc">' + (f.estado === 'descartado' ? '<button class="s" data-acc="reabrir" title="Vuelve a Por aprobar">Reabrir</button>' : '') + '<span class="desde">' + (f.revisado_por ? 'Lo decidió ' + esc(f.revisado_por) : '') + '</span></div>';
+    }
+    return h + '</article>';
+  }
+  function pintar(){
+    if (!datos) return;
+    pintarFiltros(); pintarCats();
+    var fs = filasPersona().filter(function(f){ return GRUPO(f) === fEst && (fCat === 'todas' || f.categoria === fCat); });
+    $('lista').innerHTML = fs.length ? fs.map(tarjeta).join('') : '<p class="vacio">No hay respuestas con estos filtros.</p>';
+  }
+  function fila(id){ return (datos.filas || []).filter(function(f){ return f.evento_id === id; })[0]; }
+  function confirmar(texto, cuerpo, si){
+    var f = document.createElement('div'); f.className = 'fondo';
+    f.innerHTML = '<div class="modal"><h3>' + esc(texto) + '</h3>' + (cuerpo ? '<pre>' + esc(cuerpo) + '</pre>' : '') + '<div class="acc"><button class="p" id="mSi">Sí, continuar</button><button class="s" id="mNo">Cancelar</button></div></div>';
+    document.body.appendChild(f);
+    f.querySelector('#mNo').onclick = function(){ f.remove(); };
+    f.querySelector('#mSi').onclick = function(){ f.remove(); si(); };
+  }
+  function decidir(card, accion){
+    var f = fila(card.getAttribute('data-id')); if (!f) return;
+    var ta = card.querySelector('textarea.borr'), sel = card.querySelector('select.selcat');
+    var texto = ta ? ta.value.trim() : '', cat = sel ? sel.value : f.categoria;
+    var cambiado = texto !== String(f.borrador || '').trim();
+    if (accion === 'aprobar' && cambiado) { toast('Cambiaste el texto: usa Guardar cambios y aprobar.'); return; }
+    if ((accion === 'aprobar' || accion === 'editar') && !texto) { toast('El mensaje está vacío.'); return; }
+    var cuerpo = { id: f.evento_id, accion: accion, por: actor(), categoria: cat };
+    if (accion === 'editar') cuerpo.texto = texto;
+    var ir = function(){
+      card.querySelectorAll('button').forEach(function(b){ b.disabled = true; });
+      post('gr-li-decidir', cuerpo).then(function(r){
+        if (r.ok === false) throw new Error(r.error || 'No se pudo');
+        toast(accion === 'descartar' ? 'Listo: no se le contesta.' : accion === 'reabrir' ? 'Regresó a Por aprobar.' : 'Enviado desde el perfil de ' + f.dueno + '.');
+        cargar();
+      }).catch(function(e){ toast('No se pudo: ' + e.message); card.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); });
+    };
+    if (accion === 'aprobar' || accion === 'editar') confirmar('Se envía desde el LinkedIn de ' + f.dueno + ' a ' + (f.prospecto || 'la persona') + ':', texto, ir);
+    else if (accion === 'descartar') confirmar('¿No contestarle a ' + (f.prospecto || 'esta persona') + '?', '', ir);
+    else ir();
+  }
+  document.addEventListener('click', function(e){
+    var b = e.target.closest('button'); if (!b) return;
+    if (b.id === 'act') return cargar();
+    if (b.dataset.per) { fPer = b.dataset.per; leer('gr_li_per', fPer); return pintar(); }
+    if (b.dataset.est) { fEst = b.dataset.est; fCat = 'todas'; return pintar(); }
+    if (b.dataset.acc) return decidir(b.closest('article'), b.dataset.acc);
+    if (b.dataset.modo) {
+      var cat = b.dataset.cat, modo = b.dataset.modo;
+      if (actor() !== 'Mike') { toast('Solo Mike libera o regresa una categoría. Elige Mike o Todos en Persona.'); return; }
+      confirmar(modo === 'auto' ? 'Desde ahora «' + nombreCat(cat) + '» se envía sola, sin aprobación. ¿Liberar?' : '¿Regresar «' + nombreCat(cat) + '» a aprobación?', '', function(){
+        post('gr-li-categoria', { categoria: cat, modo: modo, por: 'Mike' }).then(function(){ toast('Listo.'); cargar(); }).catch(function(er){ toast('No se pudo: ' + er.message); });
+      });
+    }
+  });
+  document.addEventListener('change', function(e){ if (e.target.id === 'fCat') { fCat = e.target.value; pintar(); } });
+  // El historial se pide solo al abrirlo (la lista viene sin historial para que sea ligera).
+  document.addEventListener('toggle', function(e){
+    var d = e.target; if (!d.classList || !d.classList.contains('hist') || !d.open || d.dataset.ok) return;
+    post('gr-li-lista', { id: d.dataset.id }).then(function(r){ d.dataset.ok = '1'; d.querySelector('pre').textContent = (r.fila && r.fila.historial) || 'Sin historial'; })
+      .catch(function(er){ d.querySelector('pre').textContent = 'No se pudo cargar: ' + er.message; });
+  }, true);
+  cargar();
+})();
+</script>
+</body>
+</html>
