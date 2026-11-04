@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/portal_comun.css">
 <style>
-  /* Respuestas de LinkedIn con aprobacion (3 nov 2026): pestana del tablero (?tab=linkedin). Sin clave, sin refresco
+  /* Respuestas de LinkedIn con aprobacion (3 nov 2026) y de correo (?canal=correo, 5 nov 2026): pestañas del portal de WhatsApp. Sin clave, sin refresco
      automatico (solo el boton Actualizar). Datos: GR — LinkedIn Respuestas (webhooks gr-li-lista, -decidir, -categoria). */
   body{font-size:14.5px}
   main{max-width:1180px;padding:16px}
@@ -75,6 +75,17 @@
 (function(){
   var BASE = 'https://mikea.app.n8n.cloud/webhook/';
   var K = new URLSearchParams(location.search).get('k') || '';   // sin clave; si una liga trae ?k= se manda igual
+  // Canal (5 nov 2026): la misma pagina sirve para las respuestas de correo con ?canal=correo (pestaña Respuestas correo
+  // del portal de WhatsApp). Sale del Gmail de cada quien, en el mismo hilo; LinkedIn sigue igual.
+  var CANAL = new URLSearchParams(location.search).get('canal') === 'correo' ? 'correo' : 'linkedin';
+  var CO = CANAL === 'correo';
+  var T = CO ? { nombre: 'correo', titulo: 'Respuestas de correo', donde: 'por correo', desde: 'desde el correo de', perfil: 'Sale desde el correo de', como: 'Se contesta desde su Gmail, en el mismo hilo del correo, con su firma.', fallo: 'Gmail no pudo enviarlas. Se pueden volver a aprobar.' }
+    : { nombre: 'LinkedIn', titulo: 'Respuestas de LinkedIn', donde: 'en LinkedIn', desde: 'desde el perfil de', perfil: 'Sale desde el perfil de LinkedIn de', como: 'Se envía con la secuencia de respuestas de Amplemarket de esa persona.', fallo: 'Amplemarket no pudo enviarlas. Se pueden volver a aprobar.' };
+  document.title = T.titulo + ' Great Revenue';
+  document.querySelector('.marca b').textContent = 'Great Revenue · ' + T.titulo;
+  document.querySelector('.top .quien').textContent = 'Se aprueba aquí y sale ' + T.desde + ' cada quien';
+  document.querySelector('.barra h1').firstChild.nodeValue = T.titulo + ' ';
+  document.querySelector('.barra h1 .ayuda').setAttribute('data-ayuda', 'Cuando un prospecto contesta ' + T.donde + ', el bot lee todo el hilo y su perfil, la clasifica y deja un borrador. Nada sale sin que alguien lo apruebe, salvo las categorías que Mike libere.' + (CO ? ' No entran las respuestas automáticas (fuera de oficina, calendario, rebotes) ni los correos que no vienen de una secuencia o de DUO.' : ''));
   if (window.self !== window.top) document.documentElement.classList.add('en-tablero');
   // Personas: las que tienen secuencia de respuestas en LinkedIn (vienen del servidor, perfiles) con el nombre y el orden
   // del catalogo unico del sitio (catalogos.json); "Todos" va primero.
@@ -88,10 +99,10 @@
   }
   function etiqueta(id){ var x = ((CAT && CAT.personas) || []).filter(function(p){ return p.id === id; })[0]; return x ? x.label : id; }
   var ESTADOS = [['por_aprobar', 'Por aprobar', 'Borradores que esperan que alguien los apruebe, los edite o los marque como No contestar.'],
-    ['enviadas', 'Enviadas', 'Ya salieron (o están saliendo) desde el perfil de LinkedIn del dueño.'],
+    ['enviadas', 'Enviadas', 'Ya salieron (o están saliendo) ' + T.desde + ' su dueño.'],
     ['descartadas', 'Descartadas', 'Marcadas como No contestar, o reemplazadas porque la persona volvió a escribir.'],
-    ['error', 'Error', 'Amplemarket no pudo enviarlas. Se pueden volver a aprobar.']];
-  var datos = null, fPer = leer('gr_li_per') || 'Todos', fEst = 'por_aprobar', fCat = 'todas';
+    ['error', 'Error', T.fallo]];
+  var datos = null, fPer = leer('gr_' + (CO ? 'co' : 'li') + '_per') || 'Todos', fEst = 'por_aprobar', fCat = 'todas';
   var $ = function(id){ return document.getElementById(id); };
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   function ay(t){ return '<span class="ayuda" tabindex="0" data-ayuda="' + esc(t) + '">i</span>'; }
@@ -101,7 +112,7 @@
   // Quien aprueba: la persona elegida en el filtro; con "Todos", Mike.
   function actor(){ return fPer !== 'Todos' ? fPer : 'Mike'; }
   function post(ruta, cuerpo){
-    return fetch(BASE + ruta, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign(K ? { k: K } : {}, cuerpo || {})) })
+    return fetch(BASE + ruta, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign(K ? { k: K } : {}, { canal: CANAL }, cuerpo || {})) })
       .then(function(r){ return r.text().then(function(t){
         var j = null; try { j = JSON.parse(t); } catch (e) {}
         if (!r.ok || !j) throw new Error((j && (j.error || j.message)) || ('Error ' + r.status));
@@ -157,11 +168,11 @@
     var est = f.estado === 'pendiente' ? '<span class="etq pend">Por aprobar</span>' : f.estado === 'error' ? '<span class="etq mal">Error</span>' :
       /enviad/.test(f.estado) ? '<span class="etq ok">' + (f.estado === 'enviado_auto' ? 'Enviada sola' : f.estado === 'enviando' ? 'Enviando' : 'Enviada') + '</span>' : '<span class="etq">' + (f.estado === 'reemplazado' ? 'Reemplazada' : 'No contestar') + '</span>';
     var h = '<article class="card' + (f.oportunidad ? ' op1' : '') + '" data-id="' + esc(f.evento_id) + '">';
-    h += '<div class="cab"><div><h3>' + (f.linkedin_url ? '<a href="' + esc(f.linkedin_url) + '" target="_blank" rel="noopener">' + esc(f.prospecto || 'Sin nombre') + '</a>' : esc(f.prospecto || 'Sin nombre')) + '</h3><div class="sub">' + (quien || 'Sin puesto ni empresa en Amplemarket') + '</div></div>' +
+    h += '<div class="cab"><div><h3>' + (f.linkedin_url ? '<a href="' + esc(f.linkedin_url) + '" target="_blank" rel="noopener">' + esc(f.prospecto || 'Sin nombre') + '</a>' : esc(f.prospecto || 'Sin nombre')) + '</h3><div class="sub">' + (quien || 'Sin puesto ni empresa en Amplemarket') + '</div>' + (CO && f.correo_prospecto ? '<div class="sub">' + esc(f.correo_prospecto) + (f.asunto ? ' · «' + esc(f.asunto) + '»' : '') + '</div>' : '') + '</div>' +
       '<div class="chips">' + est + (f.oportunidad ? '<span class="etq opo">Oportunidad</span>' : '') + '<span class="etq" title="Categoría que puso el bot">' + esc(nombreCat(f.categoria)) + '</span><span class="etq" title="Cuándo contestó">' + esc(fecha(f.recibido_ts)) + '</span></div></div>';
     h += '<div class="chips">' + (f.producto ? '<span class="etq" title="Producto (sale del nombre de la secuencia o de lo que se le escribió)">' + esc(f.producto) + '</span>' : '') +
       (f.senal ? '<span class="etq" title="Señal de la secuencia">' + esc(f.senal) + '</span>' : '') + '<span class="etq" title="Secuencia de Amplemarket">' + esc(f.secuencia || 'Sin secuencia') + '</span></div>';
-    h += '<div class="bloque"><span class="t">Lo que contestó ' + ay('Texto tal cual lo escribió la persona en LinkedIn.') + '</span><div class="contesto">' + esc(f.contesto) + '</div></div>';
+    h += '<div class="bloque"><span class="t">Lo que contestó ' + ay(CO ? 'Lo nuevo que escribió en su correo, sin la cita de nuestro correo ni su firma.' : 'Texto tal cual lo escribió la persona en LinkedIn.') + '</span><div class="contesto">' + esc(f.contesto) + '</div></div>';
     h += '<details class="hist" data-id="' + esc(f.evento_id) + '"><summary>Ver todo el hilo</summary><pre>Cargando…</pre></details>';
     if (f.gancho) h += '<div class="bloque"><span class="t">Gancho ' + ay('Qué de su perfil o de la señal usó el bot para personalizar.') + '</span><div class="sub">' + esc(f.gancho) + '</div></div>';
     if (f.motivo) h += '<div class="aviso-motivo' + (/\[Revisar/.test(f.motivo) ? ' rev' : '') + '">' + esc(f.motivo) + '</div>';
@@ -171,10 +182,10 @@
       h += '<div class="bloque"><span class="t">Borrador ' + ay('Puedes editarlo. Si lo cambias, usa Guardar cambios y aprobar.') + '</span><textarea class="borr">' + esc(f.texto_final || f.borrador) + '</textarea></div>';
       h += '<div class="acc"><label class="sub" style="display:flex;gap:6px;align-items:center">Categoría <select class="cat selcat">' + opts + '</select> ' + ay('Si el bot se equivocó, cámbiala antes de aprobar; sirve para medir cada categoría.') + '</label></div>';
       h += '<div class="acc"><button class="p" data-acc="aprobar" title="Envía el borrador tal cual">Aprobar</button><button class="s" data-acc="editar" title="Envía el texto como quedó en el cuadro">Guardar cambios y aprobar</button>' +
-        '<button class="d" data-acc="descartar" title="No se le contesta nada">No contestar</button><span class="desde">Sale desde el perfil de LinkedIn de <b>' + esc(f.dueno) + '</b> ' + ay('Se envía con la secuencia de respuestas de Amplemarket de esa persona.') + '</span></div>';
+        '<button class="d" data-acc="descartar" title="No se le contesta nada">No contestar</button><span class="desde">' + T.perfil + ' <b>' + esc(f.dueno) + '</b> ' + ay(T.como) + '</span></div>';
     } else if (/enviad/.test(f.estado)) {
       h += '<div class="bloque"><span class="t">Lo que se envió' + (f.editado ? ' (editado)' : '') + '</span><div class="enviado">' + esc(f.texto_final || f.borrador) + '</div></div>';
-      h += '<div class="sub">Desde el perfil de ' + esc(f.dueno) + (f.revisado_por ? ' · aprobó ' + esc(f.revisado_por) : '') + (f.enviado_ts ? ' · ' + esc(fecha(f.enviado_ts)) : '') + '</div>';
+      h += '<div class="sub">' + (CO ? 'Desde el correo de ' : 'Desde el perfil de ') + esc(f.dueno) + (f.revisado_por ? ' · aprobó ' + esc(f.revisado_por) : '') + (f.enviado_ts ? ' · ' + esc(fecha(f.enviado_ts)) : '') + '</div>';
     } else {
       if (f.borrador) h += '<div class="bloque"><span class="t">Borrador que no se envió</span><div class="sub" style="white-space:pre-wrap">' + esc(f.borrador) + '</div></div>';
       h += '<div class="acc">' + (f.estado === 'descartado' ? '<button class="s" data-acc="reabrir" title="Vuelve a Por aprobar">Reabrir</button>' : '') + '<span class="desde">' + (f.revisado_por ? 'Lo decidió ' + esc(f.revisado_por) : '') + '</span></div>';
@@ -208,18 +219,18 @@
       card.querySelectorAll('button').forEach(function(b){ b.disabled = true; });
       post('gr-li-decidir', cuerpo).then(function(r){
         if (r.ok === false) throw new Error(r.error || 'No se pudo');
-        toast(accion === 'descartar' ? 'Listo: no se le contesta.' : accion === 'reabrir' ? 'Regresó a Por aprobar.' : 'Enviado desde el perfil de ' + f.dueno + '.');
+        toast(accion === 'descartar' ? 'Listo: no se le contesta.' : accion === 'reabrir' ? 'Regresó a Por aprobar.' : 'Enviado ' + T.desde + ' ' + f.dueno + '.');
         cargar();
       }).catch(function(e){ toast('No se pudo: ' + e.message); card.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); });
     };
-    if (accion === 'aprobar' || accion === 'editar') confirmar('Se envía desde el LinkedIn de ' + f.dueno + ' a ' + (f.prospecto || 'la persona') + ':', texto, ir);
+    if (accion === 'aprobar' || accion === 'editar') confirmar('Se envía ' + (CO ? 'desde el correo de ' : 'desde el LinkedIn de ') + f.dueno + ' a ' + (f.prospecto || 'la persona') + ':', texto, ir);
     else if (accion === 'descartar') confirmar('¿No contestarle a ' + (f.prospecto || 'esta persona') + '?', '', ir);
     else ir();
   }
   document.addEventListener('click', function(e){
     var b = e.target.closest('button'); if (!b) return;
     if (b.id === 'act') return cargar();
-    if (b.dataset.per) { fPer = b.dataset.per; leer('gr_li_per', fPer); return pintar(); }
+    if (b.dataset.per) { fPer = b.dataset.per; leer('gr_' + (CO ? 'co' : 'li') + '_per', fPer); return pintar(); }
     if (b.dataset.est) { fEst = b.dataset.est; fCat = 'todas'; return pintar(); }
     if (b.dataset.acc) return decidir(b.closest('article'), b.dataset.acc);
     if (b.dataset.modo) {
