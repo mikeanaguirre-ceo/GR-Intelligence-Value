@@ -270,10 +270,11 @@
 </style>
 </head>
 <body>
-<nav class="tabs" id="tabs"><span class="logo"><img src="https://intelligence.greatrevenue.com/logos/gr.png" alt="Great Revenue"><b>WhatsApp</b></span><button data-t="conv" class="on">Conversaciones</button><button data-t="opor" id="t-opor">Oportunidades</button><button data-t="li" id="t-li">LinkedIn</button><button data-t="co" id="t-co">Correo</button><button data-t="conf" id="t-conf">Configuración</button></nav>
+<nav class="tabs" id="tabs"><span class="logo"><img src="https://intelligence.greatrevenue.com/logos/gr.png" alt="Great Revenue"><b>WhatsApp</b></span><button data-t="conv" class="on">Conversaciones</button><button data-t="opor" id="t-opor">Oportunidades</button><button data-t="li" id="t-li">LinkedIn</button><button data-t="rc" id="t-rc" title="Respuestas a las secuencias y señales de DUO por correo, con aprobación">Respuestas correo</button><button data-t="co" id="t-co">Correo</button><button data-t="conf" id="t-conf">Configuración</button></nav>
 <section class="conf" id="conf" hidden></section>
 <section class="conf" id="opor" hidden></section>
 <section class="conf" id="li" hidden style="padding:0;overflow:hidden"></section>
+<section class="conf" id="rc" hidden style="padding:0;overflow:hidden"></section>
 <section class="conf" id="co" hidden></section>
 <div class="app" id="app">
   <aside class="lista">
@@ -1647,15 +1648,18 @@
     var b = e.target.closest('button'); if (!b) return;
     var t = b.getAttribute('data-t');
     document.querySelectorAll('#tabs button').forEach(function(x){ x.classList.toggle('on', x === b); });
-    $('conf').hidden = t !== 'conf'; $('opor').hidden = t !== 'opor'; $('app').hidden = t !== 'conv'; $('li').hidden = t !== 'li'; $('co').hidden = t !== 'co';
+    $('conf').hidden = t !== 'conf'; $('opor').hidden = t !== 'opor'; $('app').hidden = t !== 'conv'; $('li').hidden = t !== 'li'; $('rc').hidden = t !== 'rc'; $('co').hidden = t !== 'co';
     if (t === 'co' && !co && !coCargando) cargarCo(); else if (t === 'co') pintarCo();
     if (t === 'conf') { pintarConf(); cargarConf(); }
     if (t === 'opor') { pintarOpor(); cargarOpor(); }
     // LinkedIn (3 nov 2026, decision de Mike: va aqui y no en el tablero): respuestas de LinkedIn con aprobacion.
     // Vive en /linkedin.html y se carga en un marco la primera vez; no se refresca sola.
     if (t === 'li' && !$('li').firstChild) $('li').innerHTML = '<iframe src="https://intelligence.greatrevenue.com/linkedin.html" title="Respuestas de LinkedIn" style="width:100%;height:100%;border:0;background:#f6f6f4"></iframe>';
+    // Respuestas correo (5 nov 2026, Mike): la misma pagina con ?canal=correo; sale del Gmail de cada quien en el mismo hilo.
+    if (t === 'rc' && !$('rc').firstChild) $('rc').innerHTML = '<iframe src="https://intelligence.greatrevenue.com/linkedin.html?canal=correo" title="Respuestas de correo" style="width:100%;height:100%;border:0;background:#f6f6f4"></iframe>';
   };
   if (/[?&]tab=linkedin\b/.test(location.search)) document.querySelector('#tabs [data-t="li"]').click();
+  if (/[?&]tab=respuestas-correo\b/.test(location.search)) document.querySelector('#tabs [data-t="rc"]').click();
   if (/[?&]tab=correo\b/.test(location.search)) document.querySelector('#tabs [data-t="co"]').click();
 
   $('actualizar').onclick = actualizar;
