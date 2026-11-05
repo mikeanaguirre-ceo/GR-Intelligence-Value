@@ -127,9 +127,9 @@
   }
   // Sugerencia (5 nov 2026): los partners de Hootsuite sin Gmail conectado (correo) o sin secuencia de respuestas (LinkedIn)
   // no envian solos: al aprobar, la respuesta se les manda por correo para que la envien ellos.
-  var GMAIL_N8N = ['Mike', 'Migue', 'Daniel', 'Martha', 'Fer'];
+  // Lo dice el servidor (perfiles): en correo, los de marca partner no tienen Gmail en n8n; en LinkedIn, quien no tiene secuencia.
   function esSugerencia(f){ var p = ((datos && datos.perfiles) || []).filter(function(x){ return x.corto === f.dueno; })[0] || {};
-    return CO ? GMAIL_N8N.indexOf(f.dueno) < 0 : !p.secuencia; }
+    return CO ? !!p.marca : !p.secuencia; }
   function nombreCat(c){ var x = (datos.categorias || []).filter(function(k){ return k.clave === c; })[0]; return x ? x.nombre : c; }
   function GRUPO(f){ return f.grupo || ({ pendiente: 'por_aprobar', enviando: 'enviadas', enviado: 'enviadas', enviado_auto: 'enviadas', descartado: 'descartadas', reemplazado: 'descartadas', error: 'error' })[f.estado] || 'otro'; }
   function filasPersona(){ return (datos.filas || []).filter(function(f){ return fPer === 'Todos' || f.dueno === fPer; }); }
