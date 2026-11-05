@@ -14,3 +14,5 @@ jobs:
         with:
           node-version: '20'
       - run: node scripts/candado_menus.js
+      # Candado de JavaScript: ninguna pagina se publica con errores de sintaxis (5 nov 2026).
+      - run: node scripts/candado_js.js
