@@ -337,9 +337,27 @@
   function ventana(c){ var fin = (c.ultimo_entrante_ts||0) + 86400; return { abierta: fin > Date.now()/1000, fin: fin }; }
   function toast(t){ var d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(function(){ d.remove(); }, 3200); }
 
+  // Conexion (5 nov 2026): si el navegador no logra conectar con n8n («Failed to fetch»: se cayo la red o el servidor no
+  // contesto), se reintenta sola hasta 2 veces (a los 3 y 8 s) y, si sigue sin conexion, se explica en español. Solo para
+  // fallas de conexion y solo al LEER (cargar listas): enviar, guardar o cambiar algo nunca se reintenta, para no duplicar.
+  // Un error que si contesta el servidor tampoco se reintenta. No es un refresco automatico.
+  var LECTURAS = ['cargar', 'plantillas'];
+  function conReintento(hacer, leer){
+    var esperas = leer === false ? [] : [3000, 8000];
+    function intento(n){
+      return hacer().catch(function(e){
+        if (!(e instanceof TypeError) || n >= esperas.length) {
+          if (e instanceof TypeError) throw new Error('Sin conexión con el servidor (n8n). Revisa tu internet y usa ↻ Actualizar');
+          throw e;
+        }
+        return new Promise(function(r){ setTimeout(r, esperas[n]); }).then(function(){ return intento(n + 1); });
+      });
+    }
+    return intento(0);
+  }
   function api(accion, extra){
     var cuerpo = Object.assign({ k: K, accion: accion }, extra || {});
-    return fetch(BASE + 'gr-portal-api', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(cuerpo) })
+    return conReintento(function(){ return fetch(BASE + 'gr-portal-api', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(cuerpo) }); }, LECTURAS.indexOf(accion) >= 0)
       .then(function(r){ return r.text().then(function(t){
         var j = null; try { j = JSON.parse(t); } catch(e) {}
         if (!r.ok || !j) throw new Error((j && (j.error || j.message)) || (r.status === 500 ? 'La clave no es válida o el servidor falló' : 'Error ' + r.status));
@@ -484,7 +502,7 @@
   }
   var NOMBRE_CANAL = { whatsapp: 'WhatsApp', linkedin: 'LinkedIn', correo: 'Correo' };
   function postLi(cuerpo){
-    return fetch(BASE + 'gr-li-lista', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) })
+    return conReintento(function(){ return fetch(BASE + 'gr-li-lista', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) }); })
       .then(function(r){ return r.json(); });
   }
   function cargarOtros(){
