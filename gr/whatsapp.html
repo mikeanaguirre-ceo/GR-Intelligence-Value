@@ -135,6 +135,8 @@
   .filtros button.on{background:#fff;color:var(--marca);border-color:#fff}
   .filtros button.cero{opacity:.45}
   .fpanel.cerrado .cf-fila{display:none}
+  /* Scroll propio del panel de filtros (5 nov 2026): con muchos filtros no se veian los de abajo sin bajar el zoom. */
+  #filtros{max-height:52vh;overflow-y:auto;overscroll-behavior:contain;padding-right:4px}
   /* Pestana Correo (3 nov 2026): Open+3 por correo y todo lo enviado por canal. */
   #co .tabla{display:block;overflow-x:auto} #co td{font-size:12.5px}
   .ic{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--tenue);color:var(--tenue);font:700 9.5px Arial;margin-left:4px;cursor:help;vertical-align:1px}
