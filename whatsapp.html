@@ -497,7 +497,10 @@
   // Si WhatsApp no cargo (sin clave en la liga o error del servidor), se dice arriba de la lista: LinkedIn y correo si salen.
   var errorWa = '';
   function avisoWa(){
-    var t = !K ? 'No se cargaron las conversaciones de WhatsApp: abre el portal con la liga completa que incluye la clave (?k=…). Aquí solo se ven LinkedIn y correo.' : (errorWa ? 'No se cargaron las conversaciones de WhatsApp: ' + errorWa + '. Usa ↻ Actualizar.' : '');
+    var claveMala = /clave/i.test(errorWa) && /inv[aá]lida/i.test(errorWa);
+    var t = !K ? 'No se cargaron las conversaciones de WhatsApp: abre el portal con la liga completa que incluye la clave (?k=…). Aquí solo se ven LinkedIn y correo.'
+      : claveMala ? 'No se cargaron las conversaciones de WhatsApp: la clave de tu liga ya no es la vigente (la clave del portal cambió). Pide a Mike la liga actual y ábrela. Aquí solo se ven LinkedIn y correo.'
+      : (errorWa ? 'No se cargaron las conversaciones de WhatsApp: ' + errorWa + '. Usa ↻ Actualizar.' : '');
     return t ? '<div class="vacio" style="color:#a33;font-weight:600">' + esc(t) + '</div>' : '';
   }
   var NOMBRE_CANAL = { whatsapp: 'WhatsApp', linkedin: 'LinkedIn', correo: 'Correo' };
