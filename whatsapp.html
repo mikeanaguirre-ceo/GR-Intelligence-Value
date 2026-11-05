@@ -499,7 +499,7 @@
         x.nombre = f.prospecto || 'Sin nombre'; x.empresa = f.empresa || ''; x.puesto = f.puesto || ''; x.dueno = f.dueno || '';
         return x;
       });
-      if (datos) pintarLista();
+      try { if (datos) pintarLista(); } catch (e) { console.warn('pintarLista', e); }
     });
   }
   function otro(id){ return otros.find(function(x){ return x.id === id; }); }
@@ -1805,6 +1805,8 @@
     document.body.appendChild(aviso);
   }
   if (!K) { $('estado').textContent = 'Falta la clave en la liga (?k=…)'; $('items').innerHTML = '<div class="vacio">Abre el portal con la liga completa que incluye la clave.</div>'; }
+  // LinkedIn y correo se cargan por su cuenta (no dependen de que cargue WhatsApp ni de la clave).
+  cargarOtros().catch(function(e){ console.warn('LinkedIn y correo no cargaron', e); });
   else { cargar().then(function(){ if ((datos.numeros || []).some(function(n){ return n.hootsuite; })) actualizar(); }); cargarConf(); cargarOpor(); }
 })();
 </script>
