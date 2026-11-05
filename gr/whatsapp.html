@@ -183,6 +183,7 @@
   .items{overflow-y:auto;flex:1;min-height:0;overscroll-behavior:contain}
   .vacio{padding:24px 16px;color:var(--tenue);font-size:14px}
   .item{padding:10px 14px;border-bottom:1px solid var(--borde);cursor:pointer;display:flex;gap:10px}
+  .item-otro .ava{font-size:12px;font-weight:700} .etq.canal-linkedin{background:#e1ecf7;color:#0a4f8f} .etq.canal-correo{background:#efe7f8;color:#5b2d8a}
   .item:hover{background:#faf9fd} .item.sel{background:#f1eafe}
   .ava{width:38px;height:38px;border-radius:50%;background:#ece4fb;color:#5b21b6;display:flex;align-items:center;justify-content:center;font-weight:650;flex:0 0 auto}
   .item .cuerpo{min-width:0;flex:1;display:flex;flex-direction:column;gap:2px}
@@ -363,6 +364,7 @@
     return api('cargar').then(function(j){
       datos = j; $('estado').textContent = 'Actualizado ' + hora(Math.floor(Date.now()/1000));
       pintarLista(); if (sel) pintarChat(false);
+      cargarOtros().catch(function(){});
     }).catch(function(e){ $('estado').textContent = e.message; })
       .finally(function(){ ocupado = false; $('actualizar').disabled = false; });
   }
@@ -470,6 +472,98 @@
   // conversacion con al menos un mensaje es WhatsApp. Correo, LinkedIn y Llamada solo cuentan cuando haya mensajes
   // registrados de ese canal; hoy el portal no tiene ninguno, por eso marcan 0.
   function canalConv(c){ return (c.msgs || []).some(function(m){ return m.dir === 'saliente' || m.dir === 'entrante'; }) ? 'whatsapp' : ''; }
+  // LinkedIn y correo en Conversaciones (5 nov 2026, revision del 4 nov): las respuestas que se atienden con aprobacion en
+  // las pestañas LinkedIn y Respuestas correo tambien se ven aqui como chat (solo lectura) con todo el historial. Salen de
+  // gr-li-lista (una por persona y canal, la mas reciente); el historial se pide al abrir el chat. Para aprobar, «Ir a aprobar».
+  var otros = [];
+  var NOMBRE_CANAL = { whatsapp: 'WhatsApp', linkedin: 'LinkedIn', correo: 'Correo' };
+  function postLi(cuerpo){
+    return fetch(BASE + 'gr-li-lista', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) })
+      .then(function(r){ return r.json(); });
+  }
+  function cargarOtros(){
+    return Promise.all(['linkedin', 'correo'].map(function(canal){
+      return postLi({ canal: canal }).then(function(j){ return (j.filas || []).map(function(f){ f.canal = canal; return f; }); }).catch(function(){ return []; });
+    })).then(function(ls){
+      var por = {};
+      [].concat(ls[0], ls[1]).forEach(function(f){
+        var id = (f.canal === 'correo' ? 'co:' : 'li:') + (f.contacto_id || f.evento_id);
+        var ts = Math.floor((Date.parse(f.recibido_ts) || 0) / 1000);
+        var x = por[id] || (por[id] = { id: id, canal: f.canal, filas: [], ts: 0 });
+        x.filas.push(f);
+        if (ts >= x.ts) { x.ts = ts; x.ult = f; }
+      });
+      otros = Object.keys(por).map(function(k){
+        var x = por[k], f = x.ult;
+        x.pendiente = x.filas.some(function(r){ return r.estado === 'pendiente' || r.estado === 'error'; });
+        x.nombre = f.prospecto || 'Sin nombre'; x.empresa = f.empresa || ''; x.puesto = f.puesto || ''; x.dueno = f.dueno || '';
+        return x;
+      });
+      if (datos) pintarLista();
+    });
+  }
+  function otro(id){ return otros.find(function(x){ return x.id === id; }); }
+  function soloCanal(){ return Object.keys(F).every(function(k){ return k === 'canal' || !F[k] || (k === 'atiende' && F[k] === 'todas'); }); }
+  function otrosVisibles(q){
+    if (F.canal === 'whatsapp' || (!F.canal && !soloCanal()) || (F.canal && !soloCanal())) return [];
+    return otros.filter(function(x){
+      if (F.canal && x.canal !== F.canal) return false;
+      if (!q) return true;
+      return (x.nombre + ' ' + x.empresa + ' ' + x.dueno + ' ' + (x.ult.contesto || '')).toLowerCase().indexOf(q) >= 0;
+    });
+  }
+  function itemOtro(x){
+    var f = x.ult, ini = x.canal === 'linkedin' ? 'in' : '✉';
+    return '<div class="item item-otro' + (x.id === sel ? ' sel' : '') + '" data-o="' + esc(x.id) + '">' +
+      '<div class="ava">' + ini + '</div><div class="cuerpo">' +
+      '<div class="arriba"><span class="nom">' + esc(x.nombre) + '</span><span class="hora">' + cuando(x.ts) + '</span></div>' +
+      (x.empresa ? '<span class="tel">' + esc(x.empresa) + '</span>' : '') +
+      '<div class="prev">' + esc(String(f.contesto || '').replace(/\s+/g, ' ').slice(0, 140)) + '</div>' +
+      '<div class="etqs"><span class="etq canal-' + x.canal + '" data-tip="Canal de la conversación">' + NOMBRE_CANAL[x.canal] + '</span>' +
+      (x.pendiente ? '<span class="etq atender" data-tip="Hay una respuesta esperando aprobación">Por aprobar</span>' : '') +
+      '<span class="etq" data-tip="Quién mandó la campaña; la respuesta sale de su ' + (x.canal === 'correo' ? 'correo' : 'LinkedIn') + '">' + esc(x.dueno) + '</span>' +
+      (f.producto ? '<span class="etq producto">' + esc(f.producto) + '</span>' : '') + '</div></div></div>';
+  }
+  // El historial que guardo el bot viene como texto: «[2026-11-04] PROSPECTO: …» y «[2026-11-04] GR (Migue, correo): …».
+  function burbujasHistorial(h){
+    return String(h || '').split(/\n\n(?=\[\d{4}-\d{2}-\d{2}\] )/).map(function(b){
+      var m = b.match(/^\[(\d{4}-\d{2}-\d{2})\] (PROSPECTO|GR \(([^)]*)\)): ([\s\S]*)$/);
+      if (!m) return null;
+      return { dia: m[1], cliente: m[2] === 'PROSPECTO', autor: m[2] === 'PROSPECTO' ? '' : 'Equipo · ' + m[3], texto: m[4].trim() };
+    }).filter(Boolean);
+  }
+  function abrirOtro(id){
+    var x = otro(id); if (!x) return;
+    sel = id; $('app').classList.add('abierto'); pintarLista();
+    var f = x.ult, op = x.canal === 'correo' ? 'Respuestas correo' : 'LinkedIn';
+    var origen = [f.secuencia ? 'Campaña: ' + f.secuencia : '', f.senal ? 'Señal: ' + f.senal : ''].filter(Boolean).join(' · ');
+    var html = '<div class="chatcab"><div class="quien"><span class="n"><button class="btn sec volver" id="volver">←</button>' + esc(x.nombre) + '</span>' +
+      '<span class="m">' + esc([x.puesto, x.empresa, f.pais].filter(Boolean).join(' · ')) + '</span>' +
+      '<span class="m">Canal de la conversación: <b>' + NOMBRE_CANAL[x.canal] + '</b> · Canal de origen: <b>' + (x.canal === 'correo' ? 'Correo (secuencia o señal de DUO)' : 'LinkedIn (secuencia)') + '</b>' + (x.canal === 'correo' && f.correo_prospecto ? ' · ' + esc(f.correo_prospecto) : '') + '</span>' +
+      (origen ? '<span class="m">' + esc(origen) + '</span>' : '') + '</div><div class="acciones">' +
+      (x.pendiente ? '<button class="btn tomar" id="irAprobar" data-tip="Abre la pestaña ' + op + ', donde se aprueba, edita o se marca No contestar">Ir a aprobar</button>' : '') + '</div></div>';
+    html += '<div class="aviso" style="font-size:12px;color:var(--tenue)">Solo lectura. La respuesta se aprueba en la pestaña ' + op + ' y sale ' + (x.canal === 'correo' ? 'del correo' : 'del LinkedIn') + ' de ' + esc(x.dueno) + '.</div>';
+    html += '<div class="msgs" id="msgs"><div class="vacio">Cargando el historial…</div></div>';
+    $('chat').innerHTML = html;
+    $('volver').onclick = function(){ sel = null; $('app').classList.remove('abierto'); pintarLista(); };
+    if ($('irAprobar')) $('irAprobar').onclick = function(){ document.querySelector('#tabs [data-t="' + (x.canal === 'correo' ? 'rc' : 'li') + '"]').click(); };
+    postLi({ canal: x.canal, id: f.evento_id }).then(function(j){
+      if (sel !== id) return;
+      var fila = j.fila || {}, bs = burbujasHistorial(fila.historial), out = '', ultimoDia = '';
+      bs.forEach(function(b){
+        if (b.dia !== ultimoDia) { ultimoDia = b.dia; out += '<div class="dia">' + esc(b.dia) + '</div>'; }
+        out += '<div class="m ' + (b.cliente ? 'cliente' : 'persona') + '">' + (b.autor ? '<div class="autor">' + esc(b.autor) + '</div>' : '') + '<div style="white-space:pre-wrap">' + esc(b.texto) + '</div></div>';
+      });
+      x.filas.slice().sort(function(a, b){ return String(a.enviado_ts || '').localeCompare(String(b.enviado_ts || '')); }).forEach(function(r){
+        // Solo las enviadas despues de la ultima respuesta: las anteriores ya vienen en su historial.
+        if (!/enviad/.test(r.estado) || !r.enviado_ts || String(r.enviado_ts) < String(f.recibido_ts || '')) return;
+        out += '<div class="dia">' + esc(String(r.enviado_ts).slice(0, 10)) + '</div><div class="m persona"><div class="autor">Equipo · ' + esc(r.dueno) + ' · respuesta aprobada por ' + esc(r.revisado_por || '') + '</div><div style="white-space:pre-wrap">' + esc(r.texto_final || r.borrador) + '</div></div>';
+      });
+      if (x.pendiente) out += '<div class="aviso" style="margin:8px 0">Hay un borrador esperando aprobación: «' + esc(String(f.borrador || '').slice(0, 220)) + (String(f.borrador || '').length > 220 ? '…' : '') + '»</div>';
+      $('msgs').innerHTML = out || '<div class="vacio">Sin historial guardado.</div>';
+      $('msgs').scrollTop = $('msgs').scrollHeight;
+    }).catch(function(e){ if (sel === id) $('msgs').innerHTML = '<div class="vacio">No se pudo cargar el historial: ' + esc(e.message) + '</div>'; });
+  }
   var FALLO_TOQUE = [];
   // Etiquetas de las listas (catalogo unico; se llenan en armarListas).
   var COMO_LLEGO = {}, TIPO_INTERES = {}, CAMINO = {}, CANAL = {}, TIPO_OP = {}, PARTNER = {}, ETAPA_CORTA = {}, TIP_ETAPA = {};
@@ -495,7 +589,8 @@
       { k: 'senal', t: 'Señal', ayuda: 'Qué hizo el prospecto para volverse oportunidad: abrió el correo 3 veces o más (Open+3) o contestó (Reply). El Reply lleva la etiqueta de Amplemarket de cómo contestó.',
         ops: opsDe('tiposSenal').map(function(o){ return o[0] === 'reply' ? [o[0], o[1] + ' (todos)', o[2]] : o; }).concat(opsDe('comoLlego')) },
       { k: 'origen', t: 'Origen', ayuda: 'El camino por el que llegó: la secuencia de correo, una señal de DUO, un referido; o, sin oportunidad, un anuncio o escribió directo.', ops: opsDe('origenesConversacion') },
-      { k: 'canal', t: 'Canal', ayuda: 'Por dónde se le escribió de verdad en esta conversación (los mensajes enviados o recibidos), no el campo Canal de HubSpot ni que tenga correo registrado. Hoy todo lo que hay aquí es WhatsApp.', ops: opsDe('canales') },
+      { k: 'canal', t: 'Canal de conversación', ayuda: 'Por dónde es la conversación: WhatsApp, LinkedIn o correo. LinkedIn y correo son las respuestas a las secuencias y señales de DUO (se aprueban en sus pestañas). El canal por el que contestó a la campaña original se ve dentro de cada chat.', ops: [
+        ['whatsapp', 'WhatsApp', 'Conversaciones por WhatsApp'], ['linkedin', 'LinkedIn', 'Respuestas por LinkedIn a las secuencias'], ['correo', 'Correo', 'Respuestas por correo a las secuencias y señales de DUO']] },
       { k: 'toque', t: 'Toque de Open+3', ayuda: 'En qué toque va: toque 1 al detectar la señal, toque 2 al 3er día hábil y toque 3 (despedida) al 7º. Se combina con «Resultado del toque»: por ejemplo Toque 1 + Contestó.', ops: [
         ['1', 'Toque 1', 'Su último WhatsApp automático fue el toque 1'],
         ['2', 'Toque 2', 'Su último WhatsApp automático fue el toque 2'],
@@ -518,7 +613,7 @@
     if (k === 'etapa') return v === 'sin' ? !op : (!!op && (op.o.etapa.id === v || op.o.etapa.fase === v));
     if (k === 'senal') return v === 'open3' || v === 'reply' ? senalConv(c) === v : (!!op && senalConv(c) === 'reply' && op.o.como_llego === v);
     if (k === 'origen') return origenConv(c) === v;
-    if (k === 'canal') return canalConv(c) === v;
+    if (k === 'canal') return v === 'whatsapp' && canalConv(c) === 'whatsapp';
     if (k === 'toque') return !!o3 && String(o3.toque) === v;
     if (k === 'resultado') return !!o3 && (v === 'fallo' ? FALLO_TOQUE.indexOf(o3.estado) >= 0 : o3.estado === v);
     if (k === 'plantilla') { pi = plantillaInfo(c); return v === 'mando' ? !!pi : (!!pi && (v === 'contesto' ? pi.respondio : !pi.respondio)); }
@@ -533,7 +628,7 @@
       return '<div class="cf-fila"><span class="fnom">' + esc(f.t) + ' <button class="ayuda' + (ayudaAbierta[f.k] ? ' on' : '') + '" data-ayuda="' + f.k + '" aria-label="Qué significa">?</button></span>' +
         (ayudaAbierta[f.k] ? '<div class="cf-ayuda">' + esc(f.ayuda) + '<br>' + f.ops.map(function(o){ return '<b>' + esc(o[1]) + ':</b> ' + esc(o[2]); }).join('<br>') + '</div>' : '') +
         '<div class="filtros">' + f.ops.map(function(o){
-          var n = resto.filter(function(c){ return pasaFila(c, f.k, o[0]); }).length;
+          var n = f.k === 'canal' && o[0] !== 'whatsapp' ? otros.filter(function(x){ return x.canal === o[0]; }).length : resto.filter(function(c){ return pasaFila(c, f.k, o[0]); }).length;
           var on = F[f.k] === o[0];
           return '<button data-k="' + f.k + '" data-v="' + esc(o[0]) + '" data-tip="' + esc(o[2]) + '" class="' + (on ? 'on' : '') + (n ? '' : ' cero') + '">' + esc(o[1]) + ' (' + n + ')</button>';
         }).join('') + '</div></div>';
@@ -784,9 +879,14 @@
       var txt = (c.nombre + ' ' + c.wa_id + ' ' + (opq ? opq.o.nombre + ' ' + (opq.o.campana || '') : '') + ' ' + c.msgs.map(function(m){ return m.texto; }).join(' ')).toLowerCase();
       return txt.indexOf(q) >= 0;
     });
-    if (!ls.length) { $('items').innerHTML = '<div class="vacio">' + (datos.convs.length ? 'Nada coincide con el filtro.' : 'Todavía no hay conversaciones. Cuando alguien escriba al número aparecerá aquí.') + '</div>'; return; }
+    var ots = otrosVisibles(q);
+    if (!ls.length && !ots.length) { $('items').innerHTML = '<div class="vacio">' + (datos.convs.length || otros.length ? 'Nada coincide con el filtro.' : 'Todavía no hay conversaciones. Cuando alguien escriba al número aparecerá aquí.') + '</div>'; return; }
     if (F.ventana === 'libre') ls.sort(function(a, b){ return ventana(a).fin - ventana(b).fin; });
-    $('items').innerHTML = ls.map(function(c){
+    var filasWa = ls.map(function(c){ return { ts: c.ultimo_ts || 0, c: c }; });
+    var todas = F.ventana === 'libre' ? filasWa : filasWa.concat(ots.map(function(x){ return { ts: x.ts, x: x }; })).sort(function(a, b){ return b.ts - a.ts; });
+    $('items').innerHTML = todas.map(function(it){
+      if (it.x) return itemOtro(it.x);
+      var c = it.c;
       var ult = c.msgs.filter(function(m){ return m.dir !== 'nota'; }).slice(-1)[0];
       var v = ventana(c), pi = plantillaInfo(c), lin = lineaDe(c), op = oporDe(c);
       var ini = (c.nombre || '#').trim().charAt(0).toUpperCase();
@@ -1017,14 +1117,17 @@
     }).catch(function(){ if (fichaDatos === f) { f.secuencia = { mensaje: 'No se pudo leer la secuencia.' }; pintarFicha(); } });
   }
   function pintarChat(bajar){
+    if (otro(sel)) return;
     var c = conv(sel); if (!c) return;
+    // Canal de origen (5 nov 2026): por donde contesto a la campaña original (campo Canal de la oportunidad en HubSpot).
+    var opCh = oporDe(c), canalOrigen = opCh && opCh.o.canal ? (CANAL[opCh.o.canal] || opCh.o.canal) : '';
     var v = ventana(c);
     var ms = $('msgs'); var alFinal = ms ? (ms.scrollHeight - ms.scrollTop - ms.clientHeight < 60) : true;
     var borrador = $('texto') ? $('texto').value : '';
     var esNota = $('comoNota') ? $('comoNota').checked : false;
     var html = '<div class="chatcab"><div class="quien"><span class="n"><button class="btn sec volver" id="volver">←</button>' + esc(c.nombre || tel(c.wa_id)) +
       ' <button class="lapiz" id="renombrar" title="Cambiar nombre">✎</button></span>' +
-      '<span class="m">' + esc(tel(c.wa_id)) + (variosNumeros() ? ' · por ' + esc(nombreNumero(c.phone_id)) : '') + (c.origen ? ' · ' + esc(c.origen) : '') + '</span></div><div class="acciones">' +
+      '<span class="m">' + esc(tel(c.wa_id)) + (variosNumeros() ? ' · por ' + esc(nombreNumero(c.phone_id)) : '') + (c.origen ? ' · ' + esc(c.origen) : '') + '</span><span class="m">Canal de la conversación: <b>WhatsApp</b>' + (canalOrigen ? ' · Canal de origen: <b>' + esc(canalOrigen) + '</b>' : '') + '</span></div><div class="acciones">' +
       (c.modo === 'bot' ? '<button class="btn tomar" id="tomar" data-tip="Tomas la conversación: el bot deja de contestar y le escribes tú">Me encargo yo</button>' : '<button class="btn sec" id="devolver" data-tip="El bot vuelve a contestar esta conversación">Devolver al bot</button>') +
       '</div></div>' + fichaOportunidad(c);
     html += c.modo === 'persona'
@@ -1692,7 +1795,7 @@
       tip.style.left = x + 'px'; tip.style.top = y + 'px';
     });
   })();
-  $('items').onclick = function(e){ var it = e.target.closest('.item'); if (it) abrir(it.getAttribute('data-w')); };
+  $('items').onclick = function(e){ var it = e.target.closest('.item'); if (!it) return; if (it.getAttribute('data-o')) abrirOtro(it.getAttribute('data-o')); else abrir(it.getAttribute('data-w')); };
   document.addEventListener('keydown', function(e){ if (e.key === 'Escape') cerrar(); });
 
   if (enN8n && K) {
