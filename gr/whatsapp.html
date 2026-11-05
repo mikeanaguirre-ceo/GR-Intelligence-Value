@@ -362,10 +362,10 @@
     if (ocupado) return Promise.resolve(); ocupado = true;
     $('estado').textContent = 'Actualizando…'; $('actualizar').disabled = true;
     return api('cargar').then(function(j){
-      datos = j; $('estado').textContent = 'Actualizado ' + hora(Math.floor(Date.now()/1000));
+      errorWa = ''; datos = j; $('estado').textContent = 'Actualizado ' + hora(Math.floor(Date.now()/1000));
       pintarLista(); if (sel) pintarChat(false);
       cargarOtros().catch(function(){});
-    }).catch(function(e){ $('estado').textContent = e.message; })
+    }).catch(function(e){ $('estado').textContent = e.message; errorWa = e.message; try { pintarLista(); } catch (x) {} })
       .finally(function(){ ocupado = false; $('actualizar').disabled = false; });
   }
 
@@ -476,6 +476,12 @@
   // las pestañas LinkedIn y Respuestas correo tambien se ven aqui como chat (solo lectura) con todo el historial. Salen de
   // gr-li-lista (una por persona y canal, la mas reciente); el historial se pide al abrir el chat. Para aprobar, «Ir a aprobar».
   var otros = [];
+  // Si WhatsApp no cargo (sin clave en la liga o error del servidor), se dice arriba de la lista: LinkedIn y correo si salen.
+  var errorWa = '';
+  function avisoWa(){
+    var t = !K ? 'No se cargaron las conversaciones de WhatsApp: abre el portal con la liga completa que incluye la clave (?k=…). Aquí solo se ven LinkedIn y correo.' : (errorWa ? 'No se cargaron las conversaciones de WhatsApp: ' + errorWa + '. Usa ↻ Actualizar.' : '');
+    return t ? '<div class="vacio" style="color:#a33;font-weight:600">' + esc(t) + '</div>' : '';
+  }
   var NOMBRE_CANAL = { whatsapp: 'WhatsApp', linkedin: 'LinkedIn', correo: 'Correo' };
   function postLi(cuerpo){
     return fetch(BASE + 'gr-li-lista', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) })
@@ -880,11 +886,11 @@
       return txt.indexOf(q) >= 0;
     });
     var ots = otrosVisibles(q);
-    if (!ls.length && !ots.length) { $('items').innerHTML = '<div class="vacio">' + (datos.convs.length || otros.length ? 'Nada coincide con el filtro.' : 'Todavía no hay conversaciones. Cuando alguien escriba al número aparecerá aquí.') + '</div>'; return; }
+    if (!ls.length && !ots.length) { $('items').innerHTML = avisoWa() + '<div class="vacio">' + (datos.convs.length || otros.length ? 'Nada coincide con el filtro.' : 'Todavía no hay conversaciones. Cuando alguien escriba al número aparecerá aquí.') + '</div>'; return; }
     if (F.ventana === 'libre') ls.sort(function(a, b){ return ventana(a).fin - ventana(b).fin; });
     var filasWa = ls.map(function(c){ return { ts: c.ultimo_ts || 0, c: c }; });
     var todas = F.ventana === 'libre' ? filasWa : filasWa.concat(ots.map(function(x){ return { ts: x.ts, x: x }; })).sort(function(a, b){ return b.ts - a.ts; });
-    $('items').innerHTML = todas.map(function(it){
+    $('items').innerHTML = avisoWa() + todas.map(function(it){
       if (it.x) return itemOtro(it.x);
       var c = it.c;
       var ult = c.msgs.filter(function(m){ return m.dir !== 'nota'; }).slice(-1)[0];
