@@ -125,6 +125,11 @@
       .catch(function(e){ $('lista').innerHTML = '<p class="msg bad">No se pudo cargar: ' + esc(e.message) + '</p>'; })
       .then(function(){ $('act').disabled = false; });
   }
+  // Sugerencia (5 nov 2026): los partners de Hootsuite sin Gmail conectado (correo) o sin secuencia de respuestas (LinkedIn)
+  // no envian solos: al aprobar, la respuesta se les manda por correo para que la envien ellos.
+  var GMAIL_N8N = ['Mike', 'Migue', 'Daniel', 'Martha', 'Fer'];
+  function esSugerencia(f){ var p = ((datos && datos.perfiles) || []).filter(function(x){ return x.corto === f.dueno; })[0] || {};
+    return CO ? GMAIL_N8N.indexOf(f.dueno) < 0 : !p.secuencia; }
   function nombreCat(c){ var x = (datos.categorias || []).filter(function(k){ return k.clave === c; })[0]; return x ? x.nombre : c; }
   function GRUPO(f){ return f.grupo || ({ pendiente: 'por_aprobar', enviando: 'enviadas', enviado: 'enviadas', enviado_auto: 'enviadas', descartado: 'descartadas', reemplazado: 'descartadas', error: 'error' })[f.estado] || 'otro'; }
   function filasPersona(){ return (datos.filas || []).filter(function(f){ return fPer === 'Todos' || f.dueno === fPer; }); }
@@ -182,10 +187,10 @@
       h += '<div class="bloque"><span class="t">Borrador ' + ay('Puedes editarlo. Si lo cambias, usa Guardar cambios y aprobar.') + '</span><textarea class="borr">' + esc(f.texto_final || f.borrador) + '</textarea></div>';
       h += '<div class="acc"><label class="sub" style="display:flex;gap:6px;align-items:center">Categoría <select class="cat selcat">' + opts + '</select> ' + ay('Si el bot se equivocó, cámbiala antes de aprobar; sirve para medir cada categoría.') + '</label></div>';
       h += '<div class="acc"><button class="p" data-acc="aprobar" title="Envía el borrador tal cual">Aprobar</button><button class="s" data-acc="editar" title="Envía el texto como quedó en el cuadro">Guardar cambios y aprobar</button>' +
-        '<button class="d" data-acc="descartar" title="No se le contesta nada">No contestar</button><span class="desde">' + T.perfil + ' <b>' + esc(f.dueno) + '</b> ' + ay(T.como) + '</span></div>';
+        '<button class="d" data-acc="descartar" title="No se le contesta nada">No contestar</button><span class="desde">' + (esSugerencia(f) ? 'Se le manda a <b>' + esc(f.dueno) + '</b> como sugerencia ' + ay('No tiene su ' + (CO ? 'Gmail conectado' : 'LinkedIn conectado con correo en Amplemarket') + ': al aprobar, le llega por correo la respuesta para que la envíe desde su ' + T.nombre + ', con copia a Mike.') : T.perfil + ' <b>' + esc(f.dueno) + '</b> ' + ay(T.como)) + '</span></div>';
     } else if (/enviad/.test(f.estado)) {
       h += '<div class="bloque"><span class="t">Lo que se envió' + (f.editado ? ' (editado)' : '') + '</span><div class="enviado">' + esc(f.texto_final || f.borrador) + '</div></div>';
-      h += '<div class="sub">' + (CO ? 'Desde el correo de ' : 'Desde el perfil de ') + esc(f.dueno) + (f.revisado_por ? ' · aprobó ' + esc(f.revisado_por) : '') + (f.enviado_ts ? ' · ' + esc(fecha(f.enviado_ts)) : '') + '</div>';
+      h += '<div class="sub">' + (/"modo":"sugerencia"/.test(f.envio || '') ? 'Se le mandó como sugerencia a ' : (CO ? 'Desde el correo de ' : 'Desde el perfil de ')) + esc(f.dueno) + (f.revisado_por ? ' · aprobó ' + esc(f.revisado_por) : '') + (f.enviado_ts ? ' · ' + esc(fecha(f.enviado_ts)) : '') + '</div>';
     } else {
       if (f.borrador) h += '<div class="bloque"><span class="t">Borrador que no se envió</span><div class="sub" style="white-space:pre-wrap">' + esc(f.borrador) + '</div></div>';
       h += '<div class="acc">' + (f.estado === 'descartado' ? '<button class="s" data-acc="reabrir" title="Vuelve a Por aprobar">Reabrir</button>' : '') + '<span class="desde">' + (f.revisado_por ? 'Lo decidió ' + esc(f.revisado_por) : '') + '</span></div>';
@@ -223,7 +228,7 @@
         cargar();
       }).catch(function(e){ toast('No se pudo: ' + e.message); card.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); });
     };
-    if (accion === 'aprobar' || accion === 'editar') confirmar('Se envía ' + (CO ? 'desde el correo de ' : 'desde el LinkedIn de ') + f.dueno + ' a ' + (f.prospecto || 'la persona') + ':', texto, ir);
+    if (accion === 'aprobar' || accion === 'editar') confirmar(esSugerencia(f) ? 'Se le manda a ' + f.dueno + ' como sugerencia para ' + (f.prospecto || 'la persona') + ' (no sale al prospecto):' : 'Se envía ' + (CO ? 'desde el correo de ' : 'desde el LinkedIn de ') + f.dueno + ' a ' + (f.prospecto || 'la persona') + ':', texto, ir);
     else if (accion === 'descartar') confirmar('¿No contestarle a ' + (f.prospecto || 'esta persona') + '?', '', ir);
     else ir();
   }
