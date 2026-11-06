@@ -185,6 +185,38 @@ details.extra{margin:4px 0 10px}details.extra summary{cursor:pointer;font-size:1
 .aviso{font-size:13px;border-radius:8px;padding:10px 12px;background:var(--celeste);color:var(--navy2);margin-top:10px}
 .aviso.error{background:var(--bloqf);color:var(--bloq)}
 footer{text-align:center;color:var(--suave);font-size:12px;padding:24px}
+/* Pulido para la demo (6 nov) */
+.portada:before{content:'';position:absolute;inset:-40% -10% auto auto;width:720px;height:720px;background:radial-gradient(closest-side,rgba(43,112,211,.35),transparent);pointer-events:none}
+.portada:after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent)}
+.portada-in{position:relative;z-index:1}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:20px;padding:5px 12px;margin-bottom:14px}
+.eyebrow .punto{width:7px;height:7px;border-radius:50%;background:#4ADE80;box-shadow:0 0 0 3px rgba(74,222,128,.25);animation:latido 2s ease-in-out infinite}
+@keyframes latido{50%{box-shadow:0 0 0 6px rgba(74,222,128,0)}}
+.portada h1 .grad{background:linear-gradient(90deg,#7FB2FF,#C9DEFF);-webkit-background-clip:text;background-clip:text;color:transparent}
+.kpi{backdrop-filter:blur(4px);border-left:3px solid #7FB2FF;transition:transform .2s,background .2s}
+.kpi:hover{transform:translateY(-2px);background:rgba(255,255,255,.12)}
+.kpi-grande{flex-basis:100%;max-width:440px}.kpi-grande b{font-size:22px}.kpi-grande i{font-style:normal;color:#7FB2FF}
+.camion{filter:drop-shadow(0 18px 30px rgba(0,0,0,.35));animation:flota 4s ease-in-out infinite}
+@keyframes flota{50%{transform:translateY(-3px)}}
+.carretera{animation:avanza 1.2s linear infinite}
+@keyframes avanza{to{transform:translateX(-120px)}}
+.btn{transition:transform .15s,box-shadow .15s,background .15s,border-color .15s}
+.btn-p{background:linear-gradient(180deg,#3A7FE0,var(--azul2));box-shadow:0 4px 12px rgba(43,112,211,.28)}
+.btn-p:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 18px rgba(43,112,211,.38)}
+.btn-s:hover:not(:disabled){transform:translateY(-1px)}
+.vista.activa{animation:entra .35s ease}
+@keyframes entra{from{opacity:0;transform:translateY(6px)}}
+.tarjeta{transition:box-shadow .2s}
+.tarjeta h2{letter-spacing:-.2px}
+.zona:hover{border-color:var(--azul);background:var(--celeste)}
+.zona svg{transition:transform .2s}.zona:hover svg{transform:translateY(-3px)}
+.docs li{transition:border-color .2s,background .2s;border-left-width:3px}
+.docs li.leido{border-left-color:var(--ok)}.docs li.leyendo{border-left-color:var(--azul)}.docs li.error{border-left-color:var(--bloq)}
+.paso{transition:color .2s,border-color .2s}
+.paso.hecho{color:var(--ok)}
+.cuota-grande{background:linear-gradient(135deg,var(--navy),#123B73);box-shadow:0 8px 24px rgba(4,30,66,.25)}
+.cuota-grande b{letter-spacing:-.5px}
+@media (prefers-reduced-motion:reduce){.camion,.carretera,.eyebrow .punto,.vista.activa{animation:none}}
 @media (max-width:900px){
   .portada-in{grid-template-columns:1fr;padding-top:26px}.camion{justify-self:center}
   .g2,.g3,.g32,.datos-cli,.ind{grid-template-columns:1fr}
@@ -203,21 +235,23 @@ footer{text-align:center;color:var(--suave);font-size:12px;padding:24px}
 
 <section class="portada"><div class="portada-in">
   <div>
-    <h1>Del PDF a la cotización,<br>en minutos.</h1>
+    <span class="eyebrow"><span class="punto"></span>Lectura con IA · Metodizado · Cotización</span>
+    <h1>Del PDF a la cotización,<br><span class="grad">en minutos.</span></h1>
     <p>Sube las declaraciones anuales y el Reporte Tributario de SUNAT. La IA los lee, arma el metodizado en la plantilla PCA, revisa que todo cuadre y prepara la cotización con su cronograma, lista para enviar.</p>
     <div class="kpis">
-      <div class="kpi"><b>~2 h 20 min → 15 min</b><span>por expediente</span></div>
-      <div class="kpi"><b>200 / 200</b><span>cifras iguales al Excel</span></div>
+      <div class="kpi kpi-grande"><b>2 h 20 min <i>→</i> menos de 5 min</b><span>por expediente, con la revisión del analista</span></div>
+      <div class="kpi"><b>~10 s</b><span>para leer los 6 documentos</span></div>
+      <div class="kpi"><b>1,018 / 1,018</b><span>cifras leídas sin error</span></div>
       <div class="kpi"><b>PCA intacta</b><span>macros y fórmulas de Suecia</span></div>
     </div>
   </div>
-  <svg class="camion" viewBox="0 0 640 230" role="img" aria-label="Camión">
+  <svg class="camion" id="camion" viewBox="0 0 640 230" role="img" aria-label="Camión">
     <defs>
       <linearGradient id="cab" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#F4F7FB"/><stop offset="1" stop-color="#C9D5E6"/></linearGradient>
       <linearGradient id="rem" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2B70D3"/><stop offset="1" stop-color="#1A4F9E"/></linearGradient>
     </defs>
     <rect x="0" y="205" width="640" height="3" fill="rgba(255,255,255,.18)"/>
-    <g fill="rgba(255,255,255,.35)"><rect x="20" y="214" width="60" height="3"/><rect x="140" y="214" width="60" height="3"/><rect x="260" y="214" width="60" height="3"/><rect x="380" y="214" width="60" height="3"/><rect x="500" y="214" width="60" height="3"/></g>
+    <g class="carretera" fill="rgba(255,255,255,.35)"><rect x="20" y="214" width="60" height="3"/><rect x="140" y="214" width="60" height="3"/><rect x="260" y="214" width="60" height="3"/><rect x="380" y="214" width="60" height="3"/><rect x="500" y="214" width="60" height="3"/></g>
     <!-- remolque -->
     <rect x="40" y="58" width="370" height="118" rx="6" fill="url(#rem)"/>
     <rect x="40" y="58" width="370" height="10" rx="4" fill="rgba(255,255,255,.18)"/>
@@ -233,7 +267,7 @@ footer{text-align:center;color:var(--suave);font-size:12px;padding:24px}
     <rect x="410" y="168" width="190" height="18" rx="3" fill="#0B1F3D"/>
     <rect x="588" y="166" width="14" height="8" rx="2" fill="#FFD27A"/>
     <!-- ruedas -->
-    <g><circle cx="100" cy="190" r="22" fill="#0B1F3D"/><circle cx="100" cy="190" r="9" fill="#8FA3BF"/>
+    <g class="ruedas"><circle cx="100" cy="190" r="22" fill="#0B1F3D"/><circle cx="100" cy="190" r="9" fill="#8FA3BF"/>
        <circle cx="152" cy="190" r="22" fill="#0B1F3D"/><circle cx="152" cy="190" r="9" fill="#8FA3BF"/>
        <circle cx="350" cy="190" r="22" fill="#0B1F3D"/><circle cx="350" cy="190" r="9" fill="#8FA3BF"/>
        <circle cx="460" cy="190" r="22" fill="#0B1F3D"/><circle cx="460" cy="190" r="9" fill="#8FA3BF"/>
@@ -549,7 +583,7 @@ function pintarDocs(){
   $('docs').innerHTML=E.archivos.map(function(a,i){
     var col={pendiente:'var(--suave)',leyendo:'var(--azul)',leido:'var(--ok)',error:'var(--bloq)'}[a.estado];
     var est={pendiente:'Pendiente',leyendo:'<span class="spin"></span> Leyendo',leido:'✓ Leído',error:'Error'}[a.estado];
-    return '<li class="'+(a.base64?'ver':'')+'" data-i="'+i+'"><div class="ico">PDF</div><div><div class="nom">'+esc(a.nombre)+'</div><div class="det">'+esc(a.detalle)+'</div>'+
+    return '<li class="'+(a.base64?'ver ':'')+a.estado+'" data-i="'+i+'"><div class="ico">PDF</div><div><div class="nom">'+esc(a.nombre)+'</div><div class="det">'+esc(a.detalle)+'</div>'+
       (a.base64?'<div class="lupa">🔍 Ver el PDF y lo que leyó la IA</div>':'')+'</div>'+
       '<div class="est" style="color:'+col+'">'+est+'</div>'+(a.estado==='leyendo'?'':'<button class="quitar" data-i="'+i+'" title="Quitar">×</button>')+'</li>';
   }).join('');
@@ -604,6 +638,14 @@ function listarDrive(carpeta){
 }
 $('btnListarDrive').onclick=function(){listarDrive(null);};
 
+function huella(texto){
+  try{ return crypto.subtle.digest('SHA-256',new TextEncoder().encode(texto)).then(function(b){
+    return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');}); }
+  catch(e){ return Promise.resolve(null); }
+}
+function lecturaGuardada(h){ if(!h) return null; try{ var t=localStorage.getItem('scania-lectura-'+h); return t?JSON.parse(t):null; }catch(e){ return null; } }
+function guardarLectura(h,r){ if(!h) return; try{ localStorage.setItem('scania-lectura-'+h,JSON.stringify({ok:true,tipo:r.tipo,datos:r.datos})); }catch(e){} }
+
 function llamar(cuerpo, segundos){
   var ctrl=new AbortController(); var t=setTimeout(function(){ctrl.abort();},(segundos||110)*1000);
   return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cuerpo),signal:ctrl.signal})
@@ -617,9 +659,18 @@ $('btnLeer').onclick=function(){
   pend.forEach(function(a){a.estado='leyendo';a.detalle='La IA está leyendo el documento…';});
   pintarDocs(); $('btnLeer').disabled=true;
   Promise.all(pend.map(function(a){
-    return llamar({accion:'leer',codigo:codigo,archivo:{nombre:a.nombre,base64:a.base64}}).then(function(r){
+    // Candado contra duplicados: si este mismo PDF ya se leyó en este navegador, se usa la lectura guardada (no se vuelve a cobrar).
+    return huella(a.base64).then(function(h){
+      var guardada=lecturaGuardada(h);
+      if(guardada){ guardada.desdeMemoria=true; return guardada; }
+      return llamar({accion:'leer',codigo:codigo,archivo:{nombre:a.nombre,base64:a.base64}}).then(function(r){
+        if(r.ok) guardarLectura(h,r);
+        return r;
+      });
+    }).then(function(r){
       if(!r.ok) throw new Error(r.error||'No se pudo leer');
       incorporar(r.tipo,r.datos,a);
+      if(r.desdeMemoria) a.detalle+=' · ya se había leído: sin costo';
     }).catch(function(e){a.estado='error';a.detalle=e.name==='AbortError'?'Tardó demasiado; vuelve a intentar':e.message;})
       .finally(pintarDocs);
   })).then(function(){
