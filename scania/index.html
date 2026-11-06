@@ -643,8 +643,12 @@ function huella(texto){
     return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');}); }
   catch(e){ return Promise.resolve(null); }
 }
-function lecturaGuardada(h){ if(!h) return null; try{ var t=localStorage.getItem('scania-lectura-'+h); return t?JSON.parse(t):null; }catch(e){ return null; } }
-function guardarLectura(h,r){ if(!h) return; try{ localStorage.setItem('scania-lectura-'+h,JSON.stringify({ok:true,tipo:r.tipo,datos:r.datos})); }catch(e){} }
+// Candado contra duplicados dentro del expediente: si el mismo PDF se sube dos veces en este expediente, no se vuelve a cobrar.
+// Con "Nuevo expediente" se empieza de cero, así que cualquier empresa se puede volver a leer con la IA (pedido de Mike, 6 nov).
+var LECTURAS={};
+try{ Object.keys(localStorage).forEach(function(k){ if(k.indexOf('scania-lectura-')===0) localStorage.removeItem(k); }); }catch(e){}
+function lecturaGuardada(h){ return h&&LECTURAS[h]?JSON.parse(JSON.stringify(LECTURAS[h])):null; }
+function guardarLectura(h,r){ if(h) LECTURAS[h]={ok:true,tipo:r.tipo,datos:r.datos}; }
 
 function llamar(cuerpo, segundos){
   var ctrl=new AbortController(); var t=setTimeout(function(){ctrl.abort();},(segundos||110)*1000);
@@ -670,7 +674,7 @@ $('btnLeer').onclick=function(){
     }).then(function(r){
       if(!r.ok) throw new Error(r.error||'No se pudo leer');
       incorporar(r.tipo,r.datos,a);
-      if(r.desdeMemoria) a.detalle+=' · ya se había leído: sin costo';
+      if(r.desdeMemoria) a.detalle+=' · repetido en este expediente: sin costo';
     }).catch(function(e){a.estado='error';a.detalle=e.name==='AbortError'?'Tardó demasiado; vuelve a intentar':e.message;})
       .finally(pintarDocs);
   })).then(function(){
