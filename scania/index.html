@@ -464,7 +464,7 @@ footer{text-align:center;color:var(--suave);font-size:12px;padding:24px}
       <p class="sub">Todo desde aquí, sin abrir Outlook ni Excel.</p>
       <label class="opcion"><input type="checkbox" id="optCorreo" checked><div class="t"><b>Enviar el correo con la cotización</b><span>Gmail, con el PDF adjunto.</span></div></label>
       <label class="opcion"><input type="checkbox" id="optDrive" checked><div class="t"><b>Guardar el expediente en Drive</b><span>Una carpeta con la PCA llena, la cotización y los PDF del cliente.</span></div></label>
-      <label class="opcion"><input type="checkbox" id="optCal" checked><div class="t"><b>Agendar el seguimiento en Calendar</b><span>Para revalidar condiciones antes de la firma.</span>
+      <label class="opcion"><input type="checkbox" id="optCal"><div class="t"><b>Agendar el seguimiento en Calendar (de Great Revenue)</b><span>Para revalidar condiciones antes de la firma.</span>
         <div class="fila2" style="margin-top:10px"><input id="calFecha" type="date" class="campo-in" style="border:1px solid var(--linea);border-radius:8px;padding:7px 9px"><input id="calHora" type="time" value="10:00" style="border:1px solid var(--linea);border-radius:8px;padding:7px 9px"></div></div></label>
       <button class="btn btn-p" id="btnEnviar" style="width:100%;justify-content:center;margin-top:6px">Enviar y registrar</button>
       <div class="aviso" id="avisoEnvio" style="display:none"></div>
@@ -652,17 +652,8 @@ function listarDrive(carpeta,agregarTodos){
 $('btnListarDrive').onclick=function(){listarDrive(null);};
 document.querySelectorAll('.btn-expediente').forEach(function(c){c.onclick=function(){E.rutaDrive=[];listarDrive({id:c.dataset.id,nombre:c.dataset.n},true);};});
 
-function huella(texto){
-  try{ return crypto.subtle.digest('SHA-256',new TextEncoder().encode(texto)).then(function(b){
-    return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');}); }
-  catch(e){ return Promise.resolve(null); }
-}
-// Candado contra duplicados dentro del expediente: si el mismo PDF se sube dos veces en este expediente, no se vuelve a cobrar.
-// Con "Nuevo expediente" se empieza de cero, así que cualquier empresa se puede volver a leer con la IA (pedido de Mike, 6 nov).
-var LECTURAS={};
+// Limpia lecturas guardadas por versiones anteriores del portal.
 try{ Object.keys(localStorage).forEach(function(k){ if(k.indexOf('scania-lectura-')===0) localStorage.removeItem(k); }); }catch(e){}
-function lecturaGuardada(h){ return h&&LECTURAS[h]?JSON.parse(JSON.stringify(LECTURAS[h])):null; }
-function guardarLectura(h,r){ if(h) LECTURAS[h]={ok:true,tipo:r.tipo,datos:r.datos}; }
 
 function llamar(cuerpo, segundos){
   var ctrl=new AbortController(); var t=setTimeout(function(){ctrl.abort();},(segundos||110)*1000);
@@ -677,18 +668,10 @@ $('btnLeer').onclick=function(){
   pend.forEach(function(a){a.estado='leyendo';a.detalle='La IA está leyendo el documento…';});
   pintarDocs(); $('btnLeer').disabled=true;
   Promise.all(pend.map(function(a){
-    // Candado contra duplicados: si este mismo PDF ya se leyó en este navegador, se usa la lectura guardada (no se vuelve a cobrar).
-    return huella(a.base64).then(function(h){
-      var guardada=lecturaGuardada(h);
-      if(guardada){ guardada.desdeMemoria=true; return guardada; }
-      return llamar({accion:'leer',codigo:codigo,archivo:{nombre:a.nombre,base64:a.base64}}).then(function(r){
-        if(r.ok) guardarLectura(h,r);
-        return r;
-      });
-    }).then(function(r){
+    // Sin candado de repetidos (pedido de Mike, 6 nov): cada lectura va a la IA, aunque el PDF ya se haya leído.
+    return llamar({accion:'leer',codigo:codigo,archivo:{nombre:a.nombre,base64:a.base64}}).then(function(r){
       if(!r.ok) throw new Error(r.error||'No se pudo leer');
       incorporar(r.tipo,r.datos,a);
-      if(r.desdeMemoria) a.detalle+=' · repetido en este expediente: sin costo';
     }).catch(function(e){a.estado='error';a.detalle=e.name==='AbortError'?'Tardó demasiado; vuelve a intentar':e.message;})
       .finally(pintarDocs);
   })).then(function(){
