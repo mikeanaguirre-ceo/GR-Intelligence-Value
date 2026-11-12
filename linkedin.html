@@ -208,7 +208,8 @@
       if (f.error) h += '<p class="msg bad">' + esc(f.error) + '</p>';
       var opts = (datos.categorias || []).map(function(c){ return '<option value="' + c.clave + '"' + (c.clave === f.categoria ? ' selected' : '') + '>' + esc(c.nombre) + '</option>'; }).join('');
       h += '<div class="bloque"><span class="t">Borrador ' + ay('Puedes editarlo. Si lo cambias, usa Guardar cambios y aprobar.') + '</span><textarea class="borr">' + esc(f.texto_final || f.borrador) + '</textarea></div>';
-      h += '<div class="acc"><label class="sub" style="display:flex;gap:6px;align-items:center">Categoría <select class="cat selcat">' + opts + '</select> ' + ay('Si el bot se equivocó, cámbiala antes de aprobar; sirve para medir cada categoría.') + '</label></div>';
+      h += '<div class="acc"><label class="sub" style="display:flex;gap:6px;align-items:center">Categoría <select class="cat selcat">' + opts + '</select> ' + ay('Si el bot se equivocó, cámbiala antes de aprobar; sirve para medir cada categoría.') + '</label>' +
+        (CO ? '<label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="adj"' + (f.categoria === 'pide_info' ? ' checked' : '') + '> Adjuntar One Page ' + ay('Manda en el mismo correo el One Page del producto de la campaña. Si la respuesta está en inglés va la versión en inglés cuando existe (hoy solo Amplemarket). Se marca sola cuando pide información.') + '</label>' : '') + '</div>';
       h += '<div class="acc"><button class="p" data-acc="aprobar" title="Envía el borrador tal cual">Aprobar</button><button class="s" data-acc="editar" title="Envía el texto como quedó en el cuadro">Guardar cambios y aprobar</button>' +
         '<button class="d" data-acc="descartar" title="No se le contesta nada">No contestar</button><span class="desde">' + (esSugerencia(f) ? 'Se le manda a <b>' + esc(f.dueno) + '</b> como sugerencia ' + ay('No tiene su ' + (CO ? 'Gmail conectado' : 'LinkedIn conectado con correo en Amplemarket') + ': al aprobar, le llega por correo la respuesta para que la envíe desde su ' + T.nombre + ', con copia a Mike.') : T.perfil + ' <b>' + esc(f.dueno) + '</b> ' + ay(T.como)) + '</span></div>';
     } else if (/enviad/.test(f.estado)) {
@@ -242,7 +243,8 @@
     var cambiado = texto !== String(f.borrador || '').trim();
     if (accion === 'aprobar' && cambiado) { toast('Cambiaste el texto: usa Guardar cambios y aprobar.'); return; }
     if ((accion === 'aprobar' || accion === 'editar') && !texto) { toast('El mensaje está vacío.'); return; }
-    var cuerpo = { id: f.evento_id, accion: accion, por: actor(), categoria: cat };
+    var adj = card.querySelector('input.adj');
+    var cuerpo = { id: f.evento_id, accion: accion, por: actor(), categoria: cat, adjuntar: !!(CO && adj && adj.checked) };
     if (accion === 'editar') cuerpo.texto = texto;
     var ir = function(){
       card.querySelectorAll('button').forEach(function(b){ b.disabled = true; });
@@ -254,7 +256,7 @@
         cargar();
       }).catch(function(e){ toast('No se pudo: ' + e.message); card.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); });
     };
-    if (accion === 'aprobar' || accion === 'editar') confirmar(esSugerencia(f) ? 'Se le manda a ' + f.dueno + ' como sugerencia para ' + (f.prospecto || 'la persona') + ' (no sale al prospecto):' : 'Se envía ' + (CO ? 'desde el correo de ' : 'desde el LinkedIn de ') + f.dueno + ' a ' + (f.prospecto || 'la persona') + ':', texto, ir);
+    if (accion === 'aprobar' || accion === 'editar') confirmar(esSugerencia(f) ? 'Se le manda a ' + f.dueno + ' como sugerencia para ' + (f.prospecto || 'la persona') + ' (no sale al prospecto):' : 'Se envía ' + (CO ? 'desde el correo de ' : 'desde el LinkedIn de ') + f.dueno + ' a ' + (f.prospecto || 'la persona') + (cuerpo.adjuntar ? ', con el One Page adjunto' : '') + ':', texto, ir);
     else if (accion === 'descartar') confirmar('¿No contestarle a ' + (f.prospecto || 'esta persona') + '?', '', ir);
     else ir();
   }
