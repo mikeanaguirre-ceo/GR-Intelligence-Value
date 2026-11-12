@@ -210,6 +210,13 @@
       h += '<div class="bloque"><span class="t">Borrador ' + ay('Puedes editarlo. Si lo cambias, usa Guardar cambios y aprobar.') + '</span><textarea class="borr">' + esc(f.texto_final || f.borrador) + '</textarea></div>';
       h += '<div class="acc"><label class="sub" style="display:flex;gap:6px;align-items:center">Categoría <select class="cat selcat">' + opts + '</select> ' + ay('Si el bot se equivocó, cámbiala antes de aprobar; sirve para medir cada categoría.') + '</label>' +
         (CO ? '<label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="adj"' + (f.categoria === 'pide_info' || /one ?page/i.test(f.borrador || '') ? ' checked' : '') + '> Adjuntar One Page ' + ay('Manda en el mismo correo el One Page del producto de la campaña. Si la respuesta está en inglés va la versión en inglés (ya existen las 13). Se marca sola cuando pide información o cuando el mensaje menciona el One Page.') + '</label>' : '') + '</div>';
+      var reu = null; try { reu = JSON.parse(f.reunion || 'null'); } catch (e) { reu = null; }
+      if (reu && reu.inicio_cliente) {
+        var dd = reu.inicio_cliente.split('T'), pf = dd[0].split('-').map(Number);
+        var cuando = new Date(Date.UTC(pf[0], pf[1] - 1, pf[2], 12)).toLocaleDateString('es-MX', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' }) + ', ' + dd[1] + ' h';
+        h += '<div class="bloque"><span class="t">Reunión propuesta ' + ay('La IA la dejó en un horario libre de las agendas de quienes van a la demo. Al aprobar se crea la invitación con Meet desde el calendario de Martha. Si es una reagenda, borra la invitación anterior.') + '</span>' +
+          '<label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="inv" checked> Crear la invitación al aprobar: ' + esc(cuando) + ' (hora de ' + esc(reu.zona_nombre || '') + ') · ' + esc(reu.correo) + ' · ' + esc(reu.producto || '') + '</label></div>';
+      }
       h += '<div class="acc"><button class="p" data-acc="aprobar" title="Envía el borrador tal cual">Aprobar</button><button class="s" data-acc="editar" title="Envía el texto como quedó en el cuadro">Guardar cambios y aprobar</button>' +
         '<button class="d" data-acc="descartar" title="No se le contesta nada">No contestar</button><button class="s" data-acc="a_mano" title="Ya le contestaste directo en LinkedIn o por correo: sale de Por aprobar y no se envía nada">Contestado a mano</button><span class="desde">' + (esSugerencia(f) ? 'Se le manda a <b>' + esc(f.dueno) + '</b> como sugerencia ' + ay('No tiene su ' + (CO ? 'Gmail conectado' : 'LinkedIn conectado con correo en Amplemarket') + ': al aprobar, le llega por correo la respuesta para que la envíe desde su ' + T.nombre + ', con copia a Mike.') : T.perfil + ' <b>' + esc(f.dueno) + '</b> ' + ay(T.como)) + '</span></div>';
     } else if (/enviad/.test(f.estado)) {
@@ -244,7 +251,8 @@
     if (accion === 'aprobar' && cambiado) { toast('Cambiaste el texto: usa Guardar cambios y aprobar.'); return; }
     if ((accion === 'aprobar' || accion === 'editar') && !texto) { toast('El mensaje está vacío.'); return; }
     var adj = card.querySelector('input.adj');
-    var cuerpo = { id: f.evento_id, accion: accion, por: actor(), categoria: cat, adjuntar: !!(CO && adj && adj.checked) };
+    var inv = card.querySelector('input.inv');
+    var cuerpo = { id: f.evento_id, accion: accion, por: actor(), categoria: cat, adjuntar: !!(CO && adj && adj.checked), crear_invitacion: inv ? inv.checked : true };
     if (accion === 'editar') cuerpo.texto = texto;
     var ir = function(){
       card.querySelectorAll('button').forEach(function(b){ b.disabled = true; });
@@ -256,7 +264,7 @@
         cargar();
       }).catch(function(e){ toast('No se pudo: ' + e.message); card.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); });
     };
-    if (accion === 'aprobar' || accion === 'editar') confirmar(esSugerencia(f) ? 'Se le manda a ' + f.dueno + ' como sugerencia para ' + (f.prospecto || 'la persona') + ' (no sale al prospecto):' : 'Se envía ' + (CO ? 'desde el correo de ' : 'desde el LinkedIn de ') + f.dueno + ' a ' + (f.prospecto || 'la persona') + (cuerpo.adjuntar ? ', con el One Page adjunto' : '') + ':', texto, ir);
+    if (accion === 'aprobar' || accion === 'editar') confirmar(esSugerencia(f) ? 'Se le manda a ' + f.dueno + ' como sugerencia para ' + (f.prospecto || 'la persona') + ' (no sale al prospecto):' : 'Se envía ' + (CO ? 'desde el correo de ' : 'desde el LinkedIn de ') + f.dueno + ' a ' + (f.prospecto || 'la persona') + (cuerpo.adjuntar ? ', con el One Page adjunto' : '') + (inv && inv.checked ? ', y se crea la invitación de la reunión' : '') + ':', texto, ir);
     else if (accion === 'descartar') confirmar('¿No contestarle a ' + (f.prospecto || 'esta persona') + '?', '', ir);
     else if (accion === 'a_mano') confirmar('¿Ya le contestaste a ' + (f.prospecto || 'esta persona') + ' fuera del portal? Pasa a Contestadas a mano y no se envía nada.', '', ir);
     else ir();
