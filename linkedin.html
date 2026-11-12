@@ -101,7 +101,7 @@
   var ESTADOS = [['por_aprobar', 'Por aprobar', 'Borradores que esperan que alguien los apruebe, los edite o los marque como No contestar.'],
     ['en_cola', 'En cola', 'Aprobadas que Amplemarket todavía no confirma que salieron (tarda unos 15 minutos). Usa Actualizar para confirmarlo.'],
     ['enviadas', 'Enviadas', CO ? 'Ya salieron desde el correo de su dueño.' : 'Amplemarket ya confirmó que salieron (Entregada), o se enviaron antes de que existiera la confirmación (Enviada).'],
-    ['a_mano', 'Contestadas a mano', 'Alguien ya les contestó directo en ' + T.nombre + ', así que el sistema no envió nada para no duplicar.'],
+    ['a_mano', 'Contestadas a mano', 'Alguien ya les contestó directo en ' + T.nombre + ' (lo detectó el sistema o lo marcaron con el botón Contestado a mano), así que no se envió nada para no duplicar.'],
     ['descartadas', 'Descartadas', 'Marcadas como No contestar, o reemplazadas porque la persona volvió a escribir.'],
     ['error', 'Error', T.fallo]];
   if (CO) ESTADOS = ESTADOS.filter(function(e){ return e[0] !== 'en_cola'; });   // en correo Gmail confirma al momento
@@ -211,7 +211,7 @@
       h += '<div class="acc"><label class="sub" style="display:flex;gap:6px;align-items:center">Categoría <select class="cat selcat">' + opts + '</select> ' + ay('Si el bot se equivocó, cámbiala antes de aprobar; sirve para medir cada categoría.') + '</label>' +
         (CO ? '<label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="adj"' + (f.categoria === 'pide_info' || /one ?page/i.test(f.borrador || '') ? ' checked' : '') + '> Adjuntar One Page ' + ay('Manda en el mismo correo el One Page del producto de la campaña. Si la respuesta está en inglés va la versión en inglés (ya existen las 13). Se marca sola cuando pide información o cuando el mensaje menciona el One Page.') + '</label>' : '') + '</div>';
       h += '<div class="acc"><button class="p" data-acc="aprobar" title="Envía el borrador tal cual">Aprobar</button><button class="s" data-acc="editar" title="Envía el texto como quedó en el cuadro">Guardar cambios y aprobar</button>' +
-        '<button class="d" data-acc="descartar" title="No se le contesta nada">No contestar</button><span class="desde">' + (esSugerencia(f) ? 'Se le manda a <b>' + esc(f.dueno) + '</b> como sugerencia ' + ay('No tiene su ' + (CO ? 'Gmail conectado' : 'LinkedIn conectado con correo en Amplemarket') + ': al aprobar, le llega por correo la respuesta para que la envíe desde su ' + T.nombre + ', con copia a Mike.') : T.perfil + ' <b>' + esc(f.dueno) + '</b> ' + ay(T.como)) + '</span></div>';
+        '<button class="d" data-acc="descartar" title="No se le contesta nada">No contestar</button><button class="s" data-acc="a_mano" title="Ya le contestaste directo en LinkedIn o por correo: sale de Por aprobar y no se envía nada">Contestado a mano</button><span class="desde">' + (esSugerencia(f) ? 'Se le manda a <b>' + esc(f.dueno) + '</b> como sugerencia ' + ay('No tiene su ' + (CO ? 'Gmail conectado' : 'LinkedIn conectado con correo en Amplemarket') + ': al aprobar, le llega por correo la respuesta para que la envíe desde su ' + T.nombre + ', con copia a Mike.') : T.perfil + ' <b>' + esc(f.dueno) + '</b> ' + ay(T.como)) + '</span></div>';
     } else if (/enviad/.test(f.estado)) {
       h += '<div class="bloque"><span class="t">Lo que se envió' + (f.editado ? ' (editado)' : '') + '</span><div class="enviado">' + esc(f.texto_final || f.borrador) + '</div></div>';
       h += '<div class="sub">' + (/"modo":"sugerencia"/.test(f.envio || '') ? 'Se le mandó como sugerencia a ' : (CO ? 'Desde el correo de ' : 'Desde el perfil de ')) + esc(f.dueno) + (f.revisado_por ? ' · aprobó ' + esc(f.revisado_por) : '') + (f.enviado_ts ? ' · aprobada ' + esc(fecha(f.enviado_ts)) : '') + (f.entregado_ts ? ' · entregada ' + esc(fecha(f.entregado_ts)) : '') + '</div>';
@@ -251,13 +251,14 @@
       post('gr-li-decidir', cuerpo).then(function(r){
         if (r.estado === 'descartado' && r.error) { toast(r.error); cargar(); return; }
         if (r.ok === false) throw new Error(r.error || 'No se pudo');
-        toast(accion === 'descartar' ? 'Listo: no se le contesta.' : accion === 'reabrir' ? 'Regresó a Por aprobar.' : CO || esSugerencia(f) ? 'Enviado ' + T.desde + ' ' + f.dueno + '.' :
+        toast(accion === 'a_mano' ? 'Listo: quedó en Contestadas a mano.' : accion === 'descartar' ? 'Listo: no se le contesta.' : accion === 'reabrir' ? 'Regresó a Por aprobar.' : CO || esSugerencia(f) ? 'Enviado ' + T.desde + ' ' + f.dueno + '.' :
           'Quedó en cola en el LinkedIn de ' + f.dueno + '. Sale en unos 15 minutos; usa Actualizar para confirmar la entrega.');
         cargar();
       }).catch(function(e){ toast('No se pudo: ' + e.message); card.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); });
     };
     if (accion === 'aprobar' || accion === 'editar') confirmar(esSugerencia(f) ? 'Se le manda a ' + f.dueno + ' como sugerencia para ' + (f.prospecto || 'la persona') + ' (no sale al prospecto):' : 'Se envía ' + (CO ? 'desde el correo de ' : 'desde el LinkedIn de ') + f.dueno + ' a ' + (f.prospecto || 'la persona') + (cuerpo.adjuntar ? ', con el One Page adjunto' : '') + ':', texto, ir);
     else if (accion === 'descartar') confirmar('¿No contestarle a ' + (f.prospecto || 'esta persona') + '?', '', ir);
+    else if (accion === 'a_mano') confirmar('¿Ya le contestaste a ' + (f.prospecto || 'esta persona') + ' fuera del portal? Pasa a Contestadas a mano y no se envía nada.', '', ir);
     else ir();
   }
   document.addEventListener('click', function(e){
