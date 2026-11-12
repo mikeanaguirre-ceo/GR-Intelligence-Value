@@ -126,6 +126,8 @@
   // Por aprobar las que alguien ya contestó a mano. Al abrir la página solo se lee la lista (sin llamadas a Amplemarket).
   function revisar(){
     $('act').disabled = true;
+    // 12-nov: también trae los correos sin secuencia de personas que ya están en el portal (continúan una conversación).
+    post('gr-li-rezago', { continuaciones: true }).catch(function(){});
     post('gr-li-revisar', {}).then(function(r){
       var m = [];
       if ((r.entregadas || []).length) m.push((r.entregadas.length === 1 ? '1 entregada' : r.entregadas.length + ' entregadas'));
