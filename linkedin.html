@@ -65,7 +65,7 @@
 <main>
   <div class="barra">
     <h1>Respuestas de LinkedIn <span class="ayuda" tabindex="0" data-ayuda="Cuando un prospecto contesta en LinkedIn, el bot lee todo el hilo y su perfil, la clasifica y deja un borrador. Nada sale sin que alguien lo apruebe, salvo las categorías que Mike libere.">i</span></h1>
-    <div class="acc"><span id="hora" class="sub"></span><button class="s" id="act">Actualizar</button> <span class="ayuda" tabindex="0" data-ayuda="La página no se actualiza sola: usa este botón para traer lo nuevo.">i</span></div>
+    <div class="acc"><span id="hora" class="sub"></span><button class="s" id="act">Actualizar</button> <span class="ayuda" tabindex="0" data-ayuda="La página no se actualiza sola. Este botón trae lo nuevo, confirma en Amplemarket qué respuestas ya salieron y saca de Por aprobar las que alguien ya contestó a mano.">i</span></div>
   </div>
   <section class="filtros" id="filtros"></section>
   <details class="card" id="panelCats"></details>
@@ -99,8 +99,8 @@
   }
   function etiqueta(id){ var x = ((CAT && CAT.personas) || []).filter(function(p){ return p.id === id; })[0]; return x ? x.label : id; }
   var ESTADOS = [['por_aprobar', 'Por aprobar', 'Borradores que esperan que alguien los apruebe, los edite o los marque como No contestar.'],
-    ['enviadas', 'Enviadas', 'Ya salieron (o están saliendo) ' + T.desde + ' su dueño.'],
-    ['descartadas', 'Descartadas', 'Marcadas como No contestar, o reemplazadas porque la persona volvió a escribir.'],
+    ['enviadas', 'Enviadas', CO ? 'Ya salieron desde el correo de su dueño.' : 'Aprobadas. «En cola» hasta que Amplemarket confirma que salió; «Entregada» cuando ya llegó. Usa Actualizar para confirmarlo.'],
+    ['descartadas', 'Descartadas', 'Marcadas como No contestar, contestadas a mano (no se envía nada para no duplicar), o reemplazadas porque la persona volvió a escribir.'],
     ['error', 'Error', T.fallo]];
   var datos = null, fPer = leer('gr_' + (CO ? 'co' : 'li') + '_per') || 'Todos', fEst = 'por_aprobar', fCat = 'todas';
   var $ = function(id){ return document.getElementById(id); };
@@ -118,6 +118,20 @@
         if (!r.ok || !j) throw new Error((j && (j.error || j.message)) || ('Error ' + r.status));
         return j;
       }); });
+  }
+  // 11 nov 2026: Actualizar primero revisa en Amplemarket (gr-li-revisar): confirma las entregas de las «En cola» y saca de
+  // Por aprobar las que alguien ya contestó a mano. Al abrir la página solo se lee la lista (sin llamadas a Amplemarket).
+  function revisar(){
+    $('act').disabled = true;
+    post('gr-li-revisar', {}).then(function(r){
+      var m = [];
+      if ((r.entregadas || []).length) m.push((r.entregadas.length === 1 ? '1 entregada' : r.entregadas.length + ' entregadas'));
+      if ((r.no_salieron || []).length) m.push(r.no_salieron.length + ' no salieron (pasan a Error): ' + r.no_salieron.join(', '));
+      if ((r.contestadas_a_mano || []).length) m.push(r.contestadas_a_mano.length + ' ya contestadas a mano: ' + r.contestadas_a_mano.join(', '));
+      if (r.siguen_en_cola) m.push(r.siguen_en_cola + ' siguen en cola');
+      if ((r.errores || []).length) m.push('No se pudo revisar todo: ' + r.errores.join(' | '));
+      toast(m.length ? m.join(' · ') : 'Revisado en Amplemarket: no hay cambios de entrega ni contestadas a mano.');
+    }).catch(function(e){ toast('No se pudo revisar en Amplemarket: ' + e.message); }).then(cargar);
   }
   function cargar(){
     $('act').disabled = true;
@@ -171,7 +185,9 @@
   function tarjeta(f){
     var quien = [f.puesto, f.empresa, f.pais].filter(Boolean).map(esc).join(' · ');
     var est = f.estado === 'pendiente' ? '<span class="etq pend">Por aprobar</span>' : f.estado === 'error' ? '<span class="etq mal">Error</span>' :
-      /enviad/.test(f.estado) ? '<span class="etq ok">' + (f.estado === 'enviado_auto' ? 'Enviada sola' : f.estado === 'enviando' ? 'Enviando' : 'Enviada') + '</span>' : '<span class="etq">' + (f.estado === 'reemplazado' ? 'Reemplazada' : 'No contestar') + '</span>';
+      /enviad/.test(f.estado) ? (f.entrega === 'en_cola' ? '<span class="etq pend" title="Amplemarket aún no confirma que salió. Usa Actualizar.">En cola</span>' :
+        '<span class="etq ok">' + (f.entrega === 'entregada' ? 'Entregada' : f.estado === 'enviado_auto' ? 'Enviada sola' : f.estado === 'enviando' ? 'Enviando' : 'Enviada') + '</span>') :
+      '<span class="etq">' + (f.estado === 'reemplazado' ? 'Reemplazada' : f.revisado_por === 'Contestada a mano' ? 'Contestada a mano' : 'No contestar') + '</span>';
     var h = '<article class="card' + (f.oportunidad ? ' op1' : '') + '" data-id="' + esc(f.evento_id) + '">';
     h += '<div class="cab"><div><h3>' + (f.linkedin_url ? '<a href="' + esc(f.linkedin_url) + '" target="_blank" rel="noopener">' + esc(f.prospecto || 'Sin nombre') + '</a>' : esc(f.prospecto || 'Sin nombre')) + '</h3><div class="sub">' + (quien || 'Sin puesto ni empresa en Amplemarket') + '</div>' + (CO && f.correo_prospecto ? '<div class="sub">' + esc(f.correo_prospecto) + (f.asunto ? ' · «' + esc(f.asunto) + '»' : '') + '</div>' : '') + '</div>' +
       '<div class="chips">' + est + (f.oportunidad ? '<span class="etq opo">Oportunidad</span>' : '') + '<span class="etq" title="Categoría que puso el bot">' + esc(nombreCat(f.categoria)) + '</span><span class="etq" title="Cuándo contestó">' + esc(fecha(f.recibido_ts)) + '</span></div></div>';
@@ -190,8 +206,9 @@
         '<button class="d" data-acc="descartar" title="No se le contesta nada">No contestar</button><span class="desde">' + (esSugerencia(f) ? 'Se le manda a <b>' + esc(f.dueno) + '</b> como sugerencia ' + ay('No tiene su ' + (CO ? 'Gmail conectado' : 'LinkedIn conectado con correo en Amplemarket') + ': al aprobar, le llega por correo la respuesta para que la envíe desde su ' + T.nombre + ', con copia a Mike.') : T.perfil + ' <b>' + esc(f.dueno) + '</b> ' + ay(T.como)) + '</span></div>';
     } else if (/enviad/.test(f.estado)) {
       h += '<div class="bloque"><span class="t">Lo que se envió' + (f.editado ? ' (editado)' : '') + '</span><div class="enviado">' + esc(f.texto_final || f.borrador) + '</div></div>';
-      h += '<div class="sub">' + (/"modo":"sugerencia"/.test(f.envio || '') ? 'Se le mandó como sugerencia a ' : (CO ? 'Desde el correo de ' : 'Desde el perfil de ')) + esc(f.dueno) + (f.revisado_por ? ' · aprobó ' + esc(f.revisado_por) : '') + (f.enviado_ts ? ' · ' + esc(fecha(f.enviado_ts)) : '') + '</div>';
+      h += '<div class="sub">' + (/"modo":"sugerencia"/.test(f.envio || '') ? 'Se le mandó como sugerencia a ' : (CO ? 'Desde el correo de ' : 'Desde el perfil de ')) + esc(f.dueno) + (f.revisado_por ? ' · aprobó ' + esc(f.revisado_por) : '') + (f.enviado_ts ? ' · aprobada ' + esc(fecha(f.enviado_ts)) : '') + (f.entregado_ts ? ' · entregada ' + esc(fecha(f.entregado_ts)) : '') + '</div>';
     } else {
+      if (f.revisado_por === 'Contestada a mano' && f.error) h += '<p class="msg">' + esc(f.error) + '</p>';
       if (f.borrador) h += '<div class="bloque"><span class="t">Borrador que no se envió</span><div class="sub" style="white-space:pre-wrap">' + esc(f.borrador) + '</div></div>';
       h += '<div class="acc">' + (f.estado === 'descartado' ? '<button class="s" data-acc="reabrir" title="Vuelve a Por aprobar">Reabrir</button>' : '') + '<span class="desde">' + (f.revisado_por ? 'Lo decidió ' + esc(f.revisado_por) : '') + '</span></div>';
     }
@@ -223,8 +240,10 @@
     var ir = function(){
       card.querySelectorAll('button').forEach(function(b){ b.disabled = true; });
       post('gr-li-decidir', cuerpo).then(function(r){
+        if (r.estado === 'descartado' && r.error) { toast(r.error); cargar(); return; }
         if (r.ok === false) throw new Error(r.error || 'No se pudo');
-        toast(accion === 'descartar' ? 'Listo: no se le contesta.' : accion === 'reabrir' ? 'Regresó a Por aprobar.' : 'Enviado ' + T.desde + ' ' + f.dueno + '.');
+        toast(accion === 'descartar' ? 'Listo: no se le contesta.' : accion === 'reabrir' ? 'Regresó a Por aprobar.' : CO || esSugerencia(f) ? 'Enviado ' + T.desde + ' ' + f.dueno + '.' :
+          'Quedó en cola en el LinkedIn de ' + f.dueno + '. Sale en unos 15 minutos; usa Actualizar para confirmar la entrega.');
         cargar();
       }).catch(function(e){ toast('No se pudo: ' + e.message); card.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); });
     };
@@ -234,7 +253,7 @@
   }
   document.addEventListener('click', function(e){
     var b = e.target.closest('button'); if (!b) return;
-    if (b.id === 'act') return cargar();
+    if (b.id === 'act') return revisar();
     if (b.dataset.per) { fPer = b.dataset.per; leer('gr_' + (CO ? 'co' : 'li') + '_per', fPer); return pintar(); }
     if (b.dataset.est) { fEst = b.dataset.est; fCat = 'todas'; return pintar(); }
     if (b.dataset.acc) return decidir(b.closest('article'), b.dataset.acc);
