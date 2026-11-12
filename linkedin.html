@@ -99,9 +99,12 @@
   }
   function etiqueta(id){ var x = ((CAT && CAT.personas) || []).filter(function(p){ return p.id === id; })[0]; return x ? x.label : id; }
   var ESTADOS = [['por_aprobar', 'Por aprobar', 'Borradores que esperan que alguien los apruebe, los edite o los marque como No contestar.'],
-    ['enviadas', 'Enviadas', CO ? 'Ya salieron desde el correo de su dueño.' : 'Aprobadas. «En cola» hasta que Amplemarket confirma que salió; «Entregada» cuando ya llegó. Usa Actualizar para confirmarlo.'],
-    ['descartadas', 'Descartadas', 'Marcadas como No contestar, contestadas a mano (no se envía nada para no duplicar), o reemplazadas porque la persona volvió a escribir.'],
+    ['en_cola', 'En cola', 'Aprobadas que Amplemarket todavía no confirma que salieron (tarda unos 15 minutos). Usa Actualizar para confirmarlo.'],
+    ['enviadas', 'Enviadas', CO ? 'Ya salieron desde el correo de su dueño.' : 'Amplemarket ya confirmó que salieron (Entregada), o se enviaron antes de que existiera la confirmación (Enviada).'],
+    ['a_mano', 'Contestadas a mano', 'Alguien ya les contestó directo en ' + T.nombre + ', así que el sistema no envió nada para no duplicar.'],
+    ['descartadas', 'Descartadas', 'Marcadas como No contestar, o reemplazadas porque la persona volvió a escribir.'],
     ['error', 'Error', T.fallo]];
+  if (CO) ESTADOS = ESTADOS.filter(function(e){ return e[0] !== 'en_cola'; });   // en correo Gmail confirma al momento
   var datos = null, fPer = leer('gr_' + (CO ? 'co' : 'li') + '_per') || 'Todos', fEst = 'por_aprobar', fCat = 'todas';
   var $ = function(id){ return document.getElementById(id); };
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -145,7 +148,11 @@
   function esSugerencia(f){ var p = ((datos && datos.perfiles) || []).filter(function(x){ return x.corto === f.dueno; })[0] || {};
     return CO ? !!p.marca : !p.secuencia; }
   function nombreCat(c){ var x = (datos.categorias || []).filter(function(k){ return k.clave === c; })[0]; return x ? x.nombre : c; }
-  function GRUPO(f){ return f.grupo || ({ pendiente: 'por_aprobar', enviando: 'enviadas', enviado: 'enviadas', enviado_auto: 'enviadas', descartado: 'descartadas', reemplazado: 'descartadas', error: 'error' })[f.estado] || 'otro'; }
+  // 11 nov 2026: En cola y Contestadas a mano son estados propios en el filtro (vienen de entrega y de revisado_por).
+  function GRUPO(f){
+    if (/enviad/.test(f.estado) && f.entrega === 'en_cola') return 'en_cola';
+    if (f.estado === 'descartado' && f.revisado_por === 'Contestada a mano') return 'a_mano';
+    return f.grupo || ({ pendiente: 'por_aprobar', enviando: 'enviadas', enviado: 'enviadas', enviado_auto: 'enviadas', descartado: 'descartadas', reemplazado: 'descartadas', error: 'error' })[f.estado] || 'otro'; }
   function filasPersona(){ return (datos.filas || []).filter(function(f){ return fPer === 'Todos' || f.dueno === fPer; }); }
   function pintarFiltros(){
     var base = filasPersona(), pend = (datos.filas || []).filter(function(f){ return f.estado === 'pendiente'; });
