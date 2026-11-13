@@ -102,7 +102,7 @@ input.lim { width: 90px; }
       <div><div class="hdr-main">GREAT REVENUE</div><div class="hdr-sub">Consumo de IA, n8n y plataformas por cliente</div></div>
     </div>
     <div class="hdr-right">
-      <span class="live-badge" id="carga" title="Hora de la última medición automática. Se mide cada hora a los :05 (CDMX). Verde: al día; amarillo: más de 75 min; rojo: más de 2 h sin medir."><span class="dot"></span> Cargando…</span>
+      <span class="live-badge" id="carga" title="Hora de la última medición automática. Se mide dos veces al día, 7:05 y 14:05 (CDMX). Verde: al día; amarillo o rojo: no se ha medido a la hora esperada."><span class="dot"></span> Cargando…</span>
       <button class="btn-refresh" id="btnRefrescar" title="Vuelve a pedir los datos al servidor. No dispara una medición nueva: trae lo último que se midió.">↻ Actualizar</button>
     </div>
   </header>
@@ -260,7 +260,7 @@ function pintar() {
   guardarEstado();
   var ult = D.ultimo ? new Date(D.ultimo) : null, min = ult ? Math.round((Date.now() - ult) / 60000) : 9999;
   var hora = ult ? ult.toLocaleString('es-MX', { timeZone: 'America/Mexico_City', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'sin dato';
-  $('carga').innerHTML = '<span class="dot' + (min > 130 ? ' mal' : min > 75 ? ' tarde' : '') + '"></span> Última carga: ' + hora + (ult ? ' · hace ' + (min < 60 ? min + ' min' : Math.round(min / 60) + ' h') : '');
+  $('carga').innerHTML = '<span class="dot' + (min > 19 * 60 ? ' mal' : min > 17 * 60 ? ' tarde' : '') + '"></span> Última carga: ' + hora + (ult ? ' · hace ' + (min < 60 ? min + ' min' : Math.round(min / 60) + ' h') : '');
   var noId = D.wf.filter(function (w) { return w.c === 'No identificado' && !w.ar; }).length;
   var h = '<nav class="tabs">' + TABS.map(function (t) { return '<button class="tab' + (est.tab === t[0] ? ' active' : '') + '" data-tab="' + t[0] + '" title="' + esc(t[2]) + '">' + t[1] + (t[0] === 'auditoria' && noId ? '<span class="badge" title="Workflows sin cliente identificado">' + noId + '</span>' : '') + '</button>'; }).join('') + '</nav>';
   h += filtros() + '<div id="panel"></div>';
@@ -515,7 +515,7 @@ function pLimites() {
       '<td style="white-space:nowrap"><input type="number" class="lim" min="0.5" step="0.5" value="' + (s ? s.valor : l) + '" data-c="' + esc(x[0]) + '" title="Nuevo límite diario en dólares"> <button class="btn sec guardarLim" data-c="' + esc(x[0]) + '" title="Guarda este límite; el semáforo y el correo lo usan desde la siguiente medición">Guardar</button></td></tr>';
   });
   h += '</table></div><div class="nota"><b>De dónde salieron los límites actuales.</b> Los fijé a mano el 16 oct con el gasto observado del 13 al 15 oct: Pintaando $3 (su agente gastaba ~$1.60 al día); Great Revenue $5 (~$1.30 al día con picos del Post-Reunión); Scania y Cencosud $3 cada uno, para frenar a tiempo ráfagas de pruebas como la del 14 oct; BdCh $1; cualquier otro cliente $2 (general); toda la cuenta $12, un poco arriba del peor día ($10.28 el 14 oct); y un pico de $2 en una sola hora (el 14 oct se fueron $6.92 en una hora).<br>' +
-    '<b>Cómo funciona.</b> Verde por debajo del 70% del límite, amarillo del 70 al 100%, rojo al pasarlo. Llega un correo a ' + esc(D.correo || 'GR') + ' la primera vez en el día que un cliente o la cuenta pasa a amarillo y otra vez a rojo, y otro si en una hora se gastan más de ' + usd(D.picoHora) + '. La medición corre cada hora a los :05 (CDMX).</div>' +
+    '<b>Cómo funciona.</b> Verde por debajo del 70% del límite, amarillo del 70 al 100%, rojo al pasarlo. Llega un correo a ' + esc(D.correo || 'GR') + ' la primera vez en el día que un cliente o la cuenta pasa a amarillo y otra vez a rojo, y otro si en una hora se gastan más de ' + usd(D.picoHora) + '. La medición corre a las 7:05 y a las 14:05 (CDMX).</div>' +
     (est.cliente ? '' : '<div class="form"><label title="Gasto de Claude en una sola hora que dispara un correo">Pico por hora (USD)<input type="number" id="inPico" min="0.5" step="0.5" value="' + D.picoHora + '"></label><div><button class="btn sec" id="guardarPico">Guardar pico por hora</button></div></div>') + '</div>';
   // Plataformas
   var plats = D.plataformas.filter(function (p) { return !est.cliente || p.c === est.cliente || p.c === REPARTIR; });
@@ -531,7 +531,7 @@ function pLimites() {
     '<div class="nota">Para corregir una línea, captura la misma plataforma, el mismo cliente y el mismo mes con el valor bueno: se sobrescribe.</div></div>';
   var c = D.control || {};
   h += '<div class="card"><h3><span>Cómo se mide y qué se guarda</span></h3><div class="dim" style="font-size:13px;line-height:1.7">' +
-    'Cada hora se leen por la API de n8n las ejecuciones nuevas de los workflows que usan Claude y se suma el <i>usage</i> que Anthropic devuelve en cada respuesta (tokens de entrada, salida y caché), con el precio de cada modelo. Las ejecuciones de n8n se cuentan de todos los workflows. ' +
+    'Dos veces al día (7:05 y 14:05 CDMX) se leen por la API de n8n las ejecuciones nuevas de los workflows que usan Claude y se suma el <i>usage</i> que Anthropic devuelve en cada respuesta (tokens de entrada, salida y caché), con el precio de cada modelo. Las ejecuciones de n8n se cuentan de todos los workflows. ' +
     'Todo queda guardado para siempre en tablas diarias de n8n (gasto de Claude por día, flujo y modelo; ejecuciones por día y workflow; costos de plataformas con su vigencia), así que el histórico ya no depende de lo que n8n conserve de cada ejecución. ' +
     'Última carga: ' + num(c.workflows_leidos) + ' workflows leídos, ' + num(c.workflows_con_claude) + ' con Claude, ' + num(c.ejecuciones_leidas) + ' ejecuciones revisadas. ' +
     'No se ven aquí: el uso de Claude Code y de claude.ai (van por la suscripción, no por la llave de la API).</div></div>';
