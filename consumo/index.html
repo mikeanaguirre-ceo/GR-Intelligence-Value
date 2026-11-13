@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Consumo de IA y n8n · Great Revenue</title>
+<title>Consumo y optimización · Great Revenue</title>
 <style>
 :root {
   --purple: #7C3AED; --pink: #EC4899; --cyan: #06B6D4; --mint: #10B981; --yellow: #F59E0B; --red: #EF4444;
@@ -102,14 +102,14 @@ input.lim { width: 90px; }
       <div><div class="hdr-main">GREAT REVENUE</div><div class="hdr-sub">Consumo de IA, n8n y plataformas por cliente</div></div>
     </div>
     <div class="hdr-right">
-      <span class="live-badge" id="carga" title="Hora de la última medición automática. Se mide cada hora a los :05 (CDMX). Verde: al día; amarillo: más de 75 min; rojo: más de 2 h sin medir."><span class="dot"></span> Cargando…</span>
+      <span class="live-badge" id="carga" title="Hora de la última medición automática. Se mide dos veces al día, 7:05 y 14:05 (CDMX). Verde: al día; amarillo o rojo: no se ha medido a la hora esperada."><span class="dot"></span> Cargando…</span>
       <button class="btn-refresh" id="btnRefrescar" title="Vuelve a pedir los datos al servidor. No dispara una medición nueva: trae lo último que se midió.">↻ Actualizar</button>
     </div>
   </header>
   <div id="contenido"></div>
 </div>
 <script>
-// ===== Consumo de IA, n8n y plataformas · Great Revenue (v2, 16 oct 2026) =====
+// ===== Consumo de IA, n8n y plataformas · Great Revenue (v3, 13 nov 2026: una vista de gasto y optimizacion) =====
 // Pagina estatica de intelligence.greatrevenue.com/consumo/. No trae datos: los pide con la clave a n8n
 // (webhook gr-consumo-api). La clave llega una vez en la liga (#k=...), se guarda en este navegador y se quita de la barra.
 var API = 'https://mikea.app.n8n.cloud/webhook/gr-consumo-api';
@@ -118,8 +118,9 @@ var PRECIOS = [ // USD por millon de tokens: entrada, salida, cache leido. Escri
   [/sonnet-5/, 2, 10, 0.20], [/sonnet/, 3, 15, 0.30], [/haiku-5/, 0.10, 0.50, 0.01], [/haiku-4/, 1, 5, 0.10], [/haiku/, 0.25, 1.25, 0.03]];
 var REPARTIR = '(repartir por ejecuciones)';
 var D = null, clave = '';
-var est = { tab: 'semaforo', semColor: '', periodo: 'mes', desde: '', hasta: '', cliente: '', flujo: '', buscar: '', soloIA: false, soloNoId: false, soloNuevos: false, orden: 'u' };
+var est = { tab: 'gasto', semColor: '', periodo: 'mes', desde: '', hasta: '', cliente: '', flujo: '', buscar: '', soloIA: false, soloNoId: false, soloNuevos: false, orden: 'u' };
 try { var e0 = JSON.parse(localStorage.getItem('gr_consumo_estado') || '{}'); ['tab', 'periodo', 'desde', 'hasta', 'cliente'].forEach(function (k) { if (e0[k]) est[k] = e0[k]; }); } catch (e) {}
+if (['gasto', 'flujos', 'auditoria', 'limites'].indexOf(est.tab) < 0) est.tab = 'gasto';
 function guardarEstado() { try { localStorage.setItem('gr_consumo_estado', JSON.stringify({ tab: est.tab, periodo: est.periodo, desde: est.desde, hasta: est.hasta, cliente: est.cliente })); } catch (e) {} }
 
 function $(id) { return document.getElementById(id); }
@@ -251,25 +252,22 @@ function sugerido(c) {
 
 // ---------- Pintar ----------
 var TABS = [
-  ['semaforo', 'Semáforo', 'Cada proceso con su revisión de optimización: verde, amarillo o rojo según las reglas vigentes. Resumen por cliente y créditos de Amplemarket.'],
-  ['resumen', 'Resumen', 'Gasto total por cliente y plataforma, gráficas por día y tabla por mes.'],
-  ['flujos', 'Flujos', 'Gasto de Claude por workflow: modelo, tokens, dólares y costo por llamada.'],
-  ['auditoria', 'Auditoría de workflows', 'Todos los workflows de n8n con su cliente, si usan IA, sus ejecuciones y su gasto. Aquí se corrige a qué cliente pertenece cada uno.'],
-  ['modelos', 'Modelos recomendados', 'Qué modelo de Claude conviene en cada flujo y cuánto se ahorraría con el mismo uso.'],
-  ['limites', 'Límites y costos', 'Semáforo de hoy, límites diarios (sugeridos y editables) y costos mensuales de plataformas.']];
+  ['gasto', 'Gasto y optimización', 'Cuánto gastamos por cliente, qué procesos optimizar y cómo va la revisión de cada uno.'],
+  ['flujos', 'Detalle por flujo', 'Gasto de Claude de cada proceso: modelo, tokens y costo por llamada. Clic en uno para ver su gasto por día.'],
+  ['auditoria', 'Ajustes: procesos y clientes', 'Todos los procesos de n8n con su cliente. Aquí se corrige a qué cliente pertenece cada uno.'],
+  ['limites', 'Ajustes: límites y costos', 'Límites diarios de Claude que disparan el correo de aviso y costos mensuales de plataformas.']];
 function pintar() {
   guardarEstado();
   var ult = D.ultimo ? new Date(D.ultimo) : null, min = ult ? Math.round((Date.now() - ult) / 60000) : 9999;
   var hora = ult ? ult.toLocaleString('es-MX', { timeZone: 'America/Mexico_City', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'sin dato';
-  $('carga').innerHTML = '<span class="dot' + (min > 130 ? ' mal' : min > 75 ? ' tarde' : '') + '"></span> Última carga: ' + hora + (ult ? ' · hace ' + (min < 60 ? min + ' min' : Math.round(min / 60) + ' h') : '');
+  $('carga').innerHTML = '<span class="dot' + (min > 19 * 60 ? ' mal' : min > 17 * 60 ? ' tarde' : '') + '"></span> Última carga: ' + hora + (ult ? ' · hace ' + (min < 60 ? min + ' min' : Math.round(min / 60) + ' h') : '');
   var noId = D.wf.filter(function (w) { return w.c === 'No identificado' && !w.ar; }).length;
   var h = '<nav class="tabs">' + TABS.map(function (t) { return '<button class="tab' + (est.tab === t[0] ? ' active' : '') + '" data-tab="' + t[0] + '" title="' + esc(t[2]) + '">' + t[1] + (t[0] === 'auditoria' && noId ? '<span class="badge" title="Workflows sin cliente identificado">' + noId + '</span>' : '') + '</button>'; }).join('') + '</nav>';
-  if (D.reglas.v) h += '<div class="aviso">Reglas de optimización vigentes: <b>' + esc(D.reglas.v) + '</b>' + (D.reglas.f ? ' (' + fechaCorta(D.reglas.f) + ')' : '') + (D.reglas.liga ? ' · <a href="' + esc(D.reglas.liga) + '" target="_blank" rel="noopener">ver documento</a>' : '') + '. Todo proceso nuevo o modificado se revisa con ellas.</div>';
   h += filtros() + '<div id="panel"></div>';
   $('contenido').innerHTML = h;
   Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) { b.onclick = function () { est.tab = b.getAttribute('data-tab'); est.flujo = ''; pintar(); }; });
   enlazarFiltros();
-  ({ semaforo: pSemaforo, resumen: pResumen, flujos: pFlujos, auditoria: pAuditoria, modelos: pModelos, limites: pLimites })[est.tab]();
+  (({ gasto: pGasto, flujos: pFlujos, auditoria: pAuditoria, limites: pLimites })[est.tab] || pGasto)();
 }
 function filtros() {
   var P = [['hoy', 'Hoy', 'Solo el día de hoy (CDMX)'], ['ayer', 'Ayer', 'El día de ayer completo'], ['7', '7 días', 'Los últimos 7 días, incluido hoy'], ['30', '30 días', 'Los últimos 30 días, incluido hoy'],
@@ -292,85 +290,79 @@ function avisoCobertura(r) {
 function kpi(t, v, s, ayuda) { return '<div class="kpi"><div class="kpi-label">' + t + (ayuda ? ay(ayuda) : '') + '</div><div class="kpi-value">' + v + '</div><div class="kpi-sub">' + s + '</div></div>'; }
 function quien() { return est.cliente ? esc(est.cliente) : 'todos los clientes'; }
 
-// ---------- Semaforo de optimizacion (13 nov 2026) ----------
-// Verde: revisado con las reglas vigentes y sin cambios desde la revision. Amarillo: se modifico despues o cambiaron las
-// reglas. Rojo: nunca revisado o con hallazgo abierto. El color lo calcula el servidor al pedir los datos (sin reloj).
-var COLORES = [['rojo', 'Rojo'], ['amarillo', 'Amarillo'], ['verde', 'Verde']];
-function pSemaforo() {
-  var r = rango(), ejW = {}, porW = sumar(usoEn(r, true), function (f) { return f.w; });
-  ejEn(r, true).forEach(function (f) { ejW[f.w] = (ejW[f.w] || 0) + f.e; });
-  var filas = D.sem.map(function (s) { var w = WF[s.id] || {}; return { s: s, w: w, c: w.c || 'No identificado', e: ejW[s.id] || 0, u: (porW[s.id] || {}).u || 0 }; })
-    .filter(function (x) { return !est.cliente || x.c === est.cliente; });
-  var porC = {}; filas.forEach(function (x) { var a = porC[x.c] = porC[x.c] || { rojo: 0, amarillo: 0, verde: 0 }; a[x.s.color]++; });
-  var ejC = {}; ejEn(r).forEach(function (f) { ejC[f.c] = (ejC[f.c] || 0) + f.e; });
-  var usC = sumar(usoEn(r), function (f) { return f.c; });
-  var crC = {}; D.creditos.forEach(function (f) { if (f.d >= r[0] && f.d <= r[1] && (!est.cliente || f.c === est.cliente)) { var a = crC[f.c] = crC[f.c] || { t: 0, nv: {} }; a.t++; a.nv[f.nv] = (a.nv[f.nv] || 0) + 1; } });
-  var tot = { rojo: 0, amarillo: 0, verde: 0 }; filas.forEach(function (x) { tot[x.s.color]++; });
-  var h = '<div class="kpi-grid">' + COLORES.map(function (k) { return kpi('<i class="sem ' + k[0] + '"></i> ' + k[1], num(tot[k[0]]), 'procesos de ' + quien(), { rojo: 'Nunca revisados o con un hallazgo abierto.', amarillo: 'Se modificaron después de su revisión o se revisaron con reglas anteriores.', verde: 'Revisados con las reglas vigentes y sin cambios desde entonces. No se vuelven a revisar.' }[k[0]]); }).join('') +
-    kpi('Reglas vigentes', esc(D.reglas.v || '—'), D.reglas.liga ? '<a href="' + esc(D.reglas.liga) + '" target="_blank" rel="noopener">abrir documento</a>' : 'sin documento ligado', 'Procedimiento de optimización de consumo. Si cambian, los procesos revisados con la versión anterior pasan a amarillo.') + '</div>';
-  h += '<div class="card"><h3><span>Resumen por cliente' + ay('Procesos activos de cada cliente por color, y su consumo en el periodo elegido: corridas de n8n, gasto de Claude y créditos de Amplemarket registrados por el motor. Lo que corren las bases comunes se carga al cliente que las llamó.') + '</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Cliente</th><th class="num">Rojo</th><th class="num">Amarillo</th><th class="num">Verde</th><th class="num">Corridas n8n</th><th class="num">Gasto Claude</th><th class="num" title="Consultas a Amplemarket con créditos registradas por el motor en el periodo">Créditos Amplemarket</th></tr>';
-  var cs = {}; Object.keys(porC).forEach(function (c) { cs[c] = 1; }); Object.keys(ejC).forEach(function (c) { if (ejC[c]) cs[c] = 1; });
-  Object.keys(cs).sort(function (a, b) { return (ejC[b] || 0) - (ejC[a] || 0); }).forEach(function (c) { var a = porC[c] || { rojo: 0, amarillo: 0, verde: 0 }, cr = crC[c];
-    h += '<tr><td>' + esc(c) + '</td><td class="num">' + (a.rojo ? '<span class="sube">' + a.rojo + '</span>' : '0') + '</td><td class="num">' + a.amarillo + '</td><td class="num">' + a.verde + '</td><td class="num">' + num(ejC[c] || 0) + '</td><td class="num">' + usd((usC[c] || {}).u || 0) + '</td><td class="num">' + (cr ? num(cr.t) + ' <span class="dim">(' + Object.keys(cr.nv).map(function (k) { return esc(k) + ' ' + cr.nv[k]; }).join(', ') + ')</span>' : '<span class="dim" title="Este cliente no tiene registro de créditos en el motor">sin registro</span>') + '</td></tr>'; });
-  h += '</table></div><div class="nota">Créditos: hoy solo Great Revenue registra cada consulta con créditos (botón Actualizar prospecto). Los demás clientes aparecen como «sin registro» hasta que su proceso de créditos lo guarde.</div></div>';
-  var lista = filas.filter(function (x) { return !est.semColor || x.s.color === est.semColor; });
-  var ord = { rojo: 0, amarillo: 1, verde: 2 };
-  lista.sort(function (a, b) { return ord[a.s.color] - ord[b.s.color] || b.e - a.e || b.u - a.u || String(a.w.n || '').localeCompare(String(b.w.n || '')); });
-  h += '<div class="card"><h3><span>Procesos de ' + quien() + ' (' + lista.length + ')' + ay('Procesos activos y los ya revisados. Corridas y gasto son del periodo elegido; costo al mes y veredicto son de la revisión.') + '</span></h3>' +
-    '<div class="filtros"><button class="chip' + (!est.semColor ? ' active' : '') + '" data-sc="">Todos</button>' + COLORES.map(function (k) { return '<button class="chip' + (est.semColor === k[0] ? ' active' : '') + '" data-sc="' + k[0] + '"><i class="sem ' + k[0] + '"></i> ' + k[1] + ' · ' + tot[k[0]] + '</button>'; }).join('') + '</div>' +
-    '<div class="tbl-wrap"><table class="tbl"><tr><th></th><th>Proceso</th><th>Cliente</th><th title="Fecha de la última revisión y versión de reglas con que se revisó">Revisión</th><th>Plataformas</th><th class="num">Corridas</th><th class="num">Gasto Claude</th><th class="num" title="Costo al mes estimado en la revisión">Costo/mes</th><th>Veredicto</th><th>Hallazgos o motivo</th></tr>';
-  lista.slice(0, 400).forEach(function (x) { var s = x.s;
-    h += '<tr><td><i class="sem ' + s.color + '" title="' + esc(s.motivo) + '"></i></td><td>' + esc(x.w.n || s.id) + '<div class="dim">' + esc(s.id) + '</div></td><td>' + esc(x.c) + '</td>' +
-      '<td class="dim" style="white-space:nowrap">' + (s.rev ? fechaCorta(s.rev) + ' · ' + esc(s.vr) : 'nunca') + '</td><td class="dim">' + esc(s.pl || '—') + '</td>' +
-      '<td class="num">' + num(x.e) + '</td><td class="num">' + (x.u ? usd(x.u) : '<span class="dim">—</span>') + '</td><td class="num">' + (s.rev ? usd(s.cm) : '<span class="dim">—</span>') + '</td>' +
-      '<td>' + (s.ve ? '<span class="tag' + (s.ve === 'mantener' ? ' on' : s.ve === 'suspender' ? ' noid' : ' manual') + '">' + esc(s.ve) + '</span>' : '') + '</td>' +
-      '<td style="min-width:220px">' + (s.h ? esc(s.h) : '<span class="dim">' + esc(s.motivo) + '</span>') + (s.nota ? '<div class="dim">' + esc(s.nota) + '</div>' : '') + '</td></tr>'; });
-  if (lista.length > 400) h += '<tr><td colspan="10" class="dim">Se muestran 400; elige un cliente o un color.</td></tr>';
-  h += '</table></div></div>';
+// ---------- Gasto y optimizacion (rediseno 13 nov 2026) ----------
+// Una sola vista para las dos preguntas: cuanto gastamos (por cliente) y que optimizar (los procesos que mas cuestan,
+// con su revision). Gris = sin revisar; rojo = revisado con un problema abierto; amarillo = cambio despues de revisarse.
+function colorRev(s) { return !s ? 'gris' : s.color === 'rojo' && !s.rev ? 'gris' : s.color; }
+var NOM_COLOR = { gris: 'Sin revisar', rojo: 'Con problema', amarillo: 'Revisar de nuevo', verde: 'Bien' };
+function pGasto() {
+  var r = rango(), dm = diasMedidos(r), dias = diasEntre(r[0], r[1]);
+  var SEM = {}; D.sem.forEach(function (s) { SEM[s.id] = s; });
+  var usC = sumar(usoEn(r), function (f) { return f.c; }), ejC = {}, crC = {};
+  ejEn(r).forEach(function (f) { ejC[f.c] = (ejC[f.c] || 0) + f.e; });
+  D.creditos.forEach(function (f) { if (f.d >= r[0] && f.d <= r[1] && delCliente(f)) crC[f.c] = (crC[f.c] || 0) + 1; });
+  var pl = plataformasEn(r), plC = {}, plPend = D.plataformas.some(function (p) { return /POR CONFIRMAR/.test(p.nota); });
+  Object.keys(pl.porCliente).forEach(function (c) { Object.keys(pl.porCliente[c]).forEach(function (p) { plC[c] = (plC[c] || 0) + pl.porCliente[c][p]; }); });
+  var gC = 0, gP = 0, gE = 0, gCr = 0;
+  var cs = {}; [usC, ejC, crC, plC].forEach(function (o) { Object.keys(o).forEach(function (c) { cs[c] = 1; }); });
+  var lista = Object.keys(cs).map(function (c) { var u = (usC[c] || {}).u || 0, p = plC[c] || 0; gC += u; gP += p; gE += ejC[c] || 0; gCr += crC[c] || 0; return { c: c, u: u, p: p, e: ejC[c] || 0, cr: crC[c] || 0 }; })
+    .sort(function (a, b) { return (b.u + b.p) - (a.u + a.p) || b.e - a.e; });
+  var mesIni = D.hoy.slice(0, 8) + '01', trans = diasEntre(mesIni > D.primerDia ? mesIni : D.primerDia, D.hoy);
+  var proy = trans ? total(usoEn([mesIni, D.hoy])) / trans * diasMes(D.hoy.slice(0, 7)) : 0;
+
+  // 1. Cuanto gastamos
+  var h = avisoCobertura(r) + '<div class="kpi-grid">' +
+    kpi('Gasto del periodo', usd(gC + gP), 'Claude ' + usd(gC) + (gP ? ' + plataformas ' + usd(gP) : ''), 'Claude medido llamada por llamada, más el costo mensual de las plataformas que tienen precio capturado.') +
+    kpi('Proyección del mes (Claude)', usd(proy), 'a este ritmo, ' + nombreMes(D.hoy).toLowerCase(), 'Gasto de Claude del mes ÷ días medidos × días del mes.') +
+    kpi('Corridas de n8n', num(gE), plPend ? 'precio del plan por confirmar' : 'del periodo', 'Cada vez que un proceso trabaja. Solo cuestan dinero si el plan de n8n cobra por volumen; mientras el precio del plan no esté capturado no se pueden pasar a dólares.') +
+    kpi('Créditos de Amplemarket', num(gCr), 'consultas registradas', 'Consultas que gastan créditos y que el motor registra. Hoy solo Great Revenue las registra.') + '</div>';
+  h += '<div class="card"><h3><span>1 · Cuánto gastamos, por cliente' + ay('Lo que gastan las bases comunes se carga al cliente que las llamó desde el 13 nov; antes de esa fecha aparece como «Motor (base común)».') + '</span><span class="dim">' + fechaCorta(r[0]) + (r[0] !== r[1] ? ' – ' + fechaCorta(r[1]) : '') + '</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Cliente</th><th class="num">Claude</th><th class="num">Plataformas</th><th class="num">Total</th><th class="num">% del total</th><th class="num">Corridas n8n</th><th class="num">Créditos Amplemarket</th></tr>';
+  lista.forEach(function (x) { if (!x.u && !x.p && !x.e && !x.cr) return;
+    h += '<tr class="fila-cli" data-c="' + esc(x.c) + '" style="cursor:pointer" title="Clic para ver solo este cliente"><td>' + esc(x.c) + '</td><td class="num">' + usd(x.u) + '</td><td class="num">' + (x.p ? usd(x.p) : '<span class="dim">—</span>') + '</td><td class="num"><b>' + usd(x.u + x.p) + '</b></td><td class="num">' + (gC + gP ? ((x.u + x.p) / (gC + gP) * 100).toFixed(0) + '%' : '—') + '</td><td class="num">' + num(x.e) + '</td><td class="num">' + (x.cr ? num(x.cr) : '<span class="dim" title="Sin registro de créditos">—</span>') + '</td></tr>'; });
+  h += '<tr class="total"><td>Total</td><td class="num">' + usd(gC) + '</td><td class="num">' + usd(gP) + '</td><td class="num">' + usd(gC + gP) + '</td><td class="num">100%</td><td class="num">' + num(gE) + '</td><td class="num">' + num(gCr) + '</td></tr></table></div>' +
+    (plPend ? '<div class="nota">Hay plataformas con precio por confirmar (entre ellas el plan de n8n): cuentan $0 hasta capturarlas en Ajustes → Límites y costos.</div>' : '') + '</div>';
+
+  // 2. Que optimizar
+  var porW = sumar(usoEn(r), function (f) { return f.w; }), ejW = {};
+  ejEn(r).forEach(function (f) { ejW[f.w] = (ejW[f.w] || 0) + f.e; });
+  var fila = function (id) { var w = WF[id] || {}, a = porW[id], s = SEM[id], col = colorRev(s), ah = 0, sug = '';
+    if (a) Object.keys(a.m).forEach(function (m) { var sub = { l: 0, i: 0, o: 0, cr: 0, cw: 0 }; usoEn(r).forEach(function (f) { if (f.w === id && f.m === m) ['l', 'i', 'o', 'cr', 'cw'].forEach(function (k) { sub[k] += f[k]; }); });
+      var sg = sugerencia(m, sub); if (sg[0] !== m) { var d0 = a.m[m] - costo(sg[0], sub); if (d0 > 0) { ah += d0; sug = 'Pasar de ' + m.replace('claude-', '') + ' a ' + sg[0].replace('claude-', ''); } } });
+    var queHacer = s && s.h ? s.h : sug ? sug + ' (probar antes con sus casos).' : '';
+    return { id: id, w: w, c: w.c || 'No identificado', u: a ? a.u : 0, e: ejW[id] || 0, mes: (a ? a.u : 0) / dm * 30, ah: ah / dm * 30, col: col, s: s, q: queHacer }; };
+  var celda = function (x) { return '<tr><td><i class="sem ' + x.col + '" title="' + NOM_COLOR[x.col] + (x.s && x.s.rev ? ' · revisado ' + fechaCorta(x.s.rev) + ' con ' + esc(x.s.vr) : '') + '"></i></td><td>' + esc(x.w.n || x.id) + '</td><td>' + esc(x.c) + '</td>' +
+    '<td class="num">' + (x.u ? usd(x.u) : '<span class="dim">—</span>') + '</td><td class="num">' + (x.mes >= 0.01 ? usd(x.mes) : '<span class="dim">—</span>') + '</td><td class="num">' + num(x.e) + '</td>' +
+    '<td class="num">' + (x.ah >= 0.01 ? '<span class="ahorro">' + usd(x.ah) + '</span>' : '<span class="dim">—</span>') + '</td>' +
+    '<td style="min-width:240px">' + (x.s && x.s.ve ? '<span class="tag' + (x.s.ve === 'mantener' ? ' on' : x.s.ve === 'suspender' ? ' noid' : ' manual') + '">' + esc(x.s.ve) + '</span> ' : '') + (x.q ? esc(x.q) : '<span class="dim">' + (x.col === 'gris' ? 'Falta revisarlo con las reglas vigentes.' : 'Sin cambios pendientes.') + '</span>') + '</td></tr>'; };
+  var cab = '<tr><th></th><th>Proceso</th><th>Cliente</th><th class="num">Claude periodo</th><th class="num" title="Gasto de Claude del periodo ÷ días medidos × 30">Claude al mes</th><th class="num">Corridas</th><th class="num" title="Ahorro al mes si se cambia al modelo sugerido, con el mismo uso">Ahorro posible/mes</th><th>Qué hacer</th></tr>';
+  var topU = Object.keys(porW).map(fila).sort(function (a, b) { return b.u - a.u; }).slice(0, 10);
+  var topE = Object.keys(ejW).filter(function (id) { return WF[id] && (!est.cliente || WF[id].c === est.cliente); }).map(fila).sort(function (a, b) { return b.e - a.e; }).slice(0, 10);
+  var ahT = topU.reduce(function (t, x) { return t + x.ah; }, 0);
+  h += '<div class="card"><h3><span>2 · Qué optimizar · ' + quien() + ay('Los 10 procesos que más gastan en Claude y los 10 que más corren en n8n. «Qué hacer» viene de su revisión con las reglas vigentes; si no se ha revisado, del modelo que convendría.') + '</span>' + (ahT >= 0.01 ? '<span class="ahorro">Ahorro posible en Claude: ' + usd(ahT) + ' al mes</span>' : '') + '</h3>' +
+    '<div class="dim" style="margin-bottom:6px">Los que más gastan en Claude</div><div class="tbl-wrap"><table class="tbl">' + cab + (topU.length ? topU.map(celda).join('') : '<tr><td colspan="8" class="dim">Sin gasto de Claude en el periodo.</td></tr>') + '</table></div>' +
+    '<div class="dim" style="margin:14px 0 6px">Los que más corren en n8n' + (plPend ? ' (pesan en dinero solo si el plan cobra por volumen)' : '') + '</div><div class="tbl-wrap"><table class="tbl">' + cab + topE.map(celda).join('') + '</table></div>' +
+    '<div class="nota">Ningún cambio se aplica desde aquí: cada uno se prueba con sus casos y se publica con autorización en la sesión de trabajo.</div></div>';
+
+  // 3. Revision por cliente
+  var activos = D.wf.filter(function (w) { return !w.ar && (w.a || SEM[w.id] && SEM[w.id].rev) && (!est.cliente || w.c === est.cliente); });
+  var porC = {}; activos.forEach(function (w) { var col = colorRev(SEM[w.id]), a = porC[w.c] = porC[w.c] || { gris: 0, rojo: 0, amarillo: 0, verde: 0 }; a[col]++; });
+  var ORD = ['rojo', 'amarillo', 'gris', 'verde'];
+  h += '<div class="card"><h3><span>3 · Revisión de procesos activos' + ay('Gris: nunca revisado. Rojo: revisado con un problema abierto. Amarillo: cambió después de revisarse o cambiaron las reglas. Verde: revisado y sin cambios; no se vuelve a revisar.') + '</span>' + (D.reglas.v ? '<span class="dim">Reglas vigentes ' + esc(D.reglas.v) + (D.reglas.liga ? ' · <a style="color:var(--cyan)" href="' + esc(D.reglas.liga) + '" target="_blank" rel="noopener">ver documento</a>' : '') + '</span>' : '') + '</h3>' +
+    '<div class="tbl-wrap"><table class="tbl"><tr><th>Cliente</th>' + ORD.map(function (k) { return '<th class="num"><i class="sem ' + k + '"></i> ' + NOM_COLOR[k] + '</th>'; }).join('') + '<th class="num">Avance</th></tr>';
+  Object.keys(porC).sort(function (a, b) { return porC[b].rojo - porC[a].rojo || (porC[b].gris + porC[b].rojo) - (porC[a].gris + porC[a].rojo); }).forEach(function (c) { var a = porC[c], t = a.gris + a.rojo + a.amarillo + a.verde;
+    h += '<tr><td>' + esc(c) + '</td>' + ORD.map(function (k) { return '<td class="num">' + (a[k] ? (k === 'rojo' ? '<span class="sube">' + a[k] + '</span>' : a[k]) : '<span class="dim">0</span>') + '</td>'; }).join('') + '<td class="num">' + (t ? Math.round((t - a.gris) / t * 100) + '% revisado' : '—') + '</td></tr>'; });
+  h += '</table></div>';
+  var prob = activos.filter(function (w) { var col = colorRev(SEM[w.id]); return col === 'rojo' || col === 'amarillo'; });
+  if (prob.length) { h += '<div class="dim" style="margin:14px 0 6px">Problemas abiertos y procesos por revisar de nuevo (' + prob.length + ')</div><div class="tbl-wrap"><table class="tbl"><tr><th></th><th>Proceso</th><th>Cliente</th><th>Revisado</th><th>Problema</th></tr>';
+    prob.sort(function (a, b) { return (colorRev(SEM[a.id]) === 'rojo' ? 0 : 1) - (colorRev(SEM[b.id]) === 'rojo' ? 0 : 1); }).forEach(function (w) { var s = SEM[w.id], col = colorRev(s);
+      h += '<tr><td><i class="sem ' + col + '"></i></td><td>' + esc(w.n) + '</td><td>' + esc(w.c) + '</td><td class="dim" style="white-space:nowrap">' + fechaCorta(s.rev) + ' · ' + esc(s.vr) + '</td><td style="min-width:240px">' + esc(col === 'amarillo' ? s.motivo : (s.h || s.motivo)) + '</td></tr>'; });
+    h += '</table></div>'; }
+  h += '</div>';
+  h += graficaClaude(r);
   $('panel').innerHTML = h;
-  Array.prototype.forEach.call(document.querySelectorAll('[data-sc]'), function (b) { b.onclick = function () { est.semColor = b.getAttribute('data-sc'); pSemaforo(); }; });
+  Array.prototype.forEach.call(document.querySelectorAll('.fila-cli'), function (tr) { tr.onclick = function () { var c = tr.getAttribute('data-c'); est.cliente = est.cliente === c ? '' : c; pintar(); }; });
 }
 
-function pResumen() {
-  var r = rango(), ra = anterior(r), dm = diasMedidos(r);
-  var filas = usoEn(r), prev = usoEn(ra), g = total(filas), gp = total(prev);
-  var pl = plataformasEn(r), gPl = 0; Object.keys(pl.porCliente).forEach(function (c) { Object.keys(pl.porCliente[c]).forEach(function (p) { gPl += pl.porCliente[c][p]; }); });
-  var ej = ejEn(r).reduce(function (a, f) { return a + f.e; }, 0);
-  var mesIni = D.hoy.slice(0, 8) + '01', dMes = diasMes(D.hoy.slice(0, 7));
-  var gMes = total(usoEn([mesIni, D.hoy])), trans = diasEntre(mesIni > D.primerDia ? mesIni : D.primerDia, D.hoy);
-  var proy = trans ? gMes / trans * dMes : 0;
-  var hoyG = total(usoEn([D.hoy, D.hoy])), ayerG = total(usoEn([dia(D.hoy, -1), dia(D.hoy, -1)]));
-  var cambio = gp ? (g - gp) / gp * 100 : null;
-  var tokE = filas.reduce(function (a, f) { return a + f.i + f.cr + f.cw; }, 0), tokS = filas.reduce(function (a, f) { return a + f.o; }, 0);
-  var h = avisoCobertura(r) + '<div class="kpi-grid">' +
-    kpi('Gasto total', usd(g + gPl), 'Claude ' + usd(g) + ' + plataformas ' + usd(gPl), 'Claude medido por tokens más el costo mensual de plataformas (n8n, BigCommerce, GitHub…) prorrateado por día. Las plataformas sin precio capturado cuentan $0: se capturan en Límites y costos.') +
-    kpi('Gasto Claude', usd(g), fechaCorta(r[0]) + (r[0] !== r[1] ? ' – ' + fechaCorta(r[1]) : '') + (cambio == null ? '' : ' · <span class="' + (cambio > 0 ? 'sube' : 'baja') + '">' + (cambio > 0 ? '▲ ' : '▼ ') + Math.abs(cambio).toFixed(0) + '% vs periodo anterior</span>'), 'Suma del costo de cada llamada a la API de Claude de ' + (est.cliente ? est.cliente : 'todos los clientes') + ', con el precio de su modelo. Se compara contra el mismo número de días inmediatamente antes.') +
-    kpi('Hoy', usd(hoyG), 'ayer ' + usd(ayerG) + ' · límite ' + usd(limite(est.cliente)) + '/día', 'Gasto de Claude de hoy (CDMX) contra el límite diario del semáforo.') +
-    kpi('Proyección del mes', usd(proy), 'llevamos ' + usd(gMes) + ' de Claude en ' + nombreMes(D.hoy).toLowerCase(), 'Gasto de Claude del mes ÷ días medidos del mes × días del mes. Si hubo un pico (pruebas de una demo) la proyección sale alta.') +
-    kpi('Promedio diario', usd(g / dm), dm + ' día' + (dm > 1 ? 's' : '') + ' con medición', 'Gasto de Claude del periodo ÷ días que tienen medición.') +
-    kpi('Llamadas a Claude', num(filas.reduce(function (a, f) { return a + f.l; }, 0)), tok(tokE) + ' de entrada · ' + tok(tokS) + ' de salida', 'Respuestas de Claude contadas en el periodo. Entrada incluye el caché leído y escrito.') +
-    kpi('Ejecuciones de n8n', num(ej), 'de ' + quien(), 'Todas las corridas de los workflows de n8n en el periodo, llamen o no a Claude. n8n cobra por ejecución.') + '</div>';
-  // Clientes
-  var porC = sumar(usoEn(r, true), function (f) { return f.c; }), ejC = {}, plAll = est.cliente ? plataformasEn2(r) : pl;
-  ejEn(r, true).forEach(function (f) { ejC[f.c] = (ejC[f.c] || 0) + f.e; });
-  var cs = clientesVisibles().sort(function (a, b) { return ((porC[b] || {}).u || 0) - ((porC[a] || {}).u || 0) || a.localeCompare(b); });
-  var dias = diasEntre(r[0], r[1]);
-  h += '<div class="card"><h3><span>' + (est.cliente ? 'Cliente' : 'Clientes (' + cs.length + ')') + ay('Monto grande: gasto de Claude. Debajo: llamadas, ejecuciones de n8n, workflows y costo de plataformas. El semáforo compara el gasto de Claude contra su límite diario × los días del periodo.') + '</span><span class="dim">' + (est.cliente ? 'Para ver todos, elige "Todos los clientes" arriba' : 'Clic en un cliente para filtrar todo el portal') + '</span></h3><div class="clientes">';
-  cs.forEach(function (c) {
-    var a = porC[c] || { u: 0, l: 0 }, l = limite(c) * dias, nv = nivel(a.u, l), nwf = D.wf.filter(function (w) { return w.c === c && !w.ar; }).length;
-    var plc = (plAll.porCliente[c] || {}), plt = Object.keys(plc).reduce(function (x, k) { return x + plc[k]; }, 0);
-    h += '<div class="cli' + (a.u ? '' : ' cero') + (est.cliente === c ? ' sel' : '') + '" data-c="' + esc(c) + '" title="' + esc(c + ': Claude ' + usd(a.u) + ' de un límite de ' + usd(l) + ' (' + usd(limite(c)) + ' por día × ' + dias + ' días)') + '"><div class="nom"><span class="sem ' + nv + '"></span>' + esc(c) + '</div>' +
-      '<div class="monto">' + (a.u ? usd(a.u) : 'Sin consumo') + '</div><div class="det">' + num(a.l) + ' llamadas · ' + num(ejC[c] || 0) + ' ejecuciones · ' + nwf + ' workflows' + (plt ? ' · plataformas ' + usd(plt) : '') + '</div>' +
-      '<div class="medidor"><div class="' + nv + '" style="width:' + Math.min(100, l ? a.u / l * 100 : 0) + '%"></div></div><div class="det">límite ' + usd(l) + '</div></div>';
-  });
-  h += '</div></div>';
-  h += tablaPlataformas(r, g, pl);
-  h += graficaClaude(r);
-  h += graficaN8n(r);
-  h += tablaMeses();
-  $('panel').innerHTML = h;
-  Array.prototype.forEach.call(document.querySelectorAll('.cli'), function (d) { d.onclick = function () { var c = d.getAttribute('data-c'); est.cliente = est.cliente === c ? '' : c; pintar(); }; });
-}
 function plataformasEn2(r) { var c = est.cliente; est.cliente = ''; var x = plataformasEn(r); est.cliente = c; return x; }
 function tablaPlataformas(r, gClaude, pl) {
   var filas = [['Claude (API)', gClaude, 'Medido: tokens de cada llamada × precio del modelo.']], porP = {};
@@ -510,23 +502,6 @@ function sugerencia(m, a) {
   if (/sonnet-5/.test(m) && porLlamada < 250 && entradaLl < 3000) return ['claude-haiku-5-5', 'Respuestas cortas (≈' + Math.round(porLlamada) + ' tokens): parece clasificación o extracción, que Haiku 5.5 hace a una fracción del costo. Probar antes.'];
   return [m, 'Ya está en el modelo adecuado para lo que hace.'];
 }
-function pModelos() {
-  var r = rango(), dm = diasMedidos(r);
-  var g = {}; usoEn(r).forEach(function (f) { var k = f.w + '|' + f.m; var a = g[k] = g[k] || { w: f.w, m: f.m, u: 0, l: 0, i: 0, o: 0, cr: 0, cw: 0 }; ['u', 'l', 'i', 'o', 'cr', 'cw'].forEach(function (x) { a[x] += f[x]; }); });
-  var filas = Object.keys(g).map(function (k) { var a = g[k], s = sugerencia(a.m, a), nuevo = s[0] === a.m ? a.u : costo(s[0], a); return { a: a, s: s, nuevo: nuevo, ahorro: a.u - nuevo }; })
-    .sort(function (x, y) { return y.ahorro - x.ahorro || y.a.u - x.a.u; });
-  var tot = filas.reduce(function (t, f) { t.u += f.a.u; t.n += f.nuevo; return t; }, { u: 0, n: 0 });
-  var h = '<div class="kpi-grid">' + kpi('Gasto del periodo', usd(tot.u), dm + ' días con medición · ' + quien()) + kpi('Con los modelos sugeridos', usd(tot.n), 'mismo uso de tokens', 'Se recalcula el costo con los mismos tokens y el precio del modelo sugerido. Un modelo más chico puede escribir respuestas de otro largo: es un estimado.') +
-    kpi('Ahorro posible', '<span class="ahorro">' + usd(tot.u - tot.n) + '</span>', tot.u ? ((tot.u - tot.n) / tot.u * 100).toFixed(0) + '% menos' : '') + kpi('Ahorro al mes', '<span class="ahorro">' + usd((tot.u - tot.n) / dm * 30) + '</span>', 'si el uso se mantiene', 'Ahorro del periodo ÷ días con medición × 30.') + '</div>';
-  h += '<div class="card"><h3><span>Modelo recomendado por flujo · ' + quien() + '</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Flujo</th><th>Cliente</th><th>Modelo actual</th><th>Recomendado</th><th class="num">Gasto actual</th><th class="num">Con el recomendado</th><th class="num">Ahorro</th><th>Por qué</th></tr>';
-  filas.forEach(function (f) { var w = WF[f.a.w] || {}, igual = f.s[0] === f.a.m;
-    h += '<tr><td>' + esc(w.n || f.a.w) + '</td><td>' + esc(w.c || '') + '</td><td><span class="tag ia">' + esc(f.a.m.replace('claude-', '')) + '</span></td><td>' + (igual ? '<span class="tag on">se queda</span>' : '<span class="tag manual">' + esc(f.s[0].replace('claude-', '')) + '</span>') + '</td>' +
-      '<td class="num">' + usd(f.a.u) + '</td><td class="num">' + usd(f.nuevo) + '</td><td class="num">' + (f.ahorro > 0.005 ? '<span class="ahorro">' + usd(f.ahorro) + '</span>' : '—') + '</td><td class="dim" style="min-width:260px">' + esc(f.s[1]) + '</td></tr>'; });
-  h += filas.length ? '' : '<tr><td colspan="8" class="dim">Sin gasto de Claude en este periodo para ' + quien() + '.</td></tr>';
-  h += '</table></div><div class="nota">Ningún cambio se hace solo desde aquí: cambiar el modelo de un flujo que atiende clientes exige probarlo con sus casos (por ejemplo, el agente de Pintaando pasa por sus pruebas locales y su arnés) y publicarlo con autorización. Pídelo en la sesión de trabajo y se hace con sus pruebas.</div></div>';
-  $('panel').innerHTML = h;
-}
-
 function pLimites() {
   var hoyU = sumar(usoEn([D.hoy, D.hoy], true), function (f) { return f.c; });
   var h = '<div class="card"><h3><span>Semáforo de hoy y límites diarios de Claude · ' + quien() + ay('El límite diario es cuánto puede gastar en Claude un cliente en un día antes de que el semáforo se ponga rojo y llegue un correo. El sugerido sale del histórico; el actual es el que manda.') + '</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Cliente</th><th class="num">Hoy</th><th class="num" title="Límite que usa hoy el semáforo">Límite actual</th><th class="num" title="Uso del límite actual">Uso</th><th>Semáforo</th><th class="num" title="1.5 × el promedio diario de los últimos 14 días completos con medición, redondeado hacia arriba a 50 centavos (mínimo $0.50)">Sugerido</th><th>En qué se basa</th><th title="Escribe un valor y guarda">Cambiar</th></tr>';
@@ -540,7 +515,7 @@ function pLimites() {
       '<td style="white-space:nowrap"><input type="number" class="lim" min="0.5" step="0.5" value="' + (s ? s.valor : l) + '" data-c="' + esc(x[0]) + '" title="Nuevo límite diario en dólares"> <button class="btn sec guardarLim" data-c="' + esc(x[0]) + '" title="Guarda este límite; el semáforo y el correo lo usan desde la siguiente medición">Guardar</button></td></tr>';
   });
   h += '</table></div><div class="nota"><b>De dónde salieron los límites actuales.</b> Los fijé a mano el 16 oct con el gasto observado del 13 al 15 oct: Pintaando $3 (su agente gastaba ~$1.60 al día); Great Revenue $5 (~$1.30 al día con picos del Post-Reunión); Scania y Cencosud $3 cada uno, para frenar a tiempo ráfagas de pruebas como la del 14 oct; BdCh $1; cualquier otro cliente $2 (general); toda la cuenta $12, un poco arriba del peor día ($10.28 el 14 oct); y un pico de $2 en una sola hora (el 14 oct se fueron $6.92 en una hora).<br>' +
-    '<b>Cómo funciona.</b> Verde por debajo del 70% del límite, amarillo del 70 al 100%, rojo al pasarlo. Llega un correo a ' + esc(D.correo || 'GR') + ' la primera vez en el día que un cliente o la cuenta pasa a amarillo y otra vez a rojo, y otro si en una hora se gastan más de ' + usd(D.picoHora) + '. La medición corre cada hora a los :05 (CDMX).</div>' +
+    '<b>Cómo funciona.</b> Verde por debajo del 70% del límite, amarillo del 70 al 100%, rojo al pasarlo. Llega un correo a ' + esc(D.correo || 'GR') + ' la primera vez en el día que un cliente o la cuenta pasa a amarillo y otra vez a rojo, y otro si en una hora se gastan más de ' + usd(D.picoHora) + '. La medición corre a las 7:05 y a las 14:05 (CDMX).</div>' +
     (est.cliente ? '' : '<div class="form"><label title="Gasto de Claude en una sola hora que dispara un correo">Pico por hora (USD)<input type="number" id="inPico" min="0.5" step="0.5" value="' + D.picoHora + '"></label><div><button class="btn sec" id="guardarPico">Guardar pico por hora</button></div></div>') + '</div>';
   // Plataformas
   var plats = D.plataformas.filter(function (p) { return !est.cliente || p.c === est.cliente || p.c === REPARTIR; });
@@ -556,7 +531,7 @@ function pLimites() {
     '<div class="nota">Para corregir una línea, captura la misma plataforma, el mismo cliente y el mismo mes con el valor bueno: se sobrescribe.</div></div>';
   var c = D.control || {};
   h += '<div class="card"><h3><span>Cómo se mide y qué se guarda</span></h3><div class="dim" style="font-size:13px;line-height:1.7">' +
-    'Cada hora se leen por la API de n8n las ejecuciones nuevas de los workflows que usan Claude y se suma el <i>usage</i> que Anthropic devuelve en cada respuesta (tokens de entrada, salida y caché), con el precio de cada modelo. Las ejecuciones de n8n se cuentan de todos los workflows. ' +
+    'Dos veces al día (7:05 y 14:05 CDMX) se leen por la API de n8n las ejecuciones nuevas de los workflows que usan Claude y se suma el <i>usage</i> que Anthropic devuelve en cada respuesta (tokens de entrada, salida y caché), con el precio de cada modelo. Las ejecuciones de n8n se cuentan de todos los workflows. ' +
     'Todo queda guardado para siempre en tablas diarias de n8n (gasto de Claude por día, flujo y modelo; ejecuciones por día y workflow; costos de plataformas con su vigencia), así que el histórico ya no depende de lo que n8n conserve de cada ejecución. ' +
     'Última carga: ' + num(c.workflows_leidos) + ' workflows leídos, ' + num(c.workflows_con_claude) + ' con Claude, ' + num(c.ejecuciones_leidas) + ' ejecuciones revisadas. ' +
     'No se ven aquí: el uso de Claude Code y de claude.ai (van por la suscripción, no por la llave de la API).</div></div>';
