@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="es" class="esperando-marca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Minuta por revisar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
+<link rel="stylesheet" href="/portal_comun.css?v=20261014c">
+<script src="/portal_comun.js?v=20261014c"></script>
+<style>
+/* Minuta post-reunion: revision del vendedor antes de enviar al cliente (13-nov-2026). Solo se ve con la liga del aviso (?k=). */
+.prueba{background:var(--osc);color:#fff;border-radius:8px;padding:10px 14px;font-size:14px}
+.estado{display:inline-block;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;background:#fff4e5;color:#7a4a00}.estado.hecho{background:#e6f4ea;color:#1e6b34}
+.campo{display:grid;gap:4px}.campo textarea{min-height:120px;line-height:1.45}.campo textarea.largo{min-height:300px}
+.tarea{display:grid;grid-template-columns:auto minmax(0,1fr) 150px;gap:8px;align-items:start;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.tarea input[type=checkbox]{margin-top:10px;width:18px;height:18px}.tarea small{color:var(--g);display:block;margin-top:4px}
+@media(max-width:620px){.tarea{grid-template-columns:auto minmax(0,1fr)}.tarea input[type=date]{grid-column:2}}
+.cand{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:10px;cursor:pointer}.cand input{width:18px;height:18px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:grid;place-items:center;padding:16px;z-index:20}.modal[hidden]{display:none}
+.modal .card{max-width:560px;width:100%}
+</style>
+</head>
+<body>
+<div class="top"><span class="marca" id="logo"><b>GR Intelligence</b></span><span class="quien" id="quien"></span></div>
+<div class="banda oscura" id="banda"><div class="in"><h1 id="titulo">Minuta por revisar</h1><p id="bajada"></p></div></div>
+<main><div class="panel" id="panel"><div class="card"><p class="vacio">Cargando la minuta…</p></div></div></main>
+<div class="modal" id="modal" hidden><div class="card" id="modalC"></div></div>
+<footer>Operado por Great Revenue Intelligence · <a href="/privacidad.html">Aviso de privacidad</a></footer>
+<script>
+(function () {
+  var API = 'https://mikea.app.n8n.cloud/webhook/motor-minuta';
+  var K = (/[?&]k=([A-Za-z0-9]+)/.exec(location.search) || [])[1] || '';
+  var $ = GRP.$, h = GRP.h, D = null;
+  GRP.marcaPublica('Minuta por revisar', 'Revisa, corrige si hace falta y envía desde tu cuenta. Nada sale al cliente sin tu clic.');
+  function api(cuerpo) {
+    cuerpo.k = K;
+    return fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(cuerpo) })
+      .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'Respuesta no válida del servidor.' }; }); })
+      .catch(function () { return { ok: false, error: 'Sin conexión. Revisa tu internet y vuelve a intentar.' }; });
+  }
+  function msg(id, ok, t) { GRP.msg(id, ok ? 'ok' : 'bad', t); }
+  function estado(t, hecho) { return '<span class="estado' + (hecho ? ' hecho' : '') + '">' + h(t) + '</span>'; }
+  function cargar() {
+    if (K.length < 20) { $('panel').innerHTML = '<div class="card"><p class="msg bad">Falta la llave de la liga. Abre la liga completa del aviso.</p></div>'; return; }
+    api({ accion: 'ver' }).then(function (d) {
+      if (!d || !d.ok) { $('panel').innerHTML = '<div class="card"><p class="msg bad">' + h((d && d.error) || 'No se pudo cargar.') + '</p></div>'; return; }
+      D = d; pintar();
+    });
+  }
+  function pintar() {
+    var d = D, H = '';
+    $('quien').textContent = d.remitente_nombre ? 'Envía: ' + d.remitente_nombre : '';
+    if (d.prueba) H += '<div class="prueba"><b>PRUEBA.</b> Todo lo que envíes desde aquí llega solo a ' + h(d.solo_a) + ', no al cliente.</div>';
+    H += '<div class="card"><div class="card-h"><h2>' + h(d.tipo || 'Reunión') + ' · ' + h(d.empresa || d.titulo) + '</h2>' + (d.estado === 'minuta_enviada' ? estado('Minuta enviada', true) : estado(d.estado === 'varias_oportunidades' ? 'Falta elegir oportunidad' : 'Por revisar')) + '</div>'
+      + '<dl class="dato"><dt>Reunión</dt><dd>' + h(d.fecha) + ' · ' + h(d.titulo) + '</dd>'
+      + (d.oportunidad ? '<dt>Oportunidad</dt><dd>' + h(d.oportunidad) + ' (' + h(d.fase) + ')' + (d.url_zoho ? ' · <a href="' + h(d.url_zoho) + '" target="_blank" rel="noopener">Abrir en Zoho</a>' : '') + '</dd>' : '')
+      + (d.fase_sugerida ? '<dt>Fase sugerida</dt><dd>' + h(d.fase_sugerida) + ' (el motor no la cambia; si estás de acuerdo, cámbiala tú en Zoho)</dd>' : '')
+      + (d.verificar ? '<dt>Por verificar</dt><dd>' + h(d.verificar) + '</dd>' : '') + '</dl></div>';
+    if (d.estado === 'varias_oportunidades') {
+      H += '<div class="card"><div class="card-h"><h2>Elige la oportunidad</h2></div><p>Esta empresa tiene varias oportunidades abiertas y el motor no adivina. Elige la de esta reunión; la minuta se prepara en la siguiente revisión (máximo 2 horas) y te llega el aviso.</p>'
+        + (d.candidatos || []).map(function (c, i) { return '<label class="cand"><input type="radio" name="cand" value="' + h(c.id) + '"' + (i ? '' : ' checked') + '><span><b>' + h(c.nombre) + '</b><br><small>' + h(c.fase) + '</small></span></label>'; }).join('')
+        + '<div class="acciones"><button class="p" id="bElegir">Usar esta oportunidad</button><span class="msg" id="mElegir"></span></div></div>';
+      $('panel').innerHTML = H; GRP.revelar();
+      $('bElegir').onclick = function () { var r = document.querySelector('input[name=cand]:checked'); if (!r) return; this.disabled = true; msg('mElegir', true, 'Guardando…');
+        api({ accion: 'elegir', deal_id: r.value }).then(function (x) { if (x.ok) { msg('mElegir', true, x.mensaje); } else { msg('mElegir', false, x.error); $('bElegir').disabled = false; } }); };
+      return;
+    }
+    var enviada = d.estado === 'minuta_enviada';
+    H += '<div class="card"><div class="card-h"><h2><span class="num">1</span>Minuta al cliente</h2>' + (enviada ? estado('Enviada el ' + d.enviado_el, true) : '') + '</div>'
+      + (enviada ? '<p class="nota">Enviada a ' + h(d.enviado_a) + '.</p>' : '<p class="nota">Sale desde tu cuenta a cada asistente del cliente' + (d.copia && d.copia !== d.remitente ? ', con copia a ' + h(d.copia) : '') + '. Si cambias el texto, el cambio también enseña al motor.</p>')
+      + '<label class="campo">Para (separa con comas)<input id="para" value="' + h(d.destinatarios) + '"' + (enviada ? ' disabled' : '') + '></label>'
+      + '<label class="campo">Asunto<input id="asunto" value="' + h(d.asunto) + '"' + (enviada ? ' disabled' : '') + '></label>'
+      + '<label class="campo">Texto<textarea id="cuerpo" class="largo"' + (enviada ? ' disabled' : '') + '>' + h(d.cuerpo) + '</textarea></label>'
+      + '<div class="acciones">' + (enviada ? '' : '<button class="p" id="bEnviar">Enviar minuta</button>') + '<button class="s" data-corr="minuta">Corregir</button><span class="msg" id="mEnviar"></span></div></div>';
+    var wa = !!d.whatsapp_enviado_el;
+    H += '<div class="card"><div class="card-h"><h2><span class="num">2</span>WhatsApp sugerido</h2>' + (wa ? estado('Enviado el ' + d.whatsapp_enviado_el, true) : '') + '</div>'
+      + '<label class="campo">Mensaje<textarea id="wa"' + (wa ? ' disabled' : '') + '>' + h(d.whatsapp) + '</textarea></label>'
+      + '<div class="acciones"><button class="s" id="bCopiar">Copiar</button>' + (wa ? '' : '<button class="p" id="bWa">Ya lo envié</button>') + '<button class="s" data-corr="whatsapp">Corregir</button><span class="msg" id="mWa"></span></div></div>';
+    var tc = !!d.tareas_creadas_el;
+    H += '<div class="card"><div class="card-h"><h2><span class="num">3</span>Tareas en Zoho</h2>' + (tc ? estado('Creadas el ' + d.tareas_creadas_el, true) : '') + '</div>'
+      + (tc ? '' : '<p class="nota">Se crean en la oportunidad, a tu nombre, solo cuando las apruebes. Desmarca las que no quieras y ajusta las fechas.</p>')
+      + (d.tareas || []).map(function (t, i) { return '<div class="tarea"><input type="checkbox" id="tk' + i + '" checked' + (tc ? ' disabled' : '') + '><div><input id="tt' + i + '" value="' + h(t.titulo) + '"' + (tc ? ' disabled' : '') + ' style="width:100%"><small>' + h(t.proposito || '') + '</small></div><input type="date" id="tf' + i + '" value="' + h(t.fecha_limite) + '"' + (tc ? ' disabled' : '') + '></div>'; }).join('')
+      + '<div class="acciones">' + (tc || !(d.tareas || []).length ? '' : '<button class="p" id="bTareas">Crear tareas aprobadas</button>') + '<button class="s" data-corr="tareas">Corregir</button><span class="msg" id="mTareas"></span></div></div>';
+    $('panel').innerHTML = H; GRP.revelar();
+    if ($('bEnviar')) $('bEnviar').onclick = function () {
+      var b = this; if (!confirm(d.prueba ? 'Prueba: se envía solo a ' + d.solo_a + '. ¿Enviar?' : '¿Enviar la minuta a ' + $('para').value + '?')) return;
+      b.disabled = true; msg('mEnviar', true, 'Enviando…');
+      api({ accion: 'enviar', destinatarios: $('para').value, asunto: $('asunto').value, cuerpo: $('cuerpo').value, quien: d.remitente }).then(function (x) { if (x.ok) { msg('mEnviar', true, x.mensaje || 'Enviada.'); setTimeout(cargar, 1200); } else { msg('mEnviar', false, x.error); b.disabled = false; } });
+    };
+    $('bCopiar').onclick = function () { var t = $('wa').value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { msg('mWa', true, 'Copiado. Pégalo en WhatsApp.'); }, function () { $('wa').select(); msg('mWa', true, 'Selecciona y copia el texto.'); }); };
+    if ($('bWa')) $('bWa').onclick = function () { var b = this; b.disabled = true; api({ accion: 'whatsapp', texto: $('wa').value, quien: d.remitente }).then(function (x) { if (x.ok) { msg('mWa', true, x.mensaje); setTimeout(cargar, 1200); } else { msg('mWa', false, x.error); b.disabled = false; } }); };
+    if ($('bTareas')) $('bTareas').onclick = function () {
+      var b = this, ts = (d.tareas || []).map(function (t, i) { return { titulo: $('tt' + i).value, fecha_limite: $('tf' + i).value, prioridad: t.prioridad, proposito: t.proposito, incluir: $('tk' + i).checked }; });
+      b.disabled = true; msg('mTareas', true, 'Creando…');
+      api({ accion: 'tareas', tareas: ts, quien: d.remitente }).then(function (x) { if (x.ok) { msg('mTareas', true, x.mensaje); setTimeout(cargar, 1200); } else { msg('mTareas', false, x.error); b.disabled = false; } });
+    };
+    Array.prototype.forEach.call(document.querySelectorAll('[data-corr]'), function (b) { b.onclick = function () { corregir(b.getAttribute('data-corr')); }; });
+  }
+  var TIPOS = [['tono', 'Tono o forma de decirlo'], ['dato', 'Un dato está mal'], ['oferta', 'Lo que ofrecemos'], ['destinatarios', 'A quién va'], ['persona', 'Nombre o cargo'], ['otro', 'Otro']];
+  function corregir(medio) {
+    $('modalC').innerHTML = '<div class="card-h"><h2>Corregir ' + h(medio) + '</h2></div><p class="nota">Llega a Mejoras de mensajes del portal y las siguientes minutas la toman en cuenta.</p>'
+      + '<label>¿Qué estuvo mal?<select id="cT">' + TIPOS.map(function (t) { return '<option value="' + t[0] + '">' + t[1] + '</option>'; }).join('') + '</select></label>'
+      + '<label>Cómo lo dirías tú<textarea id="cP" rows="5"></textarea></label><label>Comentario<textarea id="cC" rows="2"></textarea></label>'
+      + '<div class="acciones"><button class="s" id="cX">Cancelar</button><button class="p" id="cOk">Enviar corrección</button><span class="msg" id="mC"></span></div>';
+    $('modal').hidden = false;
+    $('cX').onclick = function () { $('modal').hidden = true; };
+    $('cOk').onclick = function () { var b = this; b.disabled = true; api({ accion: 'corregir', medio: medio, tipo: $('cT').value, propuesta: $('cP').value, comentario: $('cC').value, quien: D.remitente }).then(function (x) { if (x.ok) { msg('mC', true, x.mensaje); setTimeout(function () { $('modal').hidden = true; }, 1500); } else { msg('mC', false, x.error); b.disabled = false; } }); };
+  }
+  cargar();
+})();
+</script>
+</body>
+</html>
