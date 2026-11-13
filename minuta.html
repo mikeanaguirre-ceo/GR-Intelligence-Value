@@ -49,23 +49,51 @@
       D = d; pintar();
     });
   }
+  // 13-nov tarde (como GR): reunion interna. Nota (decisiones, pendientes, riesgos, salud) y tareas con responsable; se crean en
+  // Zoho a nombre de cada responsable solo con el clic de quien recibio el aviso.
+  function pintarInterna() {
+    var d = D, H = '', tc = !!d.tareas_creadas_el, eq = d.equipo || [];
+    $('titulo').textContent = 'Reunión interna';
+    $('quien').textContent = d.remitente_nombre ? 'Revisa: ' + d.remitente_nombre : '';
+    if (d.prueba) H += '<div class="prueba"><b>PRUEBA.</b> Las tareas se crean con la palabra PRUEBA al frente.</div>';
+    H += '<div class="card"><div class="card-h"><h2>' + h(d.titulo) + '</h2>' + (tc ? estado('Tareas creadas', true) : estado('Por revisar')) + '</div>'
+      + '<dl class="dato"><dt>Fecha</dt><dd>' + h(d.fecha) + '</dd><dt>Participantes</dt><dd>' + h(eq.map(function (e) { return e.nombre; }).join(', ')) + '</dd></dl>'
+      + '<p style="white-space:pre-line">' + h(d.nota || '') + '</p><div class="acciones"><button class="s" data-corr="nota">Corregir</button></div></div>';
+    var opts = function (sel) { return eq.map(function (e) { return '<option value="' + h(e.correo) + '"' + (e.correo === sel ? ' selected' : '') + '>' + h(e.nombre) + '</option>'; }).join(''); };
+    H += '<div class="card"><div class="card-h"><h2><span class="num">1</span>Tareas en Zoho</h2>' + (tc ? estado('Creadas el ' + d.tareas_creadas_el, true) : '') + '</div>'
+      + (tc ? '' : '<p class="nota">Ajusta responsable y fecha. Se crean a nombre de cada responsable solo cuando las apruebes.</p>')
+      + (d.tareas || []).map(function (t, i) { return '<div class="tarea"><input type="checkbox" id="tk' + i + '" checked' + (tc ? ' disabled' : '') + '><div><input id="tt' + i + '" value="' + h(t.titulo) + '"' + (tc ? ' disabled' : '') + ' style="width:100%"><select id="tr' + i + '"' + (tc ? ' disabled' : '') + ' style="margin-top:6px">' + opts(t.responsable) + '</select><small>' + h(t.proposito || '') + '</small></div><input type="date" id="tf' + i + '" value="' + h(t.fecha_limite) + '"' + (tc ? ' disabled' : '') + '></div>'; }).join('')
+      + ((d.tareas || []).length ? '' : '<p class="nota">No se detectaron tareas con compromiso.</p>')
+      + '<div class="acciones">' + (tc || !(d.tareas || []).length ? '' : '<button class="p" id="bTareas">Crear tareas aprobadas</button>') + '<button class="s" data-corr="tareas">Corregir</button><span class="msg" id="mTareas"></span></div></div>';
+    $('panel').innerHTML = H; GRP.revelar();
+    if ($('bTareas')) $('bTareas').onclick = function () {
+      var b = this, ts = (d.tareas || []).map(function (t, i) { return { titulo: $('tt' + i).value, fecha_limite: $('tf' + i).value, responsable: $('tr' + i).value, proposito: t.proposito, incluir: $('tk' + i).checked }; });
+      b.disabled = true; msg('mTareas', true, 'Creando…');
+      api({ accion: 'tareas', tareas: ts, quien: d.remitente }).then(function (x) { if (x.ok) { msg('mTareas', true, x.mensaje); setTimeout(cargar, 1200); } else { msg('mTareas', false, x.error); b.disabled = false; } });
+    };
+    Array.prototype.forEach.call(document.querySelectorAll('[data-corr]'), function (b) { b.onclick = function () { corregir(b.getAttribute('data-corr')); }; });
+  }
   function pintar() {
+    if (D && D.interna) return pintarInterna();
     var d = D, H = '';
     $('quien').textContent = d.remitente_nombre ? 'Envía: ' + d.remitente_nombre : '';
     if (d.prueba) H += '<div class="prueba"><b>PRUEBA.</b> Todo lo que envíes desde aquí llega solo a ' + h(d.solo_a) + ', no al cliente.</div>';
-    H += '<div class="card"><div class="card-h"><h2>' + h(d.tipo || 'Reunión') + ' · ' + h(d.empresa || d.titulo) + '</h2>' + (d.estado === 'minuta_enviada' ? estado('Minuta enviada', true) : estado(d.estado === 'varias_oportunidades' ? 'Falta elegir oportunidad' : 'Por revisar')) + '</div>'
+    H += '<div class="card"><div class="card-h"><h2>' + h(d.tipo || 'Reunión') + ' · ' + h(d.empresa || d.titulo) + '</h2>' + (d.estado === 'minuta_enviada' ? estado('Minuta enviada', true) : estado(d.falta_oportunidad ? 'Falta elegir oportunidad' : 'Por revisar')) + '</div>'
       + '<dl class="dato"><dt>Reunión</dt><dd>' + h(d.fecha) + ' · ' + h(d.titulo) + '</dd>'
       + (d.oportunidad ? '<dt>Oportunidad</dt><dd>' + h(d.oportunidad) + ' (' + h(d.fase) + ')' + (d.url_zoho ? ' · <a href="' + h(d.url_zoho) + '" target="_blank" rel="noopener">Abrir en Zoho</a>' : '') + '</dd>' : '')
       + (d.fase_sugerida ? '<dt>Fase sugerida</dt><dd>' + h(d.fase_sugerida) + ' (el motor no la cambia; si estás de acuerdo, cámbiala tú en Zoho)</dd>' : '')
       + (d.verificar ? '<dt>Por verificar</dt><dd>' + h(d.verificar) + '</dd>' : '') + '</dl></div>';
-    if (d.estado === 'varias_oportunidades') {
-      H += '<div class="card"><div class="card-h"><h2>Elige la oportunidad</h2></div><p>Esta empresa tiene varias oportunidades abiertas y el motor no adivina. Elige la de esta reunión; la minuta se prepara en la siguiente revisión (máximo 2 horas) y te llega el aviso.</p>'
-        + (d.candidatos || []).map(function (c, i) { return '<label class="cand"><input type="radio" name="cand" value="' + h(c.id) + '"' + (i ? '' : ' checked') + '><span><b>' + h(c.nombre) + '</b><br><small>' + h(c.fase) + '</small></span></label>'; }).join('')
-        + '<div class="acciones"><button class="p" id="bElegir">Usar esta oportunidad</button><span class="msg" id="mElegir"></span></div></div>';
-      $('panel').innerHTML = H; GRP.revelar();
-      $('bElegir').onclick = function () { var r = document.querySelector('input[name=cand]:checked'); if (!r) return; this.disabled = true; msg('mElegir', true, 'Guardando…');
-        api({ accion: 'elegir', deal_id: r.value }).then(function (x) { if (x.ok) { msg('mElegir', true, x.mensaje); } else { msg('mElegir', false, x.error); $('bElegir').disabled = false; } }); };
-      return;
+    // 13-nov tarde (como GR): toda reunion con cliente trae minuta. Si el motor no pudo resolver la oportunidad, el vendedor la elige
+    // aqui (de las de la empresa o buscandola en Zoho). Mientras falte, no se puede enviar, ni marcar el WhatsApp, ni crear tareas.
+    var falta = !!d.falta_oportunidad;
+    if (falta) {
+      H += '<div class="card" id="cOpo"><div class="card-h"><h2>Elige la oportunidad de esta reunión</h2>' + estado('Falta para enviar') + '</div>'
+        + '<p class="nota">El motor no adivina. Elige la oportunidad de IT Institute a la que pertenece esta reunión; ahí se guardan la nota, la minuta enviada y las tareas.</p>'
+        + ((d.candidatos || []).length ? '<p><b>De esta empresa</b></p>' + d.candidatos.map(function (c) { return '<label class="cand"><input type="radio" name="cand" value="' + h(c.id) + '"><span><b>' + h(c.nombre) + '</b><br><small>' + h(c.fase) + '</small></span></label>'; }).join('') : '')
+        + '<label class="campo">Buscar en Zoho (empresa u oportunidad)<input id="q" value="' + h(d.empresa || '') + '"></label>'
+        + '<div class="acciones"><button class="s" id="bBuscar">Buscar</button><span class="msg" id="mBuscar"></span></div><div id="res"></div>'
+        + '<div class="acciones"><button class="p" id="bElegir">Usar esta oportunidad</button><span class="msg" id="mElegir"></span></div>'
+        + (d.url_zoho_nueva ? '<p class="nota">¿No existe? <a href="' + h(d.url_zoho_nueva) + '" target="_blank" rel="noopener">Dala de alta en Zoho</a> y búscala aquí.</p>' : '') + '</div>';
     }
     var enviada = d.estado === 'minuta_enviada';
     H += '<div class="card"><div class="card-h"><h2><span class="num">1</span>Minuta al cliente</h2>' + (enviada ? estado('Enviada el ' + d.enviado_el, true) : '') + '</div>'
@@ -73,17 +101,34 @@
       + '<label class="campo">Para (separa con comas)<input id="para" value="' + h(d.destinatarios) + '"' + (enviada ? ' disabled' : '') + '></label>'
       + '<label class="campo">Asunto<input id="asunto" value="' + h(d.asunto) + '"' + (enviada ? ' disabled' : '') + '></label>'
       + '<label class="campo">Texto<textarea id="cuerpo" class="largo"' + (enviada ? ' disabled' : '') + '>' + h(d.cuerpo) + '</textarea></label>'
-      + '<div class="acciones">' + (enviada ? '' : '<button class="p" id="bEnviar">Enviar minuta</button>') + '<button class="s" data-corr="minuta">Corregir</button><span class="msg" id="mEnviar"></span></div></div>';
+      + '<div class="acciones">' + (enviada ? '' : '<button class="p" id="bEnviar"' + (falta ? ' disabled title="Primero elige la oportunidad"' : '') + '>Enviar minuta</button>') + '<button class="s" data-corr="minuta">Corregir</button><span class="msg" id="mEnviar"></span></div></div>';
     var wa = !!d.whatsapp_enviado_el;
     H += '<div class="card"><div class="card-h"><h2><span class="num">2</span>WhatsApp sugerido</h2>' + (wa ? estado('Enviado el ' + d.whatsapp_enviado_el, true) : '') + '</div>'
       + '<label class="campo">Mensaje<textarea id="wa"' + (wa ? ' disabled' : '') + '>' + h(d.whatsapp) + '</textarea></label>'
-      + '<div class="acciones"><button class="s" id="bCopiar">Copiar</button>' + (wa ? '' : '<button class="p" id="bWa">Ya lo envié</button>') + '<button class="s" data-corr="whatsapp">Corregir</button><span class="msg" id="mWa"></span></div></div>';
+      + '<div class="acciones"><button class="s" id="bCopiar">Copiar</button>' + (wa ? '' : '<button class="p" id="bWa"' + (falta ? ' disabled title="Primero elige la oportunidad"' : '') + '>Ya lo envié</button>') + '<button class="s" data-corr="whatsapp">Corregir</button><span class="msg" id="mWa"></span></div></div>';
     var tc = !!d.tareas_creadas_el;
     H += '<div class="card"><div class="card-h"><h2><span class="num">3</span>Tareas en Zoho</h2>' + (tc ? estado('Creadas el ' + d.tareas_creadas_el, true) : '') + '</div>'
       + (tc ? '' : '<p class="nota">Se crean en la oportunidad, a tu nombre, solo cuando las apruebes. Desmarca las que no quieras y ajusta las fechas.</p>')
       + (d.tareas || []).map(function (t, i) { return '<div class="tarea"><input type="checkbox" id="tk' + i + '" checked' + (tc ? ' disabled' : '') + '><div><input id="tt' + i + '" value="' + h(t.titulo) + '"' + (tc ? ' disabled' : '') + ' style="width:100%"><small>' + h(t.proposito || '') + '</small></div><input type="date" id="tf' + i + '" value="' + h(t.fecha_limite) + '"' + (tc ? ' disabled' : '') + '></div>'; }).join('')
-      + '<div class="acciones">' + (tc || !(d.tareas || []).length ? '' : '<button class="p" id="bTareas">Crear tareas aprobadas</button>') + '<button class="s" data-corr="tareas">Corregir</button><span class="msg" id="mTareas"></span></div></div>';
+      + '<div class="acciones">' + (tc || !(d.tareas || []).length ? '' : '<button class="p" id="bTareas"' + (falta ? ' disabled title="Primero elige la oportunidad"' : '') + '>Crear tareas aprobadas</button>') + '<button class="s" data-corr="tareas">Corregir</button><span class="msg" id="mTareas"></span></div></div>';
     $('panel').innerHTML = H; GRP.revelar();
+    if (falta) {
+      $('bBuscar').onclick = function () {
+        var b = this; b.disabled = true; msg('mBuscar', true, 'Buscando…');
+        api({ accion: 'buscar', q: $('q').value }).then(function (x) {
+          b.disabled = false;
+          if (!x.ok) { msg('mBuscar', false, x.error); return; }
+          msg('mBuscar', true, x.mensaje || (x.resultados.length + ' encontrada(s).'));
+          $('res').innerHTML = (x.resultados || []).map(function (c) { return '<label class="cand"><input type="radio" name="cand" value="' + h(c.id) + '"><span><b>' + h(c.nombre) + '</b><br><small>' + h(c.empresa) + ' · ' + h(c.fase) + (c.cierre ? ' · cierre ' + h(c.cierre) : '') + '</small></span></label>'; }).join('');
+        });
+      };
+      $('q').onkeydown = function (e) { if (e.key === 'Enter') $('bBuscar').click(); };
+      $('bElegir').onclick = function () {
+        var r = document.querySelector('input[name=cand]:checked'); if (!r) { msg('mElegir', false, 'Marca una oportunidad.'); return; }
+        var b = this; b.disabled = true; msg('mElegir', true, 'Guardando…');
+        api({ accion: 'elegir', deal_id: r.value, quien: d.remitente }).then(function (x) { if (x.ok) { msg('mElegir', true, x.mensaje); setTimeout(cargar, 1500); } else { msg('mElegir', false, x.error); b.disabled = false; } });
+      };
+    }
     if ($('bEnviar')) $('bEnviar').onclick = function () {
       var b = this; if (!confirm(d.prueba ? 'Prueba: se envía solo a ' + d.solo_a + '. ¿Enviar?' : '¿Enviar la minuta a ' + $('para').value + '?')) return;
       b.disabled = true; msg('mEnviar', true, 'Enviando…');
