@@ -87,6 +87,7 @@ button[title], .chip[title], .tab[title], select[title], input[title] { cursor: 
 .btn { background: linear-gradient(135deg, var(--purple), var(--pink)); color: white; border: none; padding: 7px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; font: inherit; font-size: 13px; }
 .btn.sec { background: var(--bg-3); border: 1px solid var(--border); color: var(--text); }
 .ahorro { color: var(--mint); font-weight: 700; }
+.aviso a, .kpi a { color: var(--cyan); font-weight: 600; }
 .form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; align-items: end; margin-top: 12px; }
 .form label { font-size: 11px; color: var(--text-dim); display: flex; flex-direction: column; gap: 4px; }
 input.lim { width: 90px; }
@@ -117,7 +118,7 @@ var PRECIOS = [ // USD por millon de tokens: entrada, salida, cache leido. Escri
   [/sonnet-5/, 2, 10, 0.20], [/sonnet/, 3, 15, 0.30], [/haiku-5/, 0.10, 0.50, 0.01], [/haiku-4/, 1, 5, 0.10], [/haiku/, 0.25, 1.25, 0.03]];
 var REPARTIR = '(repartir por ejecuciones)';
 var D = null, clave = '';
-var est = { tab: 'resumen', periodo: 'mes', desde: '', hasta: '', cliente: '', flujo: '', buscar: '', soloIA: false, soloNoId: false, soloNuevos: false, orden: 'u' };
+var est = { tab: 'semaforo', semColor: '', periodo: 'mes', desde: '', hasta: '', cliente: '', flujo: '', buscar: '', soloIA: false, soloNoId: false, soloNuevos: false, orden: 'u' };
 try { var e0 = JSON.parse(localStorage.getItem('gr_consumo_estado') || '{}'); ['tab', 'periodo', 'desde', 'hasta', 'cliente'].forEach(function (k) { if (e0[k]) est[k] = e0[k]; }); } catch (e) {}
 function guardarEstado() { try { localStorage.setItem('gr_consumo_estado', JSON.stringify({ tab: est.tab, periodo: est.periodo, desde: est.desde, hasta: est.hasta, cliente: est.cliente })); } catch (e) {} }
 
@@ -166,8 +167,15 @@ $('btnRefrescar').onclick = cargar;
 var WF = {}, EJD = {};
 function preparar() {
   WF = {}; D.wf.forEach(function (w) { WF[w.id] = w; });
-  D.uso.forEach(function (f) { var w = WF[f.w]; f.c = w ? w.c : (f.c || 'No identificado'); f.n = w ? w.n : (f.n || f.w); });
-  D.ej.forEach(function (f) { var w = WF[f.w]; f.c = w ? w.c : 'No identificado'; });
+  // 13 nov 2026: lo que gastan y corren las bases comunes se carga al cliente que las llamo (tenant que reciben), no a
+  // "Motor (base común)". Las filas de ejecuciones con tenant reemplazan esa parte de la fila general de la base.
+  var BASE = 'Motor (base común)', T = D.tenantes || {};
+  var cliT = function (c, t) { return c === BASE && t && T[t] ? T[t] : c; };
+  D.uso.forEach(function (f) { var w = WF[f.w]; f.c = cliT(w ? w.c : (f.c || 'No identificado'), f.t); f.n = w ? w.n : (f.n || f.w); });
+  var partido = {}; D.ej.forEach(function (f) { if (f.t) partido[f.d + '|' + f.w] = (partido[f.d + '|' + f.w] || 0) + f.e; });
+  D.ej.forEach(function (f) { var w = WF[f.w]; var c = w ? w.c : 'No identificado';
+    if (f.t) { f.c = cliT(c, f.t); f.x = 0; } else { f.c = c; if (partido[f.d + '|' + f.w]) f.e = Math.max(0, f.e - partido[f.d + '|' + f.w]); } });
+  D.sem = D.sem || []; D.creditos = D.creditos || []; D.reglas = D.reglas || {};
   var vistos = {}; D.clientes.forEach(function (c) { vistos[c] = 1; });
   D.wf.forEach(function (w) { if (!vistos[w.c]) { vistos[w.c] = 1; D.clientes.push(w.c); } });
   if (est.cliente && !vistos[est.cliente]) est.cliente = '';
@@ -243,6 +251,7 @@ function sugerido(c) {
 
 // ---------- Pintar ----------
 var TABS = [
+  ['semaforo', 'Semáforo', 'Cada proceso con su revisión de optimización: verde, amarillo o rojo según las reglas vigentes. Resumen por cliente y créditos de Amplemarket.'],
   ['resumen', 'Resumen', 'Gasto total por cliente y plataforma, gráficas por día y tabla por mes.'],
   ['flujos', 'Flujos', 'Gasto de Claude por workflow: modelo, tokens, dólares y costo por llamada.'],
   ['auditoria', 'Auditoría de workflows', 'Todos los workflows de n8n con su cliente, si usan IA, sus ejecuciones y su gasto. Aquí se corrige a qué cliente pertenece cada uno.'],
@@ -255,11 +264,12 @@ function pintar() {
   $('carga').innerHTML = '<span class="dot' + (min > 130 ? ' mal' : min > 75 ? ' tarde' : '') + '"></span> Última carga: ' + hora + (ult ? ' · hace ' + (min < 60 ? min + ' min' : Math.round(min / 60) + ' h') : '');
   var noId = D.wf.filter(function (w) { return w.c === 'No identificado' && !w.ar; }).length;
   var h = '<nav class="tabs">' + TABS.map(function (t) { return '<button class="tab' + (est.tab === t[0] ? ' active' : '') + '" data-tab="' + t[0] + '" title="' + esc(t[2]) + '">' + t[1] + (t[0] === 'auditoria' && noId ? '<span class="badge" title="Workflows sin cliente identificado">' + noId + '</span>' : '') + '</button>'; }).join('') + '</nav>';
+  if (D.reglas.v) h += '<div class="aviso">Reglas de optimización vigentes: <b>' + esc(D.reglas.v) + '</b>' + (D.reglas.f ? ' (' + fechaCorta(D.reglas.f) + ')' : '') + (D.reglas.liga ? ' · <a href="' + esc(D.reglas.liga) + '" target="_blank" rel="noopener">ver documento</a>' : '') + '. Todo proceso nuevo o modificado se revisa con ellas.</div>';
   h += filtros() + '<div id="panel"></div>';
   $('contenido').innerHTML = h;
   Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) { b.onclick = function () { est.tab = b.getAttribute('data-tab'); est.flujo = ''; pintar(); }; });
   enlazarFiltros();
-  ({ resumen: pResumen, flujos: pFlujos, auditoria: pAuditoria, modelos: pModelos, limites: pLimites })[est.tab]();
+  ({ semaforo: pSemaforo, resumen: pResumen, flujos: pFlujos, auditoria: pAuditoria, modelos: pModelos, limites: pLimites })[est.tab]();
 }
 function filtros() {
   var P = [['hoy', 'Hoy', 'Solo el día de hoy (CDMX)'], ['ayer', 'Ayer', 'El día de ayer completo'], ['7', '7 días', 'Los últimos 7 días, incluido hoy'], ['30', '30 días', 'Los últimos 30 días, incluido hoy'],
@@ -281,6 +291,45 @@ function avisoCobertura(r) {
 }
 function kpi(t, v, s, ayuda) { return '<div class="kpi"><div class="kpi-label">' + t + (ayuda ? ay(ayuda) : '') + '</div><div class="kpi-value">' + v + '</div><div class="kpi-sub">' + s + '</div></div>'; }
 function quien() { return est.cliente ? esc(est.cliente) : 'todos los clientes'; }
+
+// ---------- Semaforo de optimizacion (13 nov 2026) ----------
+// Verde: revisado con las reglas vigentes y sin cambios desde la revision. Amarillo: se modifico despues o cambiaron las
+// reglas. Rojo: nunca revisado o con hallazgo abierto. El color lo calcula el servidor al pedir los datos (sin reloj).
+var COLORES = [['rojo', 'Rojo'], ['amarillo', 'Amarillo'], ['verde', 'Verde']];
+function pSemaforo() {
+  var r = rango(), ejW = {}, porW = sumar(usoEn(r, true), function (f) { return f.w; });
+  ejEn(r, true).forEach(function (f) { ejW[f.w] = (ejW[f.w] || 0) + f.e; });
+  var filas = D.sem.map(function (s) { var w = WF[s.id] || {}; return { s: s, w: w, c: w.c || 'No identificado', e: ejW[s.id] || 0, u: (porW[s.id] || {}).u || 0 }; })
+    .filter(function (x) { return !est.cliente || x.c === est.cliente; });
+  var porC = {}; filas.forEach(function (x) { var a = porC[x.c] = porC[x.c] || { rojo: 0, amarillo: 0, verde: 0 }; a[x.s.color]++; });
+  var ejC = {}; ejEn(r).forEach(function (f) { ejC[f.c] = (ejC[f.c] || 0) + f.e; });
+  var usC = sumar(usoEn(r), function (f) { return f.c; });
+  var crC = {}; D.creditos.forEach(function (f) { if (f.d >= r[0] && f.d <= r[1] && (!est.cliente || f.c === est.cliente)) { var a = crC[f.c] = crC[f.c] || { t: 0, nv: {} }; a.t++; a.nv[f.nv] = (a.nv[f.nv] || 0) + 1; } });
+  var tot = { rojo: 0, amarillo: 0, verde: 0 }; filas.forEach(function (x) { tot[x.s.color]++; });
+  var h = '<div class="kpi-grid">' + COLORES.map(function (k) { return kpi('<i class="sem ' + k[0] + '"></i> ' + k[1], num(tot[k[0]]), 'procesos de ' + quien(), { rojo: 'Nunca revisados o con un hallazgo abierto.', amarillo: 'Se modificaron después de su revisión o se revisaron con reglas anteriores.', verde: 'Revisados con las reglas vigentes y sin cambios desde entonces. No se vuelven a revisar.' }[k[0]]); }).join('') +
+    kpi('Reglas vigentes', esc(D.reglas.v || '—'), D.reglas.liga ? '<a href="' + esc(D.reglas.liga) + '" target="_blank" rel="noopener">abrir documento</a>' : 'sin documento ligado', 'Procedimiento de optimización de consumo. Si cambian, los procesos revisados con la versión anterior pasan a amarillo.') + '</div>';
+  h += '<div class="card"><h3><span>Resumen por cliente' + ay('Procesos activos de cada cliente por color, y su consumo en el periodo elegido: corridas de n8n, gasto de Claude y créditos de Amplemarket registrados por el motor. Lo que corren las bases comunes se carga al cliente que las llamó.') + '</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Cliente</th><th class="num">Rojo</th><th class="num">Amarillo</th><th class="num">Verde</th><th class="num">Corridas n8n</th><th class="num">Gasto Claude</th><th class="num" title="Consultas a Amplemarket con créditos registradas por el motor en el periodo">Créditos Amplemarket</th></tr>';
+  var cs = {}; Object.keys(porC).forEach(function (c) { cs[c] = 1; }); Object.keys(ejC).forEach(function (c) { if (ejC[c]) cs[c] = 1; });
+  Object.keys(cs).sort(function (a, b) { return (ejC[b] || 0) - (ejC[a] || 0); }).forEach(function (c) { var a = porC[c] || { rojo: 0, amarillo: 0, verde: 0 }, cr = crC[c];
+    h += '<tr><td>' + esc(c) + '</td><td class="num">' + (a.rojo ? '<span class="sube">' + a.rojo + '</span>' : '0') + '</td><td class="num">' + a.amarillo + '</td><td class="num">' + a.verde + '</td><td class="num">' + num(ejC[c] || 0) + '</td><td class="num">' + usd((usC[c] || {}).u || 0) + '</td><td class="num">' + (cr ? num(cr.t) + ' <span class="dim">(' + Object.keys(cr.nv).map(function (k) { return esc(k) + ' ' + cr.nv[k]; }).join(', ') + ')</span>' : '<span class="dim" title="Este cliente no tiene registro de créditos en el motor">sin registro</span>') + '</td></tr>'; });
+  h += '</table></div><div class="nota">Créditos: hoy solo Great Revenue registra cada consulta con créditos (botón Actualizar prospecto). Los demás clientes aparecen como «sin registro» hasta que su proceso de créditos lo guarde.</div></div>';
+  var lista = filas.filter(function (x) { return !est.semColor || x.s.color === est.semColor; });
+  var ord = { rojo: 0, amarillo: 1, verde: 2 };
+  lista.sort(function (a, b) { return ord[a.s.color] - ord[b.s.color] || b.e - a.e || b.u - a.u || String(a.w.n || '').localeCompare(String(b.w.n || '')); });
+  h += '<div class="card"><h3><span>Procesos de ' + quien() + ' (' + lista.length + ')' + ay('Procesos activos y los ya revisados. Corridas y gasto son del periodo elegido; costo al mes y veredicto son de la revisión.') + '</span></h3>' +
+    '<div class="filtros"><button class="chip' + (!est.semColor ? ' active' : '') + '" data-sc="">Todos</button>' + COLORES.map(function (k) { return '<button class="chip' + (est.semColor === k[0] ? ' active' : '') + '" data-sc="' + k[0] + '"><i class="sem ' + k[0] + '"></i> ' + k[1] + ' · ' + tot[k[0]] + '</button>'; }).join('') + '</div>' +
+    '<div class="tbl-wrap"><table class="tbl"><tr><th></th><th>Proceso</th><th>Cliente</th><th title="Fecha de la última revisión y versión de reglas con que se revisó">Revisión</th><th>Plataformas</th><th class="num">Corridas</th><th class="num">Gasto Claude</th><th class="num" title="Costo al mes estimado en la revisión">Costo/mes</th><th>Veredicto</th><th>Hallazgos o motivo</th></tr>';
+  lista.slice(0, 400).forEach(function (x) { var s = x.s;
+    h += '<tr><td><i class="sem ' + s.color + '" title="' + esc(s.motivo) + '"></i></td><td>' + esc(x.w.n || s.id) + '<div class="dim">' + esc(s.id) + '</div></td><td>' + esc(x.c) + '</td>' +
+      '<td class="dim" style="white-space:nowrap">' + (s.rev ? fechaCorta(s.rev) + ' · ' + esc(s.vr) : 'nunca') + '</td><td class="dim">' + esc(s.pl || '—') + '</td>' +
+      '<td class="num">' + num(x.e) + '</td><td class="num">' + (x.u ? usd(x.u) : '<span class="dim">—</span>') + '</td><td class="num">' + (s.rev ? usd(s.cm) : '<span class="dim">—</span>') + '</td>' +
+      '<td>' + (s.ve ? '<span class="tag' + (s.ve === 'mantener' ? ' on' : s.ve === 'suspender' ? ' noid' : ' manual') + '">' + esc(s.ve) + '</span>' : '') + '</td>' +
+      '<td style="min-width:220px">' + (s.h ? esc(s.h) : '<span class="dim">' + esc(s.motivo) + '</span>') + (s.nota ? '<div class="dim">' + esc(s.nota) + '</div>' : '') + '</td></tr>'; });
+  if (lista.length > 400) h += '<tr><td colspan="10" class="dim">Se muestran 400; elige un cliente o un color.</td></tr>';
+  h += '</table></div></div>';
+  $('panel').innerHTML = h;
+  Array.prototype.forEach.call(document.querySelectorAll('[data-sc]'), function (b) { b.onclick = function () { est.semColor = b.getAttribute('data-sc'); pSemaforo(); }; });
+}
 
 function pResumen() {
   var r = rango(), ra = anterior(r), dm = diasMedidos(r);
