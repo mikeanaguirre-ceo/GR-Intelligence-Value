@@ -83,6 +83,9 @@
       + (tc ? '' : '<p class="nota">Se crean en la oportunidad, a tu nombre, solo cuando las apruebes. Desmarca las que no quieras y ajusta las fechas.</p>')
       + (d.tareas || []).map(function (t, i) { return '<div class="tarea"><input type="checkbox" id="tk' + i + '" checked' + (tc ? ' disabled' : '') + '><div><input id="tt' + i + '" value="' + h(t.titulo) + '"' + (tc ? ' disabled' : '') + ' style="width:100%"><small>' + h(t.proposito || '') + '</small></div><input type="date" id="tf' + i + '" value="' + h(t.fecha_limite) + '"' + (tc ? ' disabled' : '') + '></div>'; }).join('')
       + '<div class="acciones">' + (tc || !(d.tareas || []).length ? '' : '<button class="p" id="bTareas">Crear tareas aprobadas</button>') + '<button class="s" data-corr="tareas">Corregir</button><span class="msg" id="mTareas"></span></div></div>';
+    if (d.coaching) H += '<div class="card"><div class="card-h"><h2><span class="num">4</span>Coaching para ti</h2></div><p class="nota">Solo lo ves tú (y queda en la nota interna de Zoho). Ventas y cómo condujiste la sesión: lo que funcionó y hasta dos mejoras para la próxima reunión.</p>'
+      + '<div class="nota" style="white-space:pre-wrap;color:var(--osc);background:#fff">' + h(d.coaching) + '</div>'
+      + '<div class="acciones"><button class="s" data-corr="coaching">Corregir</button></div></div>';
     $('panel').innerHTML = H; GRP.revelar();
     if ($('bEnviar')) $('bEnviar').onclick = function () {
       var b = this; if (!confirm(d.prueba ? 'Prueba: se envía solo a ' + d.solo_a + '. ¿Enviar?' : '¿Enviar la minuta a ' + $('para').value + '?')) return;
