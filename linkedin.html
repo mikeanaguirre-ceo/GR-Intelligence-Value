@@ -217,7 +217,7 @@
         var dd = reu.inicio_cliente.split('T'), pf = dd[0].split('-').map(Number);
         var cuando = new Date(Date.UTC(pf[0], pf[1] - 1, pf[2], 12)).toLocaleDateString('es-MX', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' }) + ', ' + dd[1] + ' h';
         h += '<div class="bloque"><span class="t">Reunión propuesta ' + ay('La IA la dejó en un horario libre de las agendas de quienes van a la demo. Al aprobar se crea la invitación con Meet desde el calendario de Martha. Si es una reagenda, borra la invitación anterior.') + '</span>' +
-          '<label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="inv" checked> Crear la invitación al aprobar: ' + esc(cuando) + ' (hora de ' + esc(reu.zona_nombre || '') + ') · ' + esc(reu.correo) + ' · ' + esc(reu.producto || '') + '</label></div>';
+          '<label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="inv" checked> Crear la invitación al aprobar: ' + esc(cuando) + ' (hora de ' + esc(reu.zona_nombre || '') + ') · ' + esc(reu.correo) + ' · ' + esc(reu.producto || '') + ' ' + ay('Si la persona ya tiene otra reunión futura con nosotros, al aprobar se crea la nueva y se cancela la anterior (Google le avisa).') + '</label></div>';
       }
       h += '<div class="acc"><button class="p" data-acc="aprobar" title="Envía el borrador tal cual">Aprobar</button><button class="s" data-acc="editar" title="Envía el texto como quedó en el cuadro">Guardar cambios y aprobar</button>' +
         '<button class="d" data-acc="descartar" title="No se le contesta nada">No contestar</button><button class="s" data-acc="a_mano" title="Ya le contestaste directo en LinkedIn o por correo: sale de Por aprobar y no se envía nada">Contestado a mano</button><span class="desde">' + (esSugerencia(f) ? 'Se le manda a <b>' + esc(f.dueno) + '</b> como sugerencia ' + ay('No tiene su ' + (CO ? 'Gmail conectado' : 'LinkedIn conectado con correo en Amplemarket') + ': al aprobar, le llega por correo la respuesta para que la envíe desde su ' + T.nombre + ', con copia a Mike.') : T.perfil + ' <b>' + esc(f.dueno) + '</b> ' + ay(T.como)) + '</span></div>';
@@ -227,7 +227,7 @@
     } else {
       if (f.revisado_por === 'Contestada a mano' && f.error) h += '<p class="msg">' + esc(f.error) + '</p>';
       if (f.borrador) h += '<div class="bloque"><span class="t">Borrador que no se envió</span><div class="sub" style="white-space:pre-wrap">' + esc(f.borrador) + '</div></div>';
-      h += '<div class="acc">' + (f.estado === 'descartado' ? '<button class="s" data-acc="reabrir" title="Vuelve a Por aprobar">Reabrir</button>' : '') + '<span class="desde">' + (f.revisado_por ? 'Lo decidió ' + esc(f.revisado_por) : '') + '</span></div>';
+      h += '<div class="acc">' + (f.estado === 'descartado' ? '<button class="s" data-acc="reabrir" title="' + (f.revisado_por === 'Contestada a mano' ? 'La IA retoma la conversación: lee todo el hilo, también lo que escribieron a mano, y deja un borrador nuevo' : 'Vuelve a Por aprobar') + '">Reabrir</button>' : '') + '<span class="desde">' + (f.revisado_por ? 'Lo decidió ' + esc(f.revisado_por) : '') + '</span></div>';
     }
     return h + '</article>';
   }
@@ -261,14 +261,14 @@
       post('gr-li-decidir', cuerpo).then(function(r){
         if (r.estado === 'descartado' && r.error) { toast(r.error); cargar(); return; }
         if (r.ok === false) throw new Error(r.error || 'No se pudo');
-        toast(accion === 'a_mano' ? 'Listo: quedó en Contestadas a mano.' : accion === 'descartar' ? 'Listo: no se le contesta.' : accion === 'reabrir' ? 'Regresó a Por aprobar.' : CO || esSugerencia(f) ? 'Enviado ' + T.desde + ' ' + f.dueno + '.' :
+        toast(accion === 'a_mano' ? 'Listo: quedó en Contestadas a mano.' : accion === 'descartar' ? 'Listo: no se le contesta.' : accion === 'reabrir' ? (r.regenera ? 'La IA está leyendo toda la conversación. En un minuto aparece el borrador nuevo en Por aprobar (usa Actualizar).' : 'Regresó a Por aprobar.') : CO || esSugerencia(f) ? 'Enviado ' + T.desde + ' ' + f.dueno + '.' :
           'Quedó en cola en el LinkedIn de ' + f.dueno + '. Sale en unos 15 minutos; usa Actualizar para confirmar la entrega.');
         cargar();
       }).catch(function(e){ toast('No se pudo: ' + e.message); card.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); });
     };
     if (accion === 'aprobar' || accion === 'editar') confirmar(esSugerencia(f) ? 'Se le manda a ' + f.dueno + ' como sugerencia para ' + (f.prospecto || 'la persona') + ' (no sale al prospecto):' : 'Se envía ' + (CO ? 'desde el correo de ' : 'desde el LinkedIn de ') + f.dueno + ' a ' + (f.prospecto || 'la persona') + (cuerpo.adjuntar ? ', con el One Page adjunto' : '') + (inv && inv.checked ? ', y se crea la invitación de la reunión' : '') + ':', texto, ir);
     else if (accion === 'descartar') confirmar('¿No contestarle a ' + (f.prospecto || 'esta persona') + '?', '', ir);
-    else if (accion === 'a_mano') confirmar('¿Ya le contestaste a ' + (f.prospecto || 'esta persona') + ' fuera del portal? Pasa a Contestadas a mano y no se envía nada.', '', ir);
+    else if (accion === 'a_mano') confirmar('¿Ya le contestaste a ' + (f.prospecto || 'esta persona') + ' fuera del portal? Pasa a Contestadas a mano y no se envía nada. Desde ahora la IA no genera respuestas para esta conversación; si quieren que la retome, usen Reabrir.', '', ir);
     else ir();
   }
   document.addEventListener('click', function(e){
