@@ -93,7 +93,19 @@
         + '<label class="campo">Buscar en Zoho (empresa u oportunidad)<input id="q" value="' + h(d.empresa || '') + '"></label>'
         + '<div class="acciones"><button class="s" id="bBuscar">Buscar</button><span class="msg" id="mBuscar"></span></div><div id="res"></div>'
         + '<div class="acciones"><button class="p" id="bElegir">Usar esta oportunidad</button><span class="msg" id="mElegir"></span></div>'
-        + (d.url_zoho_nueva ? '<p class="nota">¿No existe? <a href="' + h(d.url_zoho_nueva) + '" target="_blank" rel="noopener">Dala de alta en Zoho</a> y búscala aquí.</p>' : '') + '</div>';
+        // 14-nov (como GR): si la oportunidad no existe, se da de alta aqui mismo en el Zoho de Itera, a nombre del vendedor.
+        + (d.puede_crear ? (function () {
+            var dests = String(d.destinatarios || '').split(/[,;\s]+/).filter(Boolean);
+            return '<details class="alta"' + ((d.candidatos || []).length ? '' : ' open') + ' style="margin-top:14px"><summary><b>¿No existe? Dala de alta aquí</b></summary>'
+              + '<p class="nota">Se crea en el Zoho de Itera a tu nombre, con su empresa y su contacto. Si ya hay una abierta de ese contacto y producto, se usa esa.</p>'
+              + '<label class="campo">Empresa<input id="aEmp" value="' + h(d.empresa || '') + '"></label>'
+              + '<label class="campo">Correo del contacto del cliente<input id="aCor" list="aCorL" value="' + h(dests[0] || '') + '"><datalist id="aCorL">' + dests.map(function (x) { return '<option value="' + h(x) + '">'; }).join('') + '</datalist></label>'
+              + '<label class="campo">Nombre del contacto<input id="aNom"></label><label class="campo">Apellido del contacto<input id="aApe"></label>'
+              + '<label class="campo">Producto<select id="aProd"><option value="">Elige el producto</option>' + (d.productos || []).map(function (x) { return '<option value="' + h(x.codigo) + '">' + h(x.nombre) + '</option>'; }).join('') + '</select></label>'
+              + '<label class="campo">¿De dónde vino la oportunidad?<select id="aCan"><option value="">Elige</option><option value="secuencia">Secuencia o campaña de marketing</option><option value="dueno">Cuenta propia del vendedor</option><option value="fabricante">La refirió el fabricante (Udemy, Coursera…)</option><option value="renovacion">Renovación</option></select></label>'
+              + '<label class="campo">Tamaño de la empresa (Zoho lo pide si la empresa es nueva)<select id="aTam"><option value="">Ya existe en Zoho / no sé</option><option value="25">Menos de 50 empleados</option><option value="100">De 50 a 249 empleados</option><option value="1000">De 250 a 5,000 empleados</option><option value="6000">Más de 5,000 empleados</option></select></label>'
+              + '<div class="acciones"><button class="p" id="bCrear">Dar de alta y usar esta oportunidad</button><span class="msg" id="mCrear"></span></div></details>';
+          })() : '') + '</div>';
     }
     var enviada = d.estado === 'minuta_enviada';
     H += '<div class="card"><div class="card-h"><h2><span class="num">1</span>Minuta al cliente</h2>' + (enviada ? estado('Enviada el ' + d.enviado_el, true) : '') + '</div>'
@@ -127,6 +139,13 @@
         var r = document.querySelector('input[name=cand]:checked'); if (!r) { msg('mElegir', false, 'Marca una oportunidad.'); return; }
         var b = this; b.disabled = true; msg('mElegir', true, 'Guardando…');
         api({ accion: 'elegir', deal_id: r.value, quien: d.remitente }).then(function (x) { if (x.ok) { msg('mElegir', true, x.mensaje); setTimeout(cargar, 1500); } else { msg('mElegir', false, x.error); b.disabled = false; } });
+      };
+      if ($('bCrear')) $('bCrear').onclick = function () {
+        if (!$('aProd').value) { msg('mCrear', false, 'Elige el producto.'); return; }
+        if (!$('aCan').value) { msg('mCrear', false, 'Elige de dónde vino la oportunidad.'); return; }
+        var b = this; b.disabled = true; msg('mCrear', true, 'Dando de alta en Zoho… puede tardar hasta un minuto.');
+        api({ accion: 'crear', empresa: $('aEmp').value, correo: $('aCor').value, nombre: $('aNom').value, apellido: $('aApe').value, producto: $('aProd').value, canal: $('aCan').value, empleados: $('aTam').value, quien: d.remitente })
+          .then(function (x) { if (x.ok) { msg('mCrear', true, x.mensaje); setTimeout(cargar, 1800); } else { msg('mCrear', false, x.error); b.disabled = false; } });
       };
     }
     if ($('bEnviar')) $('bEnviar').onclick = function () {
