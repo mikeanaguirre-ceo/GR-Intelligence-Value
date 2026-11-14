@@ -175,7 +175,7 @@ function preparar() {
   var cliT = function (c, t) { return c === BASE && t && T[t] ? T[t] : c; };
   D.uso.forEach(function (f) { var w = WF[f.w]; f.c = cliT(w ? w.c : (f.c || 'No identificado'), f.t); f.n = w ? w.n : (f.n || f.w); });
   var partido = {}; D.ej.forEach(function (f) { if (f.t) partido[f.d + '|' + f.w] = (partido[f.d + '|' + f.w] || 0) + f.e; });
-  D.ej.forEach(function (f) { var w = WF[f.w]; var c = w ? w.c : 'No identificado';
+  D.ej.forEach(function (f) { var w = WF[f.w]; var c = w ? w.c : 'No identificado'; f.eo = f.e;
     if (f.t) { f.c = cliT(c, f.t); f.x = 0; } else { f.c = c; if (partido[f.d + '|' + f.w]) f.e = Math.max(0, f.e - partido[f.d + '|' + f.w]); } });
   D.sem = D.sem || []; D.creditos = D.creditos || []; D.reglas = D.reglas || {};
   var vistos = {}; D.clientes.forEach(function (c) { vistos[c] = 1; });
@@ -310,17 +310,18 @@ function pGasto() {
     .sort(function (a, b) { return (b.u + b.p) - (a.u + a.p) || b.e - a.e; });
   var mesIni = D.hoy.slice(0, 8) + '01', trans = diasEntre(mesIni > D.primerDia ? mesIni : D.primerDia, D.hoy);
   var proy = trans ? total(usoEn([mesIni, D.hoy])) / trans * diasMes(D.hoy.slice(0, 7)) : 0;
-  // Tope del plan de n8n (Pro mensual, 50,000 ejecuciones; visto en el panel de n8n el 13 sep 2026, docs/n8n_instancia_proyectos_vA.md).
-  // Al pasarlo n8n detiene todos los procesos ("Execution limit reached", 8 sep 2026). Se cuentan todas las corridas, sub-procesos
-  // incluidos: es el peor caso, porque n8n podria no contar los sub-procesos. Mes calendario (el ciclo de cobro puede empezar otro dia).
-  var mesE = 0; D.ej.forEach(function (f) { if (f.d >= mesIni && f.d <= D.hoy) mesE += f.e || 0; });
+  // Tope del plan de n8n (Pro mensual, 50,000 ejecuciones; se reinicia el dia 1, visto en la consola de n8n el 14 nov 2026).
+  // Al pasarlo n8n detiene todos los procesos ("Execution limit reached", 8 sep 2026).
+  // 14 nov 2026: se cuentan solo las corridas que cobra n8n (cb = "cobradas" del medidor): sin sub-procesos, manuales, de error
+  // ni fallidas. Verificado: la consola decia 11,690 cuando el total de corridas era 15,284. Los dias sin "cobradas" usan el total.
+  var mesE = 0, mesT = 0; D.ej.forEach(function (f) { if (f.t || f.d < mesIni || f.d > D.hoy) return; mesT += f.eo || 0; mesE += typeof f.cb === 'number' ? f.cb : (f.eo || 0); });
   var proyE = trans ? mesE / trans * diasMes(D.hoy.slice(0, 7)) : 0, pctE = proyE / TOPE_N8N * 100;
 
   // 1. Cuanto gastamos
   var h = avisoCobertura(r) + '<div class="kpi-grid">' +
     kpi('Gasto del periodo', usd(gC + gP), 'Claude ' + usd(gC) + (gP ? ' + plataformas ' + usd(gP) : ''), 'Claude medido llamada por llamada, más el costo mensual de las plataformas que tienen precio capturado.') +
     kpi('Proyección del mes (Claude)', usd(proy), 'a este ritmo, ' + nombreMes(D.hoy).toLowerCase(), 'Gasto de Claude del mes ÷ días medidos × días del mes.') +
-    kpi('Corridas de n8n del mes', num(mesE) + ' <span class="dim" style="font-size:.6em">de ' + num(TOPE_N8N) + '</span>', '<span style="color:' + (pctE > 90 ? 'var(--rojo,#c0392b)' : pctE > 75 ? 'var(--amarillo,#b7791f)' : 'inherit') + '">proyección ' + num(proyE) + ' (' + pctE.toFixed(0) + '% del tope)</span>', 'El plan Pro de n8n da ' + num(TOPE_N8N) + ' corridas al mes. Si se pasa, n8n detiene todos los procesos hasta el mes siguiente (pasó el 8 sep 2026). Cuenta también los sub-procesos: es el peor caso. Corridas del periodo elegido: ' + num(gE) + '.') +
+    kpi('Corridas de n8n del mes', num(mesE) + ' <span class="dim" style="font-size:.6em">de ' + num(TOPE_N8N) + '</span>', '<span style="color:' + (pctE > 90 ? 'var(--rojo,#c0392b)' : pctE > 75 ? 'var(--amarillo,#b7791f)' : 'inherit') + '">proyección ' + num(proyE) + ' (' + pctE.toFixed(0) + '% del tope)</span>', 'El plan Pro de n8n da ' + num(TOPE_N8N) + ' corridas al mes y se reinicia el día 1. Si se pasa, n8n detiene todos los procesos hasta el mes siguiente (pasó el 8 sep 2026). Cuenta solo lo que cobra n8n: no cuenta sub-procesos, pruebas manuales ni corridas que fallan. Corridas totales del mes, incluidas las que no se cobran: ' + num(mesT) + '. Corridas del periodo elegido: ' + num(gE) + '.') +
     kpi('Créditos de Amplemarket', num(gCr), 'consultas registradas', 'Consultas que gastan créditos y que el motor registra. Hoy solo Great Revenue las registra.') + '</div>';
   h += '<div class="card"><h3><span>1 · Cuánto gastamos, por cliente' + ay('Lo que gastan las bases comunes se carga al cliente que las llamó desde el 13 nov; antes de esa fecha aparece como «Motor (base común)».') + '</span><span class="dim">' + fechaCorta(r[0]) + (r[0] !== r[1] ? ' – ' + fechaCorta(r[1]) : '') + '</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Cliente</th><th class="num">Claude</th><th class="num">Plataformas</th><th class="num">Total</th><th class="num">% del total</th><th class="num">Corridas n8n</th><th class="num">Créditos Amplemarket</th></tr>';
   lista.forEach(function (x) { if (!x.u && !x.p && !x.e && !x.cr) return;
