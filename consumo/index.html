@@ -128,6 +128,7 @@ function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function
 function ay(t) { return '<span class="i" title="' + esc(t) + '">i</span>'; }
 function usd(x) { x = x || 0; return '$' + (Math.abs(x) >= 100 ? x.toFixed(0) : x.toFixed(2)); }
 function usd4(x) { return '$' + (x || 0).toFixed(4); }
+var TOPE_N8N = 50000; // corridas al mes del plan Pro de n8n (13 sep 2026)
 function num(x) { return Math.round(x || 0).toLocaleString('es-MX'); }
 function tok(x) { x = x || 0; return x >= 1e6 ? (x / 1e6).toFixed(2) + ' M' : x >= 1e3 ? (x / 1e3).toFixed(1) + ' mil' : String(Math.round(x)); }
 function dia(d, n) { var t = new Date(d + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); }
@@ -309,12 +310,17 @@ function pGasto() {
     .sort(function (a, b) { return (b.u + b.p) - (a.u + a.p) || b.e - a.e; });
   var mesIni = D.hoy.slice(0, 8) + '01', trans = diasEntre(mesIni > D.primerDia ? mesIni : D.primerDia, D.hoy);
   var proy = trans ? total(usoEn([mesIni, D.hoy])) / trans * diasMes(D.hoy.slice(0, 7)) : 0;
+  // Tope del plan de n8n (Pro mensual, 50,000 ejecuciones; visto en el panel de n8n el 13 sep 2026, docs/n8n_instancia_proyectos_vA.md).
+  // Al pasarlo n8n detiene todos los procesos ("Execution limit reached", 8 sep 2026). Se cuentan todas las corridas, sub-procesos
+  // incluidos: es el peor caso, porque n8n podria no contar los sub-procesos. Mes calendario (el ciclo de cobro puede empezar otro dia).
+  var mesE = 0; D.ej.forEach(function (f) { if (f.d >= mesIni && f.d <= D.hoy) mesE += f.e || 0; });
+  var proyE = trans ? mesE / trans * diasMes(D.hoy.slice(0, 7)) : 0, pctE = proyE / TOPE_N8N * 100;
 
   // 1. Cuanto gastamos
   var h = avisoCobertura(r) + '<div class="kpi-grid">' +
     kpi('Gasto del periodo', usd(gC + gP), 'Claude ' + usd(gC) + (gP ? ' + plataformas ' + usd(gP) : ''), 'Claude medido llamada por llamada, más el costo mensual de las plataformas que tienen precio capturado.') +
     kpi('Proyección del mes (Claude)', usd(proy), 'a este ritmo, ' + nombreMes(D.hoy).toLowerCase(), 'Gasto de Claude del mes ÷ días medidos × días del mes.') +
-    kpi('Corridas de n8n', num(gE), plPend ? 'precio del plan por confirmar' : 'del periodo', 'Cada vez que un proceso trabaja. Solo cuestan dinero si el plan de n8n cobra por volumen; mientras el precio del plan no esté capturado no se pueden pasar a dólares.') +
+    kpi('Corridas de n8n del mes', num(mesE) + ' <span class="dim" style="font-size:.6em">de ' + num(TOPE_N8N) + '</span>', '<span style="color:' + (pctE > 90 ? 'var(--rojo,#c0392b)' : pctE > 75 ? 'var(--amarillo,#b7791f)' : 'inherit') + '">proyección ' + num(proyE) + ' (' + pctE.toFixed(0) + '% del tope)</span>', 'El plan Pro de n8n da ' + num(TOPE_N8N) + ' corridas al mes. Si se pasa, n8n detiene todos los procesos hasta el mes siguiente (pasó el 8 sep 2026). Cuenta también los sub-procesos: es el peor caso. Corridas del periodo elegido: ' + num(gE) + '.') +
     kpi('Créditos de Amplemarket', num(gCr), 'consultas registradas', 'Consultas que gastan créditos y que el motor registra. Hoy solo Great Revenue las registra.') + '</div>';
   h += '<div class="card"><h3><span>1 · Cuánto gastamos, por cliente' + ay('Lo que gastan las bases comunes se carga al cliente que las llamó desde el 13 nov; antes de esa fecha aparece como «Motor (base común)».') + '</span><span class="dim">' + fechaCorta(r[0]) + (r[0] !== r[1] ? ' – ' + fechaCorta(r[1]) : '') + '</span></h3><div class="tbl-wrap"><table class="tbl"><tr><th>Cliente</th><th class="num">Claude</th><th class="num">Plataformas</th><th class="num">Total</th><th class="num">% del total</th><th class="num">Corridas n8n</th><th class="num">Créditos Amplemarket</th></tr>';
   lista.forEach(function (x) { if (!x.u && !x.p && !x.e && !x.cr) return;
