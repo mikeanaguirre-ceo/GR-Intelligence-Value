@@ -111,9 +111,15 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
   }
   function pintar() {
     if (!D) return;
-    var prods = Object.keys(D.productos).sort(function (a, b) { if (a === 'TODOS') return -1; if (b === 'TODOS') return 1; return a.localeCompare(b); });
+    // Lista de productos: la de la configuracion del sitio (catalogos.json), en su orden; los que aun no tienen historia tambien salen.
+    var prods = ['TODOS'], vistos = { TODOS: 1 };
+    CAT.forEach(function (c) { if (!vistos[c.id]) { prods.push(c.id); vistos[c.id] = 1; } });
+    Object.keys(D.productos).forEach(function (p) { if (!vistos[p]) { prods.push(p); vistos[p] = 1; } });
     chips('f-prod', prods.map(function (p) { return [p, NOMBRES[p] || p]; }), 'prod');
     var P = D.productos[st.prod] || {};
+    if (!D.productos[st.prod]) { $('kpis').innerHTML = ''; $('cal').innerHTML = ''; ['f-anio', 'f-vista', 'f-medida', 'f-casa', 'f-pesos'].forEach(function (f) { $(f).style.display = 'none'; });
+      $('graf').innerHTML = '<div class="aviso" style="grid-column:1/-1">' + esc(NOMBRES[st.prod] || st.prod) + ' todavía no tiene oportunidades ni reacciones en la historia. Aparecerá aquí en cuanto las tenga (botón Actualizar ICP).</div>'; return; }
+    ['f-anio', 'f-vista', 'f-medida'].forEach(function (f) { $(f).style.display = ''; });
     chips('f-anio', [['todos', 'Todos']].concat((P.anios || []).map(function (a) { return [a, a]; })), 'anio');
     chips('f-vista', [['op', 'Oportunidades cerradas'], ['se', 'Prospectos (reacciones)']], 'vista');
     $('f-casa').style.display = st.vista === 'op' ? '' : 'none'; $('f-pesos').style.display = st.vista === 'op' ? 'none' : '';
@@ -138,6 +144,14 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
     $('graf').innerHTML = html;
     $('cal').innerHTML = st.prod === 'TODOS' ? calibracion() : '';
   }
+  var CAT = [];
+  function cargarCatalogo() {
+    return fetch('/catalogos.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (j) {
+      CAT = (j.productos || []).filter(function (c) { return c.activo !== false && c.id && ['Interno', 'Otro'].indexOf(c.id) < 0; })
+        .sort(function (a, b) { return (a.orden || 99) - (b.orden || 99); });
+      CAT.forEach(function (c) { NOMBRES[c.id] = c.nombre || c.label || c.id; });
+    }).catch(function () {});
+  }
   function cargar() {
     return fetch(BASE + 'gr-icp', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
       D = j; var t = j.actualizado ? new Date(j.actualizado) : null; var T = (j.productos || {}).TODOS || {};
@@ -151,7 +165,7 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
       .then(function (r) { return r.json(); }).then(function (j) { $('msg').textContent = j.ok ? 'Listo.' : (j.motivo || 'No se actualizó.'); return cargar(); })
       .catch(function () { $('msg').textContent = 'No se pudo actualizar.'; }).then(function () { b.disabled = false; });
   };
-  cargar();
+  cargarCatalogo().then(cargar);
 })();
 </script>
 </body>
