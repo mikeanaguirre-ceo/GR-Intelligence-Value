@@ -59,7 +59,7 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
 // "Actualizar ICP" recalcula (POST gr-icp-actualizar, con candado de 3 minutos en el servidor).
 (function () {
   var BASE = 'https://mikea.app.n8n.cloud/webhook/';
-  var D = null, st = { prod: 'TODOS', anio: 'todos', vista: 'op', medida: 'clientes', medidaS: 'personas', pesos: 'act', casa: true };
+  var D = null, st = { prod: 'TODOS', anio: 'todos', vista: 'op', medida: 'clientes', medidaS: 'puntos', pesos: 'cal', casa: true };
   var NOMBRES = { TODOS: 'Combinada (todos)', AM: 'Amplemarket', TW: 'Talkwalker', HS: 'Hootsuite', AEO: 'AEO + SEO', GenIA: 'GenIA', GENIARH: 'GenIA RH', GENIAVTA: 'GenIA Ventas', GENIACOB: 'GenIA Cobranza', ITS: 'IT Support', LT: 'Legacy Takeover', BD: 'Blindaje Digital', '360': 'Marketing 3V / 360', WB: 'Web', PT: 'Pintaando', SYN: 'Synapsis', EX: 'Excepciones', IMMMU: 'IMMMU', STIL: 'STIL', 'Sin producto': 'Sin producto' };
   var DIM_OP = { tamano: 'Tamaño de la empresa', nivel: 'Nivel del contacto', sector: 'Industria', area: 'Área', pais: 'País', motivo: 'Motivo de pérdida' };
   var DIM_SE = { industria: 'Industria', tamano: 'Tamaño de la empresa', nivel: 'Nivel del contacto', area: 'Área', pais: 'País', secuencia: 'Secuencia (campaña)' };
@@ -90,7 +90,7 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
         if (st.medidaS === 'puntos') {
           var otro = ((otraS || {})[x[2]] || {})[k], wp = max ? Math.abs(v[3]) / max * 100 : 0;
           h = '<div class="tr"><div class="' + (v[3] >= 0 ? 'pos' : 'neg') + '" style="width:' + wp + '%"></div></div>' +
-            '<div class="vl">' + v[3] + ' pts' + (otro ? ' <span style="color:var(--mute)">(' + (st.pesos === 'act' ? 'calibrados ' : 'actuales ') + otro[3] + ')</span>' : '') + (n < 10 ? ' <span class="poco">pocos casos</span>' : '') + '</div>';
+            '<div class="vl">' + v[3] + ' pts' + (otro ? ' <span style="color:var(--mute)">(' + (st.pesos === 'act' ? 'oficiales ' : 'anteriores ') + otro[3] + ')</span>' : '') + (n < 10 ? ' <span class="poco">pocos casos</span>' : '') + '</div>';
         } else {
           var w2 = max ? n / max * 100 : 0, pos = n ? w2 * v[1] / n : 0, neg = n ? w2 * v[2] / n : 0;
           h = '<div class="tr"><div class="pos" style="width:' + pos + '%"></div><div class="neu" style="width:' + (w2 - pos - neg) + '%"></div><div class="neg" style="width:' + neg + '%"></div></div>' +
@@ -106,8 +106,8 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
     var filas = e.map(function (x) { var c = x[1], tasa = c.n ? c.realizada / c.n : 0, prop = 10 * tasa;
       if (c.n < 20) prop = (c.n * prop + (20 - c.n) * c.peso) / 20;
       return '<tr><td>' + esc(TIPOS[x[0]] || x[0]) + '</td><td>' + c.n + '</td><td>' + pct(c.agendada, c.n) + '</td><td>' + pct(c.realizada, c.n) + '</td><td>' + c.peso + '</td><td><b>' + (Math.round(prop * 10) / 10) + '</b>' + (c.n < 20 ? ' <span class="poco">pocos casos</span>' : '') + '</td></tr>'; }).join('');
-    return '<div class="card"><h3>Calibración de pesos (propuesta)</h3><p class="n">De cada reacción registrada por el motor que abrió oportunidad, cuántas llegaron a reunión. Peso propuesto = 10 × tasa de reunión realizada; con menos de 20 casos se acerca al peso actual. En la vista de Prospectos puedes comparar el resultado con los pesos actuales y con los calibrados.</p>' +
-      '<div style="overflow-x:auto"><table><tr><th>Reacción</th><th>Casos</th><th>Reunión agendada</th><th>Reunión realizada</th><th>Peso actual</th><th>Peso propuesto</th></tr>' + filas + '</table></div></div>';
+    return '<div class="card"><h3>Calibración de pesos (oficiales desde el 15-nov-2026)</h3><p class="n">De cada reacción registrada por el motor que abrió oportunidad, cuántas llegaron a reunión. Peso propuesto = 10 × tasa de reunión realizada; con menos de 20 casos se acerca al peso actual. En la vista de Prospectos puedes comparar el resultado con los pesos actuales y con los calibrados.</p>' +
+      '<div style="overflow-x:auto"><table><tr><th>Reacción</th><th>Casos</th><th>Reunión agendada</th><th>Reunión realizada</th><th>Peso anterior</th><th>Peso oficial</th></tr>' + filas + '</table></div></div>';
   }
   function pintar() {
     if (!D) return;
@@ -118,7 +118,7 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
     chips('f-vista', [['op', 'Oportunidades cerradas'], ['se', 'Prospectos (reacciones)']], 'vista');
     $('f-casa').style.display = st.vista === 'op' ? '' : 'none'; $('f-pesos').style.display = st.vista === 'op' ? 'none' : '';
     if (st.vista === 'op') chips('f-medida', [['clientes', 'Clientes'], ['monto', 'Monto']], 'medida'); else chips('f-medida', [['personas', 'Personas'], ['puntos', 'Puntos (con pesos)']], 'medidaS');
-    chips('f-pesos', [['act', 'Pesos actuales'], ['cal', 'Pesos calibrados']], 'pesos');
+    chips('f-pesos', [['cal', 'Pesos oficiales (calibrados)'], ['act', 'Pesos anteriores']], 'pesos');
     chips('f-casa', [[true, 'Con empresas de la casa'], [false, 'Sin empresas de la casa']], 'casa');
     var html = '', k;
     if (st.vista === 'op') {
@@ -130,7 +130,7 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
     } else {
       var S = ((st.pesos === 'cal' ? P.s2 : P.s) || {})[st.anio] || { k: {}, dim: {} }; k = S.k || {};
       var O = ((st.pesos === 'cal' ? P.s : P.s2) || {})[st.anio] || { k: {}, dim: {} }; otraS = {}; for (var dn in (O.dim || {})) otraS[dn] = O.dim[dn];
-      $('kpis').innerHTML = [['Personas que reaccionaron', fmt(k.personas)], ['Positivas', fmt(k.positivas)], ['Negativas', fmt(k.negativas)], ['% positivas', pct(k.positivas, k.personas)], ['Puntos con pesos ' + (st.pesos === 'cal' ? 'calibrados' : 'actuales'), fmt(k.peso)], ['Puntos con pesos ' + (st.pesos === 'cal' ? 'actuales' : 'calibrados'), fmt((O.k || {}).peso)]]
+      $('kpis').innerHTML = [['Personas que reaccionaron', fmt(k.personas)], ['Positivas', fmt(k.positivas)], ['Negativas', fmt(k.negativas)], ['% positivas', pct(k.positivas, k.personas)], ['Puntos con pesos ' + (st.pesos === 'cal' ? 'oficiales' : 'anteriores'), fmt(k.peso)], ['Puntos con pesos ' + (st.pesos === 'cal' ? 'anteriores' : 'oficiales'), fmt((O.k || {}).peso)]]
         .map(function (x) { return '<div class="kpi"><span>' + x[0] + '</span><b>' + x[1] + '</b></div>'; }).join('');
       for (var m in DIM_SE) html += '<div class="card"><h3>' + DIM_SE[m] + '</h3><div class="ley"><span><i style="background:var(--mint)"></i>Positivas</span><span><i style="background:#4B5563"></i>Neutras</span><span><i style="background:var(--red)"></i>Negativas</span></div>' + barras((S.dim || {})[m], 'se', m) + '</div>';
       html = '<div class="aviso" style="grid-column:1/-1">Cada persona cuenta una vez por producto y año, con su reacción más alta. No cuentan las respuestas automáticas de fuera de oficina.</div>' + html;
