@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ICP por producto</title>
+<style>
+:root { --purple:#7C3AED; --pink:#EC4899; --mint:#10B981; --yellow:#F59E0B; --red:#EF4444; --bg:#0B0F19; --bg-2:#141827; --bg-3:#1E2433; --border:#2A3142; --text:#F3F4F6; --dim:#9CA3AF; --mute:#6B7280; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); font-size:14px; line-height:1.5; }
+#app { max-width:1200px; margin:0 auto; padding:16px; }
+.hdr { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; padding:14px 18px; background:linear-gradient(135deg,var(--purple),var(--pink)); border-radius:12px; margin-bottom:14px; }
+.hdr h1 { font-size:18px; font-weight:800; } .hdr p { font-size:12px; opacity:.9; }
+.btn { background:rgba(0,0,0,.28); border:none; color:#fff; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:700; }
+.btn:disabled { opacity:.5; cursor:wait; }
+.fila { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:6px 0; }
+.fila > span { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--dim); min-width:78px; }
+.chip { background:var(--bg-2); border:1px solid var(--border); color:var(--dim); padding:6px 12px; border-radius:18px; cursor:pointer; font-size:13px; font-weight:600; }
+.chip.on { background:var(--bg-3); color:var(--text); border-color:var(--purple); }
+.kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin:14px 0; }
+.kpi { background:var(--bg-2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
+.kpi b { display:block; font-size:24px; line-height:1.15; } .kpi span { font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.04em; font-weight:700; } .kpi em { display:block; font-style:normal; font-size:12px; color:var(--mute); }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr)); gap:12px; }
+.card { background:var(--bg-2); border:1px solid var(--border); border-radius:12px; padding:14px; }
+.card h3 { font-size:14px; margin-bottom:4px; } .card p.n { font-size:12px; color:var(--mute); margin-bottom:10px; }
+.bar { display:grid; grid-template-columns:minmax(90px,38%) 1fr auto; gap:8px; align-items:center; margin:5px 0; font-size:12.5px; }
+.bar .et { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); }
+.bar .et.sd { color:var(--mute); font-style:italic; }
+.bar .tr { height:14px; background:var(--bg-3); border-radius:7px; overflow:hidden; display:flex; }
+.bar .g { background:var(--mint); } .bar .p { background:#4B5563; } .bar .neg { background:var(--red); } .bar .pos { background:var(--mint); } .bar .neu { background:#4B5563; }
+.bar .vl { color:var(--dim); white-space:nowrap; font-variant-numeric:tabular-nums; min-width:92px; text-align:right; }
+.poco { color:var(--yellow); font-size:11px; }
+.ley { display:flex; gap:12px; font-size:11.5px; color:var(--dim); margin:4px 0 8px; flex-wrap:wrap; } .ley i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:4px; vertical-align:-1px; }
+table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding:7px 6px; border-bottom:1px solid var(--border); text-align:right; } th:first-child, td:first-child { text-align:left; } th { color:var(--dim); font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+.aviso { background:var(--bg-2); border:1px dashed var(--border); border-radius:10px; padding:12px; color:var(--dim); margin:10px 0; font-size:13px; }
+.msg { font-size:12.5px; color:#fff; opacity:.9; }
+@media (max-width:520px) { .bar { grid-template-columns:42% 1fr; } .bar .vl { grid-column:1 / -1; text-align:left; min-width:0; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="hdr">
+    <div><h1>ICP por producto</h1><p id="foto">Cargando la foto del ICP…</p></div>
+    <div><button class="btn" id="act">↻ Actualizar ICP</button> <span class="msg" id="msg"></span></div>
+  </header>
+  <div class="fila" id="f-prod"><span>Producto</span></div>
+  <div class="fila" id="f-anio"><span>Año</span></div>
+  <div class="fila" id="f-vista"><span>Vista</span></div>
+  <div class="fila" id="f-medida"><span>Medida</span></div>
+  <div class="fila" id="f-casa"><span>Casa</span></div>
+  <div class="fila" id="f-pesos"><span>Pesos</span></div>
+  <section id="kpis" class="kpis"></section>
+  <section id="graf" class="grid"></section>
+  <section id="cal" style="margin-top:14px"></section>
+</div>
+<script>
+// Pagina ICP de Great Revenue. Lee la foto guardada (GR — ICP Tablero API, GET gr-icp). Nada se refresca solo: solo el boton
+// "Actualizar ICP" recalcula (POST gr-icp-actualizar, con candado de 3 minutos en el servidor).
+(function () {
+  var BASE = 'https://mikea.app.n8n.cloud/webhook/';
+  var D = null, st = { prod: 'TODOS', anio: 'todos', vista: 'op', medida: 'clientes', medidaS: 'personas', pesos: 'act', casa: true };
+  var NOMBRES = { TODOS: 'Combinada (todos)', AM: 'Amplemarket', TW: 'Talkwalker', HS: 'Hootsuite', AEO: 'AEO + SEO', GenIA: 'GenIA', GENIARH: 'GenIA RH', GENIAVTA: 'GenIA Ventas', GENIACOB: 'GenIA Cobranza', ITS: 'IT Support', LT: 'Legacy Takeover', BD: 'Blindaje Digital', '360': 'Marketing 3V / 360', WB: 'Web', PT: 'Pintaando', SYN: 'Synapsis', EX: 'Excepciones', IMMMU: 'IMMMU', STIL: 'STIL', 'Sin producto': 'Sin producto' };
+  var DIM_OP = { tamano: 'Tamaño de la empresa', nivel: 'Nivel del contacto', sector: 'Industria', area: 'Área', pais: 'País', motivo: 'Motivo de pérdida' };
+  var DIM_SE = { industria: 'Industria', tamano: 'Tamaño de la empresa', nivel: 'Nivel del contacto', area: 'Área', pais: 'País', secuencia: 'Secuencia (campaña)' };
+  var TIPOS = { interested: 'Interesado', meeting_booked: 'Reunión agendada', introduction: 'Me presenta a alguien', forwarded_to_the_right_person: 'Lo reenvió a la persona correcta', asked_to_circle_back_later: 'Escríbeme más adelante', circle_back: 'Retomar después', neutral: 'Respuesta neutra', open3: 'Abrió 3 veces (Open+3)', not_the_right_person: 'No soy la persona', not_interested: 'No interesado', unsubscribe: 'Baja de la lista', hard_no: 'Rechazo duro' };
+  var $ = function (id) { return document.getElementById(id); };
+  var fmt = function (n) { return Math.round(n || 0).toLocaleString('es-MX'); };
+  var pct = function (a, b) { return b ? Math.round(a * 100 / b) + '%' : '—'; };
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  function chips(cont, opts, key) {
+    var el = $(cont); el.querySelectorAll('.chip').forEach(function (c) { c.remove(); });
+    opts.forEach(function (o) { var b = document.createElement('button'); b.className = 'chip' + (String(st[key]) === String(o[0]) ? ' on' : ''); b.textContent = o[1];
+      b.onclick = function () { st[key] = o[0]; pintar(); }; el.appendChild(b); });
+  }
+  var otraS = null;
+  function barras(dimObj, tipo, dimName) {
+    var e = Object.entries(dimObj || {}); if (!e.length) return '<p class="n">Sin datos.</p>';
+    e.sort(function (a, b) { if (a[0] === 'Sin dato') return 1; if (b[0] === 'Sin dato') return -1;
+      return tipo === 'op' ? (st.medida === 'monto' ? b[1][2] - a[1][2] : (b[1][0] + b[1][1]) - (a[1][0] + a[1][1])) : (st.medidaS === 'puntos' ? b[1][3] - a[1][3] : b[1][0] - a[1][0]); });
+    var max = 0; e.forEach(function (x) { var v = tipo === 'op' ? (st.medida === 'monto' ? x[1][2] : x[1][0] + x[1][1]) : (st.medidaS === 'puntos' ? Math.abs(x[1][3]) : x[1][0]); if (v > max) max = v; });
+    return e.map(function (x) { x[2] = dimName; var k = x[0], v = x[1], h = '';
+      if (tipo === 'op') {
+        var tot = v[0] + v[1], w = st.medida === 'monto' ? (max ? v[2] / max * 100 : 0) : (max ? tot / max * 100 : 0);
+        var g = st.medida === 'monto' ? w : (tot ? w * v[0] / tot : 0), p = w - g;
+        h = '<div class="tr"><div class="g" style="width:' + g + '%"></div><div class="p" style="width:' + p + '%"></div></div>' +
+          '<div class="vl">' + (st.medida === 'monto' ? '$' + fmt(v[2]) : v[0] + ' de ' + tot + ' · ' + pct(v[0], tot)) + (tot < 10 ? ' <span class="poco">pocos casos</span>' : '') + '</div>';
+      } else {
+        var n = v[0];
+        if (st.medidaS === 'puntos') {
+          var otro = ((otraS || {})[x[2]] || {})[k], wp = max ? Math.abs(v[3]) / max * 100 : 0;
+          h = '<div class="tr"><div class="' + (v[3] >= 0 ? 'pos' : 'neg') + '" style="width:' + wp + '%"></div></div>' +
+            '<div class="vl">' + v[3] + ' pts' + (otro ? ' <span style="color:var(--mute)">(' + (st.pesos === 'act' ? 'calibrados ' : 'actuales ') + otro[3] + ')</span>' : '') + (n < 10 ? ' <span class="poco">pocos casos</span>' : '') + '</div>';
+        } else {
+          var w2 = max ? n / max * 100 : 0, pos = n ? w2 * v[1] / n : 0, neg = n ? w2 * v[2] / n : 0;
+          h = '<div class="tr"><div class="pos" style="width:' + pos + '%"></div><div class="neu" style="width:' + (w2 - pos - neg) + '%"></div><div class="neg" style="width:' + neg + '%"></div></div>' +
+            '<div class="vl">' + n + ' · ' + pct(v[1], n) + ' positivas' + (n < 10 ? ' <span class="poco">pocos casos</span>' : '') + '</div>';
+        }
+      }
+      return '<div class="bar"><div class="et' + (k === 'Sin dato' ? ' sd' : '') + '" title="' + esc(k) + '">' + esc(k) + '</div>' + h + '</div>'; }).join('');
+  }
+  function calibracion() {
+    var t = (D.productos.TODOS || {}).calibracion || {}; var e = Object.entries(t).filter(function (x) { return x[1].n > 0; });
+    if (!e.length) return '';
+    e.sort(function (a, b) { return b[1].n - a[1].n; });
+    var filas = e.map(function (x) { var c = x[1], tasa = c.n ? c.realizada / c.n : 0, prop = 10 * tasa;
+      if (c.n < 20) prop = (c.n * prop + (20 - c.n) * c.peso) / 20;
+      return '<tr><td>' + esc(TIPOS[x[0]] || x[0]) + '</td><td>' + c.n + '</td><td>' + pct(c.agendada, c.n) + '</td><td>' + pct(c.realizada, c.n) + '</td><td>' + c.peso + '</td><td><b>' + (Math.round(prop * 10) / 10) + '</b>' + (c.n < 20 ? ' <span class="poco">pocos casos</span>' : '') + '</td></tr>'; }).join('');
+    return '<div class="card"><h3>Calibración de pesos (propuesta)</h3><p class="n">De cada reacción registrada por el motor que abrió oportunidad, cuántas llegaron a reunión. Peso propuesto = 10 × tasa de reunión realizada; con menos de 20 casos se acerca al peso actual. En la vista de Prospectos puedes comparar el resultado con los pesos actuales y con los calibrados.</p>' +
+      '<div style="overflow-x:auto"><table><tr><th>Reacción</th><th>Casos</th><th>Reunión agendada</th><th>Reunión realizada</th><th>Peso actual</th><th>Peso propuesto</th></tr>' + filas + '</table></div></div>';
+  }
+  function pintar() {
+    if (!D) return;
+    var prods = Object.keys(D.productos).sort(function (a, b) { if (a === 'TODOS') return -1; if (b === 'TODOS') return 1; return a.localeCompare(b); });
+    chips('f-prod', prods.map(function (p) { return [p, NOMBRES[p] || p]; }), 'prod');
+    var P = D.productos[st.prod] || {};
+    chips('f-anio', [['todos', 'Todos']].concat((P.anios || []).map(function (a) { return [a, a]; })), 'anio');
+    chips('f-vista', [['op', 'Oportunidades cerradas'], ['se', 'Prospectos (reacciones)']], 'vista');
+    $('f-casa').style.display = st.vista === 'op' ? '' : 'none'; $('f-pesos').style.display = st.vista === 'op' ? 'none' : '';
+    if (st.vista === 'op') chips('f-medida', [['clientes', 'Clientes'], ['monto', 'Monto']], 'medida'); else chips('f-medida', [['personas', 'Personas'], ['puntos', 'Puntos (con pesos)']], 'medidaS');
+    chips('f-pesos', [['act', 'Pesos actuales'], ['cal', 'Pesos calibrados']], 'pesos');
+    chips('f-casa', [[true, 'Con empresas de la casa'], [false, 'Sin empresas de la casa']], 'casa');
+    var html = '', k;
+    if (st.vista === 'op') {
+      var X = ((st.casa ? P.d : P.dc) || {})[st.anio] || { k: {}, dim: {} }; k = X.k || {};
+      $('kpis').innerHTML = [['Cerradas', fmt(k.cerradas)], ['Ganadas', fmt(k.ganadas)], ['Tasa de cierre', pct(k.ganadas, k.cerradas)], ['Monto ganado', '$' + fmt(k.monto)], ['Ticket promedio', k.ganadas ? '$' + fmt(k.monto / k.ganadas) : '—'], ['Abiertas hoy', fmt(k.abiertas)]]
+        .map(function (x) { return '<div class="kpi"><span>' + x[0] + '</span><b>' + x[1] + '</b></div>'; }).join('');
+      for (var n in DIM_OP) html += '<div class="card"><h3>' + DIM_OP[n] + '</h3><div class="ley"><span><i style="background:var(--mint)"></i>Ganadas</span><span><i style="background:#4B5563"></i>Perdidas</span></div>' + barras((X.dim || {})[n], 'op', n) + '</div>';
+      if ((k.ganadas || 0) < 10) html = '<div class="aviso" style="grid-column:1/-1">Este corte tiene menos de 10 ganadas: úsalo junto con la vista de Prospectos.</div>' + html;
+    } else {
+      var S = ((st.pesos === 'cal' ? P.s2 : P.s) || {})[st.anio] || { k: {}, dim: {} }; k = S.k || {};
+      var O = ((st.pesos === 'cal' ? P.s : P.s2) || {})[st.anio] || { k: {}, dim: {} }; otraS = {}; for (var dn in (O.dim || {})) otraS[dn] = O.dim[dn];
+      $('kpis').innerHTML = [['Personas que reaccionaron', fmt(k.personas)], ['Positivas', fmt(k.positivas)], ['Negativas', fmt(k.negativas)], ['% positivas', pct(k.positivas, k.personas)], ['Puntos con pesos ' + (st.pesos === 'cal' ? 'calibrados' : 'actuales'), fmt(k.peso)], ['Puntos con pesos ' + (st.pesos === 'cal' ? 'actuales' : 'calibrados'), fmt((O.k || {}).peso)]]
+        .map(function (x) { return '<div class="kpi"><span>' + x[0] + '</span><b>' + x[1] + '</b></div>'; }).join('');
+      for (var m in DIM_SE) html += '<div class="card"><h3>' + DIM_SE[m] + '</h3><div class="ley"><span><i style="background:var(--mint)"></i>Positivas</span><span><i style="background:#4B5563"></i>Neutras</span><span><i style="background:var(--red)"></i>Negativas</span></div>' + barras((S.dim || {})[m], 'se', m) + '</div>';
+      html = '<div class="aviso" style="grid-column:1/-1">Cada persona cuenta una vez por producto y año, con su reacción más alta. No cuentan las respuestas automáticas de fuera de oficina.</div>' + html;
+    }
+    $('graf').innerHTML = html;
+    $('cal').innerHTML = st.prod === 'TODOS' ? calibracion() : '';
+  }
+  function cargar() {
+    return fetch(BASE + 'gr-icp', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
+      D = j; var t = j.actualizado ? new Date(j.actualizado) : null; var T = (j.productos || {}).TODOS || {};
+      $('foto').textContent = 'Foto del ' + (t ? t.toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) : '—') + ' · ' + fmt(T.oportunidades) + ' oportunidades (vivas y borradas) · ' + fmt(T.empresas_am) + ' empresas con datos de Amplemarket';
+      pintar();
+    }).catch(function () { $('foto').textContent = 'No se pudo leer la foto del ICP. Intenta de nuevo.'; });
+  }
+  $('act').onclick = function () {
+    var b = $('act'); b.disabled = true; $('msg').textContent = 'Recalculando, tarda un minuto…';
+    fetch(BASE + 'gr-icp-actualizar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
+      .then(function (r) { return r.json(); }).then(function (j) { $('msg').textContent = j.ok ? 'Listo.' : (j.motivo || 'No se actualizó.'); return cargar(); })
+      .catch(function () { $('msg').textContent = 'No se pudo actualizar.'; }).then(function () { b.disabled = false; });
+  };
+  cargar();
+})();
+</script>
+</body>
+</html>
