@@ -22,6 +22,12 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif
 .kpi { background:var(--bg-2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
 .kpi b { display:block; font-size:24px; line-height:1.15; } .kpi span { font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.04em; font-weight:700; } .kpi em { display:block; font-style:normal; font-size:12px; color:var(--mute); }
 .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr)); gap:12px; }
+.docs { margin-top:14px; }
+.docl { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:8px; margin-top:8px; }
+.docl div { display:flex; flex-direction:column; gap:2px; font-size:13px; }
+.docl span { font-size:11px; text-transform:uppercase; letter-spacing:.04em; opacity:.7; }
+.docl a { color:var(--mint); text-decoration:none; word-break:break-word; }
+.docl em { opacity:.6; font-style:normal; }
 .card { background:var(--bg-2); border:1px solid var(--border); border-radius:12px; padding:14px; }
 .card h3 { font-size:14px; margin-bottom:4px; } .card p.n { font-size:12px; color:var(--mute); margin-bottom:10px; }
 .bar { display:grid; grid-template-columns:minmax(90px,38%) 1fr auto; gap:8px; align-items:center; margin:5px 0; font-size:12.5px; }
@@ -50,6 +56,7 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
   <div class="fila" id="f-medida"><span>Medida</span></div>
   <div class="fila" id="f-casa"><span>Casa</span></div>
   <div class="fila" id="f-pesos"><span>Pesos</span></div>
+  <section id="docs" class="docs"></section>
   <section id="kpis" class="kpis"></section>
   <section id="graf" class="grid"></section>
   <section id="cal" style="margin-top:14px"></section>
@@ -116,6 +123,7 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
     CAT.forEach(function (c) { if (!vistos[c.id]) { prods.push(c.id); vistos[c.id] = 1; } });
     Object.keys(D.productos).forEach(function (p) { if (!vistos[p]) { prods.push(p); vistos[p] = 1; } });
     chips('f-prod', prods.map(function (p) { return [p, NOMBRES[p] || p]; }), 'prod');
+    $('docs').innerHTML = documentos();
     var P = D.productos[st.prod] || {};
     if (!D.productos[st.prod]) { $('kpis').innerHTML = ''; $('cal').innerHTML = ''; ['f-anio', 'f-vista', 'f-medida', 'f-casa', 'f-pesos'].forEach(function (f) { $(f).style.display = 'none'; });
       $('graf').innerHTML = '<div class="aviso" style="grid-column:1/-1">' + esc(NOMBRES[st.prod] || st.prod) + ' todavía no tiene oportunidades ni reacciones en la historia. Aparecerá aquí en cuanto las tenga (botón Actualizar ICP).</div>'; return; }
@@ -143,6 +151,15 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
     }
     $('graf').innerHTML = html;
     $('cal').innerHTML = st.prod === 'TODOS' ? calibracion() : '';
+  }
+  // Documentos de ventas del producto: vienen del catalogo de Configuracion en la misma respuesta (sin corrida extra).
+  function documentos() {
+    if (st.prod === 'TODOS') return '';
+    var L = (D.documentos || {})[st.prod];
+    if (!L) return '<div class="card"><h3>Documentos del producto</h3><p class="n">Este producto no tiene ficha en Configuración → Productos.</p></div>';
+    return '<div class="card"><h3>Documentos del producto</h3><p class="n">Se cambian en Configuración → Productos; aquí solo se consultan.</p><div class="docl">' + L.map(function (d) {
+      return '<div><span>' + esc(d.tipo) + '</span>' + (d.url ? '<a href="' + esc(d.url) + '" target="_blank" rel="noopener">' + esc(d.nombre || 'Abrir') + '</a>' : '<em>Por definir</em>') + '</div>';
+    }).join('') + '</div></div>';
   }
   var CAT = [];
   function cargarCatalogo() {
