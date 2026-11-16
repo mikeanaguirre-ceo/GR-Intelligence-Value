@@ -854,6 +854,48 @@ function catOwnersMapa(){ var m={}; ((CAT().personas)||[]).forEach(function(p){ 
 var CAT_AYUDA_DE={prod:'productos',producto:'productos',stage:'stages',etapa:'stages',grupo:'grupos',categoria:'categoriasAlerta',tipo:'tiposSenal',persona:'personas',owner:'personas',responsable:'personas',lider:'personas',apoyo:'personas',urgencia:'urgencias',segmento:'segmentos',canal:'canales',origen:'origenes',partner:'partners'};
 function catAyuda(k,v){ var l=CAT()[CAT_AYUDA_DE[k]]; if(!Array.isArray(l)) return ''; v=String(v); var x=l.filter(function(o){ return String(o.id)===v||o.idCli===v||o.label===v; })[0]; return x&&x.ayuda?x.ayuda:''; }
 function catTitulo(k,v,extra){ if(extra&&/title=/.test(extra)) return ''; var a=catAyuda(k,v)||grAyudaOpcion(k,v); return a?' title="'+grEsc(a)+'"':''; }
+// ==== LISTA OFICIAL DE PRODUCTOS (decision de Mike, 16nov2026) — candado-productos: oficial ====
+// Son exactamente los productos del catalogo con grupo GR y activos, en el orden del catalogo. Pintaando, IMMMU,
+// Excepciones, Interno y Otro no son productos: todo lo que no sea de la lista (o venga vacio) cae en «Otros».
+// Todo filtro, menu o agrupado por producto de la pagina pasa por aqui; el candado (scripts/candado_menus.js) lo revisa.
+var PROD_OTROS='Otros';
+var _prodOfMemo={l:null,v:[],idx:{}};
+function _prodNorm(x){ return String(x==null?'':x).trim().toUpperCase().replace(/\s+/g,' '); }
+function PRODUCTOS_OFICIALES(){ // candado-productos: oficial
+  var l=(CAT().productos)||CAT_SITIO.productos||[]; // candado-productos: oficial
+  if(_prodOfMemo.l!==l){
+    var v=l.filter(function(p){ return p&&p.id&&p.grupo==='GR'&&p.activo!==false; }).slice().sort(function(a,b){ return (a.orden||0)-(b.orden||0); });
+    var idx={}; v.forEach(function(p){ [p.id,p.label,p.nombre,prodCorto(p)].concat(p.alias||[],p.prefijos||[]).forEach(function(k){ var n=_prodNorm(k); if(n&&!idx[n]) idx[n]=p.id; }); });
+    _prodOfMemo={l:l,v:v,idx:idx};
+  }
+  return _prodOfMemo.v;
+}
+// Nombre corto: el nombre del catalogo sin el parentesis final («Talkwalker (Discovery Marketing)» → «Talkwalker»).
+function prodCorto(p){ return String((p&&(p.nombre||p.label||p.id))||'').replace(/\s*\([^)]*\)\s*$/,'').trim(); }
+// Codigo oficial de un producto tal como venga en los datos (sin importar mayusculas, por alias o prefijos del catalogo), o «Otros».
+function prodOficial(code){ PRODUCTOS_OFICIALES(); var n=_prodNorm(code); if(!n||n===_prodNorm(PROD_OTROS)) return PROD_OTROS; return _prodOfMemo.idx[n]||PROD_OTROS; }
+function prodEsOficial(code){ return prodOficial(code)!==PROD_OTROS; }
+function prodDe(id){ return PRODUCTOS_OFICIALES().filter(function(p){ return p.id===id; })[0]||null; }
+function prodEtiqueta(code){ var id=prodOficial(code); if(id===PROD_OTROS) return 'Otros'; return prodCorto(prodDe(id))||id; }
+function prodAyuda(code){ var id=prodOficial(code); if(id===PROD_OTROS) return GR_AYUDA_FIJA.prod.Otros; var p=prodDe(id); return (p&&p.ayuda)||''; }
+// Opciones de un filtro de producto: los 14 oficiales en orden y «Otros» al final.
+function prodOpciones(){ return PRODUCTOS_OFICIALES().map(function(p){ return p.id; }).concat([PROD_OTROS]); }
+// Valor de un filtro guardado: si no es una opcion (por ejemplo un filtro viejo de PT), se lleva a su producto oficial o a Otros.
+function prodFiltroValor(v){ if(!v||v==='ALL'||v==='todos'||v==='TODOS'||prodOpciones().indexOf(v)>=0||!PRODUCTOS_OFICIALES().length) return v; return prodOficial(v); }
+// Texto de un chip de producto, con su conteo cuando la pestaña muestra conteos («Talkwalker · 12»).
+function prodChipTexto(code,n){ return (code==='ALL'||code==='todos'||code==='TODOS'?'Todos':prodEtiqueta(code))+(n===null||n===undefined?'':' · '+n); }
+// Agrupa por producto oficial: [{id, etiqueta, items}] en orden del catalogo, «Otros» al final, sin grupos vacios.
+function prodAgrupa(arr, prodDeItem){ var g={}; (arr||[]).forEach(function(it){ var k=prodOficial(prodDeItem(it)); (g[k]=g[k]||[]).push(it); }); return prodOpciones().filter(function(k){ return g[k]; }).map(function(k){ return {id:k, etiqueta:prodEtiqueta(k), items:g[k]}; }); }
+// Opciones de un menu que FIJA el producto (oportunidad, tarea): solo los 14. El valor es el que ya usan los datos
+// (si alguno de «valores» lo trae) o el codigo del catalogo. Si el valor actual no es de la lista, se conserva marcado.
+// Devuelve [[valor, etiqueta, ayuda]].
+function prodOpcionesFijar(valores, actual){
+  var porId={}; (valores||[]).forEach(function(v){ var id=prodOficial(v); if(id!==PROD_OTROS && !porId[id]) porId[id]=String(v); });
+  var a=String(actual||''), idA=prodOficial(a); if(a && idA!==PROD_OTROS) porId[idA]=a;
+  var out=PRODUCTOS_OFICIALES().map(function(p){ return [porId[p.id]||p.id, prodCorto(p), p.ayuda||'']; });
+  if(a && idA===PROD_OTROS) out.push([a, a+' (no es de la lista oficial)', 'Valor actual: no es uno de los productos oficiales.']);
+  return out;
+}
 // 3nov2026 (documento de Martha, Error 4): letrero de cada opcion de los filtros de Pipeline, Pendientes y Alertas.
 var GR_AYUDA_ETAPA={'Señal':'El prospecto dio una señal de interés (abrió, hizo clic o visitó) y todavía no contesta.','Reply':'El prospecto contestó la secuencia.','Contactado':'Ya le escribimos o llamamos después de su señal o su respuesta.','En Conv.':'Hay conversación con el prospecto y todavía no hay cita.','Atracción':'Tiene una cita agendada.','Educación':'Ya se realizó la primera cita.','Propuesta':'Se presentó o está por presentarse la propuesta.','Aprobación':'El cliente está revisando la propuesta para aprobarla.','Renovación':'Clientes que ya compraron y tienen una renovación en curso.','Perdida':'Se cerró sin venta.'};
 var GR_AYUDA_FIJA={
@@ -862,7 +904,7 @@ var GR_AYUDA_FIJA={
   lider:{ALL:'Todas, sin importar quién lidera el producto.'},
   apoyo:{ALL:'Todas, tengan o no apoyo.',SIN:'Oportunidades donde nadie más acompaña en las reuniones.'},
   tiempo:{ALL:'Todas, vayan o no en tiempo.',fuera:'Lleva en su etapa más días que el plazo de esa etapa.',porvencer:'Está por llegar al plazo de su etapa.',enplazo:'Va dentro del plazo de su etapa.',cierrevencido:'La fecha en que esperamos firmar ya pasó y sigue abierta.',sincierre:'No tiene fecha en que esperamos firmar.'},
-  prod:{ALL:'Todas las líneas de servicio.'},
+  prod:{ALL:'Todos los productos.',Otros:'Lo que no es uno de los 14 productos oficiales o no tiene producto: Pintaando, IMMMU, Excepciones, internas o sin dato.'},
   fper:{todo:'Sin límite de fechas.',u30:'Los últimos 30 días, hoy incluido.',u7:'Los últimos 7 días, hoy incluido.',ayer:'Solo ayer.',hoy:'Solo hoy.',p7:'De hoy a los próximos 7 días.',p30:'De hoy a los próximos 30 días.',rango:'Elige el día inicial y el final.'},
   cita:{ALL:'Con un rango de fechas: todas las citas del rango, agendadas, realizadas y no realizadas, de cualquier etapa, Discovery o Siguientes pasos. Es la suma de las tres. Sin rango: todas las oportunidades.',agendada:'La cita todavía no ocurre, o ya pasó y falta confirmar que se realizó.',realizada:'Hubo prueba de que se realizó: grabación, envío de siguientes pasos o confirmación del equipo.',no_realizada:'La cita no ocurrió y está pendiente de reagendar.',sin:'Oportunidades sin ninguna cita registrada: a quién falta agendar, o una cita que el motor no registró. Con un rango de fechas se usa el día en que se creó la oportunidad.'},
   faltan:{toggle:'Solo las oportunidades a las que les falta Responsable, origen, tipo o partner.'}
@@ -1123,7 +1165,7 @@ function grmdPintarLigas(){
 function grmdOpc(sel, lista, actual){
   var el=document.getElementById(sel); if(!el) return;
   var tiene=lista.some(function(o){ return o[0]===actual; });
-  el.innerHTML='<option value="">— Por definir —</option>'+lista.map(function(o){ return '<option value="'+grEsc(o[0])+'"'+(o[0]===actual?' selected':'')+'>'+grEsc(o[1])+'</option>'; }).join('')+((actual&&!tiene)?'<option value="'+grEsc(actual)+'" selected>'+grEsc(actual)+'</option>':'');
+  el.innerHTML='<option value="">— Por definir —</option>'+lista.map(function(o){ return '<option value="'+grEsc(o[0])+'"'+(o[2]?' title="'+grEsc(o[2])+'"':'')+(o[0]===actual?' selected':'')+'>'+grEsc(o[1])+'</option>'; }).join('')+((actual&&!tiene)?'<option value="'+grEsc(actual)+'" selected>'+grEsc(actual)+'</option>':'');
   el.style.borderColor=actual?'#2A3142':'#FFCD0080';
 }
 function grmdPintarCampos(d){
@@ -1131,7 +1173,8 @@ function grmdPintarCampos(d){
   var eq=(cfg.equipo||[]).map(function(p){ return [String(p.email).toLowerCase(), p.nombre]; });
   var lst=function(k){ return (L[k]||[]).map(function(o){ return [o.valor, o.label]; }); };
   window.__grEditCampos=JSON.parse(JSON.stringify(c));
-  var prods=(cfg.productos||[]).map(function(x){ return [x.codigo, x.codigo+' · '+x.nombre]; });
+  // 16nov2026 (Mike): solo los 14 productos oficiales; el valor es el codigo que usa HubSpot (ficha del portal) cuando lo hay.
+  var prods=prodOpcionesFijar((cfg.productos||[]).map(function(x){ return x.codigo; }), String(c.gr_producto||''));
   grmdOpc('grmd-c-gr_producto', prods, String(c.gr_producto||''));
   grmdOpc('grmd-c-gr_responsable', eq, String(c.gr_responsable||'').toLowerCase());
   grmdOpc('grmd-c-gr_origen', lst('origen'), c.gr_origen||'');
@@ -1348,24 +1391,6 @@ function catColor(name){ return (CAT().paleta || CAT_SITIO.paleta)[name] || '#6B
 function catStagesAct(){ return ((CAT().stages)||CAT_SITIO.stages).filter(function(s){return s.prioridad<=8;}); }
 function catStageLabelsAct(){ return catStagesAct().map(function(s){return s.label;}); }
 function catStageColHex(){ var m={},pal=(CAT().paleta||CAT_SITIO.paleta); catStagesAct().forEach(function(s){m[s.label]=pal[s.color];}); return m; }
-// 20oct2026 — Productos para los filtros: todo el catalogo (catalogos.json) mas lo que traigan los datos, sin duplicar
-// por mayusculas. Se usa el valor de los datos cuando existe, para que el filtro coincida.
-function prodsConCatalogo(presentes){
-  var excl={'INTERNO':1,'OTRO':1,'P-OTRO':1};
-  var cat=((CAT().productos)||CAT_SITIO.productos||[]).filter(function(p){return p&&p.id&&p.grupo!=='INTERNO';}).map(function(p){return p.id;});
-  var porK={}; (presentes||[]).filter(Boolean).forEach(function(x){ porK[String(x).toUpperCase()]=x; });
-  var out=[], vistos={};
-  cat.forEach(function(id){ var k=String(id).toUpperCase(); if(vistos[k]) return; vistos[k]=1; out.push(porK[k]||id); });
-  (presentes||[]).filter(Boolean).forEach(function(x){ var k=String(x).toUpperCase(); if(!vistos[k]&&!excl[k]){ vistos[k]=1; out.push(x); } });
-  return out;
-}
-function catProdsPresentes(){
-  var orden=((CAT().productos)||CAT_SITIO.productos||[]).map(function(p){return p.id;});
-  var excl={'Interno':1,'Otro':1};
-  var pres=[...new Set(((typeof DATA!=='undefined'&&DATA&&DATA.deals)?DATA.deals:[]).map(function(d){return d.prod;}).filter(Boolean))].filter(function(p){return !excl[p];});
-  pres.sort(function(a,b){var ia=orden.indexOf(a),ib=orden.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
-  return pres;
-}
 // ===== Helpers compartidos de filtros (homologación) =====
 // Ventana de tareas cerradas que se muestra en Pendientes. Cambiar aqui y cambia en todos lados.
 // El motor le pide a HubSpot solo los ultimos 15 dias de tareas cerradas: la ventana esta
@@ -1405,21 +1430,10 @@ async function cargarCerradas(){
   CERRADAS_CARGANDO = false;
   try{ renderCurrentTab(); }catch(e){}
 }
-function catProdMap(){ var m={}; ((CAT().productos)||CAT_SITIO.productos||[]).forEach(function(p){ m[p.id]=p; }); return m; }
+function catProdMap(){ var m={}; ((CAT().productos)||CAT_SITIO.productos||[]).forEach(function(p){ m[p.id]=p; }); return m; } // candado-productos: grupo de cada producto, no arma filtros
 function grupoDeProd(prod){ var p=catProdMap()[prod]; if(p&&p.grupo) return p.grupo; if(prod==='Interno'||prod==='Otro'||prod==='P-Otro') return 'INTERNO'; return 'GR'; }
-function GRUPOS_ORDEN_(){ return ['ALL'].concat(catIds(catLista('grupos'))); }
-function grupoLabel(g){ if(g==='ALL') return 'All'; var x=catLista('grupos').filter(function(y){return y.id===g;})[0]; return x?x.label:g; }
 // Semáforo de tiempo (uno solo): rojo=vencida, amarillo=hoy/próx 3d, verde=al día/futura
-function semList(menu){ var b=[ {id:'ALL',label:'Todos'},{id:'rojo',label:'🔴 Vencidas'},{id:'amarillo',label:'🟡 Próximas'},{id:'verde',label:'🟢 Al día'} ]; if(menu==='pendientes'){ b.splice(1,0,{id:'cerradas',label:'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6B7280;margin-right:5px;vertical-align:middle;"></span>Cerradas ('+CERRADAS_DIAS+'d)'}); } return b; }
 function semDeItem(it,kind){ if(it&&it.semaforo) return it.semaforo; return 'gris'; }
-// Producto canónico presente en un arreglo dado (excluye Interno/Otro), en orden de catálogo
-function prodsPresentesDe(arr){
-  var orden=((CAT().productos)||CAT_SITIO.productos||[]).map(function(p){return p.id;});
-  var excl={'Interno':1,'Otro':1,'P-Otro':1};
-  var pres=[...new Set((arr||[]).map(function(x){return x.prod;}).filter(Boolean))].filter(function(p){return !excl[p];});
-  pres.sort(function(a,b){var ia=orden.indexOf(a),ib=orden.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
-  return pres;
-}
 // Personas presentes (para conteo) en un arreglo, cada item con .personas (deals/alertas) o .persona (tareas)
 // 25oct2026 (Mike, ciclo 2): las oportunidades se ven y se filtran por su Responsable de la cuenta (campo gr_responsable),
 // no por el dueno de HubSpot (solo hay dos licencias y no dice quien lleva la cuenta). Las alertas toman el Responsable de
@@ -1435,67 +1449,6 @@ function personasDeItem(it){
   if(it&&Array.isArray(it.personas)) return it.personas; if(it&&it.persona) return [it.persona]; return []; }
 // ===== Render de filtros unificado =====
 function _chip(menu,k,v,label,active,extra){ return '<button class="chip '+(active?'active':'')+'" data-f="'+menu+'" data-k="'+k+'" data-v="'+v+'"'+(extra||'')+catTitulo(k,v,extra)+'>'+label+'</button>'; }
-function _stagesPresentes(arr){
-  var st=((CAT().stages)||CAT_SITIO.stages||[]).slice().sort(function(a,b){return a.prioridad-b.prioridad;});
-  var labelsPres=[...new Set((arr||[]).map(function(d){return d.stageLabel||d.stage;}).filter(Boolean))];
-  return st.filter(function(x){return labelsPres.indexOf(x.label)>=0;});
-}
-// arr = universo del menú (para conteos y opciones presentes). kind: 'deal'|'task'|'alerta'
-function filtrosHTML(menu, arr, kind){
-  if(menu==='pendientes'||menu==='alertas') return grGenFiltrosHTML(menu, arr, kind);
-  var f=FILT[menu]; var H='';
-  // Persona (todos los menús) con conteo
-  var pcount={}; var totalP=0;
-  (arr||[]).forEach(function(it){ var ps=personasDeItem(it); if(ps.length===0){ pcount['Otro']=(pcount['Otro']||0)+1; } else { ps.forEach(function(p){ pcount[p]=(pcount[p]||0)+1; }); } totalP++; });
-  var pids=catPersonaIds();
-  H+='<div class="filters"><span class="filter-label">'+((kind==='deal'||kind==='alerta')?'Responsable':'Persona')+':</span>';
-  H+=_chip(menu,'persona','Todos','Todos ('+totalP+')', f.persona==='Todos');
-  pids.forEach(function(p){ if(pcount[p] || (menu==='alertas' && kind!=='alerta')) H+=_chip(menu,'persona',p, p+' ('+(pcount[p]||0)+')', f.persona===p); });
-  if(pcount['Otro']) H+=_chip(menu,'persona','Otro','Otro ('+pcount['Otro']+')', f.persona==='Otro');
-  H+='</div>';
-  // Semáforo (pipeline, pendientes, alertas — no recap)
-  if(menu!=='recap'){
-    H+='<div class="filters"><span class="filter-label">Semáforo:</span>';
-    semList(menu).forEach(function(o){ H+=_chip(menu,'sem',o.id,o.label, (f.sem||'ALL')===o.id); });
-    H+='</div>';
-  }
-  // Grupo (todos)
-  H+='<div class="filters"><span class="filter-label">Grupo:</span>';
-  GRUPOS_ORDEN_().forEach(function(g){ H+=_chip(menu,'grupo',g,grupoLabel(g), (f.grupo||'ALL')===g); });
-  H+='</div>';
-  // Producto (todos) canónico, presente
-  var prods=prodsConCatalogo(prodsPresentesDe(arr));
-  if(f.grupo && f.grupo!=='ALL'){ prods=prods.filter(function(p){return grupoDeProd(p)===f.grupo;}); }
-  var _pc={}; (arr||[]).forEach(function(it){ if(it&&it.prod) _pc[it.prod]=(_pc[it.prod]||0)+1; });
-  H+='<div class="filters"><span class="filter-label">Producto:</span>';
-  H+=_chip(menu,'prod','ALL','Todos', (f.prod||'ALL')==='ALL');
-  prods.forEach(function(p){ H+=_chip(menu,'prod',p, p+' ('+(_pc[p]||0)+')', f.prod===p); });
-  H+='</div>';
-  // Stage (solo deals: pipeline, alertas)
-  if(kind==='deal'||kind==='alerta'){
-    var stgs;
-    if(menu==='alertas'){
-      stgs=((CAT().stages)||CAT_SITIO.stages||[]).slice().sort(function(a,b){return a.prioridad-b.prioridad;});
-    } else { stgs=_stagesPresentes(arr); }
-    if(!stgs.some(function(x){return x.label==='Perdida';})) stgs=stgs.concat([{label:'Perdida'}]);
-    var _sc={}; (arr||[]).forEach(function(it){ var l=(it&&(it.stageLabel||it.stage))||''; if(l) _sc[l]=(_sc[l]||0)+1; });
-    H+='<div class="filters"><span class="filter-label">Stage:</span>';
-    H+=_chip(menu,'stage','ALL','Todos', (f.stage||'ALL')==='ALL');
-    stgs.forEach(function(x){ H+=_chip(menu,'stage',x.label, (menu==='alertas'? (x.label+' ('+(_sc[x.label]||0)+')') : x.label), f.stage===x.label); });
-    H+='</div>';
-    // Monto
-    H+='<div class="filters"><span class="filter-label">Monto:</span>';
-    MONTO_OPC.forEach(function(o){ H+=_chip(menu,'monto',o.id,o.label, (f.monto||0)===o.id); });
-    H+='</div>';
-  }
-  // Categoría (solo alertas). En "Arreglar" manda el menu por objeto, no esta fila.
-  if(menu==='alertas' && FIX_NIVEL1==='vender'){
-    H+='<div class="filters"><span class="filter-label">Categoría:</span>';
-    [['ALL','Todas']].concat(catLista('categoriasAlerta').map(function(c){ return [c.id,c.label]; })).forEach(function(o){ H+=_chip(menu,'categoria',o[0],o[1], (f.categoria||'ALL')===o[0]); });
-    H+='</div>';
-  }
-  return H;
-}
 // Predicado unificado
 function pasaFiltro(menu, it, kind){
   var f=FILT[menu];
@@ -1507,7 +1460,7 @@ function pasaFiltro(menu, it, kind){
   if(f.persona && f.persona!=='Todos'){ var ps=personasDeItem(it); if(f.persona==='Otro'){ if(ps.length>0) return false; } else if(ps.indexOf(f.persona)<0) return false; }
   if(menu!=='recap' && f.sem && f.sem!=='ALL'){ if(semDeItem(it,kind)!==f.sem) return false; }
   if(f.grupo && f.grupo!=='ALL'){ if(grupoDeProd(it.prod)!==f.grupo) return false; }
-  if(f.prod && f.prod!=='ALL'){ if(it.prod!==f.prod) return false; }
+  if(f.prod && f.prod!=='ALL'){ if(prodOficial(it.prod)!==prodFiltroValor(f.prod)) return false; }
   if((kind==='deal'||kind==='alerta') && f.stage && f.stage!=='ALL'){ var sl=it.stageLabel||it.stage; if(sl!==f.stage) return false; }
   if((kind==='deal'||kind==='alerta') && f.monto){ if((it.amount||0) < f.monto) return false; }
   if(menu==='alertas'){
@@ -1536,8 +1489,6 @@ document.addEventListener('click', function(ev){
 let TASKS = null;
 let currentTab = 'recap';
 let pipelineFilters = { group: 'ALL', prod: 'ALL', owner: 'ALL', excludeP: false };
-// 20oct2026 — El grupo de cada producto sale del catalogo (catalogos.json), no de una lista escrita aqui.
-function inGroup(d){ if(pipelineFilters.group==='ALL') return true; return grupoDeProd(d.prod)===pipelineFilters.group; }
 let pendientesFilters = { persona: 'Todos', urgency: 'ALL', scope: 'ALL', sort: 'urgency', stage: 'ALL' };
 let alertasFilters = { accion: 'ALL', categoria: 'ALL', persona: 'Todos', producto: 'ALL', stage: 'ALL', minMonto: 0, sort: 'monto_desc' };
 let recapFilters = {
@@ -1565,7 +1516,6 @@ if(['todo','u30','u7','ayer','hoy','p7','p30','rango'].indexOf(FILT.pipeline.fpe
 function guardarFiltrosPipeline(){ try { localStorage.setItem('gr_filt_pipeline_v2', JSON.stringify(FILT.pipeline)); } catch (e) {} }
 function hayFiltrosPipeline(){ return Object.keys(FILT_PIPELINE_BASE).some(function(k){ if((k==='fdesde'||k==='fhasta')&&FILT.pipeline.fper!=='rango') return false; if(k==='fcampo'&&(FILT.pipeline.fper||'todo')==='todo') return false; return String(FILT.pipeline[k]) !== String(FILT_PIPELINE_BASE[k]); }); }
 function quitarFiltrosPipeline(){ Object.keys(FILT_PIPELINE_BASE).forEach(function(k){ FILT.pipeline[k] = FILT_PIPELINE_BASE[k]; }); PIPE_ABIERTAS = {}; guardarFiltrosPipeline(); if (typeof renderCurrentTab === 'function') renderCurrentTab(); }
-var MONTO_OPC=[ {id:0,label:'Todos'},{id:10000,label:'≥10k'},{id:50000,label:'≥50k'},{id:100000,label:'≥100k'} ];
 
 // --- Utilities ---
 const $ = (sel) => document.querySelector(sel);
@@ -1954,7 +1904,7 @@ function reuDia(fecha){
 }
 function reuTipo(r){ return (r.externos || '').toString().trim() ? 'cliente' : 'interna'; }
 function reuQuien(r){ return reuNombre(String(r.responsable||'').split(',')[0]) || '—'; }
-function reuProd(r){ return (r.producto || '').toString().trim().toUpperCase() || '—'; }
+function reuProd(r){ return prodOficial(r.producto); }
 
 // Aplica todos los filtros menos el que se indique, para que los contadores sean contextuales
 function reuFiltra(base, excepto){
@@ -1963,7 +1913,7 @@ function reuFiltra(base, excepto){
     if (excepto !== 'dia' && REU_F.dia !== 'todos' && String(reuDiaIdx(r.fecha)) !== REU_F.dia) return false;
     if (excepto !== 'tipo' && REU_F.tipo !== 'todas' && reuTipo(r) !== REU_F.tipo) return false;
     if (excepto !== 'quien' && REU_F.quien !== 'todos' && reuQuien(r) !== REU_F.quien) return false;
-    if (excepto !== 'prod' && REU_F.prod !== 'todos' && reuProd(r) !== REU_F.prod) return false;
+    if (excepto !== 'prod' && REU_F.prod !== 'todos' && reuProd(r) !== prodFiltroValor(REU_F.prod)) return false;
     if (excepto !== 'sit' && REU_F.sit !== 'todas') {
       if (REU_F.sit === 'sin' && !(r.estado === 'Sin grabacion' && !r.cerrado_por)) return false;
       if (REU_F.sit === 'pend' && !((r.estado === 'Analizada' && !(r.correo && r.minuta)) || r.estado === 'Pendiente')) return false;
@@ -1993,9 +1943,9 @@ function reuChips(titulo, dim, opciones){
   opciones.forEach(function(o){
     var act = REU_F[dim] === o.v;
     if (o.n === 0 && !act) return;
-    h += '<button data-reu-f="' + dim + '" data-reu-v="' + reuEsc(o.v) + '" style="font-size:11px;padding:5px 11px;border-radius:6px;cursor:pointer;border:1px solid ' +
+    h += '<button data-reu-f="' + dim + '" data-reu-v="' + reuEsc(o.v) + '"' + (o.title ? ' title="' + reuEsc(o.title) + '"' : '') + ' style="font-size:11px;padding:5px 11px;border-radius:6px;cursor:pointer;border:1px solid ' +
          (act?'#8b5cf6':'#374151') + ';background:' + (act?'rgba(139,92,246,.18)':'transparent') + ';color:' + (act?'#c4b5fd':'#9ca3af') +
-         ';font-weight:' + (act?'600':'400') + ';">' + reuEsc(o.t) + (o.n === null ? '' : ' <span style="opacity:.6;">' + o.n + '</span>') + '</button>';
+         ';font-weight:' + (act?'600':'400') + ';">' + reuEsc(o.t) + (o.n === null ? '' : (o.sep ? ' · ' + o.n : ' <span style="opacity:.6;">' + o.n + '</span>')) + '</button>';
   });
   return h + '</div>';
 }
@@ -2054,11 +2004,12 @@ function pintaReuniones(){
   });
   h += reuChips('CONVOCÓ', 'quien', opsQuien);
 
+  // 16nov2026 (Mike): los productos oficiales en el orden del catalogo; lo demas va en Otros.
   var prods = {};
-  reuFiltra(todas,'prod').forEach(function(r){ var q=reuProd(r); if(q!=='—') prods[q]=(prods[q]||0)+1; });
-  var opsProd = [{ v:'todos', t:'Todos', n:reuFiltra(todas,'prod').length }];
-  Object.keys(prods).sort(function(a,b){ return prods[b]-prods[a]; }).forEach(function(q){
-    opsProd.push({ v:q, t:q, n:prods[q] });
+  reuFiltra(todas,'prod').forEach(function(r){ var q=reuProd(r); prods[q]=(prods[q]||0)+1; });
+  var opsProd = [{ v:'todos', t:'Todos', n:reuFiltra(todas,'prod').length, sep:1, title:GR_AYUDA_FIJA.prod.ALL }];
+  prodOpciones().forEach(function(q){
+    opsProd.push({ v:q, t:prodEtiqueta(q), n:prods[q]||0, sep:1, title:prodAyuda(q) });
   });
   if (opsProd.length > 1) h += reuChips('PRODUCTO', 'prod', opsProd);
 
@@ -2249,7 +2200,6 @@ function renderRecap() {
       deals.forEach(d => dealsMovList.push({ ...d, owner, resp: _recResp(d, owner) }));
     });
 
-    const prodsMov = [...new Set(dealsMovList.map(d => d.prod || 'Otro'))].sort();
     const ownersMov = [...new Set(dealsMovList.map(d => d.owner))].sort();
     const STAGES_MOV_PREDEF = catStageLabelsAct().concat(['Won','Perdida']); // catálogo (CAT)
 
@@ -2259,16 +2209,14 @@ function renderRecap() {
     // 26oct2026 (Mike): mismos nombres que Pipeline. Etapa separa lo que se perdio o se gano esta semana.
     const _etapaMovDe = d => d.stageActual === 'Perdida' ? 'perdida' : (d.stageActual === 'Won' ? 'won' : 'activa');
     const _pasaMov = (d, ex) => {
-      if (ex !== 'prod' && prodMovFilter !== 'ALL' && String(d.prod || '').toUpperCase() !== String(prodMovFilter).toUpperCase()) return false;
+      if (ex !== 'prod' && prodMovFilter !== 'ALL' && prodOficial(d.prod) !== prodFiltroValor(prodMovFilter)) return false;
       if (ex !== 'etapa' && etapaMovFilter !== 'ALL' && _etapaMovDe(d) !== etapaMovFilter) return false;
       if (ex !== 'resp' && respMovFilter !== 'Todos' && d.resp !== respMovFilter) return false;
       return true;
     };
     const _cuentaMov = (ex, prueba) => dealsMovList.filter(d => _pasaMov(d, ex) && prueba(d)).length;
     const filteredMov = dealsMovList.filter(d => _pasaMov(d));
-    const _chipR = (k, v, label, n) => `<button class="chip ${String(recapFilters[k] || (k === 'respMov' ? 'Todos' : 'ALL')) === String(v) ? 'active' : ''}" data-recapfilter="${k}" data-rval="${grEsc(v)}">${label}${n === null ? '' : ' ' + n}</button>`;
-    const _catMov = ((pipeCfg() || {}).productos || []).map(x => String(x.codigo || '')).filter(Boolean);
-    const _fueraMov = [...new Set(dealsMovList.map(d => String(d.prod || '')).filter(p => p && _catMov.map(c => c.toUpperCase()).indexOf(p.toUpperCase()) < 0 && ['Interno','Otro','P-Otro'].indexOf(p) < 0))];
+    const _chipR = (k, v, label, n, t) => `<button class="chip ${String(recapFilters[k] || (k === 'respMov' ? 'Todos' : 'ALL')) === String(v) ? 'active' : ''}" data-recapfilter="${k}" data-rval="${grEsc(v)}"${t ? ' title="' + grEsc(t) + '"' : ''}>${label}${n === null ? '' : ' ' + n}</button>`;
     const _respsMov = [...new Set(dealsMovList.map(d => d.resp))].sort();
 
     filteredMov.sort((a,b) => (b.lastMod||'').localeCompare(a.lastMod||''));
@@ -2286,8 +2234,8 @@ function renderRecap() {
         ${_chipR('respMov','Todos','Todos',_cuentaMov('resp',()=>true))}${_respsMov.map(r => _chipR('respMov', r, r, _cuentaMov('resp', d => d.resp === r))).join('')}
       </div>
       <div class="filters">
-        <span class="filter-label">Producto ${grI('Línea de servicio. Aparecen todas las del catálogo del portal, aunque hoy no tengan movimiento.')}</span>
-        ${_chipR('prodMovido','ALL','Todos',_cuentaMov('prod',()=>true))}${_catMov.concat(_fueraMov).map(pr => _chipR('prodMovido', pr, pr, _cuentaMov('prod', d => String(d.prod || '').toUpperCase() === pr.toUpperCase()))).join('')}
+        <span class="filter-label">Producto ${grI('Los 14 productos oficiales de Great Revenue, aunque hoy no tengan movimiento. Otros: lo que no es de la lista o no tiene producto.')}</span>
+        ${_chipR('prodMovido','ALL',prodChipTexto('ALL',_cuentaMov('prod',()=>true)),null,GR_AYUDA_FIJA.prod.ALL)}${prodOpciones().map(pr => { const n = _cuentaMov('prod', d => prodOficial(d.prod) === pr); return (pr !== PROD_OTROS || n || prodMovFilter === pr) ? _chipR('prodMovido', pr, prodChipTexto(pr, n), null, prodAyuda(pr)) : ''; }).join('')}
       </div>
       <table class="tbl">
         <thead><tr><th>Cliente / Oportunidad</th><th>Producto</th><th>Responsable</th><th>Etapa actual</th><th>Última modif.</th><th class="num">Monto</th></tr></thead>
@@ -2333,12 +2281,9 @@ function renderRecap() {
 function renderOverview() {
   const k = DATA.kpis;
   const deals = DATA.deals;
-  const byProd = {};
-  deals.forEach(d => {
-    byProd[d.prod] = (byProd[d.prod] || 0) + (d.amount || 0);
-  });
-  const prods = Object.entries(byProd).sort((a, b) => b[1] - a[1]);
-  const maxAmt = prods.length ? prods[0][1] : 1;
+  // 16nov2026 (Mike): los productos oficiales en el orden del catalogo; lo demas se suma en Otros.
+  const prods = prodAgrupa(deals, d => d.prod).map(g => [g.etiqueta, g.items.reduce((s, d) => s + (d.amount || 0), 0)]);
+  const maxAmt = Math.max(1, ...prods.map(x => x[1]));
 
   let html = `
     <div class="kpi-grid">
@@ -2659,7 +2604,7 @@ function grPipePasa(d, excepto){ var f=FILT.pipeline, ex=function(k){ return exc
   if(!ex('lider') && f.lider && f.lider!=='ALL' && grLiderDe(d)!==f.lider) return false;
   if(!ex('apoyo') && f.apoyo && f.apoyo!=='ALL'){ var ap=grApoyoDe(d); if(f.apoyo==='SIN'){ if(ap.length) return false; } else if(ap.indexOf(f.apoyo)<0) return false; }
   if(!ex('tiempo') && f.tiempo && f.tiempo!=='ALL' && !grTiempoDe(d,f.tiempo)) return false;
-  if(!ex('prod') && f.prod && f.prod!=='ALL' && d.prod!==f.prod) return false;
+  if(!ex('prod') && f.prod && f.prod!=='ALL' && prodOficial(d.prod)!==prodFiltroValor(f.prod)) return false;
   var ci=ex('cita')?'ALL':(f.cita||'ALL'), rg=ex('fecha')?null:grRangoPipe();
   if(ci==='sin'){ if(grCitasDe(d).length) return false; if(rg){ var vc=grDiaDe(d.createdate); if(!vc||vc<rg[0]||vc>rg[1]) return false; } }
   else if((ci!=='ALL'||rg) && !grCitasEnRango(d,rg,ci).length) return false;
@@ -2702,14 +2647,11 @@ function grPipeFiltrosHTML(pool){
   var ti='', grupoAnt='';
   GR_TIEMPO_OPC.forEach(function(o){ if(o[2] && o[2]!==grupoAnt){ ti+='<span style="font-size:11px;color:#6B7280;margin-left:6px;">'+o[2]+':</span>'; grupoAnt=o[2]; } ti+=chip('tiempo',o[0],o[1],o[0]==='ALL'?cuenta('tiempo',function(){return true;}):cuenta('tiempo',function(d){ return grTiempoDe(d,o[0]); })); });
   H+=fila('Semáforo de tiempos','Etapa: días que lleva en su etapa contra el plazo que el portal le da a esa etapa (fuera de plazo, por vencer, en plazo). Cierre: la fecha en que esperamos firmar ya pasó, o no tiene fecha.',ti);
-  // Producto
-  var pr=chip('prod','ALL','Todos',cuenta('prod',function(){return true;}));
-  // 26oct2026 (Mike): todas las lineas de servicio del catalogo del portal, aunque hoy esten en 0.
-  var catP=((pipeCfg()||{}).productos)||[], vistos={};
-  catP.forEach(function(x){ var k=String(x.codigo||''); if(!k||vistos[k.toUpperCase()]) return; vistos[k.toUpperCase()]=1; var cod=pool.some(function(d){ return String(d.prod||'').toUpperCase()===k.toUpperCase(); })?(pool.filter(function(d){ return String(d.prod||'').toUpperCase()===k.toUpperCase(); })[0].prod):k; pr+=chip('prod',cod,k,cuenta('prod',function(d){ return String(d.prod||'').toUpperCase()===k.toUpperCase(); })); });
-  var fuera={}; pool.forEach(function(d){ var k=String(d.prod||''); if(k && !vistos[k.toUpperCase()] && ['Interno','Otro','P-Otro'].indexOf(k)<0) fuera[k]=1; });
-  Object.keys(fuera).forEach(function(k){ pr+=chip('prod',k,k,cuenta('prod',function(d){ return d.prod===k; })); });
-  H+=fila('Producto','Línea de servicio de la oportunidad. Aparecen todas las del catálogo del portal, aunque hoy no tengan oportunidades.',pr);
+  // 16nov2026 (Mike): los 14 productos oficiales, aunque hoy esten en 0; lo que no es de la lista va en Otros.
+  f.prod=prodFiltroValor(f.prod);
+  var pr=chip('prod','ALL',prodChipTexto('ALL',cuenta('prod',function(){return true;})),null);
+  prodOpciones().forEach(function(k){ var n=cuenta('prod',function(d){ return prodOficial(d.prod)===k; }); if(k!==PROD_OTROS||n||f.prod===k) pr+=chip('prod',k,prodChipTexto(k,n),null); });
+  H+=fila('Producto','Los 14 productos oficiales de Great Revenue, aunque hoy no tengan oportunidades. Otros: lo que no es de la lista o no tiene producto.',pr);
   // Fecha
   var fe=GR_FECHA_OPC.map(function(o){ return chip('fper',o[0],o[1],null); }).join('');
   if(f.fper==='rango'){ var rr=grFechaRango(f), est='background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;padding:7px 10px;border-radius:8px;font:inherit;font-size:13px;color-scheme:dark;'; fe+='<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><span style="color:var(--text-dim);font-size:12px;">del</span><input type="date" id="pipe-desde" value="'+rr[0]+'" onchange="pipePeriodoFecha()" style="'+est+'"><span style="color:var(--text-dim);font-size:12px;">al</span><input type="date" id="pipe-hasta" value="'+rr[1]+'" onchange="pipePeriodoFecha()" style="'+est+'"></span>'; }
@@ -2763,7 +2705,7 @@ function grGenPasa(menu,it,kind,excepto){
   if(!ex('lider') && f.lider && f.lider!=='ALL' && grLiderDe({prod:it.prod})!==f.lider) return false;
   if(!ex('apoyo') && f.apoyo && f.apoyo!=='ALL'){ var ap=d?grApoyoDe(d):[]; if(f.apoyo==='SIN'){ if(ap.length) return false; } else if(ap.indexOf(f.apoyo)<0) return false; }
   if(!ex('tiempo')){ var tv=(menu==='pendientes')?(f.sem||'ALL'):(f.tiempo||'ALL'); if(tv!=='ALL' && tv!=='cerradas' && !grGenTiempoPasa(menu,it,d,tv)) return false; }
-  if(!ex('prod') && f.prod && f.prod!=='ALL' && String(it.prod||'').toUpperCase()!==String(f.prod).toUpperCase()) return false;
+  if(!ex('prod') && f.prod && f.prod!=='ALL' && prodOficial(it.prod)!==prodFiltroValor(f.prod)) return false;
   if(!ex('fecha') && menu==='pendientes' && f.fper && f.fper!=='todo'){ var r=grFechaRango(f), v=grGenFechaDe(menu,it); if(!v||v<r[0]||v>r[1]) return false; }
   if(!ex('q') && !grGenQPasa(menu,it)) return false;
   return true;
@@ -2814,12 +2756,11 @@ function grGenFiltrosHTML(menu, pool, kind){
     GR_TIEMPO_OPC.forEach(function(o){ if(o[2]&&o[2]!==gAnt){ ti+='<span style="font-size:11px;color:#6B7280;margin-left:6px;">'+o[2]+':</span>'; gAnt=o[2]; } ti+=chip('tiempo',o[0],o[1],o[0]==='ALL'?cuenta('tiempo',function(){return true;}):cuenta('tiempo',function(it){ return grGenTiempoPasa(menu,it,grDealDeItem(it),o[0]); })); });
     H+=fila('Semáforo de tiempos','Etapa: días que lleva la oportunidad en su etapa contra el plazo del portal. Cierre: la fecha en que esperamos firmar ya pasó, o no tiene fecha.', ti);
   }
-  // Producto: las lineas del catalogo del portal, aunque esten en 0
-  var pr=chip('prod','ALL','Todos',cuenta('prod',function(){return true;})), vistos={};
-  (((pipeCfg()||{}).productos)||[]).forEach(function(x){ var k=String(x.codigo||''); if(!k||vistos[k.toUpperCase()]) return; vistos[k.toUpperCase()]=1; pr+=chip('prod',k,k,cuenta('prod',function(it){ return String(it.prod||'').toUpperCase()===k.toUpperCase(); })); });
-  var fuera={}; pool.forEach(function(it){ var k=String(it.prod||''); if(k&&!vistos[k.toUpperCase()]&&['Interno','Otro','P-Otro'].indexOf(k)<0) fuera[k]=1; });
-  Object.keys(fuera).forEach(function(k){ pr+=chip('prod',k,k,cuenta('prod',function(it){ return it.prod===k; })); });
-  H+=fila('Producto','Línea de servicio. Aparecen todas las del catálogo del portal, aunque hoy no tengan nada.', pr);
+  // Producto: los 14 productos oficiales, aunque esten en 0; lo que no es de la lista va en Otros (16nov2026, Mike).
+  f.prod=prodFiltroValor(f.prod);
+  var pr=chip('prod','ALL',prodChipTexto('ALL',cuenta('prod',function(){return true;})),null);
+  prodOpciones().forEach(function(k){ var n=cuenta('prod',function(it){ return prodOficial(it.prod)===k; }); if(k!==PROD_OTROS||n||f.prod===k) pr+=chip('prod',k,prodChipTexto(k,n),null); });
+  H+=fila('Producto','Los 14 productos oficiales de Great Revenue, aunque hoy no tengan nada. Otros: lo que no es de la lista o no tiene producto.', pr);
   // Fecha (solo Pendientes: el dia en que vence la tarea, o en que se cerro)
   if(esP){
     var fe=GR_FECHA_OPC.map(function(o){ return chip('fper',o[0],o[1],null); }).join('');
@@ -2840,12 +2781,6 @@ function renderPipeline() {
       else if(nm.indexOf('IMU')===0||nm.indexOf('IMMMU')===0) d.prod='IMMMU';
     }
   });
-  const _uniqP=[...new Set(DATA.deals.map(d => d.prod).filter(Boolean))];
-  const _ORD=((CAT().productos)||CAT_SITIO.productos||[]).map(p=>p.id);
-  _uniqP.sort((a,b)=>{const ia=_ORD.indexOf(a),ib=_ORD.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
-  let _grp=_uniqP; if(pipelineFilters.group!=='ALL'){ _grp=_uniqP.filter(p=>grupoDeProd(p)===pipelineFilters.group); }
-  const prods = ['ALL', ..._grp];
-  const owners = ['ALL', ...new Set(DATA.deals.map(d => d.owner).filter(Boolean))];
 
   // Las perdidas vienen aparte en DATA.perdidas: se suman para que la columna Perdida las muestre (30 oct).
   const poolPipe = DATA.deals.concat(DATA.perdidas || []).filter(d => d.stage !== 'closedwon' && !grEsInterna(d));
@@ -3403,7 +3338,7 @@ function renderPendientes() {
 
   // Persona filter
   html += `<div class="section">
-    ${filtrosHTML('pendientes', allT, 'task')}
+    ${grGenFiltrosHTML('pendientes', allT, 'task')}
     <div class="filters">
       <span class="filter-label">Ordenar por:</span>
       ${(CAT().sorts&&CAT().sorts.pendientes||[]).map(o => `<button class="chip ${sortMode === o.id ? 'active' : ''}" data-f="pendientes" data-k="sort" data-v="${o.id}">${o.label}</button>`).join('')}
@@ -3657,7 +3592,8 @@ function ensureTaskModal() {
       '<div style="text-align:center;margin-top:10px;"><button id="tm-cancel" style="background:none;border:0;color:var(--text-dim,#9ca3af);font-size:13px;cursor:pointer;">Cerrar</button></div>' +
     '</div>';
   document.body.appendChild(m);
-  document.getElementById('tm-prod').innerHTML = '<option value="">— sin producto —</option>' + selOptions(catProdsPresentes(), ''); // data-derived, excluye Interno/Otro (3V no 360)
+  // 16nov2026 (Mike): solo los 14 productos oficiales; el valor es el codigo que ya usan las oportunidades (3V, no 360).
+  document.getElementById('tm-prod').innerHTML = '<option value="">— sin producto —</option>' + prodOpcionesFijar(((DATA&&DATA.deals)||[]).map(function(d){ return d.prod; }), '').map(function(o){ return '<option value="' + grEsc(o[0]) + '" title="' + grEsc(o[2]) + '">' + grEsc(o[1]) + '</option>'; }).join('');
   document.getElementById('tm-resp').innerHTML = selOptions(PERSONAS, '') + '<option value="__OTRO__">Otro…</option>';
   document.getElementById('tm-resp').addEventListener('change', e => {
     document.getElementById('tm-resp-otro').style.display = e.target.value === '__OTRO__' ? 'block' : 'none';
@@ -3723,7 +3659,7 @@ function openTaskEditor(ds) {
   // El llenado por defecto excluye Interno/Otro, y al editar una tarea interna se perdia el producto.
   [ds.prod, 'Interno'].forEach(function(p){
     if(p && !Array.prototype.some.call(_tmProd.options, function(o){return o.value===p;})){
-      var _o=document.createElement('option'); _o.value=p; _o.textContent=p; _tmProd.appendChild(_o);
+      var _o=document.createElement('option'); _o.value=p; _o.textContent=(p==='Interno')?'Interna (sin producto)':(prodEsOficial(p)?prodEtiqueta(p):p+' (no es de la lista oficial)'); _tmProd.appendChild(_o);
     }
   });
   _tmProd.value = ds.prod || '';
@@ -4491,11 +4427,8 @@ function renderAlertas() {
   let baseForAccion = allAlertas.slice();
   if (alertasFilters.categoria !== 'ALL') baseForAccion = baseForAccion.filter(a => a.categoria === alertasFilters.categoria);
   if (alertasFilters.persona !== 'Todos') baseForAccion = baseForAccion.filter(a => ownerIdToPersona(String(a.ownerId || '')) === alertasFilters.persona || a.owner === alertasFilters.persona);
-  if (alertasFilters.producto !== 'ALL') baseForAccion = baseForAccion.filter(a => a.prod === alertasFilters.producto);
   baseForAccion.forEach(a => { accionCounts[a.accion] = (accionCounts[a.accion] || 0) + 1; });
 
-  // Productos disponibles
-  const productosDisponibles = Array.from(new Set(allAlertas.map(a => a.prod).filter(Boolean))).sort();
 
   // KPI Header
   let html = `
@@ -4524,7 +4457,7 @@ function renderAlertas() {
   `;
 
   // Filtros unificados (persona c/conteo · semáforo · grupo · producto · stage · monto · categoría)
-  html += filtrosHTML('alertas', allAlertas, 'alerta');
+  html += grGenFiltrosHTML('alertas', allAlertas, 'alerta');
 
   /* Fila de acciones: solo en "Vender". En "Arreglar" la opcion la elige el menu por objeto. */
   if(FIX_NIVEL1==='vender'){
@@ -4865,6 +4798,26 @@ const GANADOR_STYLES = {
   'ambos_flojos':  { color: 'var(--red)',    icon: '⚠️', label: 'Ambos flojos' },
   'inactivo':      { color: 'var(--text-mute)', icon: '💤', label: 'Inactivo' }
 };
+// 16nov2026 (Mike): el comparativo de Amplemarket va por producto oficial, en el orden del catalogo. Si varias filas caen en
+// el mismo producto (por ejemplo todo lo que va a «Otros»), se suman y las tasas se recalculan con sus pesos.
+function amPorProductoOficial(lista){
+  var g={};
+  (lista||[]).forEach(function(p){ var k=prodOficial(p&&p.codigo); (g[k]=g[k]||[]).push(p); });
+  var suma=function(arr,k){ return arr.reduce(function(s,x){ return s+(Number(x&&x[k])||0); },0); };
+  var pond=function(arr,k,peso){ var w=suma(arr,peso); return w?arr.reduce(function(s,x){ return s+(Number(x&&x[k])||0)*(Number(x&&x[peso])||0); },0)/w:0; };
+  return prodOpciones().filter(function(k){ return g[k]; }).map(function(k){
+    var rows=g[k];
+    if(rows.length===1) return Object.assign({}, rows[0], { codigo:k });
+    var S=rows.map(function(r){ return r.seq||{}; }), D=rows.map(function(r){ return r.duo||{}; });
+    var seq={ secuencias:suma(S,'secuencias'), leads:suma(S,'leads'), openRate:pond(S,'openRate','leads'), replyRate:pond(S,'replyRate','leads'),
+      meetings:suma(S,'meetings'), interested:suma(S,'interested'), detalle:[].concat.apply([], S.map(function(s){ return s.detalle||[]; })) };
+    var gen=suma(D,'generated'), sq=suma(D,'sequenced');
+    var duo={ signals:suma(D,'signals'), generated:gen, sequenced:sq, sequenceRate:gen?sq/gen:0, replies:suma(D,'replies'), replyRate:pond(D,'replyRate','sequenced'),
+      meetings:suma(D,'meetings'), detalle:[].concat.apply([], D.map(function(d){ return d.detalle||[]; })) };
+    var gan=(seq.meetings>duo.meetings)?'SEQ':(duo.meetings>seq.meetings)?'DUO':(seq.meetings?'empate':'inactivo');
+    return { codigo:k, seq:seq, duo:duo, ganador:gan };
+  });
+}
 
 const REPLY_TAG_STYLES = {
   'interested':                { color: 'var(--mint)',   label: '✅ Interested' },
@@ -4897,7 +4850,7 @@ function prospPerPasa(e){ if(!prospPer.fper||prospPer.fper==='todo') return true
 function prospPerVista(){ var r=periodoRango(prospPer); if(r[0]) return r; var hoy=_diaLocal(new Date()), mn=''; ((PROSPECCION_DATA&&PROSPECCION_DATA.eventos)||[]).forEach(function(e){ var t=new Date(e.fecha); if(isNaN(t)) return; var s=_diaLocal(t); if(!mn||s<mn) mn=s; }); return [mn||hoy, hoy]; }
 function prospPeriodoFecha(){ var a=document.getElementById('prosp-desde'), b=document.getElementById('prosp-hasta'); if(!a||!b||!a.value||!b.value) return; prospPer.fper='rango'; prospPer.fdesde=a.value; prospPer.fhasta=b.value; renderProspeccion(); }
 function prospSemOf(e){ var f=new Date(e.fecha); if(isNaN(f)) return 'verde'; var age=Math.floor((new Date()-f)/86400000); return age>30?'rojo':(age>7?'amarillo':'verde'); }
-function prospPasa(e, ex){ if(ex!=='etapa'&&prospStage!=='ALL'&&!prospEtapaPasa(e,prospStage)) return false; if(ex!=='prod'&&prospProducto!=='ALL'&&String(e.producto||'').toUpperCase()!==String(prospProducto).toUpperCase()) return false; if(ex!=='canal'&&prospCanal!=='ALL'&&(e.canal||'')!==prospCanal) return false; if(ex!=='resp'&&prospResp!=='Todos'){ var r=prospRespDe(e); if(prospResp==='Otro'?!!r:r!==prospResp) return false; } if(ex!=='tipo'&&prospTipo!=='ALL'&&String(e.tipo||'')!==prospTipo) return false; if(ex!=='fecha'&&!prospPerPasa(e)) return false; if(ex!=='q'&&!prospQPasa(e)) return false; return true; }
+function prospPasa(e, ex){ if(ex!=='etapa'&&prospStage!=='ALL'&&!prospEtapaPasa(e,prospStage)) return false; if(ex!=='prod'&&prospProducto!=='ALL'&&prodOficial(e.producto)!==prodFiltroValor(prospProducto)) return false; if(ex!=='canal'&&prospCanal!=='ALL'&&(e.canal||'')!==prospCanal) return false; if(ex!=='resp'&&prospResp!=='Todos'){ var r=prospRespDe(e); if(prospResp==='Otro'?!!r:r!==prospResp) return false; } if(ex!=='tipo'&&prospTipo!=='ALL'&&String(e.tipo||'')!==prospTipo) return false; if(ex!=='fecha'&&!prospPerPasa(e)) return false; if(ex!=='q'&&!prospQPasa(e)) return false; return true; }
 let amDetailView = 'sequences';
 let amDrilldown = null;  // null | 'meetings' | 'replies' | 'openplus3' | 'duogenerated'
 
@@ -5144,21 +5097,6 @@ function pNum(n) { return (n || 0).toLocaleString('es-MX'); }
 function pMoney(n) { return '$' + Math.round(n || 0).toLocaleString('es-MX'); }
 function semaforo(val, bench) { return val >= bench ? 'var(--mint,#34d399)' : (val >= bench * 0.6 ? 'var(--yellow,#fbbf24)' : 'var(--red,#f87171)'); }
 
-function funnelRow(steps) {
-  let h = '<div style="display:flex;gap:8px;align-items:stretch;overflow-x:auto;">';
-  steps.forEach((s, i) => {
-    if (i > 0) h += '<div style="display:flex;align-items:center;color:var(--text-mute);font-size:16px;padding:0 2px;">→</div>';
-    h += '<div style="flex:1;min-width:110px;background:var(--bg-3,#1a1d24);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;">' +
-      '<div style="font-size:11px;color:var(--text-dim);">' + s.label + '</div>' +
-      '<div style="font-size:24px;font-weight:700;color:' + (s.color || 'var(--text)') + ';">' + s.val + '</div>' +
-      (s.sub ? '<div style="font-size:11px;color:var(--text-mute);">' + s.sub + '</div>' : '') +
-      (s.bench ? '<div style="font-size:10px;color:var(--text-mute);">' + s.bench + '</div>' : '') +
-      '</div>';
-  });
-  h += '</div>';
-  return h;
-}
-
 function isEventoPrueba(e){
   var emp=(e.empresa||'').toLowerCase();
   var pros=(e.prospecto||'').toLowerCase();
@@ -5269,7 +5207,7 @@ function renderGanadoresGR(cont){
     if(String(c.gr_prueba)==='true') return false;
     var p=String(c.gr_producto||d.prod||'');
     if(prospGrupo!=='ALL' && grupoDeProd(p)!==prospGrupo) return false;
-    if(prospProducto!=='ALL' && p!==prospProducto) return false;
+    if(prospProducto!=='ALL' && prodOficial(p)!==prodFiltroValor(prospProducto)) return false;
     if(r){ var s=grDiaDe(d.createdate); if(!s) return false; if(s<r[0]||s>r[1]) return false; }
     return true; });
   var g={}; deals.forEach(function(d){ var v=ganValor(d,ganDim)||'(sin dato)'; var x=g[v]=g[v]||{v:v,n:0,c:0,ds:[]}; x.n++; if(ganLlegoACita(d)) x.c++; x.ds.push(d); });
@@ -5342,16 +5280,8 @@ function renderProspeccion() {
      la recibe del backend, que la lee de la tabla gr_catalogo_productos, que refleja el
      documento GR_Catalogo_Productos. Dar de alta un producto deja de exigir tocar el
      tablero. La lista escrita a mano queda solo como respaldo si el backend no la manda. */
-  var GR_PRODS=(function(){
-    var cat=(PROSPECCION_DATA&&Array.isArray(PROSPECCION_DATA.catalogo))?PROSPECCION_DATA.catalogo:null;
-    if(cat&&cat.length) return cat.filter(function(r){return r.activo!==false;}).map(function(r){return String(r.codigo||'');}).filter(Boolean);
-    return ((CAT().productos)||[]).filter(function(p){ return p.grupo==='GR' && p.activo!==false; }).map(function(p){ return p.id; });
-  })();
-  var activeProd=prodsConCatalogo(GR_PRODS.filter(function(p){ return PEV.some(function(e){return (e.producto||'')===p;}); }));
   var _cf=function(field,val,lbl,cur){ return '<button class="chip'+(cur===val?' active':'')+'" data-pf="'+field+'" data-pv="'+encodeURIComponent(val)+'"'+catTitulo(field,val)+' style="font-size:11px;padding:5px 11px;border-radius:18px;">'+lbl+'</button>'; };
   var _row=function(label,inner){ return '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px;"><span style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-right:2px;min-width:62px;">'+label+'</span>'+inner+'</div>'; };
-  var GRUPOS_PRES=catIds(catLista('grupos')).filter(function(g){ return g!=='INTERNO'; }).filter(function(g){ return activeProd.some(function(p){return grupoDeProd(p)===g;}); });
-  var prodShown = prospGrupo==='ALL'?activeProd:activeProd.filter(function(p){return grupoDeProd(p)===prospGrupo;});
   var canalesPres=Array.from(new Set(PEV_n.map(function(e){return e.canal;}).filter(Boolean)));
   var chips='';
   var _base=PEV_n.filter(function(e){ return e.tipo==='open3' || esReplyReal(e); });
@@ -5373,12 +5303,11 @@ function renderProspeccion() {
   Object.keys(nomR).sort().forEach(function(n){ rs+=_cfn('resp',n,n,prospResp,_n('resp',function(e){ return prospRespDe(e)===n; })); });
   rs+=_cfn('resp','Otro','Sin responsable',prospResp,_n('resp',function(e){ return !prospRespDe(e); }));
   chips+=_rowI('Responsable','Quien lleva la cuenta de la oportunidad del prospecto (campo Responsable de la ficha).',rs);
-  // Producto: las lineas del catalogo del portal
-  var catP=(((pipeCfg()||{}).productos)||[]).map(function(x){ return String(x.codigo||''); }).filter(Boolean);
-  if(!catP.length) catP=GR_PRODS.slice();
-  var pr=_cfn('prod','ALL','Todos',prospProducto,_n('prod',function(){return true;}));
-  catP.forEach(function(p){ pr+=_cfn('prod',p,p,prospProducto,_n('prod',function(e){ return String(e.producto||'').toUpperCase()===p.toUpperCase(); })); });
-  chips+=_rowI('Producto','Línea de servicio. Aparecen todas las del catálogo del portal, aunque hoy no tengan eventos.',pr);
+  // Producto: los 14 productos oficiales, aunque hoy esten en 0; lo que no es de la lista va en Otros (16nov2026, Mike).
+  prospProducto=prodFiltroValor(prospProducto);
+  var pr=_cf('prod','ALL',prodChipTexto('ALL',_n('prod',function(){return true;})),prospProducto);
+  prodOpciones().forEach(function(p){ var n=_n('prod',function(e){ return prodOficial(e.producto)===p; }); if(p!==PROD_OTROS||n||prospProducto===p) pr+=_cf('prod',p,prodChipTexto(p,n),prospProducto); });
+  chips+=_rowI('Producto','Los 14 productos oficiales de Great Revenue, aunque hoy no tengan eventos. Otros: lo que no es de la lista o no tiene producto.',pr);
   // Tipo de senal
   chips+=_rowI('Tipo de señal','Reply: el prospecto contestó. Open+3: abrió tres veces o más sin contestar. Es el mismo campo de la ficha de la oportunidad.',_cfn('tipo','ALL','Todos',prospTipo,_n('tipo',function(){return true;}))+catLista('tiposSenal').map(function(o){ return _cfn('tipo',o.id,o.label,prospTipo,_n('tipo',function(e){ return e.tipo===o.id; })); }).join(''));
   if(canalesPres.length){ chips+=_rowI('Canal','Por dónde llegó el evento.',_cfn('canal','ALL','Todos',prospCanal,_n('canal',function(){return true;}))+canalesPres.map(function(c){return _cfn('canal',c,c,prospCanal,_n('canal',function(e){ return (e.canal||'')===c; }));}).join('')); }
@@ -5675,21 +5604,6 @@ function pNum(n) { return (n || 0).toLocaleString('es-MX'); }
 function pMoney(n) { return '$' + Math.round(n || 0).toLocaleString('es-MX'); }
 function semaforo(val, bench) { return val >= bench ? 'var(--mint,#34d399)' : (val >= bench * 0.6 ? 'var(--yellow,#fbbf24)' : 'var(--red,#f87171)'); }
 
-function funnelRow(steps) {
-  let h = '<div style="display:flex;gap:8px;align-items:stretch;overflow-x:auto;">';
-  steps.forEach((s, i) => {
-    if (i > 0) h += '<div style="display:flex;align-items:center;color:var(--text-mute);font-size:16px;padding:0 2px;">→</div>';
-    h += '<div style="flex:1;min-width:110px;background:var(--bg-3,#1a1d24);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;">' +
-      '<div style="font-size:11px;color:var(--text-dim);">' + s.label + '</div>' +
-      '<div style="font-size:24px;font-weight:700;color:' + (s.color || 'var(--text)') + ';">' + s.val + '</div>' +
-      (s.sub ? '<div style="font-size:11px;color:var(--text-mute);">' + s.sub + '</div>' : '') +
-      (s.bench ? '<div style="font-size:10px;color:var(--text-mute);">' + s.bench + '</div>' : '') +
-      '</div>';
-  });
-  h += '</div>';
-  return h;
-}
-
 
 function renderAmplemarketDrilldown() {
   const container = document.getElementById('am-drilldown');
@@ -5879,21 +5793,6 @@ function pNum(n) { return (n || 0).toLocaleString('es-MX'); }
 function pMoney(n) { return '$' + Math.round(n || 0).toLocaleString('es-MX'); }
 function semaforo(val, bench) { return val >= bench ? 'var(--mint,#34d399)' : (val >= bench * 0.6 ? 'var(--yellow,#fbbf24)' : 'var(--red,#f87171)'); }
 
-function funnelRow(steps) {
-  let h = '<div style="display:flex;gap:8px;align-items:stretch;overflow-x:auto;">';
-  steps.forEach((s, i) => {
-    if (i > 0) h += '<div style="display:flex;align-items:center;color:var(--text-mute);font-size:16px;padding:0 2px;">→</div>';
-    h += '<div style="flex:1;min-width:110px;background:var(--bg-3,#1a1d24);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;">' +
-      '<div style="font-size:11px;color:var(--text-dim);">' + s.label + '</div>' +
-      '<div style="font-size:24px;font-weight:700;color:' + (s.color || 'var(--text)') + ';">' + s.val + '</div>' +
-      (s.sub ? '<div style="font-size:11px;color:var(--text-mute);">' + s.sub + '</div>' : '') +
-      (s.bench ? '<div style="font-size:10px;color:var(--text-mute);">' + s.bench + '</div>' : '') +
-      '</div>';
-  });
-  h += '</div>';
-  return h;
-}
-
 
 // ── PIPELINE METRICS GR ──
 // Etapas de Prospección por idCli: orden, color y nombre corto salen del catálogo.
@@ -6069,8 +5968,8 @@ function renderProspDetalle(ptype, pval, pwin) {
   var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');};
 
   window.__pv4pool=pool;
-  var h='<div style="display:flex;align-items:baseline;gap:8px;margin:0 0 14px;"><span style="font-size:14px;font-weight:800;">'+esc(titulo)+'</span><span style="font-size:12px;color:#9CA3AF;">'+winLbl+(prospProducto!=='ALL'?' · '+esc(prospProducto):'')+' ('+pool.length+')</span></div>';
-  if(!pool.length){box.innerHTML=h+'<div style="font-size:12px;color:#9CA3AF;padding:12px 0;">Sin contactos en esta intersección para el filtro activo ('+esc(prospProducto)+').</div>';box.scrollIntoView({behavior:'smooth',block:'nearest'});return;}
+  var h='<div style="display:flex;align-items:baseline;gap:8px;margin:0 0 14px;"><span style="font-size:14px;font-weight:800;">'+esc(titulo)+'</span><span style="font-size:12px;color:#9CA3AF;">'+winLbl+(prospProducto!=='ALL'?' · '+esc(prodEtiqueta(prospProducto)):'')+' ('+pool.length+')</span></div>';
+  if(!pool.length){box.innerHTML=h+'<div style="font-size:12px;color:#9CA3AF;padding:12px 0;">Sin contactos en esta intersección para el filtro activo ('+esc(prospProducto==='ALL'?'Todos':prodEtiqueta(prospProducto))+').</div>';box.scrollIntoView({behavior:'smooth',block:'nearest'});return;}
   h+='<div class="pv4-grid">';
   pool = pool.map(enrichE);
   window.__pv4pool=pool;
@@ -6200,7 +6099,7 @@ function renderAmplemarket() {
   }
 
   const k = am.kpis || {};
-  const productos = am.productos || [];
+  const productos = amPorProductoOficial(am.productos || []);
   const accionables = am.accionables || [];
   const totales = am.totales || {};
   const stats = am.stats || {};
@@ -6279,7 +6178,7 @@ function renderAmplemarket() {
     const s = p.seq, d = p.duo;
     const g = GANADOR_STYLES[p.ganador] || GANADOR_STYLES['inactivo'];
     h += `<tr>
-      <td style="font-weight:700;color:var(--text)">${p.codigo}</td>
+      <td style="font-weight:700;color:var(--text)" title="${grEsc(prodAyuda(p.codigo))}">${grEsc(prodEtiqueta(p.codigo))}</td>
       <td class="num">${s.secuencias || 0}</td>
       <td class="num">${fmtNum(s.leads)}</td>
       <td class="num" style="${s.openRate>=0.5&&s.openRate<=1?'color:var(--mint);font-weight:600':''}">${s.leads>0?fmtPct(s.openRate):'—'}</td>
@@ -6297,12 +6196,11 @@ function renderAmplemarket() {
   h += `</tbody></table></div></div>`;
 
   // === ACCIONABLES ===
-  const productosConDatos = [...new Set(accionables.map(a => a.producto))].sort();
   
   const filtrados = accionables.filter(a => {
     if (amFilters.canal !== 'todos' && a.canal !== amFilters.canal) return false;
     if (amFilters.tipo !== 'todos' && a.id !== amFilters.tipo) return false;
-    if (amFilters.producto !== 'todos' && a.producto !== amFilters.producto) return false;
+    if (amFilters.producto !== 'todos' && prodOficial(a.producto) !== prodFiltroValor(amFilters.producto)) return false;
     return true;
   });
 
@@ -6338,16 +6236,16 @@ function renderAmplemarket() {
           </button>
         `).join('')}
         <span style="font-size:12px;color:var(--text-dim);margin:0 4px 0 12px">Producto:</span>
-        <button onclick="setAmFilter('producto','todos')" class="chip" 
+        <button onclick="setAmFilter('producto','todos')" class="chip" title="${grEsc(GR_AYUDA_FIJA.prod.ALL)}"
                 style="${amFilters.producto === 'todos' ? 'background:var(--purple);color:white;border-color:var(--purple)' : ''}">
-          Todos
+          ${prodChipTexto('todos', accionables.length)}
         </button>
-        ${prodsConCatalogo(productosConDatos).map(prod => `
-          <button onclick="setAmFilter('producto','${prod}')" class="chip" 
+        ${prodOpciones().map(prod => { const n = accionables.filter(a => prodOficial(a.producto) === prod).length; return (prod !== PROD_OTROS || n || amFilters.producto === prod) ? `
+          <button onclick="setAmFilter('producto','${prod}')" class="chip" title="${grEsc(prodAyuda(prod))}"
                   style="${prod === amFilters.producto ? 'background:var(--purple);color:white;border-color:var(--purple)' : ''}">
-            ${prod}
+            ${grEsc(prodChipTexto(prod, n))}
           </button>
-        `).join('')}
+        ` : ''; }).join('')}
       </div>
   `;
 
@@ -6364,7 +6262,7 @@ function renderAmplemarket() {
       h += `<tr>
         <td style="color:${st.color};font-weight:600;white-space:nowrap">${st.icon} ${st.cat}</td>
         <td style="color:var(--text);font-weight:600">${a.canal === 'SEQ' ? '📋 SEQ' : '🔮 DUO'}</td>
-        <td style="color:var(--text);font-weight:700">${a.producto}</td>
+        <td style="color:var(--text);font-weight:700">${grEsc(prodEtiqueta(a.producto))}</td>
         <td style="color:var(--text-dim)">${a.detalle}</td>
       </tr>`;
     });
@@ -6395,7 +6293,7 @@ function renderAmplemarket() {
   productos.forEach(p => {
     (p.seq.detalle || []).forEach(s => {
       h += `<tr>
-        <td style="font-weight:700;color:var(--text)">${p.codigo}</td>
+        <td style="font-weight:700;color:var(--text)" title="${grEsc(prodAyuda(p.codigo))}">${grEsc(prodEtiqueta(p.codigo))}</td>
         <td style="font-size:12px;color:var(--text-dim)">${(s.nombre || '').trim()}</td>
         <td class="num">${fmtNum(s.leads)}</td>
         <td class="num" style="${s.openRate>=0.5&&s.openRate<=1?'color:var(--mint);font-weight:600':''}">${s.leads>0?fmtPct(s.openRate):'—'}</td>
@@ -6418,7 +6316,7 @@ function renderAmplemarket() {
   productos.forEach(p => {
     (p.duo.detalle || []).forEach(d => {
       h += `<tr>
-        <td style="font-weight:700;color:var(--text)">${p.codigo}</td>
+        <td style="font-weight:700;color:var(--text)" title="${grEsc(prodAyuda(p.codigo))}">${grEsc(prodEtiqueta(p.codigo))}</td>
         <td style="font-size:12px;color:var(--text-dim)">${d.signal}</td>
         <td class="num">${fmtNum(d.generated)}</td>
         <td class="num">${fmtNum(d.sequenced)}</td>
@@ -6808,7 +6706,7 @@ var GRF_MARK='https://mikea.app.n8n.cloud/webhook/gr-mark-borrar';
 
 /* Monto sugerido por producto (REA). Editable siempre. */
 // Monto sugerido de cada producto: el de su ficha en Configuración (catálogo, campo monto).
-function GRF_MONTO_(){ var m={}; ((CAT().productos)||[]).forEach(function(p){ if(p.monto) m[p.id]=p.monto; }); return m; }
+function GRF_MONTO_(){ var m={}; ((CAT().productos)||[]).forEach(function(p){ if(p.monto) m[p.id]=p.monto; }); return m; } // candado-productos: monto sugerido por producto, no arma filtros
 
 var GRF={accion:null,dealId:null,ctx:null,data:null};
 
@@ -6885,7 +6783,8 @@ function grfWireCandidatas(accion, extra){
 }
 
 function grfDealDe(id){ var d=null; ((typeof DATA!=='undefined'&&DATA&&DATA.deals)?DATA.deals:[]).forEach(function(x){ if(String(x.id)===String(id)) d=x; }); return d; }
-function grfProductos(){ return ((CAT().productos)||[]).filter(function(p){ return p.activo!==false; }).map(function(p){return p.id;}); }
+// 16nov2026 (Mike): al etiquetar una oportunidad solo se ofrecen los 14 productos oficiales.
+function grfProductos(){ return PRODUCTOS_OFICIALES().map(function(p){return p.id;}); }
 
 /* nombre del deal con el producto sustituido: P_XX_Empresa_Persona o XX_Empresa_Persona */
 function grfNombreConProducto(nombre,prod){
@@ -6907,7 +6806,7 @@ async function abrirFixGR(accion,dealId,extra){
       '<div style="color:#9CA3AF;margin-bottom:10px">El producto se define por el nombre de la oportunidad. Elige el producto y revisa el nombre resultante antes de guardar.</div>'
       +'<div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase">Producto</div>'
       +'<select id="grf-prod" onchange="grfPreviewProd()" style="width:100%;margin:5px 0 12px;padding:9px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;">'
-      +prods.map(function(p){return '<option value="'+grfEsc(p)+'">'+grfEsc(p)+'</option>';}).join('')+'</select>'
+      +prods.map(function(p){return '<option value="'+grfEsc(p)+'" title="'+grfEsc(prodAyuda(p))+'">'+grfEsc(prodEtiqueta(p))+'</option>';}).join('')+'</select>'
       +'<div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase">Nombre actual</div>'
       +'<div style="color:#9CA3AF;margin:4px 0 10px">'+grfEsc(nombre||'—')+'</div>'
       +'<div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase">Quedará como</div>'
@@ -7262,7 +7161,7 @@ function mtCalcular(){
 
   var pasa = function(r){
     if(MT_TENANT_FIJO && String(r.tenant||'')!==MT_TENANT_FIJO) return false;
-    if(MT_STATE.producto!=='TODOS' && String(r.producto||'')!==MT_STATE.producto) return false;
+    if(MT_STATE.producto!=='TODOS' && prodOficial(r.producto)!==prodFiltroValor(MT_STATE.producto)) return false;
     if(MT_STATE.owner!=='TODOS' && String(r.owner||'')!==MT_STATE.owner) return false;
     return true;
   };
@@ -7295,13 +7194,13 @@ function mtCalcular(){
   if(inv>0) adv.push(inv+' oportunidad(es) llegaron a Educación antes que a Atracción; se movieron a mano. Cuentan como efectuadas.');
 
   var prodMap={};
-  for(var m=0;m<citas.length;m++){ var c3=citas[m], pr=c3.producto||'SIN_PRODUCTO';
+  for(var m=0;m<citas.length;m++){ var c3=citas[m], pr=prodOficial(c3.producto);
     if(!prodMap[pr]) prodMap[pr]={producto:pr,agendadas:0,efectuadas:0};
     if(mtEnRango(c3.agendada,desde,hasta)) prodMap[pr].agendadas++;
     if(mtEnRango(c3.cita,desde,hasta)) prodMap[pr].efectuadas++; }
   var porProd = Object.keys(prodMap).map(function(x){ var o=prodMap[x];
     return {producto:o.producto,agendadas:o.agendadas,efectuadas:o.efectuadas,conv:mtPct(o.efectuadas,o.agendadas)}; })
-    .filter(function(o){return o.agendadas||o.efectuadas;}).sort(function(a,b){return b.efectuadas-a.efectuadas;});
+    .filter(function(o){return o.agendadas||o.efectuadas;}).sort(function(a,b){ var po=prodOpciones(); return po.indexOf(a.producto)-po.indexOf(b.producto); });
 
   var lunes=function(iso){ var d=new Date(iso+'T12:00:00Z'); var dw=(d.getUTCDay()+6)%7; d.setUTCDate(d.getUTCDate()-dw); return d.toISOString().slice(0,10); };
   var sems=[], cur=lunes(hoy);
@@ -7450,7 +7349,7 @@ function mtChips(titulo,campo,ops,activo){
     if(o==='|'){ h+='<span style="width:1px;height:18px;background:rgba(148,163,184,.35);margin:0 3px;"></span>'; continue; }
     var val=(typeof o==='string')?o:o.v, lbl=(typeof o==='string')?o:o.l, sub=(typeof o==='object'&&o.sub);
     var on=(String(val)===String(activo));
-    h+='<button data-mt="filtro" data-mt-campo="'+mtEsc(campo)+'" data-mt-valor="'+mtEsc(val)+'" style="cursor:pointer;border-radius:999px;padding:'+(sub?'3px 9px':'5px 11px')+';font-size:'+(sub?'11px':'12px')+';border:1px solid '+(on?MT_C.morado:'rgba(148,163,184,.35)')+';background:'+(on?MT_C.morado:'transparent')+';color:'+(on?'#fff':'inherit')+';">'+mtEsc(lbl)+'</button>';
+    h+='<button data-mt="filtro" data-mt-campo="'+mtEsc(campo)+'" data-mt-valor="'+mtEsc(val)+'"'+((typeof o==='object'&&o.t)?' title="'+mtEsc(o.t)+'"':'')+' style="cursor:pointer;border-radius:999px;padding:'+(sub?'3px 9px':'5px 11px')+';font-size:'+(sub?'11px':'12px')+';border:1px solid '+(on?MT_C.morado:'rgba(148,163,184,.35)')+';background:'+(on?MT_C.morado:'transparent')+';color:'+(on?'#fff':'inherit')+';">'+mtEsc(lbl)+'</button>';
   }
   return h+'</div></div>';
 }
@@ -7522,7 +7421,9 @@ function mtPintar(){
     var ms=(cat.meses||[]).slice(0,12).map(function(x){return {v:x,l:mtMesLbl(x),sub:1};});
     if(ms.length) h+=mtChips('Mes','mes',ms,MT_STATE.mes);
   }
-  h+=mtChips('Producto','producto',['TODOS'].concat(prodsConCatalogo(cat.productos||[])),MT_STATE.producto);
+  // 16nov2026 (Mike): los 14 productos oficiales en orden; Otros solo si hay datos fuera de la lista.
+  MT_STATE.producto=prodFiltroValor(MT_STATE.producto);
+  h+=mtChips('Producto','producto',[{v:'TODOS',l:'Todos',t:GR_AYUDA_FIJA.prod.ALL}].concat(prodOpciones().filter(function(k){ return k!==PROD_OTROS || MT_STATE.producto===k || (cat.productos||[]).some(function(p){ return !prodEsOficial(p); }); }).map(function(k){ return {v:k,l:prodEtiqueta(k),t:prodAyuda(k)}; })),MT_STATE.producto);
   h+=mtChips('Responsable','owner',['TODOS'].concat(cat.owners||[]),MT_STATE.owner);
   h+='<div style="font-size:11px;color:'+MT_C.gris+';margin-top:4px;">Del '+mtEsc(D.rango.desde)+' al '+mtEsc(D.rango.hasta)
     +' · <span style="cursor:pointer;text-decoration:underline;" data-mt="recargar">actualizar datos</span></div></div>';
@@ -7574,7 +7475,7 @@ function mtPintar(){
     var fp=[];
     for(var p2=0;p2<cit.porProd.length;p2++){ var Q=cit.porProd[p2];
       var cq=Q.conv>=60?MT_C.verde:(Q.conv>=30?MT_C.amarillo:MT_C.rojo);
-      fp.push([mtEsc(Q.producto),Q.agendadas,Q.efectuadas,'<b style="color:'+cq+';">'+Q.conv+'%</b>']); }
+      fp.push([mtEsc(prodEtiqueta(Q.producto)),Q.agendadas,Q.efectuadas,'<b style="color:'+cq+';">'+Q.conv+'%</b>']); }
     h+='<div style="margin-bottom:12px;"><span id="f-mt-prod" data-mt="toggle" data-mt-id="mt-prod" style="font-size:12px;font-weight:600;color:'+MT_C.morado+';cursor:pointer;padding:2px 8px;border:1px solid '+MT_C.morado+';border-radius:999px;">▸ ver</span> <span style="font-size:11px;color:'+MT_C.gris+';">Conversión por producto</span>'
       +'<div id="mt-prod" style="display:none;margin-top:8px;padding:8px;border:1px solid rgba(148,163,184,.2);border-radius:8px;">'+mtTabla(['Producto','Atracción','Educación','Conversión'],fp)+'</div></div>';
   }

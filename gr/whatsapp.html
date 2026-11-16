@@ -463,14 +463,21 @@
     COMO_LLEGO = mapa('comoLlego'); TIPO_INTERES = mapa('tiposInteres'); CAMINO = mapa('origenes'); CANAL = mapa('canales');
     TIPO_OP = mapa('tiposOportunidad'); PARTNER = mapa('partners');
     ETAPA_CORTA = {}; TIP_ETAPA = {}; (CAT.stages || []).forEach(function(e){ ETAPA_CORTA[e.id] = e.corto || e.label; TIP_ETAPA[e.id] = e.ayuda || e.nombre; });
-    SUFIJO = {}; ALIAS_LINEA = {}; (CAT.productos || []).forEach(function(p){ if (p.plantillaO3) SUFIJO[codLinea(p.id)] = p.plantillaO3; if (p.alias && p.alias.length) ALIAS_LINEA[p.id] = p.alias; });
+    SUFIJO = {}; ALIAS_LINEA = {}; (CAT.productos || []).forEach(function(p){ if (p.plantillaO3) SUFIJO[codLinea(p.id)] = p.plantillaO3; if (p.alias && p.alias.length) ALIAS_LINEA[p.id] = p.alias; }); // candado-productos: plantillas y alias, no arma filtros
   }
   var CAT_LISTO = fetch(CATALOGO, { cache: 'no-cache' }).then(function(r){ return r.json(); }).then(function(j){ if (j && j.productos) { CAT = j; armarListas(); pintarLista(); } }).catch(function(e){ console.warn('catalogos.json no cargo', e); });
-  function lineasConocidas(){
-    return (CAT.productos || []).filter(function(p){ return p.grupo === 'GR' && p.activo !== false; }).map(function(p){
+  // Lista oficial de productos (decision de Mike, 16 nov): los del catalogo con grupo GR y activos, en su orden; el texto es
+  // el nombre corto del catalogo y la ayuda, la del catalogo. Pintaando, IMMMU, Excepciones o sin producto van en «Otros».
+  function lineasConocidas(){ // candado-productos: oficial
+    return (CAT.productos || []).filter(function(p){ return p.grupo === 'GR' && p.activo !== false; }).sort(function(a, b){ return (a.orden || 0) - (b.orden || 0); }).map(function(p){ // candado-productos: oficial
       var cod = String(p.id).toUpperCase(), m = ((conf && conf.productos) || []).filter(function(x){ return codLinea(x.codigo) === cod; })[0];
-      return { codigo: cod, nombre: p.id, largo: m ? m.nombre.replace(/ \(.*\)$/, '') : (p.label || p.id) }; });
+      var corto = String(p.nombre || p.label || p.id).replace(/\s*\([^)]*\)\s*$/, '').trim();
+      return { codigo: cod, nombre: p.id, corto: corto, ayuda: p.ayuda || corto, largo: m ? m.nombre.replace(/ \(.*\)$/, '') : (p.label || p.id),
+        claves: [p.id, p.label, p.nombre, corto].concat(p.alias || [], p.prefijos || []).filter(Boolean).map(function(k){ return String(k).trim().toUpperCase(); }) }; });
   }
+  // Codigo oficial de una linea (por su codigo, alias o prefijo del catalogo), o '' si no es de la lista: entonces va en «Otros».
+  function lineaOficial(cod){ var c = codLinea(cod).trim(); if (!c) return ''; var l = lineasConocidas().filter(function(x){ return x.codigo === c || x.claves.indexOf(c) >= 0; })[0]; return l ? l.codigo : ''; }
+  var AYUDA_OTROS = 'Lo que no es uno de los 14 productos oficiales o no tiene producto: Pintaando, IMMMU, Excepciones o sin producto identificado.';
   // El codigo de la linea en HubSpot o en el bot, en mayusculas como el catalogo (GENIA = GenIA).
   function codLinea(x){ return String(x || '').toUpperCase(); }
   function pintarSelects(){ pintarLista(); }
@@ -608,7 +615,7 @@
         ['libre', 'Puedo escribirle libre', 'El cliente escribió en las últimas 24 h: le puedes mandar cualquier texto'],
         ['plantilla', 'Solo plantilla', 'Nunca ha escrito o pasaron más de 24 h: WhatsApp solo deja mandarle una plantilla aprobada']] },
       { k: 'linea', t: 'Producto', ayuda: 'El producto de su oportunidad en HubSpot o, si no tiene, el que entendió el bot en la conversación.',
-        ops: lineasConocidas().map(function(l){ return [l.codigo, l.nombre, 'Conversaciones de ' + l.largo]; }).concat([['SIN', 'Sin producto', 'No tiene oportunidad en HubSpot y el bot todavía no identifica el producto']]) },
+        ops: lineasConocidas().map(function(l){ return [l.codigo, l.corto, l.ayuda]; }).concat([['SIN', 'Otros', AYUDA_OTROS]]) },
       { k: 'etapa', t: 'Etapa', ayuda: 'La etapa de su oportunidad en HubSpot, con los mismos nombres del tablero. Prospección y Ventas juntan sus etapas.',
         ops: [['prospeccion', 'Prospección', 'Etapas de prospección: ' + (CAT.stages || []).filter(function(e){ return e.fase === 'prospeccion'; }).map(function(e){ return e.corto || e.label; }).join(', ')]].concat(et.filter(function(e){ return e.fase === 'prospeccion'; }).map(function(e){ return [e.id, ETAPA_CORTA[e.id] || e.nombre, TIP_ETAPA[e.id] || e.nombre]; }),
           [['venta', 'Ventas', 'De Atracción en adelante']], et.filter(function(e){ return e.fase === 'venta'; }).map(function(e){ return [e.id, ETAPA_CORTA[e.id] || e.nombre, TIP_ETAPA[e.id] || e.nombre]; }),
@@ -636,7 +643,7 @@
     var op = oporDe(c), o3 = op && op.o.o3, pi;
     if (k === 'atiende') return v === 'sinleer' ? !!c.sin_leer : (v === 'atender' ? !!porAtender(c) : c.modo === v);
     if (k === 'ventana') return v === 'libre' ? ventana(c).abierta : !ventana(c).abierta;
-    if (k === 'linea') { var cod = codLinea(lineaDe(c).codigo); return v === 'SIN' ? (!cod || cod === 'SIN') : cod === v; }
+    if (k === 'linea') { var cod = lineaOficial(lineaDe(c).codigo); return v === 'SIN' ? !cod : cod === v; }
     if (k === 'etapa') return v === 'sin' ? !op : (!!op && (op.o.etapa.id === v || op.o.etapa.fase === v));
     if (k === 'senal') return v === 'open3' || v === 'reply' ? senalConv(c) === v : (!!op && senalConv(c) === 'reply' && op.o.como_llego === v);
     if (k === 'origen') return origenConv(c) === v;
@@ -726,7 +733,7 @@
     var PRUEBAS = {
       pend: function(o){ return pendienteOpen3(o); },
       fase: function(o, v){ return o.etapa.fase === v; },
-      linea: function(o, v){ return codLinea(o.linea.codigo) === v; },
+      linea: function(o, v){ var cod = lineaOficial(o.linea.codigo); return v === 'SIN' ? !cod : cod === v; },
       persona: function(o, v){ return v === 'Sin' ? !o.responsable : personasOp(o).indexOf(v) >= 0; },
       wa: function(o, v){ return estadoOp(o) === v; },
       sem: function(o, v){ return v === 'sin' ? !o.semaforo : o.semaforo === v; },
@@ -757,13 +764,13 @@
       return '<span class="flabel">' + titulo + '</span><div class="filters">' + '<button class="chip' + (f[k] ? '' : ' on') + '" data-k="' + k + '" data-v="">' + (todasTxt || 'Todas') + ' (' + base.length + ')</button>' +
         opciones.map(function(op){
           var n = base.filter(function(o){ return PRUEBAS[k](o, op[0]); }).length;
-          return '<button class="chip' + (String(f[k]) === String(op[0]) ? ' on' : '') + (n ? '' : ' cero') + '" data-k="' + k + '" data-v="' + esc(op[0]) + '">' + op[1] + ' (' + n + ')</button>';
+          return '<button class="chip' + (String(f[k]) === String(op[0]) ? ' on' : '') + (n ? '' : ' cero') + '" data-k="' + k + '" data-v="' + esc(op[0]) + '"' + (op[2] ? ' title="' + esc(op[2]) + '"' : '') + '>' + op[1] + ' (' + n + ')</button>';
         }).join('') + '</div>';
     };
     var pend = todas.filter(pendienteOpen3);
     var cts = [].concat.apply([], todas.map(function(o){ return o.contactos; }));
-    var lineasF = lineasConocidas().map(function(l){ return [l.codigo, esc(l.nombre)]; });
-    if (todas.some(function(o){ return o.linea.codigo === 'SIN'; })) lineasF.push(['SIN', 'Sin producto']);
+    var lineasF = lineasConocidas().map(function(l){ return [l.codigo, esc(l.corto), l.ayuda]; });
+    if (todas.some(function(o){ return !lineaOficial(o.linea.codigo); })) lineasF.push(['SIN', 'Otros', AYUDA_OTROS]);
     var personasF = (opor.equipo || []).map(function(p){ return [p, esc(p)]; }).concat([['Sin', 'Sin responsable']]);
     var principales = fila('linea', 'Producto:', lineasF) + fila('persona', 'Persona:', personasF, 'Todos') +
       fila('wa', 'WhatsApp:', [['falta', 'Falta celular'], ['listo', 'Con celular, sin escribir'], ['enviada', 'Plantilla enviada'], ['conversa', 'Ya conversa']]) +
