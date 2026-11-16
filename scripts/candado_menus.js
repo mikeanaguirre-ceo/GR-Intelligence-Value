@@ -98,8 +98,44 @@ for (const f of archivos) {
     if (vistos.size >= 4) { hallazgos.push(`${rel}:${i + 1}  lista de productos escrita a mano en varios renglones: ${[...vistos].slice(0, 6).join(', ')}`); i += 11; }
   }
 }
+// ==== Candado de ayudas del tablero (16 nov 2026, pedido de Mike: «que haya esta definicion de que estamos viendo») ====
+// El tablero (index.html) tiene UN solo glosario, GR_AYUDA_FIJA.tablero, entre los comentarios "glosario-tablero:inicio"
+// y "glosario-tablero:fin", y UNA sola forma de mostrarlo: grI('clave'). Aqui se rechaza:
+//  a) una clave de ayuda que no exista en el glosario (la «i» saldria vacia);
+//  b) un texto de ayuda escrito a mano dentro de grI(...) en lugar de su clave;
+//  c) un recuadro (kpi-label, won-kpi-label o mtTarjeta) sin su «i»;
+//  d) las ayudas viejas (grIVer, gr-i-txt, el simbolo ⓘ) o palabras que el equipo no usa (deal, trato) en el glosario.
+const TABLERO = path.join(raiz, 'index.html');
+if (archivos.some(f => path.resolve(f) === TABLERO)) {
+  const vm = require('vm');
+  const src = fs.readFileSync(TABLERO, 'utf8'), rel = 'index.html';
+  const ini = src.indexOf('/* glosario-tablero:inicio */'), fin = src.indexOf('/* glosario-tablero:fin */');
+  let glosario = null;
+  if (ini < 0 || fin < ini) hallazgos.push(`${rel}: no se encontro el glosario (comentarios glosario-tablero:inicio y :fin)`);
+  else {
+    try { const caja = {}; vm.runInNewContext(src.slice(ini, fin) + '\n;this.G = GR_AYUDA_FIJA;', caja); glosario = (caja.G || {}).tablero || null; }
+    catch (e) { hallazgos.push(`${rel}: el glosario no se puede leer: ${e.message}`); }
+    if (glosario === null) hallazgos.push(`${rel}: GR_AYUDA_FIJA no trae la seccion tablero`);
+  }
+  if (glosario) {
+    for (const [k, t] of Object.entries(glosario)) {
+      if (!String(t || '').trim()) hallazgos.push(`${rel}: la clave ${k} del glosario no tiene texto`);
+      if (/\b(deals?|tratos?)\b/i.test(t)) hallazgos.push(`${rel}: la ayuda ${k} dice deal o trato; el equipo dice oportunidad`);
+    }
+    const PREFIJOS = /^(comun|calidad|recap|overview|pipeline|won|clientes|pendientes|alertas|prosp|am|forecast|metricas)\.[A-Za-z0-9_.]+$/;
+    const lineas = src.split('\n'), lIni = src.slice(0, ini).split('\n').length, lFin = src.slice(0, fin).split('\n').length;
+    lineas.forEach((l, i) => {
+      const n = i + 1; if (n >= lIni && n <= lFin) return;
+      l.replace(/'([^'\\\n]{3,80})'/g, (m, x) => { if (PREFIJOS.test(x) && !(x in glosario)) hallazgos.push(`${rel}:${n}  la ayuda '${x}' no existe en el glosario`); return m; });
+      l.replace(/grI\(\s*(['"`])([^'"`]*)\1\s*\)/g, (m, q, x) => { if (/\s/.test(x)) hallazgos.push(`${rel}:${n}  ayuda escrita a mano en grI(...): va en el glosario y aqui solo su clave`); return m; });
+      if (/class="(?:won-)?kpi-label"/.test(l) && !/grI\(/.test(l)) hallazgos.push(`${rel}:${n}  recuadro sin su «i» de ayuda: agrega grI('clave') en la etiqueta`);
+      if (/\bmtTarjeta\(/.test(l) && !/function mtTarjeta/.test(l) && !/'(?:metricas|comun)\.[A-Za-z0-9_.]+'/.test(l)) hallazgos.push(`${rel}:${n}  tarjeta de Metricas sin su «i» de ayuda: pasa la clave del glosario como ultimo dato`);
+      if (/grIVer|gr-i-txt|ⓘ/.test(l)) hallazgos.push(`${rel}:${n}  ayuda vieja (grIVer, gr-i-txt o ⓘ): usa grI('clave')`);
+    });
+  }
+}
 if (hallazgos.length) {
-  console.error('Candado de menus: estas paginas traen listas escritas a mano o filtros de producto fuera de la lista oficial. Deben leer catalogos.json.\n' + hallazgos.join('\n'));
+  console.error('Candado de menus y ayudas: estas paginas traen listas escritas a mano, filtros de producto fuera de la lista oficial o ayudas fuera del glosario.\n' + hallazgos.join('\n'));
   process.exit(1);
 }
-console.log('Candado de menus: ninguna pagina trae listas escritas a mano y todo filtro de producto pasa por la lista oficial (' + archivos.length + ' archivos revisados).');
+console.log('Candado de menus: ninguna pagina trae listas escritas a mano y todo filtro de producto pasa por la lista oficial (' + archivos.length + ' archivos revisados). Ayudas del tablero: cada recuadro tiene su «i» y cada clave existe en el glosario.');
