@@ -28,6 +28,11 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif
 .docl span { font-size:11px; text-transform:uppercase; letter-spacing:.04em; opacity:.7; }
 .docl a { color:var(--mint); text-decoration:none; word-break:break-word; }
 .docl em { opacity:.6; font-style:normal; }
+.prio { font-size:11px; font-weight:800; padding:2px 7px; border-radius:9px; white-space:nowrap; }
+.prio.alta { background:rgba(16,185,129,.18); color:#34D399; } .prio.media { background:rgba(245,158,11,.16); color:#FBBF24; } .prio.baja { background:rgba(239,68,68,.16); color:#F87171; } .prio.poca { background:var(--bg-3); color:var(--mute); }
+details.todas { margin-top:10px; } details.todas summary { cursor:pointer; font-size:12.5px; color:var(--mint); font-weight:700; }
+details.todas table td:first-child { max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.resumen-prio div { margin:4px 0; font-size:13px; } .resumen-prio b { color:var(--dim); font-weight:700; }
 .card { background:var(--bg-2); border:1px solid var(--border); border-radius:12px; padding:14px; }
 .card h3 { font-size:14px; margin-bottom:4px; } .card p.n { font-size:12px; color:var(--mute); margin-bottom:10px; }
 .bar { display:grid; grid-template-columns:minmax(90px,38%) 1fr auto; gap:8px; align-items:center; margin:5px 0; font-size:12.5px; }
@@ -90,6 +95,7 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
     per: 'Periodicidad. Por trimestre (la inicial) se lee estable; por mes hay pocos casos y un mes malo parece una caída. Rango: escoge los meses que quieras ver.',
     semaforo: 'Compara el % de oportunidades que llegan a reunión del último periodo completo (dato del CRM) contra el promedio de sus 4 periodos anteriores (su línea base) y contra la mediana del portafolio. Verde: igual o mejor. Amarillo: hasta 20% peor, o abajo de la mediana. Rojo: más de 20% peor. Gris: menos de 10 oportunidades en el periodo. Los números de Amplemarket se muestran solo en los meses que llegaron completos.',
     k_cont: 'Personas contactadas por primera vez en el periodo.', k_resp: 'Respondieron entre contactados.', k_int: 'Interesados entre contactados: el indicador del semáforo.', k_cpr: 'Contactados por cada reunión agendada en Amplemarket. Menos es mejor.',
+    prioridad: 'Todas las opciones del tema, no solo las primeras. Tasa = éxitos entre casos de esa opción (positivas en prospectos, reunión en oportunidades, ganadas en cerradas). Contra el promedio = la tasa de la opción entre la tasa de todo el tema. Alta: 1.2 veces o más. Media: 0.8 a 1.2. Baja: menos de 0.8. Pocos casos: menos de 10, no se toma como conclusión. «Sin dato» no entra.',
     pruebas: 'Pruebas de hipótesis del producto (ciclo de cambio vE, 5.1): dos versiones al mismo tiempo, 400 contactos por versión con señal o 1,500 en campaña, 4 a 6 semanas; gana la que tenga más respuestas positivas por contacto.',
     vista_op: 'Oportunidades ya cerradas, ganadas o perdidas. Con menos de 10 ganadas por producto sirve para confirmar, no para decidir.',
     anio: 'Año de la reacción, de la creación de la oportunidad (reunión) o del cierre (cerradas).',
@@ -259,11 +265,42 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
     html += '<div style="grid-column:1/-1">' + pruebasHtml(st.prod) + '</div>';
     return html;
   }
+
+  // ---------- Prioridades: todas las opciones de cada tema (Mike, 16-nov) ----------
+  // Por valor: casos, % del total del tema, exitos (positivas / reunion / ganadas), tasa y la tasa contra el promedio del tema.
+  // Prioridad: Alta >= 1.2 veces el promedio · Media 0.8 a 1.2 · Baja < 0.8 · Pocos casos con menos de 10.
+  function prioridades(dimObj) {
+    var e = Object.entries(dimObj || {}).filter(function (x) { return x[0] !== 'Sin dato'; });
+    var puntos = st.vista === 'se' && st.medidaS === 'puntos';
+    var totN = 0, totE = 0, totP = 0;
+    var L = e.map(function (x) { var p = st.vista === 'op' ? [x[1][0], x[1][0] + x[1][1]] : par(x[1]); var o = { v: x[0], n: p[1], ex: p[0], pts: x[1][3] || 0 }; totN += o.n; totE += o.ex; totP += o.pts; return o; });
+    var prom = puntos ? (totN ? totP / totN : 0) : (totN ? totE / totN : 0);
+    L.forEach(function (o) { o.share = totN ? o.n / totN : 0; o.tasa = puntos ? (o.n ? o.pts / o.n : 0) : (o.n ? o.ex / o.n : 0); o.ind = prom ? o.tasa / prom : 0;
+      o.prio = o.n < 10 ? 'poca' : (puntos ? (o.tasa >= prom * 1.2 && o.tasa > 0 ? 'alta' : o.tasa >= prom * 0.8 && o.tasa > 0 ? 'media' : 'baja') : (o.ind >= 1.2 ? 'alta' : o.ind >= 0.8 ? 'media' : 'baja')); });
+    var ORD = { alta: 0, media: 1, baja: 2, poca: 3 };
+    L.sort(function (a, b) { return (ORD[a.prio] - ORD[b.prio]) || (b.ind - a.ind) || (b.n - a.n); });
+    return { L: L, prom: prom, puntos: puntos, totN: totN, totE: totE };
+  }
+  var ETQ_PRIO = { alta: 'Alta', media: 'Media', baja: 'Baja', poca: 'Pocos casos' };
+  function nombreExito() { return st.vista === 'se' ? 'Positivas' : st.vista === 're' ? 'Llegaron a reunión' : 'Ganadas'; }
+  function tablaPrio(dimObj) {
+    var P = prioridades(dimObj); if (!P.L.length) return '';
+    var tasaTxt = function (o) { return P.puntos ? o.tasa.toFixed(2) + ' pts' : Math.round(o.tasa * 100) + '%'; };
+    return '<details class="todas"><summary>Ver las ' + P.L.length + ' opciones con su prioridad' + ay('prioridad') + '</summary><div style="overflow-x:auto"><table><tr><th>Opción</th><th>Casos</th><th>% del total</th><th>' + nombreExito() + '</th><th>' + (P.puntos ? 'Puntos por persona' : 'Tasa') + '</th><th>Contra el promedio</th><th>Prioridad</th></tr>' +
+      P.L.map(function (o) { return '<tr><td title="' + esc(o.v) + '">' + esc(o.v) + '</td><td>' + fmt(o.n) + '</td><td>' + (o.share * 100).toFixed(1) + '%</td><td>' + fmt(o.ex) + '</td><td>' + tasaTxt(o) + '</td><td>' + (o.ind ? o.ind.toFixed(2) + '×' : '—') + '</td><td><span class="prio ' + o.prio + '">' + ETQ_PRIO[o.prio] + '</span></td></tr>'; }).join('') +
+      '<tr><td><b>Promedio del tema</b></td><td>' + fmt(P.totN) + '</td><td>100%</td><td>' + fmt(P.totE) + '</td><td>' + (P.puntos ? P.prom.toFixed(2) + ' pts' : Math.round(P.prom * 100) + '%') + '</td><td>1.0×</td><td></td></tr></table></div></details>';
+  }
+  function resumenPrio(dim, DIMS) {
+    var filas = Object.keys(DIMS).filter(function (n) { return n !== 'motivo'; }).map(function (n) {
+      var P = prioridades(dim[n]); var A = P.L.filter(function (o) { return o.prio === 'alta'; }).slice(0, 5);
+      return '<div><b>' + DIMS[n] + ':</b> ' + (A.length ? A.map(function (o) { return esc(o.v) + ' <span style="color:var(--mute)">(' + (P.puntos ? o.tasa.toFixed(1) + ' pts' : Math.round(o.tasa * 100) + '%') + ' · ' + fmt(o.n) + ')</span>'; }).join(' · ') : '<span style="color:var(--mute)">ninguna opción con 10 casos o más arriba del promedio</span>') + '</div>'; }).join('');
+    return '<div class="card resumen-prio" style="grid-column:1/-1"><h3>Prioridades por tema' + ay('prioridad') + '</h3><p class="n">Las opciones con prioridad Alta de cada tema: su tasa de ' + nombreExito().toLowerCase() + ' está 20% o más arriba del promedio del tema, con 10 casos o más. Entre paréntesis: tasa y casos.</p>' + filas + '</div>';
+  }
   function kpi(lab, val, ayk) { return '<div class="kpi"><span>' + lab + ay(ayk) + '</span><b>' + val + '</b></div>'; }
   function tarjeta(titulo, dimObj, dimName) {
     var esDona = DONA[dimName] && !(st.vista === 'se' && st.medidaS === 'puntos');
     var ley = esDona ? '' : (st.vista === 'op' && st.medida === 'monto' ? '' : '<div class="ley"><span><i style="background:var(--mint)"></i>' + (st.vista === 'se' ? 'Positivas' : st.vista === 're' ? 'Llegaron a reunión' : 'Ganadas') + '</span><span><i style="background:#4B5563"></i>' + (st.vista === 'se' ? 'Neutras' : st.vista === 're' ? 'Sin reunión' : 'Perdidas') + '</span>' + (st.vista === 'se' ? '<span><i style="background:var(--red)"></i>Negativas</span>' : '') + '</div>');
-    return '<div class="card"><h3>' + titulo + ay(esDona ? 'dona' : 'barras') + '</h3>' + ley + (esDona ? dona(dimObj) : barras(dimObj, dimName)) + '</div>';
+    return '<div class="card"><h3>' + titulo + ay(esDona ? 'dona' : 'barras') + '</h3>' + ley + (esDona ? dona(dimObj) : barras(dimObj, dimName)) + tablaPrio(dimObj) + '</div>';
   }
   function pintar() {
     if (!D) return;
@@ -300,6 +337,7 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
       if ((k.ganadas || 0) < 10) html += '<div class="aviso" style="grid-column:1/-1">Menos de 10 ganadas en este corte: úsalo para confirmar lo que dicen las vistas de Prospectos y de Reunión, no para decidir.</div>';
     }
     if (st.vista === 'se') html += '<div class="aviso" style="grid-column:1/-1">Cada persona cuenta una vez por producto y año, con su reacción más alta. No cuentan las respuestas automáticas de fuera de oficina.</div>';
+    html += resumenPrio(X.dim || {}, DIMS);
     for (var n in DIMS) html += tarjeta(DIMS[n], (X.dim || {})[n], n);
     $('graf').innerHTML = html;
     $('cal').innerHTML = st.prod === 'TODOS' && st.vista === 'se' ? calibracion() : '';
