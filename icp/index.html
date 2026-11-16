@@ -103,7 +103,7 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
     pesos: 'Pesos oficiales (calibrados el 15-nov) = cuánto vale cada tipo de reacción según cuántas llegaron a reunión. Los anteriores quedan para comparar.',
     prod: 'Los productos oficiales de Great Revenue (Configuración → Productos). Lo que no es de un producto oficial (Pintaando, IMMMU, Excepciones o sin producto) se junta en Otros.',
     dona: 'El pastel reparte lo que sí funcionó (positivas, reuniones o ganadas) entre los valores; la lista dice cuántos de cada valor hubo en total y qué porcentaje funcionó.',
-    barras: 'Cada barra es un valor: verde lo que funcionó, gris lo neutro o perdido y rojo lo negativo. «Pocos casos» = menos de 10, no se toma como conclusión.',
+    barras: 'Cada barra muestra solo lo que funcionó (positivas, reuniones o ganadas) de esa opción: cuántas, qué % de todas son y la tasa (entre todas las personas u oportunidades de esa opción). Al pasar el cursor se ven las neutras, negativas o perdidas. «Pocos casos» = menos de 10.',
     docs: 'Los documentos de ventas vigentes del producto, como están ligados en Configuración → Productos. Aquí solo se consultan.',
     k_personas: 'Personas distintas que reaccionaron.', k_pos: 'Reacciones a favor: interés, reunión, presentación o reenvío.', k_neg: 'Reacciones en contra: no interesado, baja o rechazo.',
     k_pts: 'Suma del peso de todas las reacciones con los pesos elegidos.', k_op: 'Oportunidades creadas en el periodo, abiertas o cerradas.', k_reu: 'De esas, las que llegaron a la reunión.',
@@ -145,15 +145,23 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
     else arcos = '<circle r="' + R + '" cx="75" cy="75" fill="none" stroke="#2A3142" stroke-width="24"></circle>';
     var centro = st.vista === 'se' ? 'positivas' : st.vista === 're' ? 'reuniones' : (st.medida === 'monto' ? 'monto' : 'ganadas');
     var svg = '<svg viewBox="0 0 150 150" width="150" height="150" role="img">' + arcos + '<text x="75" y="72" text-anchor="middle" fill="#F3F4F6" font-size="20" font-weight="800">' + (st.medida === 'monto' && st.vista === 'op' ? '$' + fmt(tot / 1000) + 'k' : fmt(tot)) + '</text><text x="75" y="90" text-anchor="middle" fill="#9CA3AF" font-size="11">' + centro + '</text></svg>';
-    var lg = top.map(function (x, i) { var p = par(x[1]); var txt = st.vista === 'op' && st.medida === 'monto' ? '$' + fmt(p[0]) : fmt(p[0]) + ' de ' + fmt(p[1]) + ' · ' + pct(p[0], p[1]);
-      return '<div><i style="background:' + COLORES[i % COLORES.length] + '"></i><span title="' + esc(x[0]) + '">' + esc(x[0]) + '</span><em>' + txt + (p[1] < 10 ? ' <span class="poco">pocos</span>' : '') + '</em></div>'; }).join('');
+    var lg = top.map(function (x, i) { var p = par(x[1]); var txt = st.vista === 'op' && st.medida === 'monto' ? '$' + fmt(p[0]) : fmt(p[0]) + ' · ' + (tot ? Math.round(Math.max(p[0], 0) * 100 / tot) : 0) + '% · tasa ' + pct(p[0], p[1]);
+      return '<div title="' + esc(detalle(x[0], x[1], tot)) + '"><i style="background:' + COLORES[i % COLORES.length] + '"></i><span>' + esc(x[0]) + '</span><em>' + txt + (p[1] < 10 ? ' <span class="poco">pocos</span>' : '') + '</em></div>'; }).join('');
     return '<div class="dona">' + svg + '<div class="lg">' + lg + '</div></div>';
   }
   var otraS = null;
+  // Detalle de una opcion al pasar el cursor: lo que funciono, su parte del total que funciono, la tasa y lo demas.
+  function detalle(k, v, totEx) { var p = par(v); var nom = st.vista === 'se' ? ['positivas', 'personas', 'neutras', 'negativas'] : st.vista === 're' ? ['llegaron a reunión', 'oportunidades', 'sin reunión', ''] : ['ganadas', 'cerradas', 'perdidas', ''];
+    var t = k + ': ' + fmt(p[0]) + ' ' + nom[0] + ' (' + (totEx ? Math.round(p[0] * 1000 / totEx) / 10 : 0) + '% de todas las ' + nom[0] + ') · tasa ' + pct(p[0], p[1]) + ' de ' + fmt(p[1]) + ' ' + nom[1];
+    if (st.vista === 'se') t += ' · ' + fmt(v[0] - v[1] - v[2]) + ' neutras · ' + fmt(v[2]) + ' negativas'; else t += ' · ' + fmt(p[1] - p[0]) + ' ' + nom[2];
+    return t; }
+  function totExitos(dimObj) { var t = 0; Object.entries(dimObj || {}).forEach(function (x) { if (x[0] !== 'Sin dato') t += par(x[1])[0]; }); return t; }
   function barras(dimObj, dimName) {
     var e = ordenar(Object.entries(dimObj || {})); if (!e.length) return '<p class="n">Sin datos.</p>';
     var puntos = st.vista === 'se' && st.medidaS === 'puntos';
     var max = 0; e.forEach(function (x) { var v = puntos ? Math.abs(x[1][3]) : (st.vista === 'op' && st.medida === 'monto' ? x[1][2] : par(x[1])[1]); if (v > max) max = v; });
+    var totE = totExitos(dimObj), maxEx = 0; e.forEach(function (x) { if (x[0] !== 'Sin dato' && par(x[1])[0] > maxEx) maxEx = par(x[1])[0]; });
+    if (!puntos && !(st.vista === 'op' && st.medida === 'monto')) e.sort(function (a, b) { if (a[0] === 'Sin dato') return 1; if (b[0] === 'Sin dato') return -1; return (par(b[1])[0] - par(a[1])[0]) || (par(b[1])[1] - par(a[1])[1]); });
     return e.slice(0, 15).map(function (x) { var k = x[0], v = x[1], h = '', p = par(v);
       if (puntos) {
         var otro = ((otraS || {})[dimName] || {})[k], wp = max ? Math.abs(v[3]) / max * 100 : 0;
@@ -161,9 +169,10 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
       } else if (st.vista === 'op' && st.medida === 'monto') {
         h = '<div class="tr"><div class="g" style="width:' + (max ? v[2] / max * 100 : 0) + '%"></div></div><div class="vl">$' + fmt(v[2]) + '</div>';
       } else {
-        var w = max ? p[1] / max * 100 : 0, g = p[1] ? w * p[0] / p[1] : 0, n = p[1] ? w * p[2] / p[1] : 0;
-        h = '<div class="tr"><div class="pos" style="width:' + g + '%"></div><div class="neu" style="width:' + Math.max(w - g - n, 0) + '%"></div><div class="neg" style="width:' + n + '%"></div></div>' +
-          '<div class="vl">' + fmt(p[0]) + ' de ' + fmt(p[1]) + ' · ' + pct(p[0], p[1]) + (p[1] < 10 ? ' <span class="poco">pocos casos</span>' : '') + '</div>';
+        // Solo lo que funciono (Mike, 16-nov): el largo es cuantas positivas (o reuniones, o ganadas) aporta; lo demas va al pasar el cursor.
+        var w = maxEx ? p[0] / maxEx * 100 : 0;
+        h = '<div class="tr" title="' + esc(detalle(k, v, totE)) + '"><div class="pos" style="width:' + w + '%"></div></div>' +
+          '<div class="vl" title="' + esc(detalle(k, v, totE)) + '">' + fmt(p[0]) + ' · ' + (totE ? Math.round(p[0] * 100 / totE) : 0) + '% · tasa ' + pct(p[0], p[1]) + (p[1] < 10 ? ' <span class="poco">pocos casos</span>' : '') + '</div>';
       }
       return '<div class="bar"><div class="et' + (k === 'Sin dato' ? ' sd' : '') + '" title="' + esc(k) + '">' + esc(k) + '</div>' + h + '</div>'; }).join('');
   }
@@ -275,7 +284,7 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
     var totN = 0, totE = 0, totP = 0;
     var L = e.map(function (x) { var p = st.vista === 'op' ? [x[1][0], x[1][0] + x[1][1]] : par(x[1]); var o = { v: x[0], n: p[1], ex: p[0], pts: x[1][3] || 0 }; totN += o.n; totE += o.ex; totP += o.pts; return o; });
     var prom = puntos ? (totN ? totP / totN : 0) : (totN ? totE / totN : 0);
-    L.forEach(function (o) { o.share = totN ? o.n / totN : 0; o.tasa = puntos ? (o.n ? o.pts / o.n : 0) : (o.n ? o.ex / o.n : 0); o.ind = prom ? o.tasa / prom : 0;
+    L.forEach(function (o) { o.share = totE ? o.ex / totE : 0; o.tasa = puntos ? (o.n ? o.pts / o.n : 0) : (o.n ? o.ex / o.n : 0); o.ind = prom ? o.tasa / prom : 0;
       o.prio = o.n < 10 ? 'poca' : (puntos ? (o.tasa >= prom * 1.2 && o.tasa > 0 ? 'alta' : o.tasa >= prom * 0.8 && o.tasa > 0 ? 'media' : 'baja') : (o.ind >= 1.2 ? 'alta' : o.ind >= 0.8 ? 'media' : 'baja')); });
     var ORD = { alta: 0, media: 1, baja: 2, poca: 3 };
     L.sort(function (a, b) { return (ORD[a.prio] - ORD[b.prio]) || (b.ind - a.ind) || (b.n - a.n); });
@@ -286,9 +295,9 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
   function tablaPrio(dimObj) {
     var P = prioridades(dimObj); if (!P.L.length) return '';
     var tasaTxt = function (o) { return P.puntos ? o.tasa.toFixed(2) + ' pts' : Math.round(o.tasa * 100) + '%'; };
-    return '<details class="todas"><summary>Ver las ' + P.L.length + ' opciones con su prioridad' + ay('prioridad') + '</summary><div style="overflow-x:auto"><table><tr><th>Opción</th><th>Casos</th><th>% del total</th><th>' + nombreExito() + '</th><th>' + (P.puntos ? 'Puntos por persona' : 'Tasa') + '</th><th>Contra el promedio</th><th>Prioridad</th></tr>' +
-      P.L.map(function (o) { return '<tr><td title="' + esc(o.v) + '">' + esc(o.v) + '</td><td>' + fmt(o.n) + '</td><td>' + (o.share * 100).toFixed(1) + '%</td><td>' + fmt(o.ex) + '</td><td>' + tasaTxt(o) + '</td><td>' + (o.ind ? o.ind.toFixed(2) + '×' : '—') + '</td><td><span class="prio ' + o.prio + '">' + ETQ_PRIO[o.prio] + '</span></td></tr>'; }).join('') +
-      '<tr><td><b>Promedio del tema</b></td><td>' + fmt(P.totN) + '</td><td>100%</td><td>' + fmt(P.totE) + '</td><td>' + (P.puntos ? P.prom.toFixed(2) + ' pts' : Math.round(P.prom * 100) + '%') + '</td><td>1.0×</td><td></td></tr></table></div></details>';
+    return '<details class="todas"><summary>Ver las ' + P.L.length + ' opciones con su prioridad' + ay('prioridad') + '</summary><div style="overflow-x:auto"><table><tr><th>Opción</th><th>' + nombreExito() + '</th><th>% de todas las ' + nombreExito().toLowerCase() + '</th><th>Casos</th><th>' + (P.puntos ? 'Puntos por persona' : 'Tasa') + '</th><th>Contra el promedio</th><th>Prioridad</th></tr>' +
+      P.L.map(function (o) { return '<tr><td title="' + esc(o.v) + '">' + esc(o.v) + '</td><td>' + fmt(o.ex) + '</td><td>' + (o.share * 100).toFixed(1) + '%</td><td>' + fmt(o.n) + '</td><td>' + tasaTxt(o) + '</td><td>' + (o.ind ? o.ind.toFixed(2) + '×' : '—') + '</td><td><span class="prio ' + o.prio + '">' + ETQ_PRIO[o.prio] + '</span></td></tr>'; }).join('') +
+      '<tr><td><b>Todo el tema</b></td><td>' + fmt(P.totE) + '</td><td>100%</td><td>' + fmt(P.totN) + '</td><td>' + (P.puntos ? P.prom.toFixed(2) + ' pts' : Math.round(P.prom * 100) + '%') + '</td><td>1.0×</td><td></td></tr></table></div></details>';
   }
   function resumenPrio(dim, DIMS) {
     var filas = Object.keys(DIMS).filter(function (n) { return n !== 'motivo'; }).map(function (n) {
@@ -299,7 +308,7 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
   function kpi(lab, val, ayk) { return '<div class="kpi"><span>' + lab + ay(ayk) + '</span><b>' + val + '</b></div>'; }
   function tarjeta(titulo, dimObj, dimName) {
     var esDona = DONA[dimName] && !(st.vista === 'se' && st.medidaS === 'puntos');
-    var ley = esDona ? '' : (st.vista === 'op' && st.medida === 'monto' ? '' : '<div class="ley"><span><i style="background:var(--mint)"></i>' + (st.vista === 'se' ? 'Positivas' : st.vista === 're' ? 'Llegaron a reunión' : 'Ganadas') + '</span><span><i style="background:#4B5563"></i>' + (st.vista === 'se' ? 'Neutras' : st.vista === 're' ? 'Sin reunión' : 'Perdidas') + '</span>' + (st.vista === 'se' ? '<span><i style="background:var(--red)"></i>Negativas</span>' : '') + '</div>');
+    var ley = esDona ? '' : (st.vista === 'op' && st.medida === 'monto' ? '' : '<div class="ley"><span><i style="background:var(--mint)"></i>' + nombreExito() + ' · % de todas · tasa</span><span style="color:var(--mute)">Pasa el cursor para ver el detalle</span></div>');
     return '<div class="card"><h3>' + titulo + ay(esDona ? 'dona' : 'barras') + '</h3>' + ley + (esDona ? dona(dimObj) : barras(dimObj, dimName)) + tablaPrio(dimObj) + '</div>';
   }
   function pintar() {
