@@ -239,7 +239,8 @@
     ['reuniones', 'Reuniones', 'Cada reunión analizada (D5), agrupada por producto, con su resumen, su transcript y sus propuestas.'],
     ['marca', 'Voz de la marca', 'Las entradas fijas (E1 a E9) y sus choques con lo que dice el mercado.'],
     ['ronda', 'Ronda', 'Lo que está en prueba, qué versión de la base usa cada salida y los resultados (D8 a D10).'],
-    ['versiones', 'Últimas versiones', 'Lo vigente de cada producto: base, propuesta de valor, ICP, presentación, template, ficha del bot y mensajes de WhatsApp como los ve el cliente.']];
+    ['versiones', 'Últimas versiones', 'Lo vigente de cada producto: base, propuesta de valor, ICP, presentación, template, ficha del bot y mensajes de WhatsApp como los ve el cliente.'],
+    ['mensajes', 'Mensajes que funcionaron', 'Por producto: qué secuencias y qué señales de Duo abrieron conversación, con sus números, el texto de la secuencia y la síntesis de lo aprendido.']];
   function pintar(){
     guardado('gr_con_vista', vista); guardado('gr_con_lider', fLid); guardado('gr_con_prod', fProd);
     var n = { decidir: porDecidir(), marca: grupos().filter(function(g){ return g.abiertos; }).length };
@@ -252,6 +253,7 @@
     if (vista === 'marca') return pintarMarca();
     if (vista === 'ronda') return pintarRonda();
     if (vista === 'versiones') return pintarVersiones();
+    if (vista === 'mensajes') return pintarMensajes();
     return pintarResumen();
   }
 
@@ -389,6 +391,34 @@
 
   // ---------- Ultimas versiones (31 oct): lo mismo que Configuracion, de consulta. Se carga solo al abrir esta vista. ----------
   var versiones = null, cargandoV = false;
+
+  // ---------- Mensajes que funcionaron (16-nov-2026) ----------
+  // Se lee de la foto del ICP (GET gr-icp): secuencias y señales de Duo con sus resultados, el texto de la secuencia y la síntesis.
+  // No trae respuestas literales de prospectos (tienen correos y teléfonos). Una sola lectura al abrir la vista.
+  var msj = null, cargandoM = false;
+  function mdSimple(t){ return esc(t).replace(/^## (.*)$/gm, '<h3>$1</h3>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/^- (.*)$/gm, '• $1').replace(/\n/g, '<br>'); }
+  function tablaMsj(L, conTexto){
+    if (!L || !L.length) return '<p class="sub">Sin datos todavía.</p>';
+    return '<div style="overflow-x:auto"><table class="t2"><tr><th>' + (conTexto ? 'Secuencia' : 'Señal de Duo') + '</th><th>Personas</th><th>Positivas</th><th>Interesadas</th><th>Negativas</th><th>% interés</th></tr>' + L.map(function(x){
+      var poco = x.personas < 10 ? ' <span class="etq" title="Menos de 10 personas: es indicio, no conclusión">pocos casos</span>' : '';
+      return '<tr><td>' + (conTexto && x.texto ? '<details><summary>' + esc(x.nombre) + poco + '</summary><div class="wa-msg">' + esc(x.texto) + '</div></details>' : esc(x.nombre) + poco) + '</td><td>' + x.personas + '</td><td>' + x.positivas + '</td><td>' + x.interesados + '</td><td>' + x.negativas + '</td><td>' + (x.personas ? Math.round(x.interesados * 100 / x.personas) + '%' : '—') + '</td></tr>'; }).join('') + '</table></div>';
+  }
+  function pintarMensajes(){
+    if (!msj) {
+      $('main').innerHTML = '<h1>Mensajes que funcionaron</h1><p class="sub">Cargando…</p>';
+      if (!cargandoM) { cargandoM = true; fetch('https://mikea.app.n8n.cloud/webhook/gr-icp', { cache: 'no-store' }).then(function(r){ return r.json(); }).then(function(j){ msj = j.mensajes || {}; cargandoM = false; if (vista === 'mensajes') pintarMensajes(); })
+        .catch(function(e){ cargandoM = false; if (vista === 'mensajes') $('main').innerHTML = '<p class="error">No se pudo cargar: ' + esc(e.message) + '. Vuelve a intentar.</p>'; }); }
+      return;
+    }
+    var cods = (fProd === 'todos' ? prodOpciones() : [fProd]).filter(function(c){ return msj[c]; });
+    var cab = '<h1>Mensajes que funcionaron' + ay('Sale de leer todas las respuestas de cada producto (síntesis del 15-nov) y de los resultados por secuencia y por señal de Duo. Ordenadas por interesadas. Con menos de 10 personas es indicio, no conclusión. Los cambios que propone están en Por decidir.') + '</h1>';
+    if (!cods.length) { $('main').innerHTML = cab + '<p class="sub">Este producto no tiene mensajes analizados todavía.</p>'; return; }
+    $('main').innerHTML = cab + cods.map(function(c){ var M = msj[c], p = PRODUCTOS_OFICIALES().filter(function(x){ return x.id === c; })[0];
+      return '<details class="prod"' + (cods.length === 1 ? ' open' : '') + '><summary><span class="t">' + esc(p ? prodCorto(p) : c) + '</span> <span class="sub">' + M.secuencias.length + ' secuencias · ' + M.senales.length + ' señales de Duo' + (M.fecha ? ' · síntesis del ' + esc(M.fecha) : '') + '</span></summary>' +
+        '<div class="bloque"><span>Secuencias' + ay('Campañas de Amplemarket. Pica el nombre para ver el texto que se mandó.') + '</span>' + tablaMsj(M.secuencias, true) + '</div>' +
+        '<div class="bloque"><span>Señales de Duo' + ay('Mensajes que salieron por una señal: cambio de puesto, publicación, vacante.') + '</span>' + tablaMsj(M.senales, false) + '</div>' +
+        (M.sintesis ? '<details class="reu"><summary><b>Síntesis: lo que funcionó, frases, lo que se promete, objeciones y qué cambiar</b></summary><div class="wa-msg">' + mdSimple(M.sintesis) + '</div></details>' : '') + '</details>'; }).join('');
+  }
   function pintarVersiones(){
     if (!versiones) {
       $('main').innerHTML = '<h1>Últimas versiones</h1><p class="sub">Cargando…</p>';
