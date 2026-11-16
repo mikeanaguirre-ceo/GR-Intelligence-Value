@@ -42,6 +42,14 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
 .aviso { background:var(--bg-2); border:1px dashed var(--border); border-radius:10px; padding:12px; color:var(--dim); margin:10px 0; font-size:13px; }
 .msg { font-size:12.5px; color:#fff; opacity:.9; }
 @media (max-width:520px) { .bar { grid-template-columns:42% 1fr; } .bar .vl { grid-column:1 / -1; text-align:left; min-width:0; } }
+.ay { display:inline-block; width:15px; height:15px; line-height:15px; text-align:center; border-radius:50%; background:var(--bg-3); color:var(--dim); font-size:10px; font-weight:800; cursor:help; margin-left:5px; vertical-align:1px; position:relative; }
+.ay:hover::after, .ay:focus::after { content:attr(data-t); position:absolute; left:50%; top:20px; transform:translateX(-50%); width:260px; background:#000; color:#fff; font-size:12px; font-weight:400; line-height:1.4; text-transform:none; letter-spacing:0; text-align:left; padding:8px 10px; border-radius:8px; z-index:20; white-space:normal; box-shadow:0 4px 14px rgba(0,0,0,.5); }
+.dona { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+.dona svg { flex:0 0 150px; }
+.dona .lg { flex:1 1 180px; font-size:12.5px; }
+.dona .lg div { display:grid; grid-template-columns:12px 1fr auto; gap:6px; align-items:center; margin:3px 0; }
+.dona .lg i { width:10px; height:10px; border-radius:2px; display:inline-block; }
+.dona .lg em { color:var(--dim); font-style:normal; white-space:nowrap; font-variant-numeric:tabular-nums; }
 </style>
 </head>
 <body>
@@ -51,10 +59,9 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
     <div><button class="btn" id="act">↻ Actualizar ICP</button> <span class="msg" id="msg"></span></div>
   </header>
   <div class="fila" id="f-prod"><span>Producto</span></div>
-  <div class="fila" id="f-anio"><span>Año</span></div>
   <div class="fila" id="f-vista"><span>Vista</span></div>
+  <div class="fila" id="f-anio"><span>Año</span></div>
   <div class="fila" id="f-medida"><span>Medida</span></div>
-  <div class="fila" id="f-casa"><span>Casa</span></div>
   <div class="fila" id="f-pesos"><span>Pesos</span></div>
   <section id="docs" class="docs"></section>
   <section id="kpis" class="kpis"></section>
@@ -62,50 +69,93 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
   <section id="cal" style="margin-top:14px"></section>
 </div>
 <script>
-// Pagina ICP de Great Revenue. Lee la foto guardada (GR — ICP Tablero API, GET gr-icp). Nada se refresca solo: solo el boton
-// "Actualizar ICP" recalcula (POST gr-icp-actualizar, con candado de 3 minutos en el servidor).
+// Pagina ICP de Great Revenue (vB, 16-nov-2026). Lee la foto guardada (GR — ICP Tablero API, GET gr-icp). Nada se refresca solo:
+// solo el boton "Actualizar ICP" recalcula (POST gr-icp-actualizar, candado de 3 minutos en el servidor).
+// Productos: solo los oficiales (grupo GR de catalogos.json) y "Otros" (Mike, 16-nov). Vista principal: prospectos.
 (function () {
   var BASE = 'https://mikea.app.n8n.cloud/webhook/';
-  var D = null, st = { prod: 'TODOS', anio: 'todos', vista: 'op', medida: 'clientes', medidaS: 'puntos', pesos: 'cal', casa: true };
-  var NOMBRES = { TODOS: 'Combinada (todos)', AM: 'Amplemarket', TW: 'Talkwalker', HS: 'Hootsuite', AEO: 'AEO + SEO', GenIA: 'GenIA', GENIARH: 'GenIA RH', GENIAVTA: 'GenIA Ventas', GENIACOB: 'GenIA Cobranza', ITS: 'IT Support', LT: 'Legacy Takeover', BD: 'Blindaje Digital', '360': 'Marketing 3V / 360', WB: 'Web', PT: 'Pintaando', SYN: 'Synapsis', EX: 'Excepciones', IMMMU: 'IMMMU', STIL: 'STIL', 'Sin producto': 'Sin producto' };
-  var DIM_OP = { tamano: 'Tamaño de la empresa', nivel: 'Nivel del contacto', sector: 'Industria', area: 'Área', pais: 'País', motivo: 'Motivo de pérdida' };
-  var DIM_SE = { industria: 'Industria', tamano: 'Tamaño de la empresa', nivel: 'Nivel del contacto', area: 'Área', pais: 'País', secuencia: 'Secuencia (campaña)' };
-  var TIPOS = { interested: 'Interesado', meeting_booked: 'Reunión agendada', introduction: 'Me presenta a alguien', forwarded_to_the_right_person: 'Lo reenvió a la persona correcta', asked_to_circle_back_later: 'Escríbeme más adelante', circle_back: 'Retomar después', neutral: 'Respuesta neutra', open3: 'Abrió 3 veces (Open+3)', not_the_right_person: 'No soy la persona', not_interested: 'No interesado', unsubscribe: 'Baja de la lista', hard_no: 'Rechazo duro' };
+  var D = null, CAT = [], st = { prod: 'TODOS', anio: 'todos', vista: 'se', medida: 'clientes', medidaS: 'personas', pesos: 'cal' };
+  var NOMBRES = { TODOS: 'Todos', Otros: 'Otros' };
+  var VISTAS = [['se', 'Prospectos (reacciones)'], ['re', 'Llegaron a reunión'], ['op', 'Oportunidades cerradas']];
+  var DIM_OP = { sector: 'Industria', tamano: 'Tamaño de la empresa', nivel: 'Nivel del contacto', area: 'Área', pais: 'País', motivo: 'Motivo de pérdida' };
+  var DIM_RE = { sector: 'Industria', tamano: 'Tamaño de la empresa', nivel: 'Nivel del contacto', area: 'Área', pais: 'País' };
+  var DIM_SE = { industria: 'Industria', tamano: 'Tamaño de la empresa', nivel: 'Nivel del contacto', area: 'Área', pais: 'País', secuencia: 'Secuencia o señal' };
+  var DONA = { tamano: 1, nivel: 1, area: 1, pais: 1 };
+  var COLORES = ['#7C3AED', '#EC4899', '#10B981', '#F59E0B', '#3B82F6', '#4B5563', '#2A3142'];
+  var AYUDA = {
+    vista_se: 'Cada persona que reaccionó a una secuencia o a una señal de Duo, contada una vez por producto y año con su reacción más alta. Es la vista con más casos: sirve para decidir a quién apuntar.',
+    vista_re: 'Oportunidades (abiertas y cerradas) que llegaron a la reunión: pasaron por Educación o más adelante, o se ganaron. Es el paso intermedio entre la reacción y la venta, con más casos que las ganadas.',
+    vista_op: 'Oportunidades ya cerradas, ganadas o perdidas. Con menos de 10 ganadas por producto sirve para confirmar, no para decidir.',
+    anio: 'Año de la reacción, de la creación de la oportunidad (reunión) o del cierre (cerradas).',
+    medida: 'Clientes cuenta oportunidades ganadas; Monto suma su valor (solo en Todos: un ticket grande deforma un producto). En prospectos, Personas cuenta gente y Puntos suma el peso de cada reacción.',
+    pesos: 'Pesos oficiales (calibrados el 15-nov) = cuánto vale cada tipo de reacción según cuántas llegaron a reunión. Los anteriores quedan para comparar.',
+    prod: 'Los productos oficiales de Great Revenue (Configuración → Productos). Lo que no es de un producto oficial (Pintaando, IMMMU, Excepciones o sin producto) se junta en Otros.',
+    dona: 'El pastel reparte lo que sí funcionó (positivas, reuniones o ganadas) entre los valores; la lista dice cuántos de cada valor hubo en total y qué porcentaje funcionó.',
+    barras: 'Cada barra es un valor: verde lo que funcionó, gris lo neutro o perdido y rojo lo negativo. «Pocos casos» = menos de 10, no se toma como conclusión.',
+    docs: 'Los documentos de ventas vigentes del producto, como están ligados en Configuración → Productos. Aquí solo se consultan.',
+    k_personas: 'Personas distintas que reaccionaron.', k_pos: 'Reacciones a favor: interés, reunión, presentación o reenvío.', k_neg: 'Reacciones en contra: no interesado, baja o rechazo.',
+    k_pts: 'Suma del peso de todas las reacciones con los pesos elegidos.', k_op: 'Oportunidades creadas en el periodo, abiertas o cerradas.', k_reu: 'De esas, las que llegaron a la reunión.',
+    k_tasa_reu: 'Reuniones entre oportunidades.', k_cer: 'Oportunidades cerradas.', k_gan: 'Ganadas.', k_tasa: 'Ganadas entre cerradas.', k_monto: 'Valor de las ganadas.', k_ticket: 'Monto entre ganadas.', k_abi: 'Oportunidades abiertas hoy.'
+  };
   var $ = function (id) { return document.getElementById(id); };
   var fmt = function (n) { return Math.round(n || 0).toLocaleString('es-MX'); };
   var pct = function (a, b) { return b ? Math.round(a * 100 / b) + '%' : '—'; };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  function chips(cont, opts, key) {
-    var el = $(cont); el.querySelectorAll('.chip').forEach(function (c) { c.remove(); });
-    opts.forEach(function (o) { var b = document.createElement('button'); b.className = 'chip' + (String(st[key]) === String(o[0]) ? ' on' : ''); b.textContent = o[1];
+  var ay = function (k) { return AYUDA[k] ? '<span class="ay" tabindex="0" data-t="' + esc(AYUDA[k]) + '">?</span>' : ''; };
+  var corto = function (n) { return String(n || '').replace(/\s*\(.*\)\s*$/, ''); };
+  function chips(cont, opts, key, ayk) {
+    var el = $(cont); el.innerHTML = '<span>' + el.getAttribute('data-l') + ay(ayk) + '</span>';
+    opts.forEach(function (o) { var b = document.createElement('button'); b.className = 'chip' + (String(st[key]) === String(o[0]) ? ' on' : ''); b.textContent = o[1]; if (o[2]) b.title = o[2];
       b.onclick = function () { st[key] = o[0]; pintar(); }; el.appendChild(b); });
   }
+  // Valor que "funciono" y total por cada valor de una dimension, segun la vista
+  function par(v) {
+    if (st.vista === 'se') return [v[1], v[0], v[2]];          // positivas, personas, negativas
+    if (st.vista === 're') return [v[0], v[0] + v[1], 0];      // reunion, oportunidades
+    return [st.medida === 'monto' ? v[2] : v[0], v[0] + v[1], 0]; // ganadas (o monto), cerradas
+  }
+  function ordenar(e) {
+    return e.sort(function (a, b) { if (a[0] === 'Sin dato') return 1; if (b[0] === 'Sin dato') return -1;
+      if (st.vista === 'se' && st.medidaS === 'puntos') return b[1][3] - a[1][3];
+      var pa = par(a[1]), pb = par(b[1]); return (pb[0] - pa[0]) || (pb[1] - pa[1]); });
+  }
+  function dona(dimObj) {
+    var todos = Object.entries(dimObj || {}); if (!todos.length) return '<p class="n">Sin datos.</p>';
+    var sd = todos.filter(function (x) { return x[0] === 'Sin dato'; })[0];
+    var e = ordenar(todos.filter(function (x) { return x[0] !== 'Sin dato'; }));
+    var top = e.slice(0, 5), resto = e.slice(5);
+    if (resto.length) { var r = [0, 0, 0, 0]; resto.forEach(function (x) { for (var i = 0; i < 4; i++) r[i] += x[1][i] || 0; }); top.push(['Otros valores', r]); }
+    if (sd) top.push(sd);
+    var tot = 0; top.forEach(function (x) { tot += Math.max(par(x[1])[0], 0); });
+    var R = 54, C = 2 * Math.PI * R, acc = 0, arcos = '';
+    if (tot > 0) top.forEach(function (x, i) { var v = Math.max(par(x[1])[0], 0); if (!v) return; var l = v / tot * C;
+      arcos += '<circle r="' + R + '" cx="75" cy="75" fill="none" stroke="' + COLORES[i % COLORES.length] + '" stroke-width="24" stroke-dasharray="' + l + ' ' + (C - l) + '" stroke-dashoffset="' + (-acc) + '" transform="rotate(-90 75 75)"><title>' + esc(x[0]) + ': ' + fmt(v) + '</title></circle>'; acc += l; });
+    else arcos = '<circle r="' + R + '" cx="75" cy="75" fill="none" stroke="#2A3142" stroke-width="24"></circle>';
+    var centro = st.vista === 'se' ? 'positivas' : st.vista === 're' ? 'reuniones' : (st.medida === 'monto' ? 'monto' : 'ganadas');
+    var svg = '<svg viewBox="0 0 150 150" width="150" height="150" role="img">' + arcos + '<text x="75" y="72" text-anchor="middle" fill="#F3F4F6" font-size="20" font-weight="800">' + (st.medida === 'monto' && st.vista === 'op' ? '$' + fmt(tot / 1000) + 'k' : fmt(tot)) + '</text><text x="75" y="90" text-anchor="middle" fill="#9CA3AF" font-size="11">' + centro + '</text></svg>';
+    var lg = top.map(function (x, i) { var p = par(x[1]); var txt = st.vista === 'op' && st.medida === 'monto' ? '$' + fmt(p[0]) : fmt(p[0]) + ' de ' + fmt(p[1]) + ' · ' + pct(p[0], p[1]);
+      return '<div><i style="background:' + COLORES[i % COLORES.length] + '"></i><span title="' + esc(x[0]) + '">' + esc(x[0]) + '</span><em>' + txt + (p[1] < 10 ? ' <span class="poco">pocos</span>' : '') + '</em></div>'; }).join('');
+    return '<div class="dona">' + svg + '<div class="lg">' + lg + '</div></div>';
+  }
   var otraS = null;
-  function barras(dimObj, tipo, dimName) {
-    var e = Object.entries(dimObj || {}); if (!e.length) return '<p class="n">Sin datos.</p>';
-    e.sort(function (a, b) { if (a[0] === 'Sin dato') return 1; if (b[0] === 'Sin dato') return -1;
-      return tipo === 'op' ? (st.medida === 'monto' ? b[1][2] - a[1][2] : (b[1][0] + b[1][1]) - (a[1][0] + a[1][1])) : (st.medidaS === 'puntos' ? b[1][3] - a[1][3] : b[1][0] - a[1][0]); });
-    var max = 0; e.forEach(function (x) { var v = tipo === 'op' ? (st.medida === 'monto' ? x[1][2] : x[1][0] + x[1][1]) : (st.medidaS === 'puntos' ? Math.abs(x[1][3]) : x[1][0]); if (v > max) max = v; });
-    return e.map(function (x) { x[2] = dimName; var k = x[0], v = x[1], h = '';
-      if (tipo === 'op') {
-        var tot = v[0] + v[1], w = st.medida === 'monto' ? (max ? v[2] / max * 100 : 0) : (max ? tot / max * 100 : 0);
-        var g = st.medida === 'monto' ? w : (tot ? w * v[0] / tot : 0), p = w - g;
-        h = '<div class="tr"><div class="g" style="width:' + g + '%"></div><div class="p" style="width:' + p + '%"></div></div>' +
-          '<div class="vl">' + (st.medida === 'monto' ? '$' + fmt(v[2]) : v[0] + ' de ' + tot + ' · ' + pct(v[0], tot)) + (tot < 10 ? ' <span class="poco">pocos casos</span>' : '') + '</div>';
+  function barras(dimObj, dimName) {
+    var e = ordenar(Object.entries(dimObj || {})); if (!e.length) return '<p class="n">Sin datos.</p>';
+    var puntos = st.vista === 'se' && st.medidaS === 'puntos';
+    var max = 0; e.forEach(function (x) { var v = puntos ? Math.abs(x[1][3]) : (st.vista === 'op' && st.medida === 'monto' ? x[1][2] : par(x[1])[1]); if (v > max) max = v; });
+    return e.slice(0, 15).map(function (x) { var k = x[0], v = x[1], h = '', p = par(v);
+      if (puntos) {
+        var otro = ((otraS || {})[dimName] || {})[k], wp = max ? Math.abs(v[3]) / max * 100 : 0;
+        h = '<div class="tr"><div class="' + (v[3] >= 0 ? 'pos' : 'neg') + '" style="width:' + wp + '%"></div></div><div class="vl">' + v[3] + ' pts' + (otro ? ' <span style="color:var(--mute)">(' + (st.pesos === 'act' ? 'oficiales ' : 'anteriores ') + otro[3] + ')</span>' : '') + (v[0] < 10 ? ' <span class="poco">pocos casos</span>' : '') + '</div>';
+      } else if (st.vista === 'op' && st.medida === 'monto') {
+        h = '<div class="tr"><div class="g" style="width:' + (max ? v[2] / max * 100 : 0) + '%"></div></div><div class="vl">$' + fmt(v[2]) + '</div>';
       } else {
-        var n = v[0];
-        if (st.medidaS === 'puntos') {
-          var otro = ((otraS || {})[x[2]] || {})[k], wp = max ? Math.abs(v[3]) / max * 100 : 0;
-          h = '<div class="tr"><div class="' + (v[3] >= 0 ? 'pos' : 'neg') + '" style="width:' + wp + '%"></div></div>' +
-            '<div class="vl">' + v[3] + ' pts' + (otro ? ' <span style="color:var(--mute)">(' + (st.pesos === 'act' ? 'oficiales ' : 'anteriores ') + otro[3] + ')</span>' : '') + (n < 10 ? ' <span class="poco">pocos casos</span>' : '') + '</div>';
-        } else {
-          var w2 = max ? n / max * 100 : 0, pos = n ? w2 * v[1] / n : 0, neg = n ? w2 * v[2] / n : 0;
-          h = '<div class="tr"><div class="pos" style="width:' + pos + '%"></div><div class="neu" style="width:' + (w2 - pos - neg) + '%"></div><div class="neg" style="width:' + neg + '%"></div></div>' +
-            '<div class="vl">' + n + ' · ' + pct(v[1], n) + ' positivas' + (n < 10 ? ' <span class="poco">pocos casos</span>' : '') + '</div>';
-        }
+        var w = max ? p[1] / max * 100 : 0, g = p[1] ? w * p[0] / p[1] : 0, n = p[1] ? w * p[2] / p[1] : 0;
+        h = '<div class="tr"><div class="pos" style="width:' + g + '%"></div><div class="neu" style="width:' + Math.max(w - g - n, 0) + '%"></div><div class="neg" style="width:' + n + '%"></div></div>' +
+          '<div class="vl">' + fmt(p[0]) + ' de ' + fmt(p[1]) + ' · ' + pct(p[0], p[1]) + (p[1] < 10 ? ' <span class="poco">pocos casos</span>' : '') + '</div>';
       }
       return '<div class="bar"><div class="et' + (k === 'Sin dato' ? ' sd' : '') + '" title="' + esc(k) + '">' + esc(k) + '</div>' + h + '</div>'; }).join('');
   }
+  var TIPOS = { interested: 'Interesado', meeting_booked: 'Reunión agendada', introduction: 'Me presenta a alguien', forwarded_to_the_right_person: 'Lo reenvió a la persona correcta', asked_to_circle_back_later: 'Escríbeme más adelante', circle_back: 'Retomar después', neutral: 'Respuesta neutra', open3: 'Abrió 3 veces (Open+3)', not_the_right_person: 'No soy la persona', not_interested: 'No interesado', unsubscribe: 'Baja de la lista', hard_no: 'Rechazo duro' };
   function calibracion() {
     var t = (D.productos.TODOS || {}).calibracion || {}; var e = Object.entries(t).filter(function (x) { return x[1].n > 0; });
     if (!e.length) return '';
@@ -113,60 +163,64 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
     var filas = e.map(function (x) { var c = x[1], tasa = c.n ? c.realizada / c.n : 0, prop = 10 * tasa;
       if (c.n < 20) prop = (c.n * prop + (20 - c.n) * c.peso) / 20;
       return '<tr><td>' + esc(TIPOS[x[0]] || x[0]) + '</td><td>' + c.n + '</td><td>' + pct(c.agendada, c.n) + '</td><td>' + pct(c.realizada, c.n) + '</td><td>' + c.peso + '</td><td><b>' + (Math.round(prop * 10) / 10) + '</b>' + (c.n < 20 ? ' <span class="poco">pocos casos</span>' : '') + '</td></tr>'; }).join('');
-    return '<div class="card"><h3>Calibración de pesos (oficiales desde el 15-nov-2026)</h3><p class="n">De cada reacción registrada por el motor que abrió oportunidad, cuántas llegaron a reunión. Peso propuesto = 10 × tasa de reunión realizada; con menos de 20 casos se acerca al peso actual. En la vista de Prospectos puedes comparar el resultado con los pesos actuales y con los calibrados.</p>' +
+    return '<div class="card"><h3>Calibración de pesos (oficiales desde el 15-nov-2026)' + ay('pesos') + '</h3><p class="n">De cada reacción registrada por el motor que abrió oportunidad, cuántas llegaron a reunión. Peso = 10 × tasa de reunión realizada; con menos de 20 casos se acerca al peso anterior.</p>' +
       '<div style="overflow-x:auto"><table><tr><th>Reacción</th><th>Casos</th><th>Reunión agendada</th><th>Reunión realizada</th><th>Peso anterior</th><th>Peso oficial</th></tr>' + filas + '</table></div></div>';
   }
-  function pintar() {
-    if (!D) return;
-    // Lista de productos: la de la configuracion del sitio (catalogos.json), en su orden; los que aun no tienen historia tambien salen.
-    var prods = ['TODOS'], vistos = { TODOS: 1 };
-    CAT.forEach(function (c) { if (!vistos[c.id]) { prods.push(c.id); vistos[c.id] = 1; } });
-    Object.keys(D.productos).forEach(function (p) { if (!vistos[p]) { prods.push(p); vistos[p] = 1; } });
-    chips('f-prod', prods.map(function (p) { return [p, NOMBRES[p] || p]; }), 'prod');
-    $('docs').innerHTML = documentos();
-    var P = D.productos[st.prod] || {};
-    if (!D.productos[st.prod]) { $('kpis').innerHTML = ''; $('cal').innerHTML = ''; ['f-anio', 'f-vista', 'f-medida', 'f-casa', 'f-pesos'].forEach(function (f) { $(f).style.display = 'none'; });
-      $('graf').innerHTML = '<div class="aviso" style="grid-column:1/-1">' + esc(NOMBRES[st.prod] || st.prod) + ' todavía no tiene oportunidades ni reacciones en la historia. Aparecerá aquí en cuanto las tenga (botón Actualizar ICP).</div>'; return; }
-    ['f-anio', 'f-vista', 'f-medida'].forEach(function (f) { $(f).style.display = ''; });
-    chips('f-anio', [['todos', 'Todos']].concat((P.anios || []).map(function (a) { return [a, a]; })), 'anio');
-    chips('f-vista', [['op', 'Oportunidades cerradas'], ['se', 'Prospectos (reacciones)']], 'vista');
-    $('f-casa').style.display = st.vista === 'op' ? '' : 'none'; $('f-pesos').style.display = st.vista === 'op' ? 'none' : '';
-    if (st.vista === 'op') chips('f-medida', [['clientes', 'Clientes'], ['monto', 'Monto']], 'medida'); else chips('f-medida', [['personas', 'Personas'], ['puntos', 'Puntos (con pesos)']], 'medidaS');
-    chips('f-pesos', [['cal', 'Pesos oficiales (calibrados)'], ['act', 'Pesos anteriores']], 'pesos');
-    chips('f-casa', [[true, 'Con empresas de la casa'], [false, 'Sin empresas de la casa']], 'casa');
-    var html = '', k;
-    if (st.vista === 'op') {
-      var X = ((st.casa ? P.d : P.dc) || {})[st.anio] || { k: {}, dim: {} }; k = X.k || {};
-      $('kpis').innerHTML = [['Cerradas', fmt(k.cerradas)], ['Ganadas', fmt(k.ganadas)], ['Tasa de cierre', pct(k.ganadas, k.cerradas)], ['Monto ganado', '$' + fmt(k.monto)], ['Ticket promedio', k.ganadas ? '$' + fmt(k.monto / k.ganadas) : '—'], ['Abiertas hoy', fmt(k.abiertas)]]
-        .map(function (x) { return '<div class="kpi"><span>' + x[0] + '</span><b>' + x[1] + '</b></div>'; }).join('');
-      for (var n in DIM_OP) html += '<div class="card"><h3>' + DIM_OP[n] + '</h3><div class="ley"><span><i style="background:var(--mint)"></i>Ganadas</span><span><i style="background:#4B5563"></i>Perdidas</span></div>' + barras((X.dim || {})[n], 'op', n) + '</div>';
-      if ((k.ganadas || 0) < 10) html = '<div class="aviso" style="grid-column:1/-1">Este corte tiene menos de 10 ganadas: úsalo junto con la vista de Prospectos.</div>' + html;
-    } else {
-      var S = ((st.pesos === 'cal' ? P.s2 : P.s) || {})[st.anio] || { k: {}, dim: {} }; k = S.k || {};
-      var O = ((st.pesos === 'cal' ? P.s : P.s2) || {})[st.anio] || { k: {}, dim: {} }; otraS = {}; for (var dn in (O.dim || {})) otraS[dn] = O.dim[dn];
-      $('kpis').innerHTML = [['Personas que reaccionaron', fmt(k.personas)], ['Positivas', fmt(k.positivas)], ['Negativas', fmt(k.negativas)], ['% positivas', pct(k.positivas, k.personas)], ['Puntos con pesos ' + (st.pesos === 'cal' ? 'oficiales' : 'anteriores'), fmt(k.peso)], ['Puntos con pesos ' + (st.pesos === 'cal' ? 'anteriores' : 'oficiales'), fmt((O.k || {}).peso)]]
-        .map(function (x) { return '<div class="kpi"><span>' + x[0] + '</span><b>' + x[1] + '</b></div>'; }).join('');
-      for (var m in DIM_SE) html += '<div class="card"><h3>' + DIM_SE[m] + '</h3><div class="ley"><span><i style="background:var(--mint)"></i>Positivas</span><span><i style="background:#4B5563"></i>Neutras</span><span><i style="background:var(--red)"></i>Negativas</span></div>' + barras((S.dim || {})[m], 'se', m) + '</div>';
-      html = '<div class="aviso" style="grid-column:1/-1">Cada persona cuenta una vez por producto y año, con su reacción más alta. No cuentan las respuestas automáticas de fuera de oficina.</div>' + html;
-    }
-    $('graf').innerHTML = html;
-    $('cal').innerHTML = st.prod === 'TODOS' ? calibracion() : '';
-  }
-  // Documentos de ventas del producto: vienen del catalogo de Configuracion en la misma respuesta (sin corrida extra).
   function documentos() {
-    if (st.prod === 'TODOS') return '';
+    if (st.prod === 'TODOS' || st.prod === 'Otros') return '';
     var L = (D.documentos || {})[st.prod];
-    if (!L) return '<div class="card"><h3>Documentos del producto</h3><p class="n">Este producto no tiene ficha en Configuración → Productos.</p></div>';
-    return '<div class="card"><h3>Documentos del producto</h3><p class="n">Se cambian en Configuración → Productos; aquí solo se consultan.</p><div class="docl">' + L.map(function (d) {
+    if (!L) return '<div class="card"><h3>Documentos del producto' + ay('docs') + '</h3><p class="n">Este producto no tiene ficha en Configuración → Productos.</p></div>';
+    return '<div class="card"><h3>Documentos del producto' + ay('docs') + '</h3><div class="docl">' + L.map(function (d) {
       return '<div><span>' + esc(d.tipo) + '</span>' + (d.url ? '<a href="' + esc(d.url) + '" target="_blank" rel="noopener">' + esc(d.nombre || 'Abrir') + '</a>' : '<em>Por definir</em>') + '</div>';
     }).join('') + '</div></div>';
   }
-  var CAT = [];
+  function kpi(lab, val, ayk) { return '<div class="kpi"><span>' + lab + ay(ayk) + '</span><b>' + val + '</b></div>'; }
+  function tarjeta(titulo, dimObj, dimName) {
+    var esDona = DONA[dimName] && !(st.vista === 'se' && st.medidaS === 'puntos');
+    var ley = esDona ? '' : (st.vista === 'op' && st.medida === 'monto' ? '' : '<div class="ley"><span><i style="background:var(--mint)"></i>' + (st.vista === 'se' ? 'Positivas' : st.vista === 're' ? 'Llegaron a reunión' : 'Ganadas') + '</span><span><i style="background:#4B5563"></i>' + (st.vista === 'se' ? 'Neutras' : st.vista === 're' ? 'Sin reunión' : 'Perdidas') + '</span>' + (st.vista === 'se' ? '<span><i style="background:var(--red)"></i>Negativas</span>' : '') + '</div>');
+    return '<div class="card"><h3>' + titulo + ay(esDona ? 'dona' : 'barras') + '</h3>' + ley + (esDona ? dona(dimObj) : barras(dimObj, dimName)) + '</div>';
+  }
+  function pintar() {
+    if (!D) return;
+    var prods = ['TODOS'].concat(CAT.map(function (c) { return c.id; })).concat(['Otros']);
+    chips('f-prod', prods.map(function (p) { var c = CAT.filter(function (x) { return x.id === p; })[0]; return [p, NOMBRES[p] || p, c ? c.ayuda : '']; }), 'prod', 'prod');
+    $('docs').innerHTML = documentos();
+    chips('f-vista', VISTAS, 'vista', 'vista_' + st.vista);
+    var P = D.productos[st.prod] || {};
+    var fuente = st.vista === 'se' ? (st.pesos === 'cal' ? P.s2 : P.s) : st.vista === 're' ? P.r : P.d;
+    if (!fuente || !Object.keys(fuente).length) { $('kpis').innerHTML = ''; $('cal').innerHTML = ''; ['f-anio', 'f-medida', 'f-pesos'].forEach(function (f) { $(f).style.display = 'none'; });
+      $('graf').innerHTML = '<div class="aviso" style="grid-column:1/-1">' + esc(NOMBRES[st.prod] || st.prod) + ' todavía no tiene datos en esta vista. Aparecerán en cuanto los tenga (botón Actualizar ICP).</div>'; return; }
+    ['f-anio', 'f-medida'].forEach(function (f) { $(f).style.display = ''; });
+    var anios = Object.keys(fuente).filter(function (a) { return /^\d{4}$/.test(a); }).sort();
+    if (st.anio !== 'todos' && anios.indexOf(st.anio) < 0) st.anio = 'todos';
+    chips('f-anio', [['todos', 'Todos']].concat(anios.map(function (a) { return [a, a]; })), 'anio', 'anio');
+    $('f-pesos').style.display = st.vista === 'se' ? '' : 'none';
+    if (st.vista === 'se') { chips('f-medida', [['personas', 'Personas'], ['puntos', 'Puntos (con pesos)']], 'medidaS', 'medida'); chips('f-pesos', [['cal', 'Pesos oficiales'], ['act', 'Pesos anteriores']], 'pesos', 'pesos'); }
+    else if (st.vista === 'op' && st.prod === 'TODOS') chips('f-medida', [['clientes', 'Clientes'], ['monto', 'Monto']], 'medida', 'medida');
+    else { if (st.vista === 'op') st.medida = 'clientes'; $('f-medida').style.display = 'none'; }
+    var X = fuente[st.anio] || { k: {}, dim: {} }, k = X.k || {}, html = '', DIMS;
+    if (st.vista === 'se') {
+      var O = ((st.pesos === 'cal' ? P.s : P.s2) || {})[st.anio] || { k: {}, dim: {} }; otraS = O.dim || {};
+      $('kpis').innerHTML = kpi('Personas que reaccionaron', fmt(k.personas), 'k_personas') + kpi('Positivas', fmt(k.positivas), 'k_pos') + kpi('Negativas', fmt(k.negativas), 'k_neg') + kpi('% positivas', pct(k.positivas, k.personas), 'k_pos') + kpi('Puntos', fmt(k.peso), 'k_pts');
+      DIMS = DIM_SE;
+    } else if (st.vista === 're') {
+      $('kpis').innerHTML = kpi('Oportunidades', fmt(k.oportunidades), 'k_op') + kpi('Llegaron a reunión', fmt(k.reunion), 'k_reu') + kpi('% a reunión', pct(k.reunion, k.oportunidades), 'k_tasa_reu');
+      DIMS = DIM_RE;
+    } else {
+      $('kpis').innerHTML = kpi('Cerradas', fmt(k.cerradas), 'k_cer') + kpi('Ganadas', fmt(k.ganadas), 'k_gan') + kpi('Tasa de cierre', pct(k.ganadas, k.cerradas), 'k_tasa') +
+        (st.prod === 'TODOS' ? kpi('Monto ganado', '$' + fmt(k.monto), 'k_monto') + kpi('Ticket promedio', k.ganadas ? '$' + fmt(k.monto / k.ganadas) : '—', 'k_ticket') : '') + kpi('Abiertas hoy', fmt(k.abiertas), 'k_abi');
+      DIMS = DIM_OP;
+      if ((k.ganadas || 0) < 10) html += '<div class="aviso" style="grid-column:1/-1">Menos de 10 ganadas en este corte: úsalo para confirmar lo que dicen las vistas de Prospectos y de Reunión, no para decidir.</div>';
+    }
+    if (st.vista === 'se') html += '<div class="aviso" style="grid-column:1/-1">Cada persona cuenta una vez por producto y año, con su reacción más alta. No cuentan las respuestas automáticas de fuera de oficina.</div>';
+    for (var n in DIMS) html += tarjeta(DIMS[n], (X.dim || {})[n], n);
+    $('graf').innerHTML = html;
+    $('cal').innerHTML = st.prod === 'TODOS' && st.vista === 'se' ? calibracion() : '';
+  }
   function cargarCatalogo() {
     return fetch('/catalogos.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (j) {
-      CAT = (j.productos || []).filter(function (c) { return c.activo !== false && c.id && ['Interno', 'Otro'].indexOf(c.id) < 0; })
-        .sort(function (a, b) { return (a.orden || 99) - (b.orden || 99); });
-      CAT.forEach(function (c) { NOMBRES[c.id] = c.nombre || c.label || c.id; });
+      CAT = (j.productos || []).filter(function (c) { return c.grupo === 'GR' && c.activo !== false; }).sort(function (a, b) { return (a.orden || 99) - (b.orden || 99); });
+      CAT.forEach(function (c) { NOMBRES[c.id] = corto(c.nombre || c.label || c.id); });
     }).catch(function () {});
   }
   function cargar() {
@@ -176,6 +230,7 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
       pintar();
     }).catch(function () { $('foto').textContent = 'No se pudo leer la foto del ICP. Intenta de nuevo.'; });
   }
+  ['f-prod', 'f-vista', 'f-anio', 'f-medida', 'f-pesos'].forEach(function (id) { var el = $(id); el.setAttribute('data-l', el.querySelector('span').textContent); });
   $('act').onclick = function () {
     var b = $('act'); b.disabled = true; $('msg').textContent = 'Recalculando, tarda un minuto…';
     fetch(BASE + 'gr-icp-actualizar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
