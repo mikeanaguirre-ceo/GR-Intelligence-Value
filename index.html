@@ -853,7 +853,9 @@ function catOwnersMapa(){ var m={}; ((CAT().personas)||[]).forEach(function(p){ 
 // Texto de ayuda («?» al pasar el mouse) de una opción de menú, desde el catálogo.
 var CAT_AYUDA_DE={prod:'productos',producto:'productos',stage:'stages',etapa:'stages',grupo:'grupos',categoria:'categoriasAlerta',tipo:'tiposSenal',persona:'personas',owner:'personas',responsable:'personas',lider:'personas',apoyo:'personas',urgencia:'urgencias',segmento:'segmentos',canal:'canales',origen:'origenes',partner:'partners'};
 function catAyuda(k,v){ var l=CAT()[CAT_AYUDA_DE[k]]; if(!Array.isArray(l)) return ''; v=String(v); var x=l.filter(function(o){ return String(o.id)===v||o.idCli===v||o.label===v; })[0]; return x&&x.ayuda?x.ayuda:''; }
-function catTitulo(k,v,extra){ if(extra&&/title=/.test(extra)) return ''; var a=catAyuda(k,v)||grAyudaOpcion(k,v); return a?' title="'+grEsc(a)+'"':''; }
+function catTitulo(k,v,extra){ if(extra&&/title=|data-ayuda=/.test(extra)) return ''; return grAyAttr(catAyuda(k,v)||grAyudaOpcion(k,v)); }
+// Ayuda de una opcion (chip): se ve con el mismo globo de la «i» al pasar el mouse. Sin texto no agrega nada.
+function grAyAttr(t){ return t?' data-ayuda="'+grEsc(t)+'"':''; }
 // ==== LISTA OFICIAL DE PRODUCTOS (decision de Mike, 16nov2026) — candado-productos: oficial ====
 // Son exactamente los productos del catalogo con grupo GR y activos, en el orden del catalogo. Pintaando, IMMMU,
 // Excepciones, Interno y Otro no son productos: todo lo que no sea de la lista (o venga vacio) cae en «Otros».
@@ -898,6 +900,7 @@ function prodOpcionesFijar(valores, actual){
 }
 // 3nov2026 (documento de Martha, Error 4): letrero de cada opcion de los filtros de Pipeline, Pendientes y Alertas.
 var GR_AYUDA_ETAPA={'Señal':'El prospecto dio una señal de interés (abrió, hizo clic o visitó) y todavía no contesta.','Reply':'El prospecto contestó la secuencia.','Contactado':'Ya le escribimos o llamamos después de su señal o su respuesta.','En Conv.':'Hay conversación con el prospecto y todavía no hay cita.','Atracción':'Tiene una cita agendada.','Educación':'Ya se realizó la primera cita.','Propuesta':'Se presentó o está por presentarse la propuesta.','Aprobación':'El cliente está revisando la propuesta para aprobarla.','Renovación':'Clientes que ya compraron y tienen una renovación en curso.','Perdida':'Se cerró sin venta.'};
+/* glosario-tablero:inicio */
 var GR_AYUDA_FIJA={
   stage:{ALL:'Todas las oportunidades de Pipeline, menos las perdidas.','G:prosp':'Prospección: Señal, Reply, Contactado y En Conversación. Todavía no hay cita.','G:ventas':'Ventas: Atracción, Educación, Propuesta y Aprobación. Ya hay o hubo cita.','G:renov':'Clientes con una renovación en curso.'},
   persona:{Todos:'Todas, sin importar quién lleva la cuenta.',Otro:'Oportunidades que no tienen responsable.'},
@@ -907,8 +910,191 @@ var GR_AYUDA_FIJA={
   prod:{ALL:'Todos los productos.',Otros:'Lo que no es uno de los 14 productos oficiales o no tiene producto: Pintaando, IMMMU, Excepciones, internas o sin dato.'},
   fper:{todo:'Sin límite de fechas.',u30:'Los últimos 30 días, hoy incluido.',u7:'Los últimos 7 días, hoy incluido.',ayer:'Solo ayer.',hoy:'Solo hoy.',p7:'De hoy a los próximos 7 días.',p30:'De hoy a los próximos 30 días.',rango:'Elige el día inicial y el final.'},
   cita:{ALL:'Con un rango de fechas: todas las citas del rango, agendadas, realizadas y no realizadas, de cualquier etapa, Discovery o Siguientes pasos. Es la suma de las tres. Sin rango: todas las oportunidades.',agendada:'La cita todavía no ocurre, o ya pasó y falta confirmar que se realizó.',realizada:'Hubo prueba de que se realizó: grabación, envío de siguientes pasos o confirmación del equipo.',no_realizada:'La cita no ocurrió y está pendiente de reagendar.',sin:'Oportunidades sin ninguna cita registrada: a quién falta agendar, o una cita que el motor no registró. Con un rango de fechas se usa el día en que se creó la oportunidad.'},
-  faltan:{toggle:'Solo las oportunidades a las que les falta Responsable, origen, tipo o partner.'}
+  faltan:{toggle:'Solo las oportunidades a las que les falta Producto, Responsable, origen, tipo o partner.'},
+  // ==== GLOSARIO DEL TABLERO (16nov2026, Mike: "que haya esta definición de qué estamos viendo") ====
+  // Una sola fuente para la «i» de ayuda de cada recuadro, filtro, columna y sección. Se usa con grI('clave').
+  // Si Configuración publica catalogos.json con ayudas.tablero, esa definición gana (grAyuda).
+  // El candado (scripts/candado_menus.js) revisa que cada clave usada exista aquí y que cada recuadro tenga su «i».
+  tablero:{
+    // Comunes a varias pestañas
+    'comun.kpi.pipeline':'Suma del monto de todas las oportunidades abiertas (de prospección y de venta, sin ganadas ni perdidas). Sale de HubSpot; las marcadas como prueba no cuentan.',
+    'comun.kpi.forecast':'Lo que esperamos cerrar: el monto de cada oportunidad abierta multiplicado por la probabilidad de su etapa, la que fija el portal en Configuración. Sale de HubSpot.',
+    'comun.kpi.abiertas':'Cuántas oportunidades abiertas hay en HubSpot: todas las etapas menos ganada y perdida.',
+    'comun.kpi.propuestas':'Oportunidades en la etapa Propuesta y, abajo, la suma de su monto. Sale de HubSpot.',
+    'comun.kpi.won':'Suma del monto de todas las oportunidades ganadas que hay en HubSpot, de cualquier fecha (no solo de este año).',
+    'comun.monto':'Monto de la oportunidad en HubSpot.',
+    'comun.f.producto':'Los 14 productos oficiales de Great Revenue, aunque hoy no tengan nada. Otros: lo que no es de la lista o no tiene producto.',
+    'comun.f.lider':'Quien lidera el producto según la ficha de productos del portal. No se edita en la oportunidad: cambia si cambias el líder en el portal.',
+    'comun.f.apoyo':'Quien acompaña en las reuniones de la oportunidad. No es fijo por producto: se marca en cada oportunidad, en la ficha.',
+    'comun.f.resp':'Quien lleva la cuenta de la oportunidad (campo Responsable de la ficha), no el dueño de HubSpot.',
+    'comun.f.etapa':'Prospección: Señal, Reply, Contactado y En Conversación (aún sin cita). Ventas: Atracción, Educación, Propuesta y Aprobación (ya hay o hubo cita). Elige el grupo o una etapa.',
+    'comun.f.tiempo':'Etapa: días que lleva la oportunidad en su etapa contra el plazo que el portal le da a esa etapa (fuera de plazo, por vencer, en plazo). Cierre: la fecha en que esperamos firmar ya pasó, o no tiene fecha.',
+    'comun.diasalta':'Días desde que se creó la oportunidad en HubSpot.',
+    'comun.ventanas':'Hoy: el día de hoy en Ciudad de México. 7D, 30D y 90D: los últimos 7, 30 y 90 días, hoy incluido (los 30 días incluyen los 7 y hoy). Total: todo lo guardado.',
+    // Calidad del CRM
+    'calidad.titulo':'Qué tan completo y qué tan vivo está el CRM, y cómo va el desempeño comercial. El motor lo mide con los datos de HubSpot los días 1 y 15 de cada mes.',
+    'calidad.avance':'La calificación global y la de cada sección en cada medición, de 0 a 100. Global comparable: solo datos y vigencia, que se miden desde la medición inicial.',
+    'calidad.franja':'Promedio de las calificaciones de los indicadores de la sección en cada medición.',
+    'calidad.datos':'Calidad de datos: qué tan completo está cada registro de HubSpot. Cada indicador trae su explicación debajo del nombre.',
+    'calidad.vigencia':'Vigencia de los registros: qué tan vivos o abandonados están en HubSpot. Cada indicador trae su explicación debajo del nombre.',
+    'calidad.comercial':'Desempeño comercial: resultados de los últimos 12 meses contra los 12 meses anteriores, que son la meta. Califica desde el 11 de noviembre de 2026.',
+    'calidad.col.indicador':'Lo que se mide. Debajo del nombre va su explicación; el punto de color es su calificación de hoy.',
+    'calidad.col.fecha':'Inicial: la primera medición. Quincena: las de los días 1 y 15 de cada mes. Hoy: la más reciente, mientras llega la primera de 15 días.',
+    'calidad.col.cambio':'Diferencia entre la medición inicial y la última. La flecha verde es mejora.',
+    'calidad.col.anterior':'El valor de los 12 meses anteriores: es la meta contra la que se compara el desempeño comercial.',
+    'calidad.col.calificacion':'Calificación de 0 a 100. Datos y vigencia: el porcentaje completo (si menos es mejor, 100 menos el porcentaje; un conteo se compara contra las oportunidades abiertas). Desempeño comercial: avance contra el año anterior, con tope de 100. Referencia: se muestra pero no califica.',
+    'calidad.col.quien':'Quién o qué proceso corrige este indicador, según la medición del motor.',
+    'calidad.responsable':'Los mismos indicadores para cada persona, con las oportunidades donde es Responsable de la cuenta. Desempeño comercial se compara contra su propio año anterior.',
+    // Recap
+    'recap.pipeline':'Suma del monto de todas las oportunidades abiertas (de prospección y de venta, sin ganadas ni perdidas). Abajo, cuántas son. Sale de HubSpot.',
+    'recap.won':'Suma del monto de todas las oportunidades ganadas en HubSpot, de cualquier fecha (no solo de este año). Abajo, cuántas son.',
+    'recap.actividad':'Lo que pasó en los últimos 7 días en HubSpot: oportunidades creadas y oportunidades movidas, por Responsable de la cuenta.',
+    'recap.col.creadas':'Oportunidades creadas en HubSpot en los últimos 7 días. En el total, entre paréntesis, la suma de su monto.',
+    'recap.col.movidas':'Oportunidades creadas antes de la semana que tuvieron algún cambio en HubSpot en los últimos 7 días.',
+    'recap.movimiento':'Las oportunidades movidas esta semana (creadas antes y con algún cambio en los últimos 7 días). El número es cuántas se ven con los filtros contra el total; a la derecha, la suma de su monto. Se muestran hasta 150.',
+    'recap.f.etapa':'Activa: sigue abierta. Ganada y Perdida: lo que se cerró esta semana.',
+    'recap.col.ultima':'Último día en que la oportunidad tuvo un cambio en HubSpot.',
+    // Overview
+    'overview.educacion':'Oportunidades en la etapa Educación: ya se realizó la primera cita. Sale de HubSpot.',
+    'overview.porproducto':'Suma del monto de las oportunidades abiertas de cada producto oficial; lo que no es de la lista va en Otros. La barra compara cada producto contra el de mayor monto.',
+    // Pipeline
+    'pipeline.resultados':'Cuántas oportunidades hay en cada etapa con los filtros de abajo aplicados, y qué porcentaje son de las abiertas. Toca un recuadro para ver solo esa etapa; tócalo otra vez para quitarlo.',
+    'pipeline.citas':'Citas por el día en que se llevan a cabo, con los mismos filtros y fecha de abajo: es el mismo número que la fila Cita. Nuevas: Discovery, la primera cita con el prospecto. Siguientes pasos: ya hubo una cita antes o ya es cliente. Toca el recuadro para ver la lista.',
+    'pipeline.f.resp':'Quien lleva la cuenta. Es un campo de cada oportunidad: nace igual al líder del producto y se puede cambiar en la ficha.',
+    'pipeline.f.fecha':'Se aplica al día en que se lleva a cabo la cita, con cualquier opción de Cita. Con Sin cita registrada se aplica al día en que se creó la oportunidad. Próximos 7 y 30 días sirven para ver las citas que vienen.',
+    'pipeline.f.cita':'Citas por el día en que se llevan a cabo. Con un rango de fechas, Todas son todas las citas del rango (agendadas, realizadas y no realizadas, de cualquier etapa, Discovery o Siguientes pasos) y es la suma de las tres. Cuenta igual que el recuadro Citas. Sin cita registrada: oportunidades sin ninguna cita, por el día en que se crearon.',
+    'pipeline.f.faltan':'Oportunidades a las que les falta Producto, Responsable, origen, tipo o partner.',
+    'pipeline.f.acciones':'Completar datos de todas: el motor llena lo que está vacío en todas las oportunidades; nunca cambia lo que ya tiene valor.',
+    'pipeline.f.buscar':'Busca en el cliente, la oportunidad, el contacto y su puesto, las personas de la cuenta y el producto.',
+    'pipeline.abiertas':'Oportunidades abiertas que se ven con los filtros (sin las perdidas) y la suma de su monto. Cada columna es una etapa: cuántas hay y cuánto suman.',
+    'pipeline.tarjeta':'En cada tarjeta: el monto; el semáforo de su etapa (Vencida: pasó el plazo de la etapa o la fecha de cierre; Próxima: va en el 75% del plazo o cierra en 7 días o menos; Al día; Aparcada: tiene fecha para retomar; Sin fecha); los días que lleva en la etapa contra su plazo; y el punto de la derecha es la antigüedad desde que se creó (verde: menos de 15 días; gris: más de 90).',
+    'pipeline.otros':'Oportunidades cuya etapa no es una de las columnas del tablero.',
+    // Won
+    'won.recurrente':'Suma del monto de las renovaciones anuales más 12 veces el monto mensual de las consultorías. Sale de las oportunidades ganadas en HubSpot.',
+    'won.criticas':'Renovaciones anuales vencidas o que vencen en 60 días o menos. Abajo, cuántas vencen entre 61 y 90 días.',
+    'won.mensual':'Suma del monto mensual de las consultorías mensuales. Abajo, cuántas son.',
+    'won.renovaciones':'Oportunidades ganadas de los productos que se renuevan cada año, por 10 mil o más, con fecha de cierre de hace menos de un año. Esa fecha se lee como el vencimiento: la barra se llena conforme se acerca y la etiqueta dice vencida, crítica (60 días o menos) o próxima (90 días o menos).',
+    'won.consultorias':'Oportunidades ganadas de consultoría 3V por menos de 5 mil al mes. Día de corte: el que dice la descripción de la oportunidad, o el día 1. Factura: Pendiente si el corte de este mes no llega; Hoy o días vencida si ya pasó.',
+    'won.historico':'Las demás oportunidades ganadas: proyectos de un solo pago. Total: la suma de su monto.',
+    'won.legacy':'Oportunidades ganadas en HubSpot. URG: la fecha de cierre cae en 30 días o menos; ATN: en 60 días o menos.',
+    // Clientes
+    'clientes.titulo':'Clientes que el equipo sigue de cerca. La lista y sus datos de contacto están escritos en el tablero, no salen de HubSpot.',
+    'clientes.total':'Suma del monto de las oportunidades abiertas en HubSpot cuyo nombre incluye el nombre del cliente.',
+    // Pendientes
+    'pendientes.total':'Tareas abiertas (no completadas) en HubSpot, de todo el equipo. No cambia con los filtros.',
+    'pendientes.vencidas':'Tareas abiertas cuya fecha de vencimiento ya pasó. No cambia con los filtros.',
+    'pendientes.hoy':'Tareas abiertas que vencen hoy. No cambia con los filtros.',
+    'pendientes.proximas':'Tareas abiertas que vencen en los próximos 1 a 3 días. No cambia con los filtros.',
+    'pendientes.f.etapa':'Etapa de la oportunidad de la tarea. Prospección: Señal, Reply, Contactado y En Conversación. Ventas: Atracción, Educación, Propuesta y Aprobación. Internas: tareas del equipo sin cliente.',
+    'pendientes.f.resp':'Quien hace la tarea: el mismo nombre que va en el asunto de la tarea.',
+    'pendientes.f.tiempo':'Fuera de plazo: la tarea ya venció. Por vencer: vence hoy o en los próximos 3 días. En plazo: vence después. Cerradas: las que se completaron en los últimos días que indica el botón.',
+    'pendientes.f.fecha':'Del pasado al futuro, sobre el día en que vence la tarea (en Cerradas, el día en que se cerró).',
+    'pendientes.f.buscar':'Busca en la tarea, el cliente y la oportunidad.',
+    'pendientes.ordenar':'Cambia el orden de la lista: por urgencia (primero las vencidas, luego las de hoy y las próximas) o por fecha de vencimiento.',
+    'pendientes.lista':'Tareas que se ven con los filtros. Se muestran hasta 150.',
+    'pendientes.col.stage':'Etapa de las oportunidades ligadas a la tarea por el nombre del cliente.',
+    'pendientes.col.fecha':'Día en que vence la tarea (en Cerradas, el día en que se cerró).',
+    'pendientes.reuniones':'Reuniones del calendario con invitados de fuera que piden una acción: no tienen grabación, o están grabadas y les falta el correo de siguientes pasos o la minuta. Sale de la bitácora de reuniones del motor.',
+    'pendientes.reu.falta':'Filtra por lo que le falta a la reunión: grabación, correo de siguientes pasos o minuta. El número es cuántas reuniones lo tienen pendiente.',
+    // Alertas
+    'alertas.vista':'Vender: alertas para avanzar o reactivar oportunidades (Cerrar y ReActivar). Arreglar: datos que hay que corregir en oportunidades, contactos, empresas y tareas de HubSpot.',
+    'alertas.objeto':'El tipo de registro de HubSpot que vas a corregir.',
+    'alertas.problema':'Cada opción es un problema de datos; el número es cuántos registros lo tienen.',
+    'alertas.revenue':'Suma del monto de las oportunidades de todas las alertas activas que arma el motor con datos de HubSpot. Si una oportunidad tiene dos alertas, su monto suma dos veces. No cambia con los filtros.',
+    'alertas.total':'Cuántas alertas activas hay: cada una es una acción sugerida sobre una oportunidad. No cambia con los filtros.',
+    'alertas.criticas':'Alertas de la categoría Cerrar: empujar al cierre, tarea vencida o asignar siguiente paso. No cambia con los filtros.',
+    'alertas.semana':'Alertas de Cerrar más las de ReActivar: lo que conviene atender esta semana. No cambia con los filtros.',
+    'alertas.f.etapa':'Prospección: Señal, Reply, Contactado y En Conversación (aún sin cita). Ventas: Atracción, Educación, Propuesta y Aprobación (ya hay o hubo cita). Elige el grupo o una etapa.',
+    'alertas.f.buscar':'Busca en la oportunidad, el cliente y el contacto.',
+    'alertas.accion':'La acción sugerida de cada alerta. El número es cuántas hay con los filtros.',
+    'alertas.ordenar':'Cambia el orden de la lista: por monto, por urgencia (primero Cerrar, luego ReActivar) o por días estancado.',
+    'alertas.lista':'Alertas que se ven con los filtros y la suma del monto de sus oportunidades. Se muestran hasta 200.',
+    'alertas.col.dias':'Días que lleva el problema de la alerta: sin actividad, con la tarea vencida o con la fecha de cierre pasada, según el motivo.',
+    'alertas.limpieza':'Registros de HubSpot con este problema. Desde aquí solo se marcan para BORRAR; el borrado se hace en HubSpot.',
+    'alertas.tareas':'Tareas pendientes de HubSpot con este problema, contra el total de tareas pendientes.',
+    // Prospección
+    'prosp.inventario':'Respuestas y señales de los prospectos que guarda el motor en su tabla de eventos (vienen de Amplemarket), no de HubSpot.',
+    'prosp.f.etapa':'Etapa de la oportunidad del prospecto. Prospección: Señal, Reply, Contactado y En Conversación. Ventas: Atracción, Educación, Propuesta y Aprobación. Sin oportunidad: el evento todavía no tiene oportunidad.',
+    'prosp.f.resp':'Quien lleva la cuenta de la oportunidad del prospecto (campo Responsable de la ficha).',
+    'prosp.f.tipo':'Reply: el prospecto contestó. Open+3: abrió tres veces o más sin contestar. Es el mismo campo de la ficha de la oportunidad.',
+    'prosp.f.canal':'Por dónde llegó el evento.',
+    'prosp.f.fecha':'Del pasado a hoy, sobre el día del evento.',
+    'prosp.f.buscar':'Busca en la empresa, el prospecto, el puesto y la secuencia.',
+    'prosp.embudo':'Eventos de prospección con los filtros de arriba, por la etapa que tiene hoy la oportunidad del prospecto. Activos: los que no están en Perdida. Sin etapa: el evento no tiene oportunidad. Toca un recuadro para ver los contactos.',
+    'prosp.replies':'Respuestas reales de los prospectos a las secuencias (sin rebotes ni bajas), por la clasificación de Amplemarket y su prioridad. Si un prospecto contesta varias veces con la misma clasificación, solo cuenta la primera. Toca un número para ver el detalle.',
+    'prosp.duo':'Corte de las respuestas de contactos que llegaron por una señal DUO de Amplemarket. También están contadas abajo en su clasificación.',
+    'prosp.porrevisar':'Corte de lo que el motor no pudo resolver solo: piden algo que no ofrecemos, la etiqueta de Amplemarket y la del motor no coinciden, o no se sabe el producto. También están contadas arriba.',
+    'prosp.senales':'Señales de interés sin respuesta: las señales DUO de Amplemarket (primero) y los prospectos que abrieron tres veces o más, por producto.',
+    'prosp.interes':'Las señales Open+3 por tipo. Reapertura: ya contactado, volvió a abrir por su cuenta (la señal más fuerte). Interés maduro: su secuencia ya terminó. Interés en curso: su secuencia sigue corriendo.',
+    'prosp.ganadores':'Oportunidades de HubSpot (abiertas, ganadas y perdidas) con los filtros de producto y fecha de arriba (por el día en que se crearon), agrupadas por la etiqueta de Amplemarket que elijas.',
+    'prosp.gan.n':'Cuántas oportunidades tienen ese valor.',
+    'prosp.gan.c':'Cuántas llegaron a cita: tienen cita registrada, están en Atracción o en una etapa posterior, o se ganaron.',
+    'prosp.gan.pct':'Llegaron a cita entre el total de oportunidades de esa fila.',
+    // Amplemarket
+    'am.periodo':'La ventana del resumen de Amplemarket: los últimos 7, 15 o 30 días. Cada periodo es una foto que se guarda al actualizar Amplemarket.',
+    'am.titulo':'Resumen de las secuencias y las señales DUO de Amplemarket en el periodo. No se calcula en vivo: es la foto guardada en la última actualización (Generado).',
+    'am.reuniones':'Reuniones agendadas en el periodo según Amplemarket. Abajo, cuántas vienen de secuencias (SEQ) y cuántas de señales DUO. Toca el recuadro para ver el detalle.',
+    'am.respuestas':'Respuestas de los prospectos en el periodo según Amplemarket. Abajo, cuántas de secuencias (SEQ) y cuántas de señales DUO. Toca el recuadro para ver el detalle.',
+    'am.open3':'Prospectos con interés por aperturas (Open+3) en las secuencias del periodo, según el resumen guardado de Amplemarket. Toca el recuadro para ver el detalle.',
+    'am.duo':'Prospectos que generaron las señales DUO de Amplemarket en el periodo. Abajo, cuántos ya se metieron a una secuencia. Toca el recuadro para ver el detalle.',
+    'am.comparativo':'Por producto, las secuencias de correo (SEQ) contra las señales DUO. El ganador se define por reuniones agendadas; la tasa de respuesta solo se compara dentro del mismo canal.',
+    'am.col.seqs':'Secuencias del producto en el periodo.',
+    'am.col.leads':'Prospectos que recibieron esas secuencias.',
+    'am.col.open':'Porcentaje de prospectos que abrieron los correos.',
+    'am.col.reply':'Porcentaje de prospectos que contestaron. En DUO, sobre los que ya se metieron a una secuencia.',
+    'am.col.mtgs':'Reuniones agendadas.',
+    'am.col.sigs':'Señales DUO del producto.',
+    'am.col.gen':'Prospectos que generaron esas señales.',
+    'am.col.seqpct':'Porcentaje de los prospectos de la señal que ya se metieron a una secuencia.',
+    'am.col.sequenced':'Prospectos de la señal que ya se metieron a una secuencia.',
+    'am.col.replies':'Respuestas de los prospectos.',
+    'am.col.interesados':'Prospectos que Amplemarket marcó como interesados.',
+    'am.col.ganador':'El canal que dio más reuniones agendadas para el producto.',
+    'am.acciones':'Sugerencias que arma la actualización de Amplemarket con el comportamiento de cada secuencia y señal: celebrar, reforzar, activar, optimizar o pausar. Toca un recuadro para filtrar.',
+    'am.f.canal':'SEQ: secuencias de correo. DUO: señales de DuoCopilot en Amplemarket.',
+    'am.detalle':'Cada secuencia y cada señal DUO del periodo con sus números.',
+    // Forecast
+    'forecast.conservador':'Monto de las oportunidades en Propuesta por 35%. Cálculo fijo de esta pestaña con el monto de HubSpot; no usa las probabilidades del portal.',
+    'forecast.base':'El conservador más el monto de las oportunidades en Educación por 20%.',
+    'forecast.optimista':'El base más el monto de las oportunidades en Atracción por 10%.',
+    'forecast.cierres':'Oportunidades abiertas cuya fecha en que esperamos firmar cae entre hoy y los próximos 30 días, de la más cercana a la más lejana. En rojo, 7 días o menos; en amarillo, 15 o menos.',
+    'forecast.col.dias':'Días que faltan para la fecha en que esperamos firmar.',
+    // Métricas
+    'metricas.periodo':'Todas: sin límite. Mes y S1 a S4: el mes elegido o una de sus semanas (días 1 a 7, 8 a 14, 15 a 21 y 22 al fin de mes). 30d, 45d y 90d: los últimos días hasta hoy.',
+    'metricas.mes':'El mes al que se aplican Mes y las semanas S1 a S4.',
+    'metricas.responsable':'Dueño de la oportunidad en HubSpot, como lo manda el motor de Métricas.',
+    'metricas.embudo':'Oportunidades de la foto diaria de HubSpot que toma el motor: cuántas están paradas en cada etapa hoy.',
+    'metricas.vienen':'Las oportunidades que hoy están en Atracción por la conversión histórica de Atracción a Educación: cuántas citas se esperan.',
+    'metricas.citas':'Atracción: la cita quedó agendada. Educación: la reunión se efectuó. Cada una se cuenta por el día en que pasó, con datos de HubSpot.',
+    'metricas.atraccion':'Citas agendadas en el periodo (llegaron a Atracción). Abajo, el cambio contra el periodo anterior del mismo largo.',
+    'metricas.educacion':'Reuniones efectuadas en el periodo (llegaron a Educación). Abajo, el cambio contra el periodo anterior del mismo largo.',
+    'metricas.conversion':'De las citas agendadas en el periodo, cuántas se efectuaron dentro de la ventana de días de la configuración. Es parcial mientras no pasan esos días.',
+    'metricas.meta':'Reuniones efectuadas contra la meta del periodo (la meta mensual, proporcional a los días). Cierre: cuántas habría al final del periodo al ritmo actual.',
+    'metricas.cayeron':'Citas agendadas en el periodo que no llegaron a Educación y ya pasó la ventana de días.',
+    'metricas.tarda':'Días promedio entre agendar la cita y efectuarla.',
+    'metricas.porproducto':'Por producto: citas agendadas, reuniones efectuadas y su conversión en el periodo.',
+    'metricas.semanas':'Reuniones efectuadas cada semana, de lunes a domingo, en las últimas semanas. La línea punteada es la meta semanal (la meta mensual por 7 entre 30).',
+    'metricas.tiempos':'Con la foto diaria de HubSpot: cuántos días lleva cada oportunidad en su etapa contra el plazo de esa etapa.',
+    'metricas.cuello':'La etapa con la menor tasa de avance desde la foto del inicio del periodo. Si aún no hay fotos suficientes, la que tiene más oportunidades con retraso.',
+    'metricas.inv':'Oportunidades vivas en la foto de hoy.',
+    'metricas.entiempo':'Porcentaje de oportunidades que llevan menos días que el plazo de su etapa.',
+    'metricas.retraso':'Porcentaje de oportunidades que ya alcanzaron o pasaron el plazo de su etapa.',
+    'metricas.avanzaron':'Oportunidades que hoy están en una etapa más adelante que en la foto del inicio del periodo. Necesita dos fotos.',
+    'metricas.entraron':'Oportunidades que hoy están en el embudo y no estaban en la foto del inicio del periodo.',
+    'metricas.col.hay':'Oportunidades en la etapa hoy.',
+    'metricas.col.excedido':'En las que van con retraso, cuánto pasan del plazo en promedio, como porcentaje del plazo.',
+    'metricas.col.dias':'Días promedio que llevan las oportunidades en la etapa.',
+    'metricas.col.plazo':'Días que el portal le da a la etapa.',
+    'metricas.col.avance':'De las que estaban en la etapa en la foto del inicio del periodo, qué porcentaje ya avanzó.',
+    'metricas.tareas':'Tareas del rol de prospección en HubSpot, medidas contra su fecha compromiso. Las captura el motor en la corrida de la madrugada.',
+    'metricas.t.vencian':'Tareas con fecha compromiso dentro del periodo.',
+    'metricas.t.cumplidas':'De esas, las que se cumplieron.',
+    'metricas.t.cumplimiento':'Cumplidas entre las que vencían en el periodo.',
+    'metricas.t.sin':'Tareas del periodo que ya vencieron y no se cumplieron. Abajo, el retraso promedio de las que se cumplieron tarde.',
+    'metricas.t.backlog':'Todas las tareas vencidas que siguen abiertas, de cualquier fecha.'
+  }
 };
+/* glosario-tablero:fin */
 function grAyudaOpcion(k,v){ v=String(v); var f=(GR_AYUDA_FIJA[k]||{})[v]; if(f) return f;
   if(k==='stage') return GR_AYUDA_ETAPA[v]||('Oportunidades en la etapa '+v+'.');
   if(k==='persona') return 'Oportunidades cuya cuenta lleva '+v+'.';
@@ -2131,24 +2317,24 @@ function renderRecap() {
   let html = `
     <div class="kpi-grid">
       <div class="kpi kpi-purple">
-        <div class="kpi-label">Pipeline Total</div>
+        <div class="kpi-label">Pipeline Total ${grI('recap.pipeline')}</div>
         <div class="kpi-value">${fmtK(k.pipeline)}</div>
-        <div class="kpi-sub">${k.totalDeals} deals activos</div>
+        <div class="kpi-sub">${k.totalDeals} oportunidades abiertas</div>
       </div>
       <div class="kpi kpi-pink">
-        <div class="kpi-label">Forecast</div>
+        <div class="kpi-label">Forecast ${grI('comun.kpi.forecast')}</div>
         <div class="kpi-value">${fmtK(k.forecast)}</div>
-        <div class="kpi-sub">weighted</div>
+        <div class="kpi-sub">ponderado por etapa</div>
       </div>
       <div class="kpi kpi-cyan">
-        <div class="kpi-label">Propuestas</div>
+        <div class="kpi-label">Propuestas ${grI('comun.kpi.propuestas')}</div>
         <div class="kpi-value">${k.propuestasCount}</div>
         <div class="kpi-sub">${fmtK(k.propuestasTotal)}</div>
       </div>
       <div class="kpi kpi-mint">
-        <div class="kpi-label">Won Anual</div>
+        <div class="kpi-label">Won Anual ${grI('recap.won')}</div>
         <div class="kpi-value">${fmtK(k.wonAnual)}</div>
-        <div class="kpi-sub">${k.wonCount} clientes</div>
+        <div class="kpi-sub">${k.wonCount} oportunidades ganadas</div>
       </div>
     </div>
   `;
@@ -2157,14 +2343,14 @@ function renderRecap() {
   html += `
     <div class="section">
       <div class="section-title">
-        Actividad de la semana
+        Actividad de la semana ${grI('recap.actividad')}
         <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">${recap.ventanaDesde} → ${recap.ventanaHasta}</span>
       </div>
       <table class="tbl">
         <thead><tr>
-          <th>Responsable ${grI('Quien lleva la cuenta de cada oportunidad (campo Responsable de la ficha), no el dueño de HubSpot.')}</th>
-          <th class="num">Oportunidades creadas</th>
-          <th class="num">Oportunidades movidas</th>
+          <th>Responsable ${grI('comun.f.resp')}</th>
+          <th class="num">Oportunidades creadas ${grI('recap.col.creadas')}</th>
+          <th class="num">Oportunidades movidas ${grI('recap.col.movidas')}</th>
         </tr></thead>
         <tbody>
   `;
@@ -2216,7 +2402,7 @@ function renderRecap() {
     };
     const _cuentaMov = (ex, prueba) => dealsMovList.filter(d => _pasaMov(d, ex) && prueba(d)).length;
     const filteredMov = dealsMovList.filter(d => _pasaMov(d));
-    const _chipR = (k, v, label, n, t) => `<button class="chip ${String(recapFilters[k] || (k === 'respMov' ? 'Todos' : 'ALL')) === String(v) ? 'active' : ''}" data-recapfilter="${k}" data-rval="${grEsc(v)}"${t ? ' title="' + grEsc(t) + '"' : ''}>${label}${n === null ? '' : ' ' + n}</button>`;
+    const _chipR = (k, v, label, n, t) => `<button class="chip ${String(recapFilters[k] || (k === 'respMov' ? 'Todos' : 'ALL')) === String(v) ? 'active' : ''}" data-recapfilter="${k}" data-rval="${grEsc(v)}"${grAyAttr(t)}>${label}${n === null ? '' : ' ' + n}</button>`;
     const _respsMov = [...new Set(dealsMovList.map(d => d.resp))].sort();
 
     filteredMov.sort((a,b) => (b.lastMod||'').localeCompare(a.lastMod||''));
@@ -2224,21 +2410,21 @@ function renderRecap() {
     const montoMovFiltrado = filteredMov.reduce((s, d) => s + (d.amount || 0), 0);
 
     html += `<div class="section">
-      <div class="section-title">Oportunidades con movimiento esta semana <span class="section-count">${filteredMov.length}/${recap.dealsMovidos.total}</span> <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">${fmtK(montoMovFiltrado)}</span></div>
+      <div class="section-title">Oportunidades con movimiento esta semana ${grI('recap.movimiento')} <span class="section-count">${filteredMov.length}/${recap.dealsMovidos.total}</span> <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">${fmtK(montoMovFiltrado)}</span></div>
       <div class="filters">
-        <span class="filter-label">Etapa ${grI('Activa: sigue abierta. Ganada y Perdida: lo que se cerró esta semana.')}</span>
+        <span class="filter-label">Etapa ${grI('recap.f.etapa')}</span>
         ${_chipR('etapaMov','ALL','Todos',_cuentaMov('etapa',()=>true))}${_chipR('etapaMov','activa','Activa',_cuentaMov('etapa',d=>_etapaMovDe(d)==='activa'))}${_chipR('etapaMov','won','Ganada',_cuentaMov('etapa',d=>_etapaMovDe(d)==='won'))}${_chipR('etapaMov','perdida','Perdida',_cuentaMov('etapa',d=>_etapaMovDe(d)==='perdida'))}
       </div>
       <div class="filters">
-        <span class="filter-label">Responsable ${grI('Quien lleva la cuenta de la oportunidad (campo Responsable de la ficha).')}</span>
+        <span class="filter-label">Responsable ${grI('comun.f.resp')}</span>
         ${_chipR('respMov','Todos','Todos',_cuentaMov('resp',()=>true))}${_respsMov.map(r => _chipR('respMov', r, r, _cuentaMov('resp', d => d.resp === r))).join('')}
       </div>
       <div class="filters">
-        <span class="filter-label">Producto ${grI('Los 14 productos oficiales de Great Revenue, aunque hoy no tengan movimiento. Otros: lo que no es de la lista o no tiene producto.')}</span>
+        <span class="filter-label">Producto ${grI('comun.f.producto')}</span>
         ${_chipR('prodMovido','ALL',prodChipTexto('ALL',_cuentaMov('prod',()=>true)),null,GR_AYUDA_FIJA.prod.ALL)}${prodOpciones().map(pr => { const n = _cuentaMov('prod', d => prodOficial(d.prod) === pr); return (pr !== PROD_OTROS || n || prodMovFilter === pr) ? _chipR('prodMovido', pr, prodChipTexto(pr, n), null, prodAyuda(pr)) : ''; }).join('')}
       </div>
       <table class="tbl">
-        <thead><tr><th>Cliente / Oportunidad</th><th>Producto</th><th>Responsable</th><th>Etapa actual</th><th>Última modif.</th><th class="num">Monto</th></tr></thead>
+        <thead><tr><th>Cliente / Oportunidad</th><th>Producto</th><th>Responsable</th><th>Etapa actual</th><th>Última modif. ${grI('recap.col.ultima')}</th><th class="num">Monto ${grI('comun.monto')}</th></tr></thead>
         <tbody>`;
 
     filteredMov.slice(0, 150).forEach(d => {
@@ -2259,7 +2445,7 @@ function renderRecap() {
       html += `<tr><td colspan="6" class="empty">Mostrando 150 de ${filteredMov.length}</td></tr>`;
     }
     if (filteredMov.length === 0) {
-      html += `<tr><td colspan="6" class="empty">Sin deals movidos para estos filtros.</td></tr>`;
+      html += `<tr><td colspan="6" class="empty">Sin oportunidades movidas para estos filtros.</td></tr>`;
     }
     html += `</tbody></table></div>`;
   }
@@ -2287,17 +2473,17 @@ function renderOverview() {
 
   let html = `
     <div class="kpi-grid">
-      <div class="kpi kpi-purple"><div class="kpi-label">Pipeline</div><div class="kpi-value">${fmtK(k.pipeline)}</div></div>
-      <div class="kpi kpi-pink"><div class="kpi-label">Forecast</div><div class="kpi-value">${fmtK(k.forecast)}</div></div>
-      <div class="kpi kpi-cyan"><div class="kpi-label">Deals Totales</div><div class="kpi-value">${k.totalDeals}</div></div>
-      <div class="kpi kpi-mint"><div class="kpi-label">Propuestas</div><div class="kpi-value">${k.propuestasCount}</div><div class="kpi-sub">${fmtK(k.propuestasTotal)}</div></div>
-      <div class="kpi kpi-yellow"><div class="kpi-label">Educación</div><div class="kpi-value">${k.educacionCount}</div></div>
-      <div class="kpi kpi-purple"><div class="kpi-label">Won Anual</div><div class="kpi-value">${fmtK(k.wonAnual)}</div></div>
+      <div class="kpi kpi-purple"><div class="kpi-label">Pipeline ${grI('comun.kpi.pipeline')}</div><div class="kpi-value">${fmtK(k.pipeline)}</div></div>
+      <div class="kpi kpi-pink"><div class="kpi-label">Forecast ${grI('comun.kpi.forecast')}</div><div class="kpi-value">${fmtK(k.forecast)}</div></div>
+      <div class="kpi kpi-cyan"><div class="kpi-label">Oportunidades abiertas ${grI('comun.kpi.abiertas')}</div><div class="kpi-value">${k.totalDeals}</div></div>
+      <div class="kpi kpi-mint"><div class="kpi-label">Propuestas ${grI('comun.kpi.propuestas')}</div><div class="kpi-value">${k.propuestasCount}</div><div class="kpi-sub">${fmtK(k.propuestasTotal)}</div></div>
+      <div class="kpi kpi-yellow"><div class="kpi-label">Educación ${grI('overview.educacion')}</div><div class="kpi-value">${k.educacionCount}</div></div>
+      <div class="kpi kpi-purple"><div class="kpi-label">Won Anual ${grI('comun.kpi.won')}</div><div class="kpi-value">${fmtK(k.wonAnual)}</div></div>
     </div>
     <div class="section">
-      <div class="section-title">Pipeline por Producto</div>
+      <div class="section-title">Pipeline por Producto ${grI('overview.porproducto')}</div>
       <table class="tbl">
-        <thead><tr><th>Producto</th><th style="width:60%">Distribución</th><th class="num">Monto</th></tr></thead>
+        <thead><tr><th>Producto</th><th style="width:60%">Distribución</th><th class="num">Monto ${grI('comun.monto')}</th></tr></thead>
         <tbody>
   `;
   prods.forEach(([prod, amt]) => {
@@ -2535,9 +2721,9 @@ function grPintarReuPendientes(){
     var FO=[['ALL','Todas'],['grabacion','Sin grabación'],['pasos','Sin siguientes pasos'],['minuta','Sin minuta']];
     var fsel=window.__grReuFalta||'ALL';
     var rs=fsel==='ALL'?base:base.filter(function(r){ return falta(r).indexOf(fsel)>=0; });
-    var h='<div class="section-title">Reuniones con cliente por cerrar <span class="section-count">'+rs.length+'</span></div>'
+    var h='<div class="section-title">Reuniones con cliente por cerrar '+grI('pendientes.reuniones')+' <span class="section-count">'+rs.length+'</span></div>'
       +'<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Sin grabación, o grabadas sin siguientes pasos o sin minuta. Marca a mano solo lo que el motor no puede saber.</div>'
-      +'<div class="filters"><span class="filter-label">Falta:</span>'+FO.map(function(o){ var n=o[0]==='ALL'?base.length:base.filter(function(r){ return falta(r).indexOf(o[0])>=0; }).length; return '<button class="chip '+(fsel===o[0]?'active':'')+'" onclick="window.__grReuFalta=\''+o[0]+'\';grPintarReuPendientes()">'+o[1]+' '+n+'</button>'; }).join('')+'</div>';
+      +'<div class="filters"><span class="filter-label">Falta '+grI('pendientes.reu.falta')+'</span>'+FO.map(function(o){ var n=o[0]==='ALL'?base.length:base.filter(function(r){ return falta(r).indexOf(o[0])>=0; }).length; return '<button class="chip '+(fsel===o[0]?'active':'')+'" onclick="window.__grReuFalta=\''+o[0]+'\';grPintarReuPendientes()">'+o[1]+' '+n+'</button>'; }).join('')+'</div>';
     if(!rs.length){ box.innerHTML=h+'<div class="empty">Nada pendiente.</div>'; return; }
     var muestra=window.__grReuTodas?rs:rs.slice(0,15);
     h+='<div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>Día</th><th>Reunión</th><th>Empresa</th><th>Estado</th><th>Falta</th><th>Marcar</th></tr></thead><tbody>';
@@ -2569,8 +2755,41 @@ function GR_ETAPAS_VENTAS_(){ return catIds(catEtapasFase('venta').filter(functi
 var GR_FECHA_OPC=[['todo','Todo'],['u30','Últimos 30 días'],['u7','Últimos 7 días'],['ayer','Ayer'],['hoy','Hoy'],['p7','Próximos 7 días'],['p30','Próximos 30 días'],['rango','Rango']];
 var GR_TIEMPO_OPC=[['ALL','Todos',''],['fuera','Fuera de plazo','Etapa'],['porvencer','Por vencer','Etapa'],['enplazo','En plazo','Etapa'],['cierrevencido','Cierre vencido','Cierre'],['sincierre','Sin fecha de cierre','Cierre']];
 var GR_CITA_REG_OPC=[['ALL','Todas'],['agendada','Agendada'],['realizada','Realizada'],['no_realizada','No se realizó'],['sin','Sin cita registrada']];
-function grI(t){ return '<span class="gr-i" role="button" tabindex="0" title="'+grEsc(t)+'" onclick="event.stopPropagation();grIVer(this)">i</span>'; }
-function grIVer(el){ var f=el.closest('.filters')||el.parentNode; var b=f.querySelector('.gr-i-txt'); if(b&&b.getAttribute('data-src')===el.title){ b.remove(); return; } if(b) b.remove(); b=document.createElement('div'); b.className='gr-i-txt'; b.setAttribute('data-src',el.title); b.textContent=el.title; f.appendChild(b); }
+// ==== AYUDA «i» DEL TABLERO (16nov2026, Mike: «que podamos tener la ayuda de posicionarnos en cualquier tema importante») ====
+// UN solo mecanismo: grI('clave') pinta la «i» con la definicion del glosario (GR_AYUDA_FIJA.tablero). Se abre al pasar
+// el mouse, al tocarla en el celular (otro toque la cierra) y con el teclado (Tab la enfoca; Enter o Espacio la fijan;
+// Esc la cierra). Las opciones de los filtros usan el mismo globo al pasar el mouse (grAyAttr / catTitulo).
+// Si catalogos.json trae ayudas.tablero (lo publica Configuracion), esa definicion gana sobre la del glosario.
+function grAyuda(clave){ var c=CAT().ayudas, t=c&&c.tablero&&c.tablero[clave]; return t||((GR_AYUDA_FIJA.tablero||{})[clave])||''; }
+function grI(clave){ var t=grAyuda(clave)||(/\s/.test(String(clave||''))?String(clave):''); if(!t) return ''; return '<span class="gr-i" role="button" tabindex="0" aria-label="Qué significa" data-ayuda="'+grEsc(t)+'">i</span>'; }
+(function(){
+  var pop=null, el=null, fijo=false, tm=null;
+  // En el celular no hay mouse: las opciones de los filtros se tocan para filtrar; la ayuda vive en la «i».
+  var sinHover=!!(window.matchMedia&&window.matchMedia('(hover: none)').matches);
+  function caja(){ if(!pop){ pop=document.createElement('div'); pop.id='gr-ayuda-pop'; pop.setAttribute('role','tooltip'); document.body.appendChild(pop); } return pop; }
+  function mostrar(x,fij){ var t=x.getAttribute('data-ayuda'); if(!t||!document.body.contains(x)) return; clearTimeout(tm); var p=caja(); if(el&&el!==x) el.removeAttribute('aria-describedby');
+    p.textContent=t; p.style.display='block'; p.style.left='0px'; p.style.top='0px'; el=x; fijo=!!fij; x.setAttribute('aria-describedby','gr-ayuda-pop');
+    var r=x.getBoundingClientRect(), w=p.offsetWidth, h=p.offsetHeight, vw=document.documentElement.clientWidth, vh=window.innerHeight;
+    var l=Math.max(8,Math.min(r.left+r.width/2-w/2, vw-w-8)), tp=r.bottom+6; if(tp+h>vh-8 && r.top-h-6>8) tp=r.top-h-6;
+    p.style.left=l+'px'; p.style.top=tp+'px'; }
+  function ocultar(){ clearTimeout(tm); if(pop) pop.style.display='none'; if(el) el.removeAttribute('aria-describedby'); el=null; fijo=false; }
+  window.grAyudaCerrar=ocultar;
+  function esI(t){ return t&&t.closest?t.closest('.gr-i'):null; }
+  document.addEventListener('mouseover',function(e){ var x=e.target&&e.target.closest?e.target.closest('[data-ayuda]'):null;
+    if(!x){ if(el&&!fijo) ocultar(); return; } if(x===el||fijo) return;
+    clearTimeout(tm); if(x.classList.contains('gr-i')) mostrar(x,false); else if(!sinHover) tm=setTimeout(function(){ mostrar(x,false); },350); });
+  document.addEventListener('mouseout',function(e){ if(fijo) return; var x=e.target&&e.target.closest?e.target.closest('[data-ayuda]'):null; if(!x) return; if(e.relatedTarget&&x.contains(e.relatedTarget)) return; if(x===el) ocultar(); else clearTimeout(tm); });
+  // El toque o clic en la «i» no activa lo que hay debajo (un recuadro, un filtro, un encabezado que ordena).
+  window.addEventListener('click',function(e){ var x=esI(e.target);
+    if(!x){ ocultar(); return; }
+    e.preventDefault(); e.stopPropagation(); if(x===el&&fijo) ocultar(); else mostrar(x,true); },true);
+  window.addEventListener('keydown',function(e){ if(e.key==='Escape'){ if(el) ocultar(); return; } var x=esI(e.target); if(!x) return;
+    if(e.key==='Enter'||e.key===' '){ e.preventDefault(); e.stopPropagation(); if(x===el&&fijo) ocultar(); else mostrar(x,true); } },true);
+  document.addEventListener('focusin',function(e){ var x=esI(e.target); if(x&&x!==el) mostrar(x,false); });
+  document.addEventListener('focusout',function(e){ if(esI(e.target)&&e.target===el) ocultar(); });
+  window.addEventListener('scroll',function(){ if(el) ocultar(); },true);
+  window.addEventListener('resize',function(){ if(el) ocultar(); });
+})();
 function grEsInterna(d){ var n=String((d&&d.name)||'').toUpperCase(); return /^(GR|PT)_INTERNO/.test(n) || grupoDeProd(d&&d.prod)==='INTERNO' || String(((d&&d.campos)||{}).gr_interno)==='true'; }
 function grStageLabel(d){ var m={}; stageOrderK().forEach(function(x){ m[x.id]=x.label; }); if(m[d.stage]) return m[d.stage]; if(d.stageLabel) return d.stageLabel; var o=((typeof DATA!=='undefined'&&DATA&&DATA.deals)||[]).filter(function(x){ return String(x.stage)===String(d.stage) && x.stageLabel; })[0]; return o?o.stageLabel:d.stage; }
 function grLiderDe(d){ var pr=((pipeCfg()||{}).productos)||[], k=String((d&&d.prod)||'').toUpperCase(); for(var i=0;i<pr.length;i++){ if(String(pr[i].codigo||'').toUpperCase()===k) return grEquipoNombre(pr[i].lidera); } return ''; }
@@ -2615,7 +2834,7 @@ function grPipeFiltrosHTML(pool){
   var f=FILT.pipeline, H_APOYO='';
   var cuenta=function(k, prueba){ return pool.filter(function(d){ return grPipePasa(d,[k]) && prueba(d); }).length; };
   var chip=function(k,v,label,n,extra){ var on=String(f[k]||'')===String(v); return '<button class="chip '+(on?'active':'')+'" data-f="pipeline" data-k="'+k+'" data-v="'+grEsc(v)+'"'+(extra||'')+catTitulo(k,v,extra)+'>'+grEsc(label)+(n===null||n===undefined?'':' '+n)+'</button>'; };
-  var fila=function(titulo, info, cuerpo){ return '<div class="filters"><span class="filter-label" title="'+grEsc(info)+'">'+titulo+' '+grI(info)+'</span>'+cuerpo+'</div>'; };
+  var fila=function(titulo, clave, cuerpo){ return '<div class="filters"><span class="filter-label">'+titulo+' '+grI(clave)+'</span>'+cuerpo+'</div>'; };
   var H='';
   // Etapa
   var et=chip('stage','ALL','Todos',cuenta('etapa',function(d){return !esStagePerdida(d.stage);}));
@@ -2624,13 +2843,13 @@ function grPipeFiltrosHTML(pool){
   et+=chip('stage','G:ventas','Ventas',cuenta('etapa',function(d){ return GR_ETAPAS_VENTAS_().indexOf(String(d.stage))>=0; }),' style="border-color:#62D17580;"');
   stageOrder().filter(function(x){ return GR_ETAPAS_VENTAS_().indexOf(String(x.id))>=0; }).forEach(function(x){ var n=cuenta('etapa',function(d){ return String(d.stage)===String(x.id); }); if(n||f.stage===x.label) et+=chip('stage',x.label,x.label,n); });
   stageOrderK().filter(function(x){ return GR_ETAPAS_PROSP_().indexOf(String(x.id))<0 && GR_ETAPAS_VENTAS_().indexOf(String(x.id))<0; }).forEach(function(x){ var n=cuenta('etapa',function(d){ return String(d.stage)===String(x.id); }); if(n) et+=chip('stage',x.label,x.label,n); });
-  H+=fila('Etapa','Prospección: Señal, Reply, Contactado y En Conversación (aún sin cita). Ventas: Atracción, Educación, Propuesta y Aprobación (ya hay o hubo cita). Elige el grupo o una etapa.',et);
+  H+=fila('Etapa','comun.f.etapa',et);
   // Responsable
   var resp=chip('persona','Todos','Todos',cuenta('persona',function(){return true;}));
   var nombresR={}; (((pipeCfg()||{}).equipo)||[]).forEach(function(p){ if(p&&p.nombre) nombresR[p.nombre]=1; }); pool.forEach(function(d){ var r=grRespDe(d); if(r) nombresR[r]=1; });
   Object.keys(nombresR).sort().forEach(function(n){ resp+=chip('persona',n,n,cuenta('persona',function(d){ return grRespDe(d)===n; })); });
   var sinR=cuenta('persona',function(d){ return !grRespDe(d); }); if(sinR) resp+=chip('persona','Otro','Sin responsable',sinR);
-  H+=fila('Responsable','Quien lleva la cuenta. Es un campo de cada oportunidad: nace igual al líder del producto y se puede cambiar en la ficha.',resp);
+  H+=fila('Responsable','pipeline.f.resp',resp);
   // Lider
   var lid=chip('lider','ALL','Todos',cuenta('lider',function(){return true;}));
   var nombresL={}; (((pipeCfg()||{}).productos)||[]).forEach(function(x){ var l=grEquipoNombre(x.lidera); if(l) nombresL[l]=1; }); pool.forEach(function(d){ var l=grLiderDe(d); if(l) nombresL[l]=1; });
@@ -2640,22 +2859,22 @@ function grPipeFiltrosHTML(pool){
   var nombresA={}; (((pipeCfg()||{}).equipo)||[]).forEach(function(p){ if(p&&p.nombre) nombresA[p.nombre]=1; }); pool.forEach(function(d){ grApoyoDe(d).forEach(function(n){ nombresA[n]=1; }); });
   Object.keys(nombresA).sort().forEach(function(n){ apo+=chip('apoyo',n,n,cuenta('apoyo',function(d){ return grApoyoDe(d).indexOf(n)>=0; })); });
   apo+=chip('apoyo','SIN','Sin apoyo',cuenta('apoyo',function(d){ return !grApoyoDe(d).length; }));
-  H_APOYO=fila('Apoyo','Quien acompaña en las reuniones de la oportunidad. No es fijo por producto: se marca en cada oportunidad, en la ficha.',apo);
-  H+=fila('Líder','Quien lidera el producto según la ficha de productos del portal. No se edita en la oportunidad: cambia si cambias el líder en el portal.',lid);
+  H_APOYO=fila('Apoyo','comun.f.apoyo',apo);
+  H+=fila('Líder','comun.f.lider',lid);
   H+=H_APOYO;
   // Semaforo de tiempos
   var ti='', grupoAnt='';
   GR_TIEMPO_OPC.forEach(function(o){ if(o[2] && o[2]!==grupoAnt){ ti+='<span style="font-size:11px;color:#6B7280;margin-left:6px;">'+o[2]+':</span>'; grupoAnt=o[2]; } ti+=chip('tiempo',o[0],o[1],o[0]==='ALL'?cuenta('tiempo',function(){return true;}):cuenta('tiempo',function(d){ return grTiempoDe(d,o[0]); })); });
-  H+=fila('Semáforo de tiempos','Etapa: días que lleva en su etapa contra el plazo que el portal le da a esa etapa (fuera de plazo, por vencer, en plazo). Cierre: la fecha en que esperamos firmar ya pasó, o no tiene fecha.',ti);
+  H+=fila('Semáforo de tiempos','comun.f.tiempo',ti);
   // 16nov2026 (Mike): los 14 productos oficiales, aunque hoy esten en 0; lo que no es de la lista va en Otros.
   f.prod=prodFiltroValor(f.prod);
   var pr=chip('prod','ALL',prodChipTexto('ALL',cuenta('prod',function(){return true;})),null);
   prodOpciones().forEach(function(k){ var n=cuenta('prod',function(d){ return prodOficial(d.prod)===k; }); if(k!==PROD_OTROS||n||f.prod===k) pr+=chip('prod',k,prodChipTexto(k,n),null); });
-  H+=fila('Producto','Los 14 productos oficiales de Great Revenue, aunque hoy no tengan oportunidades. Otros: lo que no es de la lista o no tiene producto.',pr);
+  H+=fila('Producto','comun.f.producto',pr);
   // Fecha
   var fe=GR_FECHA_OPC.map(function(o){ return chip('fper',o[0],o[1],null); }).join('');
   if(f.fper==='rango'){ var rr=grFechaRango(f), est='background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;padding:7px 10px;border-radius:8px;font:inherit;font-size:13px;color-scheme:dark;'; fe+='<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><span style="color:var(--text-dim);font-size:12px;">del</span><input type="date" id="pipe-desde" value="'+rr[0]+'" onchange="pipePeriodoFecha()" style="'+est+'"><span style="color:var(--text-dim);font-size:12px;">al</span><input type="date" id="pipe-hasta" value="'+rr[1]+'" onchange="pipePeriodoFecha()" style="'+est+'"></span>'; }
-  H+=fila('Fecha','Se aplica al día en que se lleva a cabo la cita, con cualquier opción de Cita. Con Sin cita registrada se aplica al día en que se creó la oportunidad. Próximos 7 y 30 días sirven para ver las citas que vienen.',fe);
+  H+=fila('Fecha','pipeline.f.fecha',fe);
   // Cita
   var rgC=grRangoPipe(), baseC=pool.filter(function(d){ return grPipePasa(d,['cita']); });
   var nC=function(e){ return baseC.reduce(function(s,d){ return s+grCitasEnRango(d,rgC,e).length; },0); };
@@ -2663,11 +2882,11 @@ function grPipeFiltrosHTML(pool){
   nCita.sin=pool.filter(function(d){ if(!grPipePasa(d,['cita','fecha'])||grCitasDe(d).length) return false; if(!rgC) return true; var v=grDiaDe(d.createdate); return !!v&&v>=rgC[0]&&v<=rgC[1]; }).length;
   nCita.ALL=rgC?(nCita.agendada+nCita.realizada+nCita.no_realizada):null;
   var ci=GR_CITA_REG_OPC.map(function(o){ return chip('cita',o[0],o[1],nCita[o[0]]); }).join('');
-  H+=fila('Cita','Citas por el día en que se llevan a cabo. Con un rango de fechas, Todas son todas las citas del rango (agendadas, realizadas y no realizadas, de cualquier etapa, Discovery o Siguientes pasos) y es la suma de las tres. Cuenta igual que el recuadro Citas. Sin cita registrada: oportunidades sin ninguna cita, por el día en que se crearon.',ci);
+  H+=fila('Cita','pipeline.f.cita',ci);
   // Faltan datos
-  H+=fila('Faltan datos','Oportunidades a las que les falta Responsable, origen, tipo o partner.','<button class="chip '+(f.faltan?'active':'')+'" data-f="pipeline" data-k="faltan" data-v="toggle" title="'+grEsc(GR_AYUDA_FIJA.faltan.toggle)+'">Solo las que les faltan datos '+cuenta('faltan',function(d){ return camposFaltan(d).length>0; })+'</button>');
+  H+=fila('Faltan datos','pipeline.f.faltan','<button class="chip '+(f.faltan?'active':'')+'" data-f="pipeline" data-k="faltan" data-v="toggle"'+grAyAttr(GR_AYUDA_FIJA.faltan.toggle)+'>Solo las que les faltan datos '+cuenta('faltan',function(d){ return camposFaltan(d).length>0; })+'</button>');
   // Acciones
-  H+='<div class="filters" style="border-top:1px solid #2A3142;padding-top:8px;"><span class="filter-label">Acciones:</span><button class="chip" onclick="pipeCompletarTodas(this)" title="El motor llena lo vacío de todas las oportunidades; nunca cambia lo que ya tiene valor" style="border-color:#02ADBA80;color:#02ADBA;">Completar datos de todas</button>'+(hayFiltrosPipeline()?'<button class="chip" onclick="quitarFiltrosPipeline()" style="border-color:#DB054080;">Quitar filtros</button>':'')+'</div>';
+  H+='<div class="filters" style="border-top:1px solid #2A3142;padding-top:8px;"><span class="filter-label">Acciones '+grI('pipeline.f.acciones')+'</span><button class="chip" onclick="pipeCompletarTodas(this)" style="border-color:#02ADBA80;color:#02ADBA;">Completar datos de todas</button>'+(hayFiltrosPipeline()?'<button class="chip" onclick="quitarFiltrosPipeline()" style="border-color:#DB054080;">Quitar filtros</button>':'')+'</div>';
   return H;
 }
 
@@ -2718,7 +2937,7 @@ function grGenFiltrosHTML(menu, pool, kind){
   // En Pendientes > Cerradas el universo ya viene filtrado por cierre; el semaforo no se vuelve a aplicar al contar.
   var cuenta=function(k,prueba){ return pool.filter(function(it){ return grGenPasa(menu,it,kind,[k]) && (menu!=='alertas' || grNivel1Pasa(it)) && prueba(it); }).length; };
   var chip=function(k,v,label,n,extra){ var on=String(f[k]||'')===String(v); return '<button class="chip '+(on?'active':'')+'" data-f="'+menu+'" data-k="'+k+'" data-v="'+grEsc(v)+'"'+(extra||'')+catTitulo(k,v,extra)+'>'+label+(n===null||n===undefined?'':' '+n)+'</button>'; };
-  var fila=function(titulo,info,cuerpo){ return '<div class="filters"><span class="filter-label" title="'+grEsc(info)+'">'+titulo+' '+grI(info)+'</span>'+cuerpo+'</div>'; };
+  var fila=function(titulo,clave,cuerpo){ return '<div class="filters"><span class="filter-label">'+titulo+' '+grI(clave)+'</span>'+cuerpo+'</div>'; };
   var H='';
   // Etapa
   var et=chip('stage','ALL','Todos',cuenta('etapa',function(){return true;}));
@@ -2728,47 +2947,47 @@ function grGenFiltrosHTML(menu, pool, kind){
   if(!esP) stageOrder().filter(function(x){ return GR_ETAPAS_VENTAS_().indexOf(String(x.id))>=0; }).forEach(function(x){ var n=cuenta('etapa',function(it){ return grGenEtapaPasa(it,grDealDeItem(it),x.label); }); if(n||f.stage===x.label) et+=chip('stage',x.label,x.label,n); });
   var nRen=cuenta('etapa',function(it){ return grGenEtapaPasa(it,grDealDeItem(it),'G:renov'); }); if(nRen||f.stage==='G:renov') et+=chip('stage','G:renov',grStageLabel({stage:'1355589932'}),nRen);
   if(esP) et+=chip('stage','G:internas','Internas',cuenta('etapa',function(it){ return grItemInterno(it,grDealDeItem(it)); }));
-  H+=fila('Etapa', esP?'Etapa de la oportunidad de la tarea. Prospección: Señal, Reply, Contactado y En Conversación. Ventas: Atracción, Educación, Propuesta y Aprobación. Internas: tareas del equipo sin cliente.':'Prospección: Señal, Reply, Contactado y En Conversación (aún sin cita). Ventas: Atracción, Educación, Propuesta y Aprobación (ya hay o hubo cita). Elige el grupo o una etapa.', et);
+  H+=fila('Etapa', esP?'pendientes.f.etapa':'alertas.f.etapa', et);
   // Responsable
   var resp=chip('persona','Todos','Todos',cuenta('persona',function(){return true;}));
   var nomR={}; (((pipeCfg()||{}).equipo)||[]).forEach(function(p){ if(p&&p.nombre) nomR[p.nombre]=1; }); pool.forEach(function(it){ personasDeItem(it).forEach(function(n){ if(n&&n!=='Otro') nomR[n]=1; }); });
   Object.keys(nomR).sort().forEach(function(n){ resp+=chip('persona',n,n,cuenta('persona',function(it){ return personasDeItem(it).indexOf(n)>=0; })); });
   var sinR=cuenta('persona',function(it){ var ps=personasDeItem(it); return !ps.length || ps.indexOf('Otro')>=0; }); if(sinR) resp+=chip('persona','Otro','Sin responsable',sinR);
-  H+=fila('Responsable', esP?'Quien hace la tarea: el mismo nombre que va en el asunto de la tarea.':'Quien lleva la cuenta de la oportunidad (campo Responsable de la ficha).', resp);
+  H+=fila('Responsable', esP?'pendientes.f.resp':'comun.f.resp', resp);
   // Lider
   var lid=chip('lider','ALL','Todos',cuenta('lider',function(){return true;}));
   var nomL={}; (((pipeCfg()||{}).productos)||[]).forEach(function(x){ var l=grEquipoNombre(x.lidera); if(l) nomL[l]=1; });
   Object.keys(nomL).sort().forEach(function(n){ lid+=chip('lider',n,n,cuenta('lider',function(it){ return grLiderDe({prod:it.prod})===n; })); });
-  H+=fila('Líder','Quien lidera el producto según la ficha de productos del portal.', lid);
+  H+=fila('Líder','comun.f.lider', lid);
   // Apoyo
   var apo=chip('apoyo','ALL','Todos',cuenta('apoyo',function(){return true;}));
   var nomA={}; (((pipeCfg()||{}).equipo)||[]).forEach(function(p){ if(p&&p.nombre) nomA[p.nombre]=1; });
   Object.keys(nomA).sort().forEach(function(n){ apo+=chip('apoyo',n,n,cuenta('apoyo',function(it){ var d=grDealDeItem(it); return !!d && grApoyoDe(d).indexOf(n)>=0; })); });
   apo+=chip('apoyo','SIN','Sin apoyo',cuenta('apoyo',function(it){ var d=grDealDeItem(it); return !d || !grApoyoDe(d).length; }));
-  H+=fila('Apoyo','Quien acompaña en las reuniones de la oportunidad. Se marca en cada oportunidad, en la ficha.', apo);
+  H+=fila('Apoyo','comun.f.apoyo', apo);
   // Semaforo de tiempos
   var ti='';
   if(esP){
     [['ALL','Todos'],['rojo','Fuera de plazo'],['amarillo','Por vencer'],['verde','En plazo'],['cerradas','Cerradas ('+CERRADAS_DIAS+' días)']].forEach(function(o){ ti+=chip('sem',o[0],o[1],(o[0]==='ALL'||o[0]==='cerradas')?null:cuenta('tiempo',function(it){ return semDeItem(it,'task')===o[0]; })); });
-    H+=fila('Semáforo de tiempos','Fuera de plazo: la tarea ya venció. Por vencer: vence hoy o en los próximos 3 días. En plazo: vence después. Cerradas: las que se completaron en los últimos '+CERRADAS_DIAS+' días.', ti);
+    H+=fila('Semáforo de tiempos','pendientes.f.tiempo', ti);
   } else {
     var gAnt='';
     GR_TIEMPO_OPC.forEach(function(o){ if(o[2]&&o[2]!==gAnt){ ti+='<span style="font-size:11px;color:#6B7280;margin-left:6px;">'+o[2]+':</span>'; gAnt=o[2]; } ti+=chip('tiempo',o[0],o[1],o[0]==='ALL'?cuenta('tiempo',function(){return true;}):cuenta('tiempo',function(it){ return grGenTiempoPasa(menu,it,grDealDeItem(it),o[0]); })); });
-    H+=fila('Semáforo de tiempos','Etapa: días que lleva la oportunidad en su etapa contra el plazo del portal. Cierre: la fecha en que esperamos firmar ya pasó, o no tiene fecha.', ti);
+    H+=fila('Semáforo de tiempos','comun.f.tiempo', ti);
   }
   // Producto: los 14 productos oficiales, aunque esten en 0; lo que no es de la lista va en Otros (16nov2026, Mike).
   f.prod=prodFiltroValor(f.prod);
   var pr=chip('prod','ALL',prodChipTexto('ALL',cuenta('prod',function(){return true;})),null);
   prodOpciones().forEach(function(k){ var n=cuenta('prod',function(it){ return prodOficial(it.prod)===k; }); if(k!==PROD_OTROS||n||f.prod===k) pr+=chip('prod',k,prodChipTexto(k,n),null); });
-  H+=fila('Producto','Los 14 productos oficiales de Great Revenue, aunque hoy no tengan nada. Otros: lo que no es de la lista o no tiene producto.', pr);
+  H+=fila('Producto','comun.f.producto', pr);
   // Fecha (solo Pendientes: el dia en que vence la tarea, o en que se cerro)
   if(esP){
     var fe=GR_FECHA_OPC.map(function(o){ return chip('fper',o[0],o[1],null); }).join('');
     if(f.fper==='rango'){ var rr=grFechaRango(f), est='background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;padding:7px 10px;border-radius:8px;font:inherit;font-size:13px;color-scheme:dark;'; fe+='<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><span style="color:var(--text-dim);font-size:12px;">del</span><input type="date" id="gen-desde-'+menu+'" value="'+rr[0]+'" onchange="grGenPeriodoFecha(\''+menu+'\')" style="'+est+'"><span style="color:var(--text-dim);font-size:12px;">al</span><input type="date" id="gen-hasta-'+menu+'" value="'+rr[1]+'" onchange="grGenPeriodoFecha(\''+menu+'\')" style="'+est+'"></span>'; }
-    H+=fila('Fecha','Del pasado al futuro, sobre el día en que vence la tarea (en Cerradas, el día en que se cerró).', fe);
+    H+=fila('Fecha','pendientes.f.fecha', fe);
   }
   // Buscar
-  H+=fila('Buscar', esP?'Busca en la tarea, el cliente y la oportunidad.':'Busca en la oportunidad, el cliente y el contacto.', '<input id="gen-q-'+menu+'" type="search" placeholder="Buscar cliente, oportunidad o tarea" value="'+grEsc(f.q||'')+'" oninput="grGenBuscar(\''+menu+'\',this.value)" style="flex:1;min-width:0;max-width:420px;padding:8px 12px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:13px;">');
+  H+=fila('Buscar', esP?'pendientes.f.buscar':'alertas.f.buscar', '<input id="gen-q-'+menu+'" type="search" placeholder="Buscar cliente, oportunidad o tarea" value="'+grEsc(f.q||'')+'" oninput="grGenBuscar(\''+menu+'\',this.value)" style="flex:1;min-width:0;max-width:420px;padding:8px 12px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:13px;">');
   return H;
 }
 
@@ -2808,10 +3027,11 @@ function renderPipeline() {
       <div id="pipeline-metrics-gr-pip" style="margin:0 0 12px"></div>
       ${grPipeFiltrosHTML(poolPipe)}
       <div class="filters">
+        <span class="filter-label">Buscar ${grI('pipeline.f.buscar')}</span>
         <input id="pipe-q" type="search" placeholder="Buscar cliente, oportunidad o contacto" value="${grEsc(FILT.pipeline.q||'')}" oninput="pipeBuscar(this.value)" style="flex:1;min-width:0;max-width:420px;padding:8px 12px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:13px;">
       </div>
       <div class="section-title">
-        <span class="section-count">${activos.length} deals activos</span>
+        <span class="section-count">${activos.length} oportunidades abiertas</span> ${grI('pipeline.abiertas')} <span style="font-size:11px;color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0;">Cómo leer las tarjetas ${grI('pipeline.tarjeta')}</span>
         <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">Total: <strong style="color:var(--text);">${fmtK(total)}</strong></span>
       </div>
       <div class="kanban">
@@ -2884,8 +3104,8 @@ function renderPipeline() {
   html += `</div>`;
 
   if (otros.length > 0) {
-    html += `<div class="section-title" style="margin-top:20px;">Otros stages <span class="section-count">${otros.length}</span></div>
-      <table class="tbl"><thead><tr><th>Deal</th><th>Stage</th><th>Responsable</th><th>Close</th><th class="num">Monto</th></tr></thead><tbody>`;
+    html += `<div class="section-title" style="margin-top:20px;">Otras etapas ${grI('pipeline.otros')} <span class="section-count">${otros.length}</span></div>
+      <table class="tbl"><thead><tr><th>Oportunidad</th><th>Etapa</th><th>Responsable</th><th>Cierre</th><th class="num">Monto ${grI('comun.monto')}</th></tr></thead><tbody>`;
     (PIPE_ABIERTAS._otros ? otros : otros.slice(0, 20)).forEach(d => {
       html += `<tr>
         <td>${d.name}</td>
@@ -2945,7 +3165,7 @@ function renderPipelineMetricsPipeline(){
   var totalPerdida=perd.reduce(function(s,k){return s+(dbs[k]||[]).length;},0);
   var total=totalActivos+totalPerdida;
   if(!total){box.innerHTML='';return;}
-  var h='<div style="margin-bottom:10px;font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.06em">Resultados &middot; <span style="color:#F3F4F6">'+total+'</span> oportunidades con los filtros de abajo '+grI('Cuántas oportunidades hay en cada etapa con los filtros de abajo aplicados. Toca un recuadro para ver solo esa etapa; tócalo otra vez para quitarlo.')+'</div>';
+  var h='<div style="margin-bottom:10px;font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.06em">Resultados &middot; <span style="color:#F3F4F6">'+total+'</span> oportunidades con los filtros de abajo '+grI('pipeline.resultados')+'</div>';
   h+='<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;">';
   main.forEach(function(k){
     var deals=dbs[k]||[]; if(!deals.length) return;
@@ -2969,8 +3189,7 @@ function renderPipelineMetricsPipeline(){
     });
   }
   var _ct=grCitas(), _ctC='#7C3AED';
-  var _tt='Citas por el día en que se llevan a cabo, con los mismos filtros y fecha de abajo (es el mismo número que la fila Cita). Totales: '+_ct.todas.length+'. Nuevas (Discovery, primera cita con el prospecto): '+_ct.nuevas+'. De siguientes pasos (ya hubo una cita antes o ya es cliente): '+_ct.siguientes+'. Realizadas '+_ct.real.length+', agendadas '+_ct.agen.length+(_ct.pasadas.length?(', ya pasaron sin confirmar '+_ct.pasadas.length):'')+(_ct.noR.length?(', no se realizaron '+_ct.noR.length):'')+'. Toca para ver la lista.';
-  h+='<div onclick="grCitasLista()" title="'+grEsc(_tt)+'" style="cursor:pointer;margin-left:auto;display:flex;flex-direction:column;align-items:center;gap:2px;background:'+_ctC+'1f;border:1px solid '+_ctC+'66;border-radius:14px;padding:10px 16px;min-width:110px;"><div style="font-size:22px;font-weight:800;color:#C4A5F0;line-height:1;">'+_ct.todas.length+'</div><div style="font-size:10px;font-weight:700;color:#F3F4F6;text-align:center;line-height:1.3;">Citas</div><div style="font-size:11px;font-weight:700;color:#C4A5F0;margin-top:2px;">'+_ct.nuevas+' nuevas</div><div style="font-size:11px;font-weight:700;color:#02ADBA;">'+_ct.siguientes+' siguientes pasos</div></div>';
+  h+='<div onclick="grCitasLista()" style="cursor:pointer;margin-left:auto;display:flex;flex-direction:column;align-items:center;gap:2px;background:'+_ctC+'1f;border:1px solid '+_ctC+'66;border-radius:14px;padding:10px 16px;min-width:110px;"><div style="font-size:22px;font-weight:800;color:#C4A5F0;line-height:1;">'+_ct.todas.length+'</div><div style="font-size:10px;font-weight:700;color:#F3F4F6;text-align:center;line-height:1.3;">Citas '+grI('pipeline.citas')+'</div><div style="font-size:11px;font-weight:700;color:#C4A5F0;margin-top:2px;">'+_ct.nuevas+' nuevas</div><div style="font-size:11px;font-weight:700;color:#02ADBA;">'+_ct.siguientes+' siguientes pasos</div></div>';
   h+='</div><div id="gr-citas-lista" style="display:none;margin-top:10px;padding:12px 14px;border:1px solid #2A3142;border-radius:12px;background:#0d111a;max-height:320px;overflow:auto;"></div>';
   box.innerHTML=h;
 }
@@ -3002,17 +3221,17 @@ function renderWon() {
   html += `
     <div class="won-kpis">
       <div class="won-kpi renewal">
-        <div class="won-kpi-label">💰 Revenue Recurrente Anual</div>
+        <div class="won-kpi-label">💰 Revenue Recurrente Anual ${grI('won.recurrente')}</div>
         <div class="won-kpi-value">${fmtK(recurrenteAnual)}</div>
         <div class="won-kpi-sub">${fmtK(statsWon.renovacionesAnuales.montoTotal)} anuales + ${fmtK(statsWon.consultoriasMensuales.montoAnual)} consultorías</div>
       </div>
       <div class="won-kpi recurring">
-        <div class="won-kpi-label">📅 Renovaciones críticas</div>
+        <div class="won-kpi-label">📅 Renovaciones críticas ${grI('won.criticas')}</div>
         <div class="won-kpi-value">${statsWon.renovacionesAnuales.vencidas + statsWon.renovacionesAnuales.criticas}</div>
         <div class="won-kpi-sub">Vencen en ≤60 días · ${statsWon.renovacionesAnuales.proximas} próximas (≤90d)</div>
       </div>
       <div class="won-kpi oneshot">
-        <div class="won-kpi-label">💵 Monto mensual recurrente</div>
+        <div class="won-kpi-label">💵 Monto mensual recurrente ${grI('won.mensual')}</div>
         <div class="won-kpi-value">${fmtK(statsWon.consultoriasMensuales.montoMensual)}</div>
         <div class="won-kpi-sub">${statsWon.consultoriasMensuales.count} consultorías activas</div>
       </div>
@@ -3024,7 +3243,7 @@ function renderWon() {
     <div class="won-bucket">
       <div class="won-bucket-header">
         <span class="won-bucket-icon">📅</span>
-        <span>Renovaciones Anuales</span>
+        <span>Renovaciones Anuales ${grI('won.renovaciones')}</span>
         <span class="won-bucket-count">${renovaciones.length}</span>
         <span class="won-bucket-total">Total: <strong>${fmtK(statsWon.renovacionesAnuales.montoTotal)}</strong></span>
       </div>
@@ -3062,7 +3281,7 @@ function renderWon() {
           <div><span class="urg-badge ${d.urgencia}">${d.urgencia}</span></div>
           <div class="num-right">${fmtK(d.amount)}</div>
           <div style="text-align:center;">
-            <a class="btn-action" href="${hsUrl}" target="_blank">Ver deal →</a>
+            <a class="btn-action" href="${hsUrl}" target="_blank">Ver oportunidad →</a>
           </div>
         </div>
       `;
@@ -3075,7 +3294,7 @@ function renderWon() {
     <div class="won-bucket">
       <div class="won-bucket-header">
         <span class="won-bucket-icon">💰</span>
-        <span>Consultorías Mensuales</span>
+        <span>Consultorías Mensuales ${grI('won.consultorias')}</span>
         <span class="won-bucket-count">${consultorias.length}</span>
         <span class="won-bucket-total">${fmtK(statsWon.consultoriasMensuales.montoMensual)}/mes · <strong>${fmtK(statsWon.consultoriasMensuales.montoAnual)}/año</strong></span>
       </div>
@@ -3130,7 +3349,7 @@ function renderWon() {
             <div class="won-deal-prod" style="text-align:right;">${fmtK(d.amount * 12)}/año</div>
           </div>
           <div style="text-align:center;">
-            <a class="btn-action" href="${hsUrl}" target="_blank">Ver deal →</a>
+            <a class="btn-action" href="${hsUrl}" target="_blank">Ver oportunidad →</a>
           </div>
         </div>
       `;
@@ -3143,16 +3362,16 @@ function renderWon() {
     <div class="won-bucket">
       <div class="won-bucket-header">
         <span class="won-bucket-icon">📊</span>
-        <span>Histórico Won</span>
+        <span>Histórico Won ${grI('won.historico')}</span>
         <span class="won-bucket-count">${historico.length}</span>
-        <span class="won-bucket-total">Proyectos one-shot · Total: <strong>${fmtK(statsWon.historicoWon.montoTotal)}</strong></span>
+        <span class="won-bucket-total">Proyectos de un solo pago · Total: <strong>${fmtK(statsWon.historicoWon.montoTotal)}</strong></span>
       </div>
   `;
 
   if (historico.length === 0) {
-    html += `<div class="won-empty-bucket">Sin proyectos one-shot cerrados</div>`;
+    html += `<div class="won-empty-bucket">Sin proyectos de un solo pago cerrados</div>`;
   } else {
-    html += `<table class="tbl" style="border-radius:0 0 8px 8px;"><thead><tr><th>Deal</th><th>Producto</th><th>Responsable</th><th>Cierre</th><th class="num">Monto</th></tr></thead><tbody>`;
+    html += `<table class="tbl" style="border-radius:0 0 8px 8px;"><thead><tr><th>Oportunidad</th><th>Producto</th><th>Responsable</th><th>Cierre</th><th class="num">Monto ${grI('comun.monto')}</th></tr></thead><tbody>`;
     historico.forEach(d => {
       const dealId = d.id || '';
       const hsUrl = dealId ? `https://app.hubspot.com/contacts/49671716/record/0-3/${dealId}` : '#';
@@ -3179,15 +3398,15 @@ function renderWonLegacy() {
   let html = `
     <div class="section">
       <div class="section-title">
-        Clientes Won <span class="section-count">${won.length}</span>
+        Clientes Won ${grI('won.legacy')} <span class="section-count">${won.length}</span>
         <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">Total: <strong style="color:var(--text);">${fmtK(total)}</strong></span>
       </div>
       <table class="tbl">
-        <thead><tr><th></th><th>Deal</th><th>Responsable</th><th>Close</th><th class="num">Monto</th></tr></thead>
+        <thead><tr><th></th><th>Oportunidad</th><th>Responsable</th><th>Cierre</th><th class="num">Monto ${grI('comun.monto')}</th></tr></thead>
         <tbody>
   `;
   if (won.length === 0) {
-    html += `<tr><td colspan="5" class="empty">No hay deals en Won en la vista actual</td></tr>`;
+    html += `<tr><td colspan="5" class="empty">No hay oportunidades ganadas en la vista actual</td></tr>`;
   }
   won.forEach(d => {
     const days = daysUntil(d.closedate);
@@ -3213,7 +3432,7 @@ function renderWonLegacy() {
 
 // --- CLIENTES ---
 function renderClientes() {
-  let html = `<div class="client-grid">`;
+  let html = `<div class="section-title" style="margin-bottom:10px;">Clientes activos ${grI('clientes.titulo')}</div><div class="client-grid">`;
   Object.values(ACTIVE_CLIENTS).forEach(c => {
     const clientDeals = DATA.deals.filter(d =>
       d.name.toUpperCase().includes(c.name.toUpperCase())
@@ -3221,11 +3440,11 @@ function renderClientes() {
     const total = clientDeals.reduce((s, d) => s + (d.amount || 0), 0);
     html += `<div class="client-card">
       <div class="client-name">${c.name}</div>
-      <div class="client-total">${fmtK(total)}</div>
+      <div class="client-total">${fmtK(total)} ${grI('clientes.total')}</div>
       <div class="client-contact">${c.contact}${c.email ? ' · ' + c.email : ''}</div>
       <div class="client-contact" style="color:var(--yellow);">${c.note || ''}</div>
       <div class="client-deals">
-        ${clientDeals.length === 0 ? '<div class="empty" style="padding:8px;font-size:11px;">Sin deals activos</div>' : ''}
+        ${clientDeals.length === 0 ? '<div class="empty" style="padding:8px;font-size:11px;">Sin oportunidades abiertas</div>' : ''}
         ${clientDeals.map(d => `
           <div class="client-deal">
             <span>${d.name}</span>
@@ -3314,22 +3533,22 @@ function renderPendientes() {
   let html = `
     <div class="kpi-grid">
       <div class="kpi kpi-purple">
-        <div class="kpi-label">Total Pendientes</div>
+        <div class="kpi-label">Total Pendientes ${grI('pendientes.total')}</div>
         <div class="kpi-value">${s.total}</div>
         <div class="kpi-sub">en HubSpot</div>
       </div>
       <div class="kpi kpi-pink" style="border-left-color: var(--red);">
-        <div class="kpi-label">Vencidas</div>
+        <div class="kpi-label">Vencidas ${grI('pendientes.vencidas')}</div>
         <div class="kpi-value" style="color:#FCA5A5;">${s.vencidas}</div>
         <div class="kpi-sub">requieren atención</div>
       </div>
       <div class="kpi kpi-yellow">
-        <div class="kpi-label">Hoy</div>
+        <div class="kpi-label">Hoy ${grI('pendientes.hoy')}</div>
         <div class="kpi-value">${s.hoy}</div>
         <div class="kpi-sub">cerrar hoy</div>
       </div>
       <div class="kpi kpi-cyan">
-        <div class="kpi-label">Próximas (3d)</div>
+        <div class="kpi-label">Próximas (3d) ${grI('pendientes.proximas')}</div>
         <div class="kpi-value">${s.proximas}</div>
         <div class="kpi-sub">planear</div>
       </div>
@@ -3340,11 +3559,11 @@ function renderPendientes() {
   html += `<div class="section">
     ${grGenFiltrosHTML('pendientes', allT, 'task')}
     <div class="filters">
-      <span class="filter-label">Ordenar por:</span>
+      <span class="filter-label">Ordenar por ${grI('pendientes.ordenar')}</span>
       ${(CAT().sorts&&CAT().sorts.pendientes||[]).map(o => `<button class="chip ${sortMode === o.id ? 'active' : ''}" data-f="pendientes" data-k="sort" data-v="${o.id}">${o.label}</button>`).join('')}
     </div>
     <div class="section-title">
-      <span class="section-count">${filtered.length} tareas</span>
+      <span class="section-count">${filtered.length} tareas</span> ${grI('pendientes.lista')}
       <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">Ordenadas por ${sortMode === 'date_asc' ? 'fecha ascendente' : sortMode === 'date_desc' ? 'fecha descendente' : 'urgencia'}</span>
     </div>
     <table class="tbl">
@@ -3352,10 +3571,10 @@ function renderPendientes() {
         <th style="width:30px;"></th>
         <th>Tarea</th>
         <th>Cliente</th>
-        <th>Stage</th>
+        <th>Etapa ${grI('pendientes.col.stage')}</th>
         ${current === 'Todos' ? '<th>Persona</th>' : ''}
         <th>Producto</th>
-        <th>Fecha</th>
+        <th>Fecha ${grI('pendientes.col.fecha')}</th>
         <th style="width:40px;text-align:center;">Acción</th>
       </tr></thead>
       <tbody>
@@ -3829,7 +4048,7 @@ function renderLimpieza(){
   var prodDeName=function(nm){ var t=String(nm||'').split('_'); var p=(t[0]==='P'?t[1]:t[0])||''; p=p.replace(/\+.*$/,''); return p||'—'; };
   var ageOf=function(cd){ if(!cd) return '—'; var f=new Date(cd); if(isNaN(f)) return '—'; return Math.floor((Date.now()-f)/86400000)+'d'; };
   var thead=esDeal
-    ? '<tr><th>Deal</th><th>Producto</th><th>Stage</th><th style="text-align:center;">Días alta</th><th style="width:1%"></th></tr>'
+    ? '<tr><th>Oportunidad</th><th>Producto</th><th>Etapa</th><th style="text-align:center;">Días alta '+grI('comun.diasalta')+'</th><th style="width:1%"></th></tr>'
     : esEmpresa
     ? '<tr><th>Empresa</th><th>Dominio</th><th style="text-align:center;">Contactos</th><th style="text-align:center;">Oportunidades</th><th style="text-align:center;">Días alta</th><th style="width:1%"></th></tr>'
     : '<tr><th>Nombre</th><th>Puesto</th><th>Empresa</th><th>Teléfono</th><th>Empresa con deals</th><th style="width:1%"></th></tr>';
@@ -3864,7 +4083,7 @@ function renderLimpieza(){
   }).join('');
   var tabla=active.arr.length?('<table class="tbl"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table>'):'<div class="empty">Sin registros en esta categoría 🎉</div>';
   if(cEl){
-    cEl.innerHTML='<div class="section-title" style="margin-top:8px"><span class="section-count">🧹 '+active.label+' · '+active.arr.length+'</span><span style="margin-left:auto;color:var(--text-mute);font-size:11px">solo marca BORRAR · el borrado lo haces tú en HubSpot</span></div>'+tabla;
+    cEl.innerHTML='<div class="section-title" style="margin-top:8px"><span class="section-count">🧹 '+active.label+' · '+active.arr.length+'</span> '+grI('alertas.limpieza')+'<span style="margin-left:auto;color:var(--text-mute);font-size:11px">solo marca BORRAR · el borrado lo haces tú en HubSpot</span></div>'+tabla;
     cEl.querySelectorAll('.limp-borrar').forEach(function(b){b.addEventListener('click',function(){abrirPreviaBorrado(b.getAttribute('data-id'),b.getAttribute('data-emp'),b.getAttribute('data-caso'),decodeURIComponent(b.getAttribute('data-nom')),b);});});
     cEl.querySelectorAll('.limp-mark').forEach(function(b){b.addEventListener('click',function(){markBorrar(b.getAttribute('data-tipo'),b.getAttribute('data-id'),decodeURIComponent(b.getAttribute('data-orig')),false,b);});});
     cEl.querySelectorAll('.limp-undo').forEach(function(b){b.addEventListener('click',function(){markBorrar(b.getAttribute('data-tipo'),b.getAttribute('data-id'),decodeURIComponent(b.getAttribute('data-orig')),true,b);});});
@@ -4094,12 +4313,13 @@ function fixConteo(op){
 
 function fixMenuHTML(){
   var H='<div class="filters" style="margin-bottom:8px;gap:6px">'
+    +'<span class="filter-label">Vista '+grI('alertas.vista')+'</span>'
     +'<button class="chip'+(FIX_NIVEL1==='vender'?' active':'')+'" data-fix1="vender" style="font-weight:700">💼 Vender</button>'
     +'<button class="chip'+(FIX_NIVEL1==='arreglar'?' active':'')+'" data-fix1="arreglar" style="font-weight:700">🧹 Arreglar</button>'
     +'</div>';
   if(FIX_NIVEL1!=='arreglar') return H;
 
-  H+='<div class="filters" style="margin-bottom:8px;gap:6px"><span class="filter-label">¿Qué arreglas?</span>'
+  H+='<div class="filters" style="margin-bottom:8px;gap:6px"><span class="filter-label">¿Qué arreglas? '+grI('alertas.objeto')+'</span>'
     +'<button class="chip'+(FIX_OBJ==='oportunidad'?' active':'')+'" data-fixobj="oportunidad">💠 Oportunidad</button>'
     +'<button class="chip'+(FIX_OBJ==='contacto'?' active':'')+'" data-fixobj="contacto">📇 Contacto</button>'
     +'<button class="chip'+(FIX_OBJ==='empresa'?' active':'')+'" data-fixobj="empresa">🏢 Empresa</button>'
@@ -4110,7 +4330,7 @@ function fixMenuHTML(){
   H+='</div>';
 
   var ops=fixOpciones(FIX_OBJ);
-  H+='<div class="filters" style="margin-bottom:6px;gap:6px"><span class="filter-label">Problema:</span>';
+  H+='<div class="filters" style="margin-bottom:6px;gap:6px"><span class="filter-label">Problema '+grI('alertas.problema')+'</span>';
   ops.forEach(function(o){
     H+='<button class="chip'+(FIX_OPC===o.k?' active':'')+'" data-fixopc="'+o.k+'">'+o.label+' <b>'+fixConteo(o)+'</b></button>';
   });
@@ -4217,7 +4437,7 @@ function renderTareas(){
     ? '<table class="tbl"><thead><tr><th>Tarea</th><th>Responsable</th><th>Vence</th><th style="text-align:center">Oportunidad</th><th style="text-align:center">Contacto</th><th style="width:1%"></th></tr></thead><tbody>'+filas+'</tbody></table>'
     : '<div class="empty">Sin tareas en esta categoría 🎉</div>';
 
-  cEl.innerHTML='<div class="section-title" style="margin-top:8px"><span class="section-count">✅ '+b.label+' · '+b.arr.length+'</span><span style="margin-left:auto;color:var(--text-mute);font-size:11px">de '+(((TAREAS||{}).resumen||{}).pendientes||0)+' tareas pendientes</span></div>'+tabla;
+  cEl.innerHTML='<div class="section-title" style="margin-top:8px"><span class="section-count">✅ '+b.label+' · '+b.arr.length+'</span> '+grI('alertas.tareas')+'<span style="margin-left:auto;color:var(--text-mute);font-size:11px">de '+(((TAREAS||{}).resumen||{}).pendientes||0)+' tareas pendientes</span></div>'+tabla;
 
   cEl.querySelectorAll('.tar-cerrar').forEach(function(x){ x.addEventListener('click',function(){ accionTarea('cerrar', x.getAttribute('data-id'), null, x); }); });
   cEl.querySelectorAll('.tar-owner').forEach(function(x){ x.addEventListener('change',function(){ if(x.value) accionTarea('asignar', x.getAttribute('data-id'), x.value, x); }); });
@@ -4434,22 +4654,22 @@ function renderAlertas() {
   let html = `
     <div class="kpi-grid" style="margin-bottom:16px;">
       <div class="kpi kpi-pink">
-        <div class="kpi-label">REVENUE EN JUEGO</div>
+        <div class="kpi-label">REVENUE EN JUEGO ${grI('alertas.revenue')}</div>
         <div class="kpi-value">${fmtK(stats.revenueEnRiesgo || 0)}</div>
         <div class="kpi-sub">en alertas activas</div>
       </div>
       <div class="kpi kpi-cyan">
-        <div class="kpi-label">TOTAL ALERTAS</div>
+        <div class="kpi-label">TOTAL ALERTAS ${grI('alertas.total')}</div>
         <div class="kpi-value">${stats.total || 0}</div>
         <div class="kpi-sub">en HubSpot</div>
       </div>
       <div class="kpi kpi-purple">
-        <div class="kpi-label">CRÍTICAS</div>
+        <div class="kpi-label">CRÍTICAS ${grI('alertas.criticas')}</div>
         <div class="kpi-value">${criticas}</div>
         <div class="kpi-sub">cerrar urgente</div>
       </div>
       <div class="kpi kpi-yellow">
-        <div class="kpi-label">ACCIONES SEMANA</div>
+        <div class="kpi-label">ACCIONES SEMANA ${grI('alertas.semana')}</div>
         <div class="kpi-value">${semana}</div>
         <div class="kpi-sub">cerrar + reactivar</div>
       </div>
@@ -4463,7 +4683,7 @@ function renderAlertas() {
   if(FIX_NIVEL1==='vender'){
     var _accBase = allAlertas.filter(function(a){ return pasaFiltro('alertas', a, 'alerta'); });
     var _accCounts = {}; _accBase.forEach(function(a){ _accCounts[a.accion]=(_accCounts[a.accion]||0)+1; });
-    html += '<div class="filters"><span class="filter-label">Acción:</span>';
+    html += '<div class="filters"><span class="filter-label">Acción '+grI('alertas.accion')+'</span>';
     html += _chip('alertas','accion','ALL','Todas ('+_accBase.length+')', FILT.alertas.accion==='ALL');
     ACCION_DEFS.forEach(function(d){
       if(d.cat==='Higienizar') return;
@@ -4473,7 +4693,7 @@ function renderAlertas() {
   }
 
   html += `<div class="filters">
-    <span class="filter-label">Ordenar por:</span>
+    <span class="filter-label">Ordenar por ${grI('alertas.ordenar')}</span>
     <button class="chip ${FILT.alertas.sort === 'monto_desc' ? 'active' : ''}" data-f="alertas" data-k="sort" data-v="monto_desc">💰 Monto ↓</button>
     <button class="chip ${FILT.alertas.sort === 'urgencia' ? 'active' : ''}" data-f="alertas" data-k="sort" data-v="urgencia">⚠️ Urgencia</button>
     <button class="chip ${FILT.alertas.sort === 'dias_desc' ? 'active' : ''}" data-f="alertas" data-k="sort" data-v="dias_desc">📅 Días estancado ↓</button>
@@ -4482,7 +4702,7 @@ function renderAlertas() {
   // Lista
   const revenueFiltered = filtered.reduce((s, a) => s + (a.amount || 0), 0);
   html += `<div class="section-title" style="margin-top:16px;">
-    <span class="section-count">${filtered.length} alertas</span>
+    <span class="section-count">${filtered.length} alertas</span> ${grI('alertas.lista')}
     <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">${fmtK(revenueFiltered)} en juego · Ordenadas por ${FILT.alertas.sort === 'monto_desc' ? 'monto descendente' : FILT.alertas.sort === 'urgencia' ? 'urgencia' : 'días estancado'}</span>
   </div>`;
 
@@ -4494,11 +4714,11 @@ function renderAlertas() {
     var _ageMap = (typeof _dealAgeMap==='function') ? _dealAgeMap() : {};
     if (focoTarea) {
       html += `<table class="tbl"><thead><tr>
-        <th>Tarea</th><th>Cliente</th><th>Stage</th><th>Persona</th><th>Producto</th><th>Fecha</th><th>Acción</th>
+        <th>Tarea</th><th>Cliente</th><th>Etapa</th><th>Persona</th><th>Producto</th><th>Fecha</th><th>Acción</th>
       </tr></thead><tbody>`;
     } else {
       html += `<table class="tbl"><thead><tr>
-        <th>Deal</th><th>Producto</th><th>Stage</th><th>Persona</th><th style="text-align:center;">Días retraso</th><th style="text-align:center;">Días alta</th><th>Motivo</th><th>Resolver</th>
+        <th>Oportunidad</th><th>Producto</th><th>Etapa</th><th>Persona</th><th style="text-align:center;">Días retraso ${grI('alertas.col.dias')}</th><th style="text-align:center;">Días alta ${grI('comun.diasalta')}</th><th>Motivo</th><th>Resolver</th>
       </tr></thead><tbody>`;
     }
     filtered.slice(0, 200).forEach(a => {
@@ -5214,10 +5434,10 @@ function renderGanadoresGR(cont){
   var filas=Object.keys(g).map(function(k){return g[k];}).sort(function(a,b){ if((a.v==='(sin dato)')!==(b.v==='(sin dato)')) return a.v==='(sin dato)'?1:-1; return (b.c-a.c)||(b.n-a.n); });
   var totN=deals.length, totC=deals.filter(ganLlegoACita).length;
   var chip=function(k,l){ return '<button class="chip'+(ganDim===k?' active':'')+'" data-gdim="'+k+'" style="font-size:11px;padding:5px 11px;border-radius:18px;">'+l+'</button>'; };
-  var html='<div class="section" id="prosp-ganadores"><div class="section-title">Qué está generando reuniones</div>'
+  var html='<div class="section" id="prosp-ganadores"><div class="section-title">Qué está generando reuniones '+grI('prosp.ganadores')+'</div>'
     +'<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Oportunidades de HubSpot (abiertas, ganadas y perdidas) con los filtros de arriba: '+totN+' oportunidades, '+totC+' llegaron a cita agendada. Las etiquetas son las de Amplemarket. Toca una fila para ver las oportunidades.</div>'
     +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">'+GAN_DIMS.map(function(x){return chip(x[0],x[1]);}).join('')+'</div>'
-    +'<div style="overflow-x:auto;"><table class="tbl" style="width:100%;"><thead><tr><th style="width:55%;">'+grEsc((GAN_DIMS.filter(function(x){return x[0]===ganDim;})[0]||[])[1]||'')+'</th><th style="text-align:center;">OPORTUNIDADES</th><th style="text-align:center;">LLEGARON A CITA</th><th style="text-align:center;">% A CITA</th></tr></thead><tbody>';
+    +'<div style="overflow-x:auto;"><table class="tbl" style="width:100%;"><thead><tr><th style="width:55%;">'+grEsc((GAN_DIMS.filter(function(x){return x[0]===ganDim;})[0]||[])[1]||'')+'</th><th style="text-align:center;">OPORTUNIDADES '+grI('prosp.gan.n')+'</th><th style="text-align:center;">LLEGARON A CITA '+grI('prosp.gan.c')+'</th><th style="text-align:center;">% A CITA '+grI('prosp.gan.pct')+'</th></tr></thead><tbody>';
   if(!filas.length) html+='<tr><td colspan="4" style="font-size:12px;color:var(--text-mute);padding:12px;">Sin oportunidades para este filtro.</td></tr>';
   filas.slice(0,25).forEach(function(x){ var pct=x.n?Math.round(100*x.c/x.n):0; var sel=ganSel===x.v;
     html+='<tr data-gval="'+encodeURIComponent(x.v)+'" style="cursor:pointer;'+(sel?'background:rgba(2,173,186,.08);':'')+'"><td style="'+(x.v==='(sin dato)'?'color:var(--text-mute);':'')+'word-break:break-word;">'+grEsc(x.v)+'</td><td style="text-align:center;">'+x.n+'</td><td style="text-align:center;font-weight:700;color:'+(x.c?'#62D175':'var(--text-mute)')+';">'+x.c+'</td><td style="text-align:center;">'+pct+'%</td></tr>';
@@ -5287,7 +5507,7 @@ function renderProspeccion() {
   var _base=PEV_n.filter(function(e){ return e.tipo==='open3' || esReplyReal(e); });
   var _n=function(ex,prueba){ return _base.filter(function(e){ return prospPasa(e,ex) && prueba(e); }).length; };
   var _cfn=function(field,val,lbl,cur,n){ return _cf(field,val,lbl+(n===undefined||n===null?'':' '+n),cur); };
-  var _rowI=function(label,info,inner){ return _row(label+' '+grI(info),inner); };
+  var _rowI=function(label,clave,inner){ return _row(label+' '+grI(clave),inner); };
   // Etapa
   var et=_cfn('stage','ALL','Todos',prospStage,_n('etapa',function(){return true;}));
   et+=_cfn('stage','G:prosp','Prospección',prospStage,_n('etapa',function(e){ return prospEtapaPasa(e,'G:prosp'); }));
@@ -5296,33 +5516,33 @@ function renderProspeccion() {
   GR_PM_VENTAS_().forEach(function(x){ var n=_n('etapa',function(e){ return (e.etapa||'')===x; }); if(n||prospStage===x) et+=_cfn('stage',x,(GR_ETAPA_LABEL_()[x]||x),prospStage,n); });
   ((CAT().stages)||[]).filter(function(s){ return s.fase!=='prospeccion' && !(s.fase==='venta'&&s.prioridad<=9); }).sort(function(a,b){return a.prioridad-b.prioridad;}).map(function(s){ return s.idCli; }).concat(['Otra etapa']).forEach(function(x){ var n=_n('etapa',function(e){ return (e.etapa||'')===x; }); if(n||prospStage===x) et+=_cfn('stage',x,(GR_ETAPA_LABEL_()[x]||x),prospStage,n); });
   et+=_cfn('stage','G:sin','Sin oportunidad',prospStage,_n('etapa',function(e){ return prospEtapaPasa(e,'G:sin'); }));
-  chips+=_rowI('Etapa','Etapa de la oportunidad del prospecto. Prospección: Señal, Reply, Contactado y En Conversación. Ventas: Atracción, Educación, Propuesta y Aprobación. Sin oportunidad: el evento todavía no tiene oportunidad.',et);
+  chips+=_rowI('Etapa','prosp.f.etapa',et);
   // Responsable
   var nomR={}; (((pipeCfg()||{}).equipo)||[]).forEach(function(p){ if(p&&p.nombre) nomR[p.nombre]=1; });
   var rs=_cfn('resp','Todos','Todos',prospResp,_n('resp',function(){return true;}));
   Object.keys(nomR).sort().forEach(function(n){ rs+=_cfn('resp',n,n,prospResp,_n('resp',function(e){ return prospRespDe(e)===n; })); });
   rs+=_cfn('resp','Otro','Sin responsable',prospResp,_n('resp',function(e){ return !prospRespDe(e); }));
-  chips+=_rowI('Responsable','Quien lleva la cuenta de la oportunidad del prospecto (campo Responsable de la ficha).',rs);
+  chips+=_rowI('Responsable','prosp.f.resp',rs);
   // Producto: los 14 productos oficiales, aunque hoy esten en 0; lo que no es de la lista va en Otros (16nov2026, Mike).
   prospProducto=prodFiltroValor(prospProducto);
   var pr=_cf('prod','ALL',prodChipTexto('ALL',_n('prod',function(){return true;})),prospProducto);
   prodOpciones().forEach(function(p){ var n=_n('prod',function(e){ return prodOficial(e.producto)===p; }); if(p!==PROD_OTROS||n||prospProducto===p) pr+=_cf('prod',p,prodChipTexto(p,n),prospProducto); });
-  chips+=_rowI('Producto','Los 14 productos oficiales de Great Revenue, aunque hoy no tengan eventos. Otros: lo que no es de la lista o no tiene producto.',pr);
+  chips+=_rowI('Producto','comun.f.producto',pr);
   // Tipo de senal
-  chips+=_rowI('Tipo de señal','Reply: el prospecto contestó. Open+3: abrió tres veces o más sin contestar. Es el mismo campo de la ficha de la oportunidad.',_cfn('tipo','ALL','Todos',prospTipo,_n('tipo',function(){return true;}))+catLista('tiposSenal').map(function(o){ return _cfn('tipo',o.id,o.label,prospTipo,_n('tipo',function(e){ return e.tipo===o.id; })); }).join(''));
-  if(canalesPres.length){ chips+=_rowI('Canal','Por dónde llegó el evento.',_cfn('canal','ALL','Todos',prospCanal,_n('canal',function(){return true;}))+canalesPres.map(function(c){return _cfn('canal',c,c,prospCanal,_n('canal',function(e){ return (e.canal||'')===c; }));}).join('')); }
+  chips+=_rowI('Tipo de señal','prosp.f.tipo',_cfn('tipo','ALL','Todos',prospTipo,_n('tipo',function(){return true;}))+catLista('tiposSenal').map(function(o){ return _cfn('tipo',o.id,o.label,prospTipo,_n('tipo',function(e){ return e.tipo===o.id; })); }).join(''));
+  if(canalesPres.length){ chips+=_rowI('Canal','prosp.f.canal',_cfn('canal','ALL','Todos',prospCanal,_n('canal',function(){return true;}))+canalesPres.map(function(c){return _cfn('canal',c,c,prospCanal,_n('canal',function(e){ return (e.canal||'')===c; }));}).join('')); }
   (function(){ var r=prospPerVista(), hoy=_diaLocal(new Date()); var est='background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;padding:6px 9px;border-radius:8px;font:inherit;font-size:12px;color-scheme:dark;cursor:pointer;'; var ab='onclick="try{this.showPicker&&this.showPicker()}catch(e){}"';
     var opc=[['todo','Todo'],['30','Últimos 30 días'],['7','Últimos 7 días'],['ayer','Ayer'],['hoy','Hoy'],['rango','Rango']];
-    chips+=_rowI('Fecha','Del pasado a hoy, sobre el día del evento.', opc.map(function(o){ return _cf('per',o[0],o[1],prospPer.fper||'todo'); }).join('')+(prospPer.fper==='rango'?'<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><span style="color:var(--text-dim);font-size:12px;">del</span><input type="date" id="prosp-desde" value="'+r[0]+'" max="'+hoy+'" '+ab+' onchange="prospPeriodoFecha()" title="Fecha de inicio del rango" style="'+est+'"><span style="color:var(--text-dim);font-size:12px;">al</span><input type="date" id="prosp-hasta" value="'+r[1]+'" max="'+hoy+'" '+ab+' onchange="prospPeriodoFecha()" title="Fecha de fin del rango (incluida)" style="'+est+'"></span>':'')); })();
-  chips+=_rowI('Buscar','Busca en la empresa, el prospecto, el puesto y la secuencia.','<input id="prosp-q" type="search" placeholder="Buscar empresa, prospecto o secuencia" value="'+grEsc(prospQ||'')+'" oninput="prospBuscar(this.value)" style="flex:1;min-width:0;max-width:420px;padding:7px 11px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:12px;">');
+    chips+=_rowI('Fecha','prosp.f.fecha', opc.map(function(o){ return _cf('per',o[0],o[1],prospPer.fper||'todo'); }).join('')+(prospPer.fper==='rango'?'<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><span style="color:var(--text-dim);font-size:12px;">del</span><input type="date" id="prosp-desde" value="'+r[0]+'" max="'+hoy+'" '+ab+' onchange="prospPeriodoFecha()" title="Fecha de inicio del rango" style="'+est+'"><span style="color:var(--text-dim);font-size:12px;">al</span><input type="date" id="prosp-hasta" value="'+r[1]+'" max="'+hoy+'" '+ab+' onchange="prospPeriodoFecha()" title="Fecha de fin del rango (incluida)" style="'+est+'"></span>':'')); })();
+  chips+=_rowI('Buscar','prosp.f.buscar','<input id="prosp-q" type="search" placeholder="Buscar empresa, prospecto o secuencia" value="'+grEsc(prospQ||'')+'" oninput="prospBuscar(this.value)" style="flex:1;min-width:0;max-width:420px;padding:7px 11px;border-radius:9px;background:#0d111a;border:1px solid #2A3142;color:#F3F4F6;font-size:12px;">');
   var dot=function(c){ return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+c+';margin-right:7px;vertical-align:middle;"></span>'; };
-  var H1='<thead><tr><th style="width:38%;">CLASIFICACIÓN</th><th style="text-align:center;">HOY</th><th style="text-align:center;">7D</th><th style="text-align:center;">30D</th><th style="text-align:center;">90D</th><th style="text-align:center;">TOTAL</th></tr></thead>';
+  var H1='<thead><tr><th style="width:38%;">CLASIFICACIÓN</th><th style="text-align:center;">HOY '+grI('comun.ventanas')+'</th><th style="text-align:center;">7D</th><th style="text-align:center;">30D</th><th style="text-align:center;">90D</th><th style="text-align:center;">TOTAL</th></tr></thead>';
   var wc=function(n,win,clas,bold){ var s=bold?'font-weight:700;':''; return n>0?'<td class="pcell" data-ptype="clas" data-pval="'+encodeURIComponent(clas)+'" data-pwin="'+win+'" style="text-align:center;'+s+'cursor:pointer;">'+n+'</td>':'<td style="text-align:center;color:var(--text-mute);'+s+'">0</td>'; };
   var rowC=function(clas,col){ var sub=repliesCnt.filter(function(e){return normClasP(e.clasificacion||'')===clas;}); if(!sub.length)return ''; var w=winOf(sub); return '<tr><td>'+dot(col)+fmtLbl(clas)+'</td>'+wc(w.hoy,'hoy',clas,0)+wc(w.d7,'d7',clas,0)+wc(w.d30,'d30',clas,0)+wc(w.d90,'d90',clas,0)+wc(w.total,'total',clas,1)+'</tr>'; };
-  var secH=function(lbl,col,bg){ return '<tr style="background:'+bg+';"><td colspan="6" style="font-size:11px;font-weight:800;text-transform:uppercase;color:'+col+';padding:8px 12px;">'+dot(col)+lbl+'</td></tr>'; };
+  var secH=function(lbl,col,bg,ay){ return '<tr style="background:'+bg+';"><td colspan="6" style="font-size:11px;font-weight:800;text-transform:uppercase;color:'+col+';padding:8px 12px;">'+dot(col)+lbl+(ay?' '+grI(ay):'')+'</td></tr>'; };
   var t1='<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;">'+H1+'<tbody>';
   // Sección DUO en replies (contactos DUO que respondieron)
-  if(duoReplies.length){ t1+=secH('DUO — SEÑAL CONDUCTUAL + REPLY · corte por origen, estas respuestas tambien aparecen abajo en su clasificacion','#7C3AED','rgba(124,58,237,.08)'); var wDR=winOf(duoRepliesCnt); t1+='<tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#7C3AED;margin-right:7px;vertical-align:middle;"></span>DUO Reply</td>'+wc(wDR.hoy,'hoy','__DUO_REPLY__',0)+wc(wDR.d7,'d7','__DUO_REPLY__',0)+wc(wDR.d30,'d30','__DUO_REPLY__',0)+wc(wDR.d90,'d90','__DUO_REPLY__',0)+wc(wDR.total,'total','__DUO_REPLY__',1)+'</tr>'; }
+  if(duoReplies.length){ t1+=secH('DUO — SEÑAL CONDUCTUAL + REPLY · corte por origen, estas respuestas tambien aparecen abajo en su clasificacion','#7C3AED','rgba(124,58,237,.08)','prosp.duo'); var wDR=winOf(duoRepliesCnt); t1+='<tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#7C3AED;margin-right:7px;vertical-align:middle;"></span>DUO Reply</td>'+wc(wDR.hoy,'hoy','__DUO_REPLY__',0)+wc(wDR.d7,'d7','__DUO_REPLY__',0)+wc(wDR.d30,'d30','__DUO_REPLY__',0)+wc(wDR.d90,'d90','__DUO_REPLY__',0)+wc(wDR.total,'total','__DUO_REPLY__',1)+'</tr>'; }
   // Secciones por prioridad del catálogo (comoLlego[].prioridad); la clave de Amplemarket es claveReply o el id.
   var _clReply=function(x){ return x.claveReply||x.id; };
   [['alta','ALTA PRIORIDAD — ATENDER YA','#10B981','rgba(16,185,129,.08)'],['media','MEDIA — PENDIENTE / RETOMAR','#F59E0B','rgba(245,158,11,.08)'],['descartado','DESCARTADO — YA NO INTERESA','#6B7280','rgba(107,114,128,.08)']].forEach(function(g){
@@ -5344,7 +5564,7 @@ function renderProspeccion() {
   var _noLeVendemos=function(e){ return String(e.fit_comercial||'')==='no' && CLAS_POSITIVA.has(normClasP(e.clasificacion||'')); };
   var _revisables=repliesCnt.filter(function(e){ return _sinProducto(e)||_dudaEtiqueta(e)||_noLeVendemos(e); });
   if(_revisables.length){
-    t1+=secH('POR REVISAR · corte, estas respuestas tambien estan contadas arriba en su clasificacion','#02ADBA','rgba(2,173,186,.08)');
+    t1+=secH('POR REVISAR · corte, estas respuestas tambien estan contadas arriba en su clasificacion','#02ADBA','rgba(2,173,186,.08)','prosp.porrevisar');
     t1+=rowP('No le podemos vender','__SIN_FIT__','#02ADBA',_noLeVendemos,'pidio algo que no ofrecemos');
     t1+=rowP('Etiqueta en duda','__DUDA_ETIQUETA__','#02ADBA',_dudaEtiqueta,'Amplemarket y el motor no coinciden');
     t1+=rowP('Sin producto','__SIN_PRODUCTO__','#02ADBA',_sinProducto,'el motor no supo cual es');
@@ -5354,7 +5574,7 @@ function renderProspeccion() {
   if(!repliesArr.length) t1+='<tr><td colspan="6" style="font-size:12px;color:var(--text-mute);padding:12px;">Sin replies para este filtro.</td></tr>';
   var wT=winOf(repliesCnt);
   t1+='<tr style="border-top:2px solid var(--border,#2A3142);"><td style="font-weight:700;">TOTAL replies</td>'+wc(wT.hoy,'hoy','__ALL_REPLIES__',1)+wc(wT.d7,'d7','__ALL_REPLIES__',1)+wc(wT.d30,'d30','__ALL_REPLIES__',1)+wc(wT.d90,'d90','__ALL_REPLIES__',1)+wc(wT.total,'total','__ALL_REPLIES__',1)+'</tr></tbody></table></div>';
-  var H2='<thead><tr><th style="width:38%;">PRODUCTO</th><th style="text-align:center;">HOY</th><th style="text-align:center;">7D</th><th style="text-align:center;">30D</th><th style="text-align:center;">90D</th><th style="text-align:center;">TOTAL</th></tr></thead>';
+  var H2='<thead><tr><th style="width:38%;">PRODUCTO</th><th style="text-align:center;">HOY '+grI('comun.ventanas')+'</th><th style="text-align:center;">7D</th><th style="text-align:center;">30D</th><th style="text-align:center;">90D</th><th style="text-align:center;">TOTAL</th></tr></thead>';
   var wcp=function(n,win,prod,bold){ var s=bold?'font-weight:700;':''; return n>0?'<td class="pcell" data-ptype="prod" data-pval="'+encodeURIComponent(prod)+'" data-pwin="'+win+'" style="text-align:center;'+s+'cursor:pointer;">'+n+'</td>':'<td style="text-align:center;color:var(--text-mute);'+s+'">0</td>'; };
   var t2='<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;">'+H2+'<tbody>';
   // Separar DUO (campana con formato "Empresa, Persona – señal") de Open+3 puro
@@ -5382,7 +5602,7 @@ function renderProspeccion() {
     return '';
   };
   var wcc=function(n,win,cat,bold){ var st=bold?'font-weight:700;':''; return n>0?'<td class="pcell" data-ptype="cat" data-pval="'+encodeURIComponent(cat)+'" data-pwin="'+win+'" style="text-align:center;'+st+'cursor:pointer;">'+n+'</td>':'<td style="text-align:center;color:var(--text-mute);'+st+'">0</td>'; };
-  var H3='<thead><tr><th style="width:38%;">TIPO DE INTERES</th><th style="text-align:center;">HOY</th><th style="text-align:center;">7D</th><th style="text-align:center;">30D</th><th style="text-align:center;">90D</th><th style="text-align:center;">TOTAL</th></tr></thead>';
+  var H3='<thead><tr><th style="width:38%;">TIPO DE INTERES</th><th style="text-align:center;">HOY '+grI('comun.ventanas')+'</th><th style="text-align:center;">7D</th><th style="text-align:center;">30D</th><th style="text-align:center;">90D</th><th style="text-align:center;">TOTAL</th></tr></thead>';
   var t3='<div style="overflow-x:auto;"><table class="tbl" style="table-layout:fixed;width:100%;">'+H3+'<tbody>';
   var _catTot=0;
   CAT_DEF.forEach(function(cd){
@@ -5399,7 +5619,7 @@ function renderProspeccion() {
 
   // ETAPAS y sc eliminados (tabla dh quitada)
   // Tabla Oportunidades eliminada
-  cont.innerHTML=GR_SYNC_BOX + '<div class="section"><div class="section-title">Inventario de prospección</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Fuente: tabla de eventos (los 3 tenants), no HubSpot. Los 30d incluyen 7d y hoy.</div>'+chips+'<div id="pipeline-metrics-gr" style="margin:14px 0 4px;"></div><div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado. Toca un número para ver el detalle.</div>'+t1+'<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto</div>'+t2+'<div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:18px 0 6px;">Open+3 por tipo de interés</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">La reapertura es la señal más fuerte: volvió solo, sin que le escribiéramos. Toca un número para ver el detalle.</div>'+t3+'<div style="border:none;border-top:1px solid #252d50;margin:14px 0"></div><div id="prosp-detalle" style="margin-top:16px;"></div></div>';
+  cont.innerHTML=GR_SYNC_BOX + '<div class="section"><div class="section-title">Inventario de prospección '+grI('prosp.inventario')+'</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Fuente: tabla de eventos (los 3 tenants), no HubSpot. Los 30d incluyen 7d y hoy.</div>'+chips+'<div id="pipeline-metrics-gr" style="margin:14px 0 4px;"></div><div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:16px 0 6px;">Replies por prioridad '+grI('prosp.replies')+'</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Verde = atender ya · Amarillo = pendiente/retomar · Rojo = descartado. Toca un número para ver el detalle.</div>'+t1+'<div style="font-size:12px;font-weight:700;color:var(--yellow,#F59E0B);margin:18px 0 6px;">Open+3 (señales) por producto '+grI('prosp.senales')+'</div>'+t2+'<div style="font-size:12px;font-weight:700;color:var(--cyan,#06B6D4);margin:18px 0 6px;">Open+3 por tipo de interés '+grI('prosp.interes')+'</div><div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">La reapertura es la señal más fuerte: volvió solo, sin que le escribiéramos. Toca un número para ver el detalle.</div>'+t3+'<div style="border:none;border-top:1px solid #252d50;margin:14px 0"></div><div id="prosp-detalle" style="margin-top:16px;"></div></div>';
   cont.querySelectorAll('[data-pf]').forEach(function(btn){ btn.addEventListener('click',function(){ var f=btn.dataset.pf, v=decodeURIComponent(btn.dataset.pv); if(f==='grupo'){prospGrupo=v; prospProducto='ALL';} else if(f==='prod')prospProducto=v; else if(f==='resp')prospResp=v; else if(f==='tipo')prospTipo=v; else if(f==='canal')prospCanal=v; else if(f==='sem')prospSem=v; else if(f==='stage')prospStage=v; else if(f==='per'){ prospPer.fper=v; if(v==='rango'&&!prospPer.fdesde){ var _r=prospPerVista(); prospPer.fdesde=_r[0]; prospPer.fhasta=_r[1]; } } renderProspeccion(); }); });
   renderPipelineMetricsGR();
   renderGanadoresGR(cont);
@@ -5831,8 +6051,8 @@ function renderPipelineMetricsGR(pool){
   if(!totalGeneral){box.innerHTML='';return;}
   var rotulo = pool
     ? 'En esta vista &middot; <span style="color:#F3F4F6">'+totalGeneral+'</span> contactos &middot; <span style="color:#62D175">'+totalActivos+'</span> activos'
-    : 'Pipeline GR &middot; <span style="color:#F3F4F6">'+totalGeneral+'</span> deals &middot; <span style="color:#62D175">'+totalActivos+'</span> activos';
-  var h='<div style="margin-bottom:10px;font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.06em">'+rotulo+'</div>';
+    : 'Pipeline GR &middot; <span style="color:#F3F4F6">'+totalGeneral+'</span> eventos &middot; <span style="color:#62D175">'+totalActivos+'</span> activos';
+  var h='<div style="margin-bottom:10px;font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.06em">'+rotulo+' '+grI('prosp.embudo')+'</div>';
   h+='<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;">';
   mainEtapas.forEach(function(k){
     var deals=dbs[k]||[]; if(!deals.length) return;
@@ -6081,7 +6301,7 @@ function renderAmplemarket() {
     $('#p-amplemarket').innerHTML = `
       <div class="section" style="margin-bottom:8px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-          <span style="font-size:13px;color:var(--text-dim);font-weight:600">Periodo:</span>
+          <span style="font-size:13px;color:var(--text-dim);font-weight:600">Periodo ${grI('am.periodo')}</span>
           <button onclick="setAmPeriod(7)" class="chip" style="${amPeriod===7?'background:var(--purple);color:white;border-color:var(--purple)':''}">7 días</button>
           <button onclick="setAmPeriod(15)" class="chip" style="${amPeriod===15?'background:var(--purple);color:white;border-color:var(--purple)':''}">15 días</button>
           <button onclick="setAmPeriod(30)" class="chip" style="${amPeriod===30?'background:var(--purple);color:white;border-color:var(--purple)':''}">30 días</button>
@@ -6107,14 +6327,14 @@ function renderAmplemarket() {
   let h = `
     <div class="section" style="margin-bottom:8px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-        <span style="font-size:13px;color:var(--text-dim);font-weight:600">Periodo:</span>
+        <span style="font-size:13px;color:var(--text-dim);font-weight:600">Periodo ${grI('am.periodo')}</span>
         <button onclick="setAmPeriod(7)" class="chip" style="${amPeriod===7?'background:var(--purple);color:white;border-color:var(--purple)':''}">7 días</button>
         <button onclick="setAmPeriod(15)" class="chip" style="${amPeriod===15?'background:var(--purple);color:white;border-color:var(--purple)':''}">15 días</button>
         <button onclick="setAmPeriod(30)" class="chip" style="${amPeriod===30?'background:var(--purple);color:white;border-color:var(--purple)':''}">30 días</button>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px">
         <div>
-          <div style="font-size:18px;font-weight:700;color:var(--text)">📡 Amplemarket — Últimos ${am.periodoDias || amPeriod} días</div>
+          <div style="font-size:18px;font-weight:700;color:var(--text)">📡 Amplemarket — Últimos ${am.periodoDias || amPeriod} días ${grI('am.titulo')}</div>
           <div style="font-size:12px;color:var(--text-dim);margin-top:2px">
             ${am.periodoDesde || '—'} → ${am.periodoHasta || '—'} · 
             Generado <strong style="color:var(--text)">${freshness(am.generadoEn)}</strong> · 
@@ -6128,22 +6348,22 @@ function renderAmplemarket() {
 
       <div class="kpi-grid">
         <div class="kpi kpi-mint" data-am-kpi="meetings" onclick="toggleAmDrilldown('meetings')" style="cursor:pointer;transition:all 0.15s;${amDrilldown==='meetings'?'box-shadow:0 0 0 2px var(--mint)':''}" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-          <div class="kpi-label">🎯 Reuniones agendadas <span style="color:var(--text-mute);font-size:10px">${amDrilldown==='meetings'?'(abierto ▼)':'(click)'}</span></div>
+          <div class="kpi-label">🎯 Reuniones agendadas ${grI('am.reuniones')} <span style="color:var(--text-mute);font-size:10px">${amDrilldown==='meetings'?'(abierto ▼)':'(click)'}</span></div>
           <div class="kpi-value">${k.meetings || 0}</div>
           <div class="kpi-sub">${totales.seqMeetings || 0} SEQ · ${totales.duoMeetings || 0} DUO</div>
         </div>
         <div class="kpi kpi-cyan" data-am-kpi="replies" onclick="toggleAmDrilldown('replies')" style="cursor:pointer;transition:all 0.15s;${amDrilldown==='replies'?'box-shadow:0 0 0 2px var(--cyan)':''}" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-          <div class="kpi-label">💬 Respuestas <span style="color:var(--text-mute);font-size:10px">${amDrilldown==='replies'?'(abierto ▼)':'(click)'}</span></div>
+          <div class="kpi-label">💬 Respuestas ${grI('am.respuestas')} <span style="color:var(--text-mute);font-size:10px">${amDrilldown==='replies'?'(abierto ▼)':'(click)'}</span></div>
           <div class="kpi-value">${k.replies || 0}</div>
           <div class="kpi-sub">${totales.seqReplies || 0} SEQ · ${totales.duoReplies || 0} DUO</div>
         </div>
         <div class="kpi kpi-yellow" data-am-kpi="openplus3" onclick="toggleAmDrilldown('openplus3')" style="cursor:pointer;transition:all 0.15s;${amDrilldown==='openplus3'?'box-shadow:0 0 0 2px var(--yellow)':''}" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-          <div class="kpi-label">📨 Open+3 (engaged) <span style="color:var(--text-mute);font-size:10px">${amDrilldown==='openplus3'?'(abierto ▼)':'(click)'}</span></div>
+          <div class="kpi-label">📨 Open+3 (interés) ${grI('am.open3')} <span style="color:var(--text-mute);font-size:10px">${amDrilldown==='openplus3'?'(abierto ▼)':'(click)'}</span></div>
           <div class="kpi-value">${fmtNum(k.openPlus3)}</div>
-          <div class="kpi-sub">leads en seqs &gt;60% open rate</div>
+          <div class="kpi-sub">prospectos en secuencias con más de 60% de apertura</div>
         </div>
         <div class="kpi kpi-purple" data-am-kpi="duogenerated" onclick="toggleAmDrilldown('duogenerated')" style="cursor:pointer;transition:all 0.15s;${amDrilldown==='duogenerated'?'box-shadow:0 0 0 2px var(--purple)':''}" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-          <div class="kpi-label">🔮 DUO Generated <span style="color:var(--text-mute);font-size:10px">${amDrilldown==='duogenerated'?'(abierto ▼)':'(click)'}</span></div>
+          <div class="kpi-label">🔮 DUO generadas ${grI('am.duo')} <span style="color:var(--text-mute);font-size:10px">${amDrilldown==='duogenerated'?'(abierto ▼)':'(click)'}</span></div>
           <div class="kpi-value">${fmtNum(k.duoGenerated)}</div>
           <div class="kpi-sub">${totales.duoSequenced || 0} ya secuenciadas</div>
         </div>
@@ -6157,7 +6377,7 @@ function renderAmplemarket() {
   // === COMPARATIVO SEQ vs DUO POR PRODUCTO ===
   h += `
     <div class="section">
-      <div class="section-title">🥊 SEQ vs DUO — Comparativo por producto <span class="section-count">${productos.length}</span></div>
+      <div class="section-title">🥊 SEQ vs DUO — Comparativo por producto ${grI('am.comparativo')} <span class="section-count">${productos.length}</span></div>
       <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px">Reply rate solo es comparable dentro del mismo canal. El ganador se define por reuniones agendadas.</div>
       <div style="overflow-x:auto"><table class="tbl">
         <thead>
@@ -6165,11 +6385,11 @@ function renderAmplemarket() {
             <th rowspan="2" style="vertical-align:bottom">Producto</th>
             <th colspan="5" style="text-align:center;color:var(--mint);border-bottom:1px solid var(--border)">📋 SEQ — Secuencias outbound</th>
             <th colspan="5" style="text-align:center;color:var(--purple);border-bottom:1px solid var(--border)">🔮 DUO — Señales DuoCopilot</th>
-            <th rowspan="2" style="vertical-align:bottom;text-align:center">🏆 Ganador</th>
+            <th rowspan="2" style="vertical-align:bottom;text-align:center">🏆 Ganador ${grI('am.col.ganador')}</th>
           </tr>
           <tr>
-            <th class="num" style="color:var(--mint)">Seqs</th><th class="num" style="color:var(--mint)">Leads</th><th class="num" style="color:var(--mint)">Open%</th><th class="num" style="color:var(--mint)">Reply%</th><th class="num" style="color:var(--mint)">Mtgs</th>
-            <th class="num" style="color:var(--purple)">Sigs</th><th class="num" style="color:var(--purple)">Gen</th><th class="num" style="color:var(--purple)">Seq%</th><th class="num" style="color:var(--purple)">Reply%</th><th class="num" style="color:var(--purple)">Mtgs</th>
+            <th class="num" style="color:var(--mint)">Seqs ${grI('am.col.seqs')}</th><th class="num" style="color:var(--mint)">Leads ${grI('am.col.leads')}</th><th class="num" style="color:var(--mint)">Open% ${grI('am.col.open')}</th><th class="num" style="color:var(--mint)">Reply% ${grI('am.col.reply')}</th><th class="num" style="color:var(--mint)">Mtgs ${grI('am.col.mtgs')}</th>
+            <th class="num" style="color:var(--purple)">Sigs ${grI('am.col.sigs')}</th><th class="num" style="color:var(--purple)">Gen ${grI('am.col.gen')}</th><th class="num" style="color:var(--purple)">Seq% ${grI('am.col.seqpct')}</th><th class="num" style="color:var(--purple)">Reply% ${grI('am.col.reply')}</th><th class="num" style="color:var(--purple)">Mtgs ${grI('am.col.mtgs')}</th>
           </tr>
         </thead>
         <tbody>`;
@@ -6178,7 +6398,7 @@ function renderAmplemarket() {
     const s = p.seq, d = p.duo;
     const g = GANADOR_STYLES[p.ganador] || GANADOR_STYLES['inactivo'];
     h += `<tr>
-      <td style="font-weight:700;color:var(--text)" title="${grEsc(prodAyuda(p.codigo))}">${grEsc(prodEtiqueta(p.codigo))}</td>
+      <td style="font-weight:700;color:var(--text)"${grAyAttr(prodAyuda(p.codigo))}>${grEsc(prodEtiqueta(p.codigo))}</td>
       <td class="num">${s.secuencias || 0}</td>
       <td class="num">${fmtNum(s.leads)}</td>
       <td class="num" style="${s.openRate>=0.5&&s.openRate<=1?'color:var(--mint);font-weight:600':''}">${s.leads>0?fmtPct(s.openRate):'—'}</td>
@@ -6206,7 +6426,7 @@ function renderAmplemarket() {
 
   h += `
     <div class="section">
-      <div class="section-title">🎯 Acciones recomendadas <span class="section-count">${filtrados.length}/${accionables.length}</span></div>
+      <div class="section-title">🎯 Acciones recomendadas ${grI('am.acciones')} <span class="section-count">${filtrados.length}/${accionables.length}</span></div>
       <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px">
         Generadas automáticamente desde el comportamiento de cada secuencia y señal del último mes.
       </div>
@@ -6227,7 +6447,7 @@ function renderAmplemarket() {
       </div>
 
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
-        <span style="font-size:12px;color:var(--text-dim);margin-right:4px">Canal:</span>
+        <span style="font-size:12px;color:var(--text-dim);margin-right:4px">Canal ${grI('am.f.canal')}</span>
         ${['todos','SEQ','DUO'].map(c => `
           <button onclick="setAmFilter('canal','${c}')" class="chip" 
                   style="${c === amFilters.canal ? 'background:var(--purple);color:white;border-color:var(--purple)' : ''}">
@@ -6235,13 +6455,13 @@ function renderAmplemarket() {
             ${c !== 'todos' ? ` (${stats.porCanal?.[c] || 0})` : ` (${accionables.length})`}
           </button>
         `).join('')}
-        <span style="font-size:12px;color:var(--text-dim);margin:0 4px 0 12px">Producto:</span>
-        <button onclick="setAmFilter('producto','todos')" class="chip" title="${grEsc(GR_AYUDA_FIJA.prod.ALL)}"
+        <span style="font-size:12px;color:var(--text-dim);margin:0 4px 0 12px">Producto ${grI('comun.f.producto')}</span>
+        <button onclick="setAmFilter('producto','todos')" class="chip"${grAyAttr(GR_AYUDA_FIJA.prod.ALL)}
                 style="${amFilters.producto === 'todos' ? 'background:var(--purple);color:white;border-color:var(--purple)' : ''}">
           ${prodChipTexto('todos', accionables.length)}
         </button>
         ${prodOpciones().map(prod => { const n = accionables.filter(a => prodOficial(a.producto) === prod).length; return (prod !== PROD_OTROS || n || amFilters.producto === prod) ? `
-          <button onclick="setAmFilter('producto','${prod}')" class="chip" title="${grEsc(prodAyuda(prod))}"
+          <button onclick="setAmFilter('producto','${prod}')" class="chip"${grAyAttr(prodAyuda(prod))}
                   style="${prod === amFilters.producto ? 'background:var(--purple);color:white;border-color:var(--purple)' : ''}">
             ${grEsc(prodChipTexto(prod, n))}
           </button>
@@ -6274,7 +6494,7 @@ function renderAmplemarket() {
   h += `
     <div class="section">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-        <div class="section-title" style="margin:0">📊 Detalle por secuencia y señal <span class="section-count">${(totales.seqSecuencias || 0) + (totales.duoSignals || 0)}</span></div>
+        <div class="section-title" style="margin:0">📊 Detalle por secuencia y señal ${grI('am.detalle')} <span class="section-count">${(totales.seqSecuencias || 0) + (totales.duoSignals || 0)}</span></div>
         <div style="display:flex;gap:6px">
           <button class="chip" data-am-detail="sequences" onclick="switchAmDetailViewInPlace('sequences')"
                   style="${amDetailView==='sequences'?'background:var(--purple);color:white;border-color:var(--purple)':''}">📋 Secuencias (${totales.seqSecuencias || 0})</button>
@@ -6286,14 +6506,14 @@ function renderAmplemarket() {
       <div id="am-seq-detail" style="display:${amDetailView==='sequences'?'block':'none'}">
         <table class="tbl">
           <thead>
-            <tr><th>Producto</th><th>Secuencia</th><th class="num">Leads</th><th class="num">Open%</th><th class="num">Reply%</th><th class="num">Interesados</th><th class="num">Mtgs</th></tr>
+            <tr><th>Producto</th><th>Secuencia</th><th class="num">Leads ${grI('am.col.leads')}</th><th class="num">Open% ${grI('am.col.open')}</th><th class="num">Reply% ${grI('am.col.reply')}</th><th class="num">Interesados ${grI('am.col.interesados')}</th><th class="num">Mtgs ${grI('am.col.mtgs')}</th></tr>
           </thead>
           <tbody>`;
 
   productos.forEach(p => {
     (p.seq.detalle || []).forEach(s => {
       h += `<tr>
-        <td style="font-weight:700;color:var(--text)" title="${grEsc(prodAyuda(p.codigo))}">${grEsc(prodEtiqueta(p.codigo))}</td>
+        <td style="font-weight:700;color:var(--text)"${grAyAttr(prodAyuda(p.codigo))}>${grEsc(prodEtiqueta(p.codigo))}</td>
         <td style="font-size:12px;color:var(--text-dim)">${(s.nombre || '').trim()}</td>
         <td class="num">${fmtNum(s.leads)}</td>
         <td class="num" style="${s.openRate>=0.5&&s.openRate<=1?'color:var(--mint);font-weight:600':''}">${s.leads>0?fmtPct(s.openRate):'—'}</td>
@@ -6309,14 +6529,14 @@ function renderAmplemarket() {
       <div id="am-duo-detail" style="display:${amDetailView==='signals'?'block':'none'}">
         <table class="tbl">
           <thead>
-            <tr><th>Producto</th><th>Señal DUO</th><th class="num">Generated</th><th class="num">Sequenced</th><th class="num">Seq%</th><th class="num">Replies</th><th class="num">Reply%</th><th class="num">Mtgs</th></tr>
+            <tr><th>Producto</th><th>Señal DUO</th><th class="num">Generadas ${grI('am.col.gen')}</th><th class="num">En secuencia ${grI('am.col.sequenced')}</th><th class="num">Seq% ${grI('am.col.seqpct')}</th><th class="num">Respuestas ${grI('am.col.replies')}</th><th class="num">Reply% ${grI('am.col.reply')}</th><th class="num">Mtgs ${grI('am.col.mtgs')}</th></tr>
           </thead>
           <tbody>`;
 
   productos.forEach(p => {
     (p.duo.detalle || []).forEach(d => {
       h += `<tr>
-        <td style="font-weight:700;color:var(--text)" title="${grEsc(prodAyuda(p.codigo))}">${grEsc(prodEtiqueta(p.codigo))}</td>
+        <td style="font-weight:700;color:var(--text)"${grAyAttr(prodAyuda(p.codigo))}>${grEsc(prodEtiqueta(p.codigo))}</td>
         <td style="font-size:12px;color:var(--text-dim)">${d.signal}</td>
         <td class="num">${fmtNum(d.generated)}</td>
         <td class="num">${fmtNum(d.sequenced)}</td>
@@ -6418,29 +6638,29 @@ function renderForecast() {
   let html = `
     <div class="kpi-grid">
       <div class="kpi kpi-mint">
-        <div class="kpi-label">Conservador</div>
+        <div class="kpi-label">Conservador ${grI('forecast.conservador')}</div>
         <div class="kpi-value">${fmtK(conservador)}</div>
         <div class="kpi-sub">Propuestas × 35%</div>
       </div>
       <div class="kpi kpi-cyan">
-        <div class="kpi-label">Base</div>
+        <div class="kpi-label">Base ${grI('forecast.base')}</div>
         <div class="kpi-value">${fmtK(base)}</div>
         <div class="kpi-sub">+ Educación × 20%</div>
       </div>
       <div class="kpi kpi-purple">
-        <div class="kpi-label">Optimista</div>
+        <div class="kpi-label">Optimista ${grI('forecast.optimista')}</div>
         <div class="kpi-value">${fmtK(optimista)}</div>
         <div class="kpi-sub">+ Atracción × 10%</div>
       </div>
     </div>
     <div class="section">
-      <div class="section-title">Closes próximos 30 días <span class="section-count">${close30.length}</span></div>
+      <div class="section-title">Cierres de los próximos 30 días ${grI('forecast.cierres')} <span class="section-count">${close30.length}</span></div>
       <table class="tbl">
-        <thead><tr><th>Deal</th><th>Stage</th><th>Close</th><th>Días</th><th class="num">Monto</th></tr></thead>
+        <thead><tr><th>Oportunidad</th><th>Etapa</th><th>Cierre</th><th>Días ${grI('forecast.col.dias')}</th><th class="num">Monto ${grI('comun.monto')}</th></tr></thead>
         <tbody>
   `;
   if (close30.length === 0) {
-    html += `<tr><td colspan="5" class="empty">Sin closes en los próximos 30 días</td></tr>`;
+    html += `<tr><td colspan="5" class="empty">Sin cierres en los próximos 30 días</td></tr>`;
   }
   close30.forEach(d => {
     const days = daysUntil(d.closedate);
@@ -6494,8 +6714,10 @@ if (document.readyState === 'loading') {
 #gr-modal-edit .md-in{width:100%;box-sizing:border-box;padding:9px 11px;border-radius:10px;background:#0a0e17;border:1px solid #2A3142;color:#F3F4F6;font-size:14px;color-scheme:dark;}
 #gr-modal-edit .md-in:focus{outline:none;border-color:#02ADBA;}
 #gr-modal-edit .md-2{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;}
-.gr-i{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid #6B7280;color:#9CA3AF;font-size:10px;font-weight:700;font-style:italic;cursor:pointer;margin-left:3px;text-transform:none;letter-spacing:0;vertical-align:middle;}
-.gr-i-txt{flex-basis:100%;font-size:12px;color:#cbd2e1;background:#121726;border:1px solid #2A3142;border-radius:8px;padding:8px 10px;margin-top:4px;text-transform:none;letter-spacing:0;font-weight:400;}
+.gr-i{display:inline-flex;align-items:center;justify-content:center;flex:none;width:15px;height:15px;border-radius:50%;border:1px solid #6B7280;color:#9CA3AF;font-size:10px;font-weight:700;font-style:italic;font-family:Georgia,serif;line-height:1;cursor:help;margin-left:4px;text-transform:none;letter-spacing:0;vertical-align:middle;user-select:none;-webkit-user-select:none;position:relative;}
+.gr-i::after{content:'';position:absolute;inset:-8px;}
+.gr-i:hover,.gr-i:focus-visible,.gr-i[aria-describedby]{border-color:#02ADBA;color:#02ADBA;outline:none;}
+#gr-ayuda-pop{display:none;position:fixed;z-index:20000;max-width:min(320px,calc(100vw - 16px));box-sizing:border-box;font-size:12.5px;line-height:1.45;color:#E5E7EB;background:#121726;border:1px solid #2A3142;border-radius:10px;padding:9px 12px;box-shadow:0 10px 30px rgba(0,0,0,.5);text-transform:none;letter-spacing:0;font-weight:400;font-style:normal;text-align:left;white-space:normal;pointer-events:none;}
 #gr-modal-edit .md-nota{font-size:11px;color:#8b93a7;line-height:1.5;margin-top:6px;}
 #gr-modal-edit .md-msg{font-size:13px;color:#9CA3AF;margin-top:10px;line-height:1.5;padding:10px 12px;border-radius:10px;background:#0a0e17;border:1px solid #2A3142;font-weight:600;}
 #gr-modal-edit .md-msg:empty{display:none;}
@@ -7003,7 +7225,6 @@ function calCambio(a,b,una){ if(una||!a||!b||a.valor===null||b.valor===null) ret
    compara contra las oportunidades abiertas). En desempeno comercial, el avance contra el ano anterior (tope 100); lo que
    no tiene ano anterior es referencia y no califica. Seccion = promedio de sus indicadores; global = promedio de secciones. */
 var CAL_SECC=[['datos','Calidad de datos','Qué tan completo está cada registro.'],['vigencia','Vigencia de los registros','Qué tan vivos o abandonados están.'],['comercial','Desempeño comercial','Resultados de los últimos 12 meses contra los 12 meses anteriores (la meta).']];
-var CAL_AYCAL='Calificación de 0 a 100. Datos y vigencia: el porcentaje completo (si menos es mejor, 100 menos el porcentaje; un conteo se compara contra las oportunidades abiertas). Desempeño comercial: avance contra el año anterior, con tope de 100. Sección: promedio de sus indicadores. Global: promedio de las secciones.';
 function calPts(r,v,ab,ant){ if(!r||v===null||v===undefined||v==='') return null; v=Number(v); var pct=(r.tipo==='pct'||r.tipo==='pct_asociacion');
   if(r.grupo==='comercial'){ if(ant===null||ant===undefined||!Number(ant)||(r.tipo!=='pct'&&r.tipo!=='conteo')) return null; var av=r.mejor==='bajo'?Number(ant)/Math.max(v,0.0001)*100:v/Number(ant)*100; return Math.max(0,Math.min(100,av)); }
   if(pct) return Math.max(0,Math.min(100,r.mejor==='bajo'?100-v:v));
@@ -7020,22 +7241,22 @@ function calColumnas(meds){ var porDia={}; meds.forEach(function(m){ porDia[m.fe
   var q=l.slice(1).filter(function(m){ return /-(01|15)$/.test(m.fecha); }).slice(-6), cols=[{m:l[0],t:'Inicial'}];
   q.forEach(function(m){ cols.push({m:m,t:'Quincena'}); }); if(!q.length&&l.length>1) cols.push({m:l[l.length-1],t:'Hoy'}); return cols; }
 function calFechaCorta(f){ var M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; return f?(Number(f.slice(8,10))+' '+M[Number(f.slice(5,7))-1]+' '+f.slice(2,4)):''; }
-function calCabeza(cols,extra){ return '<thead><tr><th style="text-align:left;padding:6px">Indicador</th>'+cols.map(function(c){ return '<th style="text-align:right;padding:6px;white-space:nowrap">'+calEsc(c.t)+'<div style="font-weight:400;font-size:11px;color:var(--text-dim)">'+calEsc(calFechaCorta(c.m.fecha))+'</div></th>'; }).join('')+'<th style="text-align:right;padding:6px">Cambio</th>'+(extra||'')+'</tr></thead>'; }
+function calCabeza(cols,extra,primera){ return '<thead><tr><th style="text-align:left;padding:6px">'+(primera||('Indicador '+grI('calidad.col.indicador')))+'</th>'+cols.map(function(c,i){ return '<th style="text-align:right;padding:6px;white-space:nowrap">'+calEsc(c.t)+(i===0?' '+grI('calidad.col.fecha'):'')+'<div style="font-weight:400;font-size:11px;color:var(--text-dim)">'+calEsc(calFechaCorta(c.m.fecha))+'</div></th>'; }).join('')+'<th style="text-align:right;padding:6px">Cambio '+grI('calidad.col.cambio')+'</th>'+(extra||'')+'</tr></thead>'; }
 function calDif(a,b){ if(a===null||a===undefined||b===null||b===undefined) return '—'; var d=Math.round(b-a); if(!d) return '='; return '<span style="color:'+(d>0?'#62D175':'#DB0540')+';font-weight:600">'+(d>0?'▲ ':'▼ ')+Math.abs(d)+'</span>'; }
 // Tabla de avance: global (franja) y secciones, una columna por fecha.
 function calTablaAvance(cols,defs,titulo){ var n=cols.map(function(c){ return calNotas(c.m,defs); });
   var fila=function(k,nombre,cls){ return '<tr style="border-top:1px solid var(--border)'+(cls?';'+cls:'')+'"><td style="padding:6px">'+nombre+'</td>'+n.map(function(x){ return '<td style="text-align:right;padding:6px">'+calNum(x[k])+'</td>'; }).join('')+'<td style="text-align:right;padding:6px">'+(n.length>1?calDif(n[0][k],n[n.length-1][k]):'—')+'</td></tr>'; };
-  return '<div style="overflow-x:auto"><table class="data-table" style="width:100%;border-collapse:collapse;font-size:13px">'+calCabeza(cols).replace('>Indicador<','>'+(titulo||'Sección')+'<')+'<tbody>'+
+  return '<div style="overflow-x:auto"><table class="data-table" style="width:100%;border-collapse:collapse;font-size:13px">'+calCabeza(cols,'',calEsc(titulo||'Sección'))+'<tbody>'+
     fila('global','<b>GLOBAL</b><div style="font-size:11px;color:var(--text-dim)">todas las secciones</div>','background:#1E2433')+
     (n.some(function(x){ return x.comercial===null||x.comercial===undefined; })&&n.length>1?fila('global_c','<b>Global comparable</b><div style="font-size:11px;color:var(--text-dim)">datos y vigencia, que se miden desde la inicial</div>','background:#171c2a'):'')+
     CAL_SECC.map(function(s){ return fila(s[0],calEsc(s[1])); }).join('')+'</tbody></table></div>'; }
 // Franja de una seccion: su calificacion en cada fecha.
 function calFranja(cols,defs,g){ var n=cols.map(function(c){ return calNotas(c.m,defs)[g]; });
-  return '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 8px;font-size:12px"><span style="color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;font-size:11px">Calificación de la sección</span>'+
+  return '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 8px;font-size:12px"><span style="color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;font-size:11px">Calificación de la sección '+grI('calidad.franja')+'</span>'+
     cols.map(function(c,i){ return '<span style="background:var(--bg-3);border-radius:10px;padding:2px 8px">'+calEsc(c.t)+' '+calEsc(calFechaCorta(c.m.fecha))+': '+calNum(n[i])+'</span>'; }).join('<span style="color:var(--text-dim)">→</span>')+'</div>'; }
 // Tabla de indicadores de una seccion.
 function calTablaSeccion(cols,defs,g,EX){ var l=defs.filter(function(r){return r.grupo===g;}); if(!l.length) return ''; var ult=cols[cols.length-1].m, ini=cols[0].m, com=(g==='comercial');
-  var h='<div style="overflow-x:auto"><table class="data-table" style="width:100%;border-collapse:collapse;font-size:13px">'+calCabeza(cols,(com?'<th style="text-align:right;padding:6px">Año anterior (meta)</th>':'')+'<th style="text-align:right;padding:6px" title="'+calEsc(CAL_AYCAL)+'">Calificación ⓘ</th><th style="text-align:left;padding:6px">Quién lo mejora</th>')+'<tbody>';
+  var h='<div style="overflow-x:auto"><table class="data-table" style="width:100%;border-collapse:collapse;font-size:13px">'+calCabeza(cols,(com?'<th style="text-align:right;padding:6px">Año anterior (meta) '+grI('calidad.col.anterior')+'</th>':'')+'<th style="text-align:right;padding:6px">Calificación '+grI('calidad.col.calificacion')+'</th><th style="text-align:left;padding:6px">Quién lo mejora '+grI('calidad.col.quien')+'</th>')+'<tbody>';
   l.forEach(function(r){ var vh=ult.val[r.clave], pt=calPts(r,vh,ult.ab,(ult.ant||{})[r.clave]), a=ini.val[r.clave];
     h+='<tr style="border-top:1px solid var(--border)"><td style="padding:6px"><b>'+(pt!==null?'<span style="color:'+calSemP(pt)+'">●</span> ':'')+calEsc(r.etiqueta)+'</b>'+(EX[r.clave]?'<div style="font-size:11px;color:var(--text-dim)">'+calEsc(EX[r.clave])+'</div>':'')+'</td>'+
       cols.map(function(c,i){ var v=c.m.val[r.clave]; return '<td style="text-align:right;padding:6px">'+(i===cols.length-1?'<b>':'')+calFmt({valor:v,tipo:r.tipo})+(i===cols.length-1?'</b>':'')+'</td>'; }).join('')+
@@ -7057,16 +7278,16 @@ function renderCalidad(){
   // Equipo: cada medicion con sus valores y el ano anterior (existe desde que se mide por responsable).
   var meds=lista.map(function(m){ var val={}; m.filas.forEach(function(r){ val[r.clave]=r.valor; }); return {fecha:m.fecha,val:val,ant:m.meta||{},ab:abDe(val)}; });
   var cols=calColumnas(meds);
-  var html='<div class="section"><div class="section-title">Calidad del CRM <span style="margin-left:auto;color:var(--text-dim);font-size:12px">Se mide los días 1 y 15 de cada mes · última medición '+calEsc(calFechaCorta(ultimo.fecha))+'</span></div>';
+  var html='<div class="section"><div class="section-title">Calidad del CRM '+grI('calidad.titulo')+' <span style="margin-left:auto;color:var(--text-dim);font-size:12px">Se mide los días 1 y 15 de cada mes · última medición '+calEsc(calFechaCorta(ultimo.fecha))+'</span></div>';
   html+='<div style="font-size:12px;color:var(--text-dim);margin:4px 0 10px">Calificación de 0 a 100: <span style="color:#62D175">●</span> 80 o más &nbsp; <span style="color:#FFCD00">●</span> 60 a 79 &nbsp; <span style="color:#DB0540">●</span> menos de 60. Columnas: la medición inicial y las de cada 15 días'+(cols.length&&cols[cols.length-1].t==='Hoy'?' (mientras llega la primera de 15 días se ve la de hoy)':'')+'. Desempeño comercial califica desde el 11 de noviembre, cuando empezó a medirse contra el año anterior.</div>';
-  html+='<div style="margin:12px 0 6px;font-weight:700">Avance de la calificación</div>'+calTablaAvance(cols,defs);
+  html+='<div style="margin:12px 0 6px;font-weight:700">Avance de la calificación '+grI('calidad.avance')+'</div>'+calTablaAvance(cols,defs);
   CAL_SECC.forEach(function(s){ if(!defs.some(function(r){return r.grupo===s[0];})) return;
-    html+='<div style="margin:22px 0 2px;font-weight:700">'+calEsc(s[1])+'</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">'+calEsc(s[2])+'</div>'+calFranja(cols,defs,s[0])+calTablaSeccion(cols,defs,s[0],EX); });
+    html+='<div style="margin:22px 0 2px;font-weight:700">'+calEsc(s[1])+' '+grI('calidad.'+s[0])+'</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">'+calEsc(s[2])+'</div>'+calFranja(cols,defs,s[0])+calTablaSeccion(cols,defs,s[0],EX); });
   // Por responsable: una flecha por persona; adentro, todos sus indicadores con las mismas columnas.
   var conR=lista.filter(function(m){ return m.por_responsable; });
   if(conR.length){ var ultR=conR[conR.length-1].por_responsable;
     var ids=Object.keys(ultR).sort(function(a,b){ return (ultR[b].oportunidades||0)-(ultR[a].oportunidades||0); });
-    html+='<div style="margin:28px 0 4px;font-weight:700">Por responsable</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Cada persona con sus oportunidades (campo Responsable de la cuenta). Los indicadores de contactos miden a los contactos de sus oportunidades de los últimos 12 meses. Desempeño comercial se compara contra su propio año anterior. Toca un nombre para ver todos sus indicadores.</div>';
+    html+='<div style="margin:28px 0 4px;font-weight:700">Por responsable '+grI('calidad.responsable')+'</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Cada persona con sus oportunidades (campo Responsable de la cuenta). Los indicadores de contactos miden a los contactos de sus oportunidades de los últimos 12 meses. Desempeño comercial se compara contra su propio año anterior. Toca un nombre para ver todos sus indicadores.</div>';
     ids.forEach(function(id){ var mp=conR.filter(function(m){ return m.por_responsable[id]; }).map(function(m){ var p=m.por_responsable[id]; return {fecha:m.fecha,val:p.v||{},ant:p.ant||{},ab:Number((p.v||{}).d_abiertas)||0}; });
       var cp=calColumnas(mp); if(!cp.length) return; var nh=calNotas(cp[cp.length-1].m,defs), p=ultR[id], nom=id?(grEquipoNombre(id)||id):'Sin responsable';
       html+='<details style="border:1px solid var(--border);border-radius:10px;margin:6px 0;background:var(--bg-2)"><summary style="cursor:pointer;padding:10px 12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center"><b style="min-width:120px">'+calEsc(nom)+'</b><span style="font-size:12px;color:var(--text-dim)">'+(p.oportunidades||0)+' oportunidades · '+(Number((p.v||{}).d_abiertas)||0)+' abiertas</span><span style="margin-left:auto;font-size:12px">Global '+calNum(nh.global)+' · Datos '+calNum(nh.datos)+' · Vigencia '+calNum(nh.vigencia)+' · Comercial '+calNum(nh.comercial)+'</span></summary><div style="padding:4px 12px 12px">'+
@@ -7343,21 +7564,21 @@ function mtToggle(id){
   if(abrir) setTimeout(function(){ el.scrollIntoView({behavior:'smooth',block:'nearest'}); },60);
 }
 
-function mtChips(titulo,campo,ops,activo){
-  var h='<div style="margin:0 0 10px 0;"><div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:'+MT_C.gris+';margin-bottom:5px;">'+mtEsc(titulo)+'</div><div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">';
+function mtChips(titulo,campo,ops,activo,ay){
+  var h='<div style="margin:0 0 10px 0;"><div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:'+MT_C.gris+';margin-bottom:5px;">'+mtEsc(titulo)+(ay?' '+grI(ay):'')+'</div><div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">';
   for(var i=0;i<ops.length;i++){ var o=ops[i];
     if(o==='|'){ h+='<span style="width:1px;height:18px;background:rgba(148,163,184,.35);margin:0 3px;"></span>'; continue; }
     var val=(typeof o==='string')?o:o.v, lbl=(typeof o==='string')?o:o.l, sub=(typeof o==='object'&&o.sub);
     var on=(String(val)===String(activo));
-    h+='<button data-mt="filtro" data-mt-campo="'+mtEsc(campo)+'" data-mt-valor="'+mtEsc(val)+'"'+((typeof o==='object'&&o.t)?' title="'+mtEsc(o.t)+'"':'')+' style="cursor:pointer;border-radius:999px;padding:'+(sub?'3px 9px':'5px 11px')+';font-size:'+(sub?'11px':'12px')+';border:1px solid '+(on?MT_C.morado:'rgba(148,163,184,.35)')+';background:'+(on?MT_C.morado:'transparent')+';color:'+(on?'#fff':'inherit')+';">'+mtEsc(lbl)+'</button>';
+    h+='<button data-mt="filtro" data-mt-campo="'+mtEsc(campo)+'" data-mt-valor="'+mtEsc(val)+'"'+grAyAttr(typeof o==='object'&&o.t)+' style="cursor:pointer;border-radius:999px;padding:'+(sub?'3px 9px':'5px 11px')+';font-size:'+(sub?'11px':'12px')+';border:1px solid '+(on?MT_C.morado:'rgba(148,163,184,.35)')+';background:'+(on?MT_C.morado:'transparent')+';color:'+(on?'#fff':'inherit')+';">'+mtEsc(lbl)+'</button>';
   }
   return h+'</div></div>';
 }
 
-function mtTarjeta(et,val,suf,col,pie,idd){
+function mtTarjeta(et,val,suf,col,pie,idd,ay){
   var v = idd ? '<span id="f-'+idd+'" data-mt="toggle" data-mt-id="'+idd+'" style="font-size:13px;font-weight:600;color:'+MT_C.morado+';cursor:pointer;padding:3px 8px;border:1px solid '+MT_C.morado+';border-radius:999px;white-space:nowrap;">▸ ver</span>' : '';
   return '<div style="flex:1 1 150px;min-width:150px;border:1px solid rgba(148,163,184,.25);border-radius:12px;padding:12px 14px;">'
-   +'<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;"><span style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:'+MT_C.gris+';">'+mtEsc(et)+'</span>'+v+'</div>'
+   +'<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;"><span style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:'+MT_C.gris+';">'+mtEsc(et)+(ay?' '+grI(ay):'')+'</span>'+v+'</div>'
    +'<div style="font-size:30px;font-weight:700;line-height:1.15;color:'+col+';">'+mtEsc(val)+(suf||'')+'</div>'
    +'<div style="font-size:11px;color:'+MT_C.gris+';min-height:14px;">'+(pie||'')+'</div></div>';
 }
@@ -7369,9 +7590,9 @@ function mtVar(a0,p0){
   return '<span style="color:'+col+';">'+(d>0?'+':'')+d+'% vs '+p+'</span>';
 }
 
-function mtTabla(cols,filas){
+function mtTabla(cols,filas,ays){
   var h='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="text-align:left;color:'+MT_C.gris+';font-size:10px;text-transform:uppercase;letter-spacing:.06em;">';
-  for(var i=0;i<cols.length;i++) h+='<th style="padding:6px 8px;white-space:nowrap;">'+mtEsc(cols[i])+'</th>';
+  for(var i=0;i<cols.length;i++) h+='<th style="padding:6px 8px;white-space:nowrap;">'+mtEsc(cols[i])+((ays&&ays[i])?' '+grI(ays[i]):'')+'</th>';
   h+='</tr></thead><tbody>';
   for(var j=0;j<filas.length;j++){ h+='<tr style="border-top:1px solid rgba(148,163,184,.15);">';
     for(var k=0;k<filas[j].length;k++) h+='<td style="padding:6px 8px;">'+filas[j][k]+'</td>';
@@ -7416,15 +7637,15 @@ function mtPintar(){
   h+='<div style="border:1px solid rgba(148,163,184,.2);border-radius:12px;padding:12px 14px;margin-bottom:16px;">';
   h+=mtChips('Periodo','periodo',[{v:'todas',l:'Todas'},'|',{v:'mes',l:'Mes'},
       {v:'sem1',l:'S1',sub:1},{v:'sem2',l:'S2',sub:1},{v:'sem3',l:'S3',sub:1},{v:'sem4',l:'S4',sub:1},
-      '|',{v:'30d',l:'30d'},{v:'45d',l:'45d'},{v:'90d',l:'90d'}],MT_STATE.periodo);
+      '|',{v:'30d',l:'30d'},{v:'45d',l:'45d'},{v:'90d',l:'90d'}],MT_STATE.periodo,'metricas.periodo');
   if(['mes','sem1','sem2','sem3','sem4'].indexOf(MT_STATE.periodo)>=0){
     var ms=(cat.meses||[]).slice(0,12).map(function(x){return {v:x,l:mtMesLbl(x),sub:1};});
-    if(ms.length) h+=mtChips('Mes','mes',ms,MT_STATE.mes);
+    if(ms.length) h+=mtChips('Mes','mes',ms,MT_STATE.mes,'metricas.mes');
   }
   // 16nov2026 (Mike): los 14 productos oficiales en orden; Otros solo si hay datos fuera de la lista.
   MT_STATE.producto=prodFiltroValor(MT_STATE.producto);
-  h+=mtChips('Producto','producto',[{v:'TODOS',l:'Todos',t:GR_AYUDA_FIJA.prod.ALL}].concat(prodOpciones().filter(function(k){ return k!==PROD_OTROS || MT_STATE.producto===k || (cat.productos||[]).some(function(p){ return !prodEsOficial(p); }); }).map(function(k){ return {v:k,l:prodEtiqueta(k),t:prodAyuda(k)}; })),MT_STATE.producto);
-  h+=mtChips('Responsable','owner',['TODOS'].concat(cat.owners||[]),MT_STATE.owner);
+  h+=mtChips('Producto','producto',[{v:'TODOS',l:'Todos',t:GR_AYUDA_FIJA.prod.ALL}].concat(prodOpciones().filter(function(k){ return k!==PROD_OTROS || MT_STATE.producto===k || (cat.productos||[]).some(function(p){ return !prodEsOficial(p); }); }).map(function(k){ return {v:k,l:prodEtiqueta(k),t:prodAyuda(k)}; })),MT_STATE.producto,'comun.f.producto');
+  h+=mtChips('Responsable','owner',['TODOS'].concat(cat.owners||[]),MT_STATE.owner,'metricas.responsable');
   h+='<div style="font-size:11px;color:'+MT_C.gris+';margin-top:4px;">Del '+mtEsc(D.rango.desde)+' al '+mtEsc(D.rango.hasta)
     +' · <span style="cursor:pointer;text-decoration:underline;" data-mt="recargar">actualizar datos</span></div></div>';
 
@@ -7435,7 +7656,7 @@ function mtPintar(){
   }
 
   /* EMBUDO */
-  h+='<h3 style="margin:0 0 4px 0;font-size:15px;">Embudo hoy</h3>';
+  h+='<h3 style="margin:0 0 4px 0;font-size:15px;">Embudo hoy '+grI('metricas.embudo')+'</h3>';
   h+='<div style="font-size:11px;color:'+MT_C.gris+';margin-bottom:10px;">Cuántas oportunidades hay paradas en cada etapa en este momento.</div>';
   h+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px;">';
   var maxI=1; for(var b0=0;b0<flu.porEtapa.length;b0++) if(flu.porEtapa[b0].inv>maxI) maxI=flu.porEtapa[b0].inv;
@@ -7447,19 +7668,19 @@ function mtPintar(){
   }
   h+='</div>';
   h+='<div style="border:1px solid rgba(148,163,184,.25);border-radius:12px;padding:12px 14px;margin-bottom:26px;font-size:13px;">'
-    +'<b>Citas que vienen: '+flu.proyectadas+'</b> <span style="color:'+MT_C.gris+';font-size:11px;">— '+flu.invAtraccion+' en Atracción, con '+cit.showRate+'% de conversión histórica</span></div>';
+    +'<b>Citas que vienen: '+flu.proyectadas+'</b> '+grI('metricas.vienen')+' <span style="color:'+MT_C.gris+';font-size:11px;">— '+flu.invAtraccion+' en Atracción, con '+cit.showRate+'% de conversión histórica</span></div>';
 
   /* CITAS */
   var colMeta=cit.cumpl>=100?MT_C.verde:(cit.cumpl>=70?MT_C.amarillo:MT_C.rojo);
-  h+='<h3 style="margin:0 0 4px 0;font-size:15px;">Citas del periodo</h3>';
+  h+='<h3 style="margin:0 0 4px 0;font-size:15px;">Citas del periodo '+grI('metricas.citas')+'</h3>';
   h+='<div style="font-size:11px;color:'+MT_C.gris+';margin-bottom:10px;">Atracción = la cita quedó agendada. Educación = la reunión se efectuó.</div>';
   h+='<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;">';
-  h+=mtTarjeta('Atracción',cit.ag,'',MT_C.azul,mtVar(cit.ag,cit.prevAg));
-  h+=mtTarjeta('Educación',cit.ef,'',MT_C.verde,mtVar(cit.ef,cit.prevEf),'mt-citas');
-  h+=mtTarjeta('Conversión',cit.showRate,'%',(cit.showOk?MT_C.morado:MT_C.amarillo),(cit.showOk?'Atracción → Educación':'parcial: cohorte incompleta'));
-  h+=mtTarjeta('Vs meta',cit.cumpl,'%',colMeta,(D.meta?(cit.ef+' de '+D.meta+' · cierre '+cit.proy):'sin meta'));
-  h+=mtTarjeta('Se cayeron',cit.ca,'',(cit.ca?MT_C.rojo:MT_C.gris),'Atracción sin llegar a Educación');
-  h+=mtTarjeta('Tarda',cit.demora,'d',MT_C.azul,'de agendar a sentarse');
+  h+=mtTarjeta('Atracción',cit.ag,'',MT_C.azul,mtVar(cit.ag,cit.prevAg),'','metricas.atraccion');
+  h+=mtTarjeta('Educación',cit.ef,'',MT_C.verde,mtVar(cit.ef,cit.prevEf),'mt-citas','metricas.educacion');
+  h+=mtTarjeta('Conversión',cit.showRate,'%',(cit.showOk?MT_C.morado:MT_C.amarillo),(cit.showOk?'Atracción → Educación':'parcial: cohorte incompleta'),'','metricas.conversion');
+  h+=mtTarjeta('Vs meta',cit.cumpl,'%',colMeta,(D.meta?(cit.ef+' de '+D.meta+' · cierre '+cit.proy):'sin meta'),'','metricas.meta');
+  h+=mtTarjeta('Se cayeron',cit.ca,'',(cit.ca?MT_C.rojo:MT_C.gris),'Atracción sin llegar a Educación','','metricas.cayeron');
+  h+=mtTarjeta('Tarda',cit.demora,'d',MT_C.azul,'de agendar a sentarse','','metricas.tarda');
   h+='</div>';
 
   var fc=[];
@@ -7477,13 +7698,13 @@ function mtPintar(){
       var cq=Q.conv>=60?MT_C.verde:(Q.conv>=30?MT_C.amarillo:MT_C.rojo);
       fp.push([mtEsc(prodEtiqueta(Q.producto)),Q.agendadas,Q.efectuadas,'<b style="color:'+cq+';">'+Q.conv+'%</b>']); }
     h+='<div style="margin-bottom:12px;"><span id="f-mt-prod" data-mt="toggle" data-mt-id="mt-prod" style="font-size:12px;font-weight:600;color:'+MT_C.morado+';cursor:pointer;padding:2px 8px;border:1px solid '+MT_C.morado+';border-radius:999px;">▸ ver</span> <span style="font-size:11px;color:'+MT_C.gris+';">Conversión por producto</span>'
-      +'<div id="mt-prod" style="display:none;margin-top:8px;padding:8px;border:1px solid rgba(148,163,184,.2);border-radius:8px;">'+mtTabla(['Producto','Atracción','Educación','Conversión'],fp)+'</div></div>';
+      +'<div id="mt-prod" style="display:none;margin-top:8px;padding:8px;border:1px solid rgba(148,163,184,.2);border-radius:8px;">'+mtTabla(['Producto','Atracción','Educación','Conversión'],fp,['','metricas.atraccion','metricas.educacion','metricas.conversion'])+'</div></div>';
   }
 
   if(cit.tend.length){
     var maxT=1; for(var t=0;t<cit.tend.length;t++) if(cit.tend[t].educacion>maxT) maxT=cit.tend[t].educacion;
     h+='<div style="border:1px solid rgba(148,163,184,.2);border-radius:12px;padding:12px 14px;margin-bottom:26px;">';
-    h+='<div style="font-size:12px;font-weight:600;margin-bottom:2px;">Reuniones efectuadas por semana</div>';
+    h+='<div style="font-size:12px;font-weight:600;margin-bottom:2px;">Reuniones efectuadas por semana '+grI('metricas.semanas')+'</div>';
     h+='<div style="font-size:11px;color:'+MT_C.gris+';margin-bottom:8px;">Cada barra es una semana de lunes a domingo. Las últimas '+cit.tend.length+', la más antigua a la izquierda. <b>'+cit.bajoMeta+' de '+cit.nsem+' quedaron por debajo de la meta.</b></div>';
     h+='<div style="display:flex;align-items:flex-end;gap:4px;height:118px;">';
     for(var s2=0;s2<cit.tend.length;s2++){ var W=cit.tend[s2];
@@ -7499,15 +7720,15 @@ function mtPintar(){
   }
 
   /* TIEMPOS */
-  h+='<h3 style="margin:0 0 4px 0;font-size:15px;">Tiempos del embudo</h3>';
+  h+='<h3 style="margin:0 0 4px 0;font-size:15px;">Tiempos del embudo '+grI('metricas.tiempos')+'</h3>';
   h+='<div style="font-size:11px;color:'+MT_C.gris+';margin-bottom:10px;">Foto del '+mtEsc(flu.fecha||'—')+'. Con retraso = lleva más días de los que fija el plazo de su etapa.</div>';
-  if(flu.cuello) h+='<div style="border-left:3px solid '+MT_C.rojo+';background:rgba(219,5,64,.07);border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:13px;"><b>Cuello de botella: '+mtEsc(flu.cuello)+'</b> <span style="color:'+MT_C.gris+';font-size:11px;">— '+mtEsc(flu.criterio)+'</span></div>';
+  if(flu.cuello) h+='<div style="border-left:3px solid '+MT_C.rojo+';background:rgba(219,5,64,.07);border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:13px;"><b>Cuello de botella: '+mtEsc(flu.cuello)+'</b> '+grI('metricas.cuello')+' <span style="color:'+MT_C.gris+';font-size:11px;">— '+mtEsc(flu.criterio)+'</span></div>';
   h+='<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;">';
-  h+=mtTarjeta('En el embudo',flu.inv,'',MT_C.azul,'oportunidades vivas','mt-todos');
-  h+=mtTarjeta('En tiempo',flu.enTiempoPct,'%',MT_C.verde,flu.enTiempo+' oportunidades','mt-entiempo');
-  h+=mtTarjeta('Con retraso',flu.retPct,'%',MT_C.rojo,flu.ret+' oportunidades','mt-retraso');
-  h+=mtTarjeta('Avanzaron',flu.avanzaron,'',MT_C.verde,flu.comparada?('desde '+mtEsc(flu.comparada)):'requiere 2 fotos','mt-avanz');
-  h+=mtTarjeta('Entraron',flu.entraron,'',MT_C.morado,flu.comparada?('desde '+mtEsc(flu.comparada)):'requiere 2 fotos','mt-entr');
+  h+=mtTarjeta('En el embudo',flu.inv,'',MT_C.azul,'oportunidades vivas','mt-todos','metricas.inv');
+  h+=mtTarjeta('En tiempo',flu.enTiempoPct,'%',MT_C.verde,flu.enTiempo+' oportunidades','mt-entiempo','metricas.entiempo');
+  h+=mtTarjeta('Con retraso',flu.retPct,'%',MT_C.rojo,flu.ret+' oportunidades','mt-retraso','metricas.retraso');
+  h+=mtTarjeta('Avanzaron',flu.avanzaron,'',MT_C.verde,flu.comparada?('desde '+mtEsc(flu.comparada)):'requiere 2 fotos','mt-avanz','metricas.avanzaron');
+  h+=mtTarjeta('Entraron',flu.entraron,'',MT_C.morado,flu.comparada?('desde '+mtEsc(flu.comparada)):'requiere 2 fotos','mt-entr','metricas.entraron');
   h+='</div>';
   h+=mtListaOps('mt-todos',flu.dTodos)+mtListaOps('mt-entiempo',flu.dEnTiempo)+mtListaOps('mt-retraso',flu.dRet)
     +mtListaOps('mt-avanz',flu.dAvanz)+mtListaOps('mt-entr',flu.dEntr);
@@ -7522,11 +7743,11 @@ function mtPintar(){
       (E3.excesoProm?'<span style="color:'+MT_C.rojo+';">+'+E3.excesoProm+'%</span>':'—'),
       E3.diasProm+'d',(E3.umbral?E3.umbral+'d':'—'),
       '<span style="color:'+cA+';">'+E3.avancePct+'%</span>']); }
-  h+=mtTabla(['Etapa','Hay','En tiempo','Con retraso','Excedido','Días prom.','Plazo','Avance'],fe);
+  h+=mtTabla(['Etapa','Hay','En tiempo','Con retraso','Excedido','Días prom.','Plazo','Avance'],fe,['','metricas.col.hay','metricas.entiempo','metricas.retraso','metricas.col.excedido','metricas.col.dias','metricas.col.plazo','metricas.col.avance']);
   for(var q2=0;q2<flu.porEtapa.length;q2++) h+=mtListaOps('mt-et-'+q2,flu.porEtapa[q2].lista);
 
   /* TAREAS */
-  h+='<h3 style="margin:22px 0 4px 0;font-size:15px;">Tareas</h3>';
+  h+='<h3 style="margin:22px 0 4px 0;font-size:15px;">Tareas '+grI('metricas.tareas')+'</h3>';
   h+='<div style="font-size:11px;color:'+MT_C.gris+';margin-bottom:10px;">Solo del rol de prospección. Se miden contra su fecha compromiso; la autoridad es HubSpot.'
     +(tar.capturadas?(' Capturadas el '+mtEsc(tar.capturadas)+'.'):'')+'</div>';
   if(!tar.hay){
@@ -7534,11 +7755,11 @@ function mtPintar(){
   } else {
     var cT=tar.cumplPct;
     h+='<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;">';
-    h+=mtTarjeta('Vencían',tar.vencian,'',MT_C.azul,'con compromiso en el periodo','mt-t-venc');
-    h+=mtTarjeta('Cumplidas',tar.cumplidas,'',MT_C.verde,'','mt-t-cum');
-    h+=mtTarjeta('Cumplimiento',cT,'%',(cT>=80?MT_C.verde:(cT>=50?MT_C.amarillo:MT_C.rojo)),'contra fecha compromiso');
-    h+=mtTarjeta('Sin cumplir',tar.sinCumplir,'',MT_C.rojo,tar.retrasoProm+'d de retraso prom.','mt-t-sin');
-    h+=mtTarjeta('Backlog',tar.backlog,'',MT_C.gris,'vencidas y abiertas','mt-t-back');
+    h+=mtTarjeta('Vencían',tar.vencian,'',MT_C.azul,'con compromiso en el periodo','mt-t-venc','metricas.t.vencian');
+    h+=mtTarjeta('Cumplidas',tar.cumplidas,'',MT_C.verde,'','mt-t-cum','metricas.t.cumplidas');
+    h+=mtTarjeta('Cumplimiento',cT,'%',(cT>=80?MT_C.verde:(cT>=50?MT_C.amarillo:MT_C.rojo)),'contra fecha compromiso','','metricas.t.cumplimiento');
+    h+=mtTarjeta('Sin cumplir',tar.sinCumplir,'',MT_C.rojo,tar.retrasoProm+'d de retraso prom.','mt-t-sin','metricas.t.sin');
+    h+=mtTarjeta('Backlog',tar.backlog,'',MT_C.gris,'vencidas y abiertas','mt-t-back','metricas.t.backlog');
     h+='</div>';
     h+=mtListaTareas('mt-t-venc',tar.dTodas)+mtListaTareas('mt-t-cum',tar.dCum)
       +mtListaTareas('mt-t-sin',tar.dSin)+mtListaTareas('mt-t-back',tar.dBack);
