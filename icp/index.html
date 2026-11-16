@@ -60,6 +60,7 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
   </header>
   <div class="fila" id="f-prod"><span>Producto</span></div>
   <div class="fila" id="f-vista"><span>Vista</span></div>
+  <div class="fila" id="f-per"><span>Periodicidad</span></div>
   <div class="fila" id="f-anio"><span>Año</span></div>
   <div class="fila" id="f-medida"><span>Medida</span></div>
   <div class="fila" id="f-pesos"><span>Pesos</span></div>
@@ -74,9 +75,9 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
 // Productos: solo los oficiales (grupo GR de catalogos.json) y "Otros" (Mike, 16-nov). Vista principal: prospectos.
 (function () {
   var BASE = 'https://mikea.app.n8n.cloud/webhook/';
-  var D = null, CAT = [], st = { prod: 'TODOS', anio: 'todos', vista: 'se', medida: 'clientes', medidaS: 'personas', pesos: 'cal' };
+  var D = null, CAT = [], st = { prod: 'TODOS', anio: 'todos', vista: 'se', medida: 'clientes', medidaS: 'personas', pesos: 'cal', per: 'q', desde: '', hasta: '' };
   var NOMBRES = { TODOS: 'Todos', Otros: 'Otros' };
-  var VISTAS = [['se', 'Prospectos (reacciones)'], ['re', 'Llegaron a reunión'], ['op', 'Oportunidades cerradas']];
+  var VISTAS = [['se', 'Prospectos (reacciones)'], ['re', 'Llegaron a reunión'], ['op', 'Oportunidades cerradas'], ['rd', 'Rendimiento y pruebas']];
   var DIM_OP = { sector: 'Industria', tamano: 'Tamaño de la empresa', nivel: 'Nivel del contacto', area: 'Área', pais: 'País', motivo: 'Motivo de pérdida' };
   var DIM_RE = { sector: 'Industria', tamano: 'Tamaño de la empresa', nivel: 'Nivel del contacto', area: 'Área', pais: 'País' };
   var DIM_SE = { industria: 'Industria', tamano: 'Tamaño de la empresa', nivel: 'Nivel del contacto', area: 'Área', pais: 'País', secuencia: 'Secuencia o señal' };
@@ -85,6 +86,11 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
   var AYUDA = {
     vista_se: 'Cada persona que reaccionó a una secuencia o a una señal de Duo, contada una vez por producto y año con su reacción más alta. Es la vista con más casos: sirve para decidir a quién apuntar.',
     vista_re: 'Oportunidades (abiertas y cerradas) que llegaron a la reunión: pasaron por Educación o más adelante, o se ganaron. Es el paso intermedio entre la reacción y la venta, con más casos que las ganadas.',
+    vista_rd: 'Cómo va cada producto en el tiempo y qué pruebas tiene. Contactados, respuestas, interesados y reuniones salen de la analítica de Amplemarket (se actualiza cada lunes); oportunidades, reuniones y ganadas salen del CRM.',
+    per: 'Periodicidad. Por trimestre (la inicial) se lee estable; por mes hay pocos casos y un mes malo parece una caída. Rango: escoge los meses que quieras ver.',
+    semaforo: 'Compara el % de interesados del último periodo completo contra el promedio de sus 4 periodos anteriores (su línea base) y contra la mediana del portafolio. Verde: igual o mejor que su línea base. Amarillo: hasta 20% peor. Rojo: más de 20% peor, o abajo de la mediana del portafolio. Gris: menos de 200 contactados, pocos datos.',
+    k_cont: 'Personas contactadas por primera vez en el periodo.', k_resp: 'Respondieron entre contactados.', k_int: 'Interesados entre contactados: el indicador del semáforo.', k_cpr: 'Contactados por cada reunión agendada en Amplemarket. Menos es mejor.',
+    pruebas: 'Pruebas de hipótesis del producto (ciclo de cambio vE, 5.1): dos versiones al mismo tiempo, 400 contactos por versión con señal o 1,500 en campaña, 4 a 6 semanas; gana la que tenga más respuestas positivas por contacto.',
     vista_op: 'Oportunidades ya cerradas, ganadas o perdidas. Con menos de 10 ganadas por producto sirve para confirmar, no para decidir.',
     anio: 'Año de la reacción, de la creación de la oportunidad (reunión) o del cierre (cerradas).',
     medida: 'Clientes cuenta oportunidades ganadas; Monto suma su valor (solo en Todos: un ticket grande deforma un producto). En prospectos, Personas cuenta gente y Puntos suma el peso de cada reacción.',
@@ -171,8 +177,85 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
     var L = (D.documentos || {})[st.prod];
     if (!L) return '<div class="card"><h3>Documentos del producto' + ay('docs') + '</h3><p class="n">Este producto no tiene ficha en Configuración → Productos.</p></div>';
     return '<div class="card"><h3>Documentos del producto' + ay('docs') + '</h3><div class="docl">' + L.map(function (d) {
-      return '<div><span>' + esc(d.tipo) + '</span>' + (d.url ? '<a href="' + esc(d.url) + '" target="_blank" rel="noopener">' + esc(d.nombre || 'Abrir') + '</a>' : '<em>Por definir</em>') + '</div>';
+      return '<div><span>' + esc(d.tipo) + '</span>' + (d.url ? '<a href="' + esc(d.url) + '" target="_blank" rel="noopener">' + esc(d.nombre || 'Abrir') + '</a>' : (d.nombre ? '<b>' + esc(d.nombre) + '</b>' : '<em>Por definir</em>')) + '</div>';
     }).join('') + '</div></div>';
+  }
+
+  // ---------- Rendimiento y pruebas (vista rd) ----------
+  var MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  var HOY = new Date(), MES_HOY = HOY.getFullYear() + '-' + ('0' + (HOY.getMonth() + 1)).slice(-2);
+  function clavePer(m) { var y = m.slice(0, 4), mm = Number(m.slice(5, 7)); return st.per === 'm' || st.per === 'r' ? m : st.per === 'q' ? y + '-T' + Math.ceil(mm / 3) : y; }
+  function nombrePer(k) { if (/^\d{4}-\d{2}$/.test(k)) return MESES[Number(k.slice(5)) - 1] + ' ' + k.slice(2, 4); if (/-T/.test(k)) return 'T' + k.slice(-1) + ' ' + k.slice(2, 4); return k; }
+  function serie(p) {
+    var A = (D.rendimiento || {})[p] || {}, H = ((D.productos || {})[p] || {}).mes || {}, S = {};
+    function add(m, f) { if (m > MES_HOY) m = MES_HOY; if (st.per === 'r' && ((st.desde && m < st.desde) || (st.hasta && m > st.hasta))) return; var k = clavePer(m); var x = S[k] || (S[k] = { c: 0, r: 0, i: 0, m: 0, op: 0, reu: 0, gan: 0, monto: 0, tope: false }); f(x); }
+    Object.keys(A).forEach(function (m) { var a = A[m]; add(m, function (x) { x.c += a.c; x.r += a.r; x.i += a.i; x.m += a.m; x.tope = x.tope || a.tope; }); });
+    Object.keys(H).forEach(function (m) { var h = H[m]; add(m, function (x) { x.op += h.op; x.reu += h.reu; x.gan += h.gan; x.monto += h.monto; }); });
+    return Object.keys(S).sort().map(function (k) { return [k, S[k]]; });
+  }
+  var tasa = function (x) { return x.c ? x.i / x.c : 0; };
+  function enCurso(k) { return k === clavePer(MES_HOY); }
+  function semaforo(se, med) {
+    var comp = se.filter(function (x) { return !enCurso(x[0]); }); if (!comp.length) return { c: 'gris', t: 'Sin periodos completos' };
+    var u = comp[comp.length - 1][1]; if (u.c < 200) return { c: 'gris', t: 'Pocos datos (' + fmt(u.c) + ' contactados)' };
+    var prev = comp.slice(-5, -1).filter(function (x) { return x[1].c >= 200; }); var base = prev.length ? prev.reduce(function (s, x) { return s + tasa(x[1]); }, 0) / prev.length : 0;
+    var t = tasa(u); if (!base) return { c: 'gris', t: 'Sin línea base todavía' };
+    var r = t / base, c = r >= 1 ? 'verde' : r >= 0.8 ? 'amarillo' : 'rojo'; if (med && t < med && c === 'verde') c = 'amarillo';
+    return { c: c, t: (t * 100).toFixed(2) + '% interesados contra ' + (base * 100).toFixed(2) + '% de su línea base' + (med ? ' · mediana del portafolio ' + (med * 100).toFixed(2) + '%' : '') };
+  }
+  var COLOR_SEM = { verde: '#10B981', amarillo: '#F59E0B', rojo: '#EF4444', gris: '#4B5563' }, ETQ_SEM = { verde: 'Va bien', amarillo: 'Atención', rojo: 'Va mal', gris: 'Pocos datos' };
+  function punto(sm) { return '<span title="' + esc(sm.t) + '" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:' + COLOR_SEM[sm.c] + ';vertical-align:-1px"></span>'; }
+  function linea(se, f, alto, ancho) {
+    var v = se.map(function (x) { return f(x[1]); }); if (v.length < 2) return '';
+    var max = Math.max.apply(null, v) || 1, w = ancho || 120, h = alto || 28, step = w / (v.length - 1);
+    var pts = v.map(function (y, i) { return (i * step).toFixed(1) + ',' + (h - 2 - (y / max) * (h - 4)).toFixed(1); }).join(' ');
+    return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '"><polyline fill="none" stroke="#7C3AED" stroke-width="2" points="' + pts + '"/></svg>';
+  }
+  function grafica(se) {
+    if (se.length < 2) return '<p class="n">Hace falta más de un periodo para ver la tendencia.</p>';
+    var W = 640, H = 180, pad = 30, n = se.length, step = (W - pad * 2) / (n - 1);
+    var ti = se.map(function (x) { return tasa(x[1]) * 100; }), mx = Math.max.apply(null, ti) || 1, rm = se.map(function (x) { return x[1].m + x[1].reu; }), mr = Math.max.apply(null, rm) || 1;
+    var bars = se.map(function (x, i) { var bh = (rm[i] / mr) * (H - pad * 2); return '<rect x="' + (pad + i * step - 6).toFixed(1) + '" y="' + (H - pad - bh).toFixed(1) + '" width="12" height="' + bh.toFixed(1) + '" fill="#2A3142"><title>' + nombrePer(x[0]) + ': ' + x[1].m + ' reuniones en Amplemarket · ' + x[1].reu + ' en el CRM</title></rect>'; }).join('');
+    var pts = ti.map(function (y, i) { return (pad + i * step).toFixed(1) + ',' + (H - pad - (y / mx) * (H - pad * 2)).toFixed(1); }).join(' ');
+    var dots = ti.map(function (y, i) { return '<circle cx="' + (pad + i * step).toFixed(1) + '" cy="' + (H - pad - (y / mx) * (H - pad * 2)).toFixed(1) + '" r="3" fill="' + (enCurso(se[i][0]) ? '#9CA3AF' : '#EC4899') + '"><title>' + nombrePer(se[i][0]) + ': ' + y.toFixed(2) + '% interesados de ' + fmt(se[i][1].c) + ' contactados' + (enCurso(se[i][0]) ? ' (en curso)' : '') + '</title></circle>'; }).join('');
+    var et = se.map(function (x, i) { return (n <= 14 || i % Math.ceil(n / 12) === 0) ? '<text x="' + (pad + i * step).toFixed(1) + '" y="' + (H - 10) + '" text-anchor="middle" fill="#9CA3AF" font-size="10">' + nombrePer(x[0]) + '</text>' : ''; }).join('');
+    return '<div style="overflow-x:auto"><svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="min-width:420px">' + bars + '<polyline fill="none" stroke="#EC4899" stroke-width="2" points="' + pts + '"/>' + dots + et + '</svg></div><div class="ley"><span><i style="background:#EC4899"></i>% interesados (línea)</span><span><i style="background:#2A3142"></i>Reuniones (barras)</span><span><i style="background:#9CA3AF"></i>Periodo en curso</span></div>';
+  }
+  function tablaPer(se, todos) {
+    return '<div style="overflow-x:auto"><table><tr><th>Periodo</th><th>Contactados</th><th>% respuesta</th><th>% interesados</th><th>Reuniones (Amplemarket)</th><th>Contactados por reunión</th><th>Oportunidades</th><th>Llegaron a reunión</th><th>Ganadas</th>' + (todos ? '<th>Monto ganado</th>' : '') + '</tr>' +
+      se.slice().reverse().map(function (x) { var a = x[1]; return '<tr><td>' + nombrePer(x[0]) + (enCurso(x[0]) ? ' <span class="poco">en curso</span>' : '') + (a.tope ? ' <span class="poco" title="Algún mes llegó al tope de 100 secuencias de la consulta: puede faltar volumen">tope</span>' : '') + '</td><td>' + fmt(a.c) + '</td><td>' + pct(a.r, a.c) + '</td><td>' + (a.c ? (a.i / a.c * 100).toFixed(2) + '%' : '—') + '</td><td>' + fmt(a.m) + '</td><td>' + (a.m ? fmt(a.c / a.m) : '—') + '</td><td>' + fmt(a.op) + '</td><td>' + fmt(a.reu) + '</td><td>' + fmt(a.gan) + '</td>' + (todos ? '<td>$' + fmt(a.monto) + '</td>' : '') + '</tr>'; }).join('') + '</table></div>';
+  }
+  function pruebasHtml(p) {
+    var L = (D.pruebas || []).filter(function (x) { return p === 'TODOS' || x.producto === p; });
+    if (!L.length) return '<div class="card"><h3>Recomendaciones y pruebas' + ay('pruebas') + '</h3><p class="n">Este producto no tiene pruebas registradas. Las siguientes hipótesis están en la tabla «Hypotheses to test» de su ICP (Documentos del producto).</p></div>';
+    return '<div class="card"><h3>Recomendaciones y pruebas' + ay('pruebas') + '</h3><div style="overflow-x:auto"><table><tr><th>Producto</th><th>Hipótesis</th><th>Versión A</th><th>Versión B</th><th>Canal</th><th>Contactos por versión</th><th>Semanas</th><th>Estado</th><th>Resultado</th></tr>' +
+      L.map(function (x) { return '<tr><td>' + esc(NOMBRES[x.producto] || x.producto) + '</td><td style="text-align:left">' + esc(x.hipotesis) + '</td><td style="text-align:left">' + esc(x.a) + '</td><td style="text-align:left">' + esc(x.b) + '</td><td>' + esc(x.canal) + '</td><td>' + fmt(x.contactos) + '</td><td>' + esc(x.semanas) + '</td><td>' + esc(x.estado) + '</td><td style="text-align:left">' + esc(x.resultado || '—') + '</td></tr>'; }).join('') + '</table></div></div>';
+  }
+  function rendimiento() {
+    var per = $('f-per'); per.style.display = '';
+    chips('f-per', [['q', 'Trimestre'], ['m', 'Mes'], ['a', 'Año'], ['r', 'Rango de meses']], 'per', 'per');
+    if (st.per === 'r') { var meses = Object.keys(((D.rendimiento || {}).TODOS) || {}).sort(); var op = function (sel) { return meses.map(function (m) { return '<option value="' + m + '"' + (m === sel ? ' selected' : '') + '>' + nombrePer(m) + '</option>'; }).join(''); };
+      per.insertAdjacentHTML('beforeend', ' <select id="r-desde" class="chip">' + '<option value="">Desde el inicio</option>' + op(st.desde) + '</select> <select id="r-hasta" class="chip"><option value="">Hasta hoy</option>' + op(st.hasta) + '</select>');
+      $('r-desde').onchange = function () { st.desde = this.value; pintar(); }; $('r-hasta').onchange = function () { st.hasta = this.value; pintar(); }; }
+    var prods = CAT.map(function (c) { return c.id; }).concat(['Otros']);
+    var html = '';
+    if (st.prod === 'TODOS') {
+      var se = serie('TODOS'), meds = [];
+      prods.forEach(function (p) { var s2 = serie(p).filter(function (x) { return !enCurso(x[0]); }); var u = s2[s2.length - 1]; if (u && u[1].c >= 200) meds.push(tasa(u[1])); });
+      meds.sort(function (a, b) { return a - b; }); var med = meds.length ? meds[Math.floor(meds.length / 2)] : 0;
+      var filas = prods.map(function (p) { var s2 = serie(p); if (!s2.length) return ''; var sm = semaforo(s2, med), tot = s2.reduce(function (a, x) { a.c += x[1].c; a.i += x[1].i; a.m += x[1].m; a.op += x[1].op; a.reu += x[1].reu; a.gan += x[1].gan; return a; }, { c: 0, i: 0, m: 0, op: 0, reu: 0, gan: 0 });
+        return '<tr><td>' + punto(sm) + ' ' + esc(NOMBRES[p] || p) + '</td><td>' + fmt(tot.c) + '</td><td>' + (tot.c ? (tot.i / tot.c * 100).toFixed(2) + '%' : '—') + '</td><td>' + fmt(tot.m) + '</td><td>' + (tot.m ? fmt(tot.c / tot.m) : '—') + '</td><td>' + fmt(tot.op) + '</td><td>' + fmt(tot.reu) + '</td><td>' + fmt(tot.gan) + '</td><td>' + linea(s2, tasa) + '</td><td style="text-align:left;white-space:nowrap" title="' + esc(sm.t) + '">' + punto(sm) + ' ' + ETQ_SEM[sm.c] + '</td></tr>'; }).join('');
+      html += '<div class="card" style="grid-column:1/-1"><h3>Semáforo por producto' + ay('semaforo') + '</h3><p class="n">Suma del periodo elegido; la línea muestra el % de interesados en el tiempo y el semáforo compara el último periodo completo.</p><div style="overflow-x:auto"><table><tr><th>Producto</th><th>Contactados</th><th>% interesados</th><th>Reuniones (Amplemarket)</th><th>Contactados por reunión</th><th>Oportunidades</th><th>Llegaron a reunión</th><th>Ganadas</th><th>Tendencia</th><th>Semáforo</th></tr>' + filas + '</table></div></div>';
+      html += '<div class="card" style="grid-column:1/-1"><h3>Todo el portafolio en el tiempo' + ay('per') + '</h3>' + grafica(se) + '</div>';
+      html += '<div class="card" style="grid-column:1/-1"><h3>Detalle por periodo · todo el portafolio</h3>' + tablaPer(se, true) + '</div>';
+    } else {
+      var s3 = serie(st.prod), sm3 = semaforo(s3, 0), comp = s3.filter(function (x) { return !enCurso(x[0]); }), u = (comp[comp.length - 1] || ['', { c: 0, r: 0, i: 0, m: 0 }])[1];
+      $('kpis').innerHTML = kpi('Semáforo', punto(sm3) + ' <span style="font-size:13px">' + ETQ_SEM[sm3.c] + '</span>', 'semaforo') + kpi('Contactados · último periodo', fmt(u.c), 'k_cont') + kpi('% respuesta', pct(u.r, u.c), 'k_resp') + kpi('% interesados', u.c ? (u.i / u.c * 100).toFixed(2) + '%' : '—', 'k_int') + kpi('Contactados por reunión', u.m ? fmt(u.c / u.m) : '—', 'k_cpr');
+      html += '<div class="card" style="grid-column:1/-1"><h3>' + esc(NOMBRES[st.prod] || st.prod) + ' en el tiempo' + ay('semaforo') + '</h3><p class="n">' + esc(sm3.t) + '</p>' + grafica(s3) + '</div>';
+      html += '<div class="card" style="grid-column:1/-1"><h3>Detalle por periodo</h3>' + tablaPer(s3, false) + '</div>';
+    }
+    html += '<div style="grid-column:1/-1">' + pruebasHtml(st.prod) + '</div>';
+    return html;
   }
   function kpi(lab, val, ayk) { return '<div class="kpi"><span>' + lab + ay(ayk) + '</span><b>' + val + '</b></div>'; }
   function tarjeta(titulo, dimObj, dimName) {
@@ -186,6 +269,8 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
     chips('f-prod', prods.map(function (p) { var c = CAT.filter(function (x) { return x.id === p; })[0]; return [p, NOMBRES[p] || p, c ? c.ayuda : '']; }), 'prod', 'prod');
     $('docs').innerHTML = documentos();
     chips('f-vista', VISTAS, 'vista', 'vista_' + st.vista);
+    $('f-per').style.display = 'none';
+    if (st.vista === 'rd') { ['f-anio', 'f-medida', 'f-pesos'].forEach(function (f) { $(f).style.display = 'none'; }); $('kpis').innerHTML = ''; $('cal').innerHTML = ''; $('graf').innerHTML = rendimiento(); return; }
     var P = D.productos[st.prod] || {};
     var fuente = st.vista === 'se' ? (st.pesos === 'cal' ? P.s2 : P.s) : st.vista === 're' ? P.r : P.d;
     if (!fuente || !Object.keys(fuente).length) { $('kpis').innerHTML = ''; $('cal').innerHTML = ''; ['f-anio', 'f-medida', 'f-pesos'].forEach(function (f) { $(f).style.display = 'none'; });
@@ -230,7 +315,7 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
       pintar();
     }).catch(function () { $('foto').textContent = 'No se pudo leer la foto del ICP. Intenta de nuevo.'; });
   }
-  ['f-prod', 'f-vista', 'f-anio', 'f-medida', 'f-pesos'].forEach(function (id) { var el = $(id); el.setAttribute('data-l', el.querySelector('span').textContent); });
+  ['f-prod', 'f-vista', 'f-per', 'f-anio', 'f-medida', 'f-pesos'].forEach(function (id) { var el = $(id); el.setAttribute('data-l', el.querySelector('span').textContent); });
   $('act').onclick = function () {
     var b = $('act'); b.disabled = true; $('msg').textContent = 'Recalculando, tarda un minuto…';
     fetch(BASE + 'gr-icp-actualizar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
