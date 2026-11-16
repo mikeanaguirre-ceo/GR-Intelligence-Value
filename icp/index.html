@@ -195,7 +195,7 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
     return Object.keys(S).sort().map(function (k) { return [k, S[k]]; });
   }
   var tasa = function (x) { return x.op ? x.reu / x.op : 0; }; // semáforo: % de oportunidades que llegan a reunión (CRM, exacto)
-  var MIN_OP = 10, AMPLE = false;
+  var MIN_OP = 10, AMPLE = true;
   function enCurso(k) { return k === clavePer(MES_HOY); }
   function semaforo(se, med) {
     var comp = se.filter(function (x) { return !enCurso(x[0]); }); if (!comp.length) return { c: 'gris', t: 'Sin periodos completos' };
@@ -247,7 +247,7 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
       meds.sort(function (a, b) { return a - b; }); var med = meds.length ? meds[Math.floor(meds.length / 2)] : 0;
       var filas = prods.map(function (p) { var s2 = serie(p); if (!s2.length) return ''; var sm = semaforo(s2, med), tot = s2.reduce(function (a, x) { a.c += x[1].c; a.i += x[1].i; a.m += x[1].m; a.op += x[1].op; a.reu += x[1].reu; a.gan += x[1].gan; return a; }, { c: 0, i: 0, m: 0, op: 0, reu: 0, gan: 0 });
         return '<tr><td>' + punto(sm) + ' ' + esc(NOMBRES[p] || p) + '</td>' + (AMPLE ? '<td>' + fmt(tot.c) + '</td><td>' + (tot.c ? (tot.i / tot.c * 100).toFixed(2) + '%' : '—') + '</td><td>' + fmt(tot.m) + '</td><td>' + (tot.m ? fmt(tot.c / tot.m) : '—') + '</td>' : '') + '<td>' + fmt(tot.op) + '</td><td>' + fmt(tot.reu) + '</td><td>' + fmt(tot.gan) + '</td><td>' + linea(s2, tasa) + '</td><td style="text-align:left;white-space:nowrap" title="' + esc(sm.t) + '">' + punto(sm) + ' ' + ETQ_SEM[sm.c] + '</td></tr>'; }).join('');
-      html += '<div class="card" style="grid-column:1/-1"><h3>Semáforo por producto' + ay('semaforo') + '</h3><p class="n">Suma del periodo elegido. La línea muestra el % de oportunidades que llegan a reunión en el tiempo y el semáforo compara el último periodo completo. Los contactados y respuestas de Amplemarket por producto se agregan en cuanto quede la fuente exacta.</p><div style="overflow-x:auto"><table><tr><th>Producto</th>' + (AMPLE ? '<th>Contactados</th><th>% interesados</th><th>Reuniones (Amplemarket)</th><th>Contactados por reunión</th>' : '') + '<th>Oportunidades</th><th>Llegaron a reunión</th><th>Ganadas</th><th>Tendencia</th><th>Semáforo</th></tr>' + filas + '</table></div></div>';
+      html += '<div class="card" style="grid-column:1/-1"><h3>Semáforo por producto' + ay('semaforo') + '</h3><p class="n">Suma del periodo elegido. La línea muestra el % de oportunidades que llegan a reunión en el tiempo y el semáforo compara el último periodo completo. Contactados, respuestas, interesados y reuniones de Amplemarket: un renglón por producto y mes desde la analítica (se actualiza los lunes); Otros es el total menos los productos.</p><div style="overflow-x:auto"><table><tr><th>Producto</th>' + (AMPLE ? '<th>Contactados</th><th>% interesados</th><th>Reuniones (Amplemarket)</th><th>Contactados por reunión</th>' : '') + '<th>Oportunidades</th><th>Llegaron a reunión</th><th>Ganadas</th><th>Tendencia</th><th>Semáforo</th></tr>' + filas + '</table></div></div>';
       html += '<div class="card" style="grid-column:1/-1"><h3>Todo el portafolio en el tiempo' + ay('per') + '</h3>' + grafica(se) + '</div>';
       html += '<div class="card" style="grid-column:1/-1"><h3>Detalle por periodo · todo el portafolio</h3>' + tablaPer(se, true) + '</div>';
     } else {
