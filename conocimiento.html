@@ -156,17 +156,35 @@
   function pasado(x){ return x.origen === 'rezago' || ((x.origen === 'reunion' || x.origen === 'consolidada') && Date.parse(x.fecha) < CATORCE); }
   function corto(n){ return String(n || '').replace(/\s*\(.*\)\s*$/, ''); }
 
+  // ---------- Lista oficial de productos (decision de Mike, 16 nov) — candado-productos: oficial ----------
+  // Son los productos del catalogo del sitio (/catalogos.json, el que copia Configuracion) con grupo GR y activos, en su
+  // orden. Pintaando, IMMMU, Excepciones, Interno y Otro no son productos: si el motor manda una de esas lineas, va en «Otros».
+  var CAT_PROD = [];
+  var CAT_LISTO = fetch('/catalogos.json', { cache: 'no-cache' }).then(function(r){ return r.json(); }).then(function(j){ CAT_PROD = (j && j.productos) || []; }).catch(function(){}); // candado-productos: oficial
+  function prodNorm(x){ return String(x == null ? '' : x).trim().toUpperCase().replace(/\s+/g, ' '); }
+  function PRODUCTOS_OFICIALES(){ return CAT_PROD.filter(function(p){ return p && p.id && p.grupo === 'GR' && p.activo !== false; }).sort(function(a, b){ return (a.orden || 0) - (b.orden || 0); }); }
+  function prodCorto(p){ return String((p && (p.nombre || p.label || p.id)) || '').replace(/\s*\([^)]*\)\s*$/, '').trim(); }
+  function prodOficial(c){ var n = prodNorm(c); if (!n || n === 'OTROS') return 'Otros';
+    var p = PRODUCTOS_OFICIALES().filter(function(p){ return [p.id, p.label, p.nombre, prodCorto(p)].concat(p.alias || [], p.prefijos || []).some(function(k){ return prodNorm(k) === n; }); })[0];
+    return p ? p.id : 'Otros'; }
+  function prodOpciones(){ return PRODUCTOS_OFICIALES().map(function(p){ return p.id; }).concat(['Otros']); }
+  var AYUDA_OTROS = 'Lo que no es uno de los 14 productos oficiales: Pintaando, IMMMU, Excepciones o internas.';
+
   // ---------- Filtros: lider y producto ----------
   function lineasLider(){ return datos.lineas.filter(function(l){ return fLid === 'todos' || l.lidera === fLid; }); }
-  function lineasVista(){ return lineasLider().filter(function(l){ return fProd === 'todos' || l.codigo === fProd; }); }
+  function lineasVista(){ return lineasLider().filter(function(l){ return fProd === 'todos' || prodOficial(l.codigo) === fProd; }); }
   function barraFiltros(){
     var lids = ['todos'].concat((datos.lideres || []).map(function(x){ return x.nombre; }));
     var ls = lineasLider();
     return '<div class="filtros-top"><div class="fila-f"><span class="lbl">Líder' + ay('Muestra solo los productos que lidera esa persona según el catálogo. Lo que apruebes queda con su nombre; con «Todos», con el de Mike.') + '</span>' +
       lids.map(function(n){ return '<button class="chip' + (fLid === n ? ' on' : '') + '" data-flid="' + esc(n) + '">' + (n === 'todos' ? 'Todos' : esc(n)) + '</button>'; }).join('') + '</div>' +
-      '<div class="fila-f"><span class="lbl">Producto' + ay('Los productos del catálogo. Los que dicen «sin base» todavía no tienen base de conocimiento: sus mensajes se cuentan, pero no se analizan.') + '</span>' +
-      '<button class="chip' + (fProd === 'todos' ? ' on' : '') + '" data-fprod="todos">Todos (' + ls.length + ')</button>' +
-      ls.map(function(l){ return '<button class="chip' + (fProd === l.codigo ? ' on' : '') + (l.kb ? '' : ' sinbase') + '" data-fprod="' + esc(l.codigo) + '" title="' + esc(l.nombre + ' · lidera ' + l.lidera + (l.kb ? ' · base ' + l.kb.nombre : ' · sin base todavía')) + '">' + esc(corto(l.nombre)) + (l.kb ? '' : ' · sin base') + '</button>'; }).join('') + '</div></div>';
+      '<div class="fila-f"><span class="lbl">Producto' + ay('Los 14 productos oficiales de Great Revenue, en el orden del catálogo. Los que dicen «sin base» todavía no tienen base de conocimiento: sus mensajes se cuentan, pero no se analizan. Otros: lo que no es de la lista.') + '</span>' +
+      '<button class="chip' + (fProd === 'todos' ? ' on' : '') + '" data-fprod="todos">Todos · ' + ls.length + '</button>' +
+      prodOpciones().map(function(id){
+        var de = ls.filter(function(l){ return prodOficial(l.codigo) === id; }); if (!de.length) return '';
+        var p = PRODUCTOS_OFICIALES().filter(function(x){ return x.id === id; })[0], sinBase = !de.some(function(l){ return l.kb; });
+        var t = (p ? (p.ayuda || prodCorto(p)) : AYUDA_OTROS) + (sinBase ? ' · Sin base de conocimiento todavía.' : '');
+        return '<button class="chip' + (fProd === id ? ' on' : '') + (sinBase ? ' sinbase' : '') + '" data-fprod="' + esc(id) + '" title="' + esc(t) + '">' + esc(p ? prodCorto(p) : 'Otros') + (sinBase ? ' · sin base' : '') + '</button>'; }).join('') + '</div></div>';
   }
 
   // 29 oct: el borrador de cada base se lee al cargar. Antes «Ver cómo quedaría» siempre volvía a prepararlo y, si se
@@ -180,7 +198,8 @@
   function cargar(){
     return post('gr-conocimiento').then(function(j){ datos = j;
       if (fLid !== 'todos' && !(datos.lideres || []).some(function(x){ return x.nombre === fLid; })) fLid = 'todos';
-      if (fProd !== 'todos' && !datos.lineas.some(function(l){ return l.codigo === fProd; })) fProd = 'todos';
+      if (fProd !== 'todos') fProd = prodOficial(fProd);
+      if (fProd !== 'todos' && !datos.lineas.some(function(l){ return prodOficial(l.codigo) === fProd; })) fProd = 'todos';
       pintar(); leerBorradores(); })
       .catch(function(e){ $('main').innerHTML = '<p class="error">No se pudo cargar: ' + esc(e.message) + '. Vuelve a intentar.</p>'; });
   }
@@ -532,11 +551,11 @@
     var g = function(k){ return t.getAttribute(k); };
     if (t.hasAttribute('data-v')) { vista = g('data-v'); window.scrollTo(0, 0); return pintar(); }
     if (t.hasAttribute('data-ayuda')) return verAyuda();
-    if (t.hasAttribute('data-flid')) { fLid = g('data-flid'); if (fProd !== 'todos' && !lineasLider().some(function(l){ return l.codigo === fProd; })) fProd = 'todos'; return pintar(); }
+    if (t.hasAttribute('data-flid')) { fLid = g('data-flid'); if (fProd !== 'todos' && !lineasLider().some(function(l){ return prodOficial(l.codigo) === fProd; })) fProd = 'todos'; return pintar(); }
     if (t.hasAttribute('data-fprod')) { fProd = g('data-fprod'); return pintar(); }
     if (t.hasAttribute('data-zona')) { zona = g('data-zona'); return pintar(); }
     // Celda de la matriz: abre Por decidir con ese producto, entrada y periodo.
-    if (t.hasAttribute('data-ir')) { var p = g('data-ir').split('|'); fProd = p[0]; fEnt = p[1]; fPer = p[2]; fAcc = 'todas'; fEst = 'nuevo'; vista = 'decidir'; window.scrollTo(0, 0); return pintar(); }
+    if (t.hasAttribute('data-ir')) { var p = g('data-ir').split('|'); fProd = prodOficial(p[0]); fEnt = p[1]; fPer = p[2]; fAcc = 'todas'; fEst = 'nuevo'; vista = 'decidir'; window.scrollTo(0, 0); return pintar(); }
     if (t.hasAttribute('data-fper')) { fPer = g('data-fper'); return pintar(); }
     if (t.hasAttribute('data-fest')) { fEst = g('data-fest'); return pintar(); }
     if (t.hasAttribute('data-fent')) { fEnt = g('data-fent'); fAcc = 'todas'; return pintar(); }
@@ -560,7 +579,7 @@
       t.disabled = true; return revisar(i, a);
     }
   });
-  cargar();
+  CAT_LISTO.then(cargar);
 })();
 </script>
 </body>
