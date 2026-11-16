@@ -787,46 +787,7 @@ let amPeriod = 30; // 7, 15, or 30
 
 // --- Operational knowledge (hardcoded, curated) ---
 
-const ACTIVE_CLIENTS = {
-  STIL: {
-    name: 'STIL',
-    contact: 'Estela Escalante',
-    email: 'eescalante@stil.mx',
-    phone: '+1 656-308-4410',
-    owner: 'Mike/Migue',
-    note: 'WB sin respuesta'
-  },
-  IMMMU: {
-    name: 'IMMMU',
-    contact: 'María Santoyo',
-    email: 'maria@immmu.mx',
-    phone: '+525611731945',
-    owner: 'Mike',
-    note: 'Factura abril pendiente'
-  },
-  CETES: {
-    name: 'CETES',
-    contact: 'Óscar Morales',
-    email: 'omorales@cetesdirecto.com',
-    phone: '+52 55 2413 5515',
-    owner: 'Mike',
-    note: 'El más grande del pipeline'
-  },
-  GPV: {
-    name: 'GPV',
-    contact: 'Ney Galicia',
-    email: 'ngaliciaa@sapv.com.mx',
-    phone: '+52 55 5683 4900',
-    owner: 'Mike',
-    note: 'Propuesta 13-abr sin respuesta'
-  },
-  COMIR: {
-    name: 'COMIR',
-    contact: 'Anai Cruz',
-    owner: 'Migue',
-    note: 'Reunión 22-abr'
-  }
-};
+// 16nov2026 (Mike): la pestana Clientes sale de las oportunidades ganadas (DATA.won); ya no hay lista escrita a mano.
 
 // ALERTS: se genera dinámicamente desde DATA.deals + TASKS en buildAlerts()
 
@@ -918,10 +879,10 @@ var GR_AYUDA_FIJA={
   tablero:{
     // Comunes a varias pestañas
     'comun.kpi.pipeline':'Suma del monto de todas las oportunidades abiertas (de prospección y de venta, sin ganadas ni perdidas). Sale de HubSpot; las marcadas como prueba no cuentan.',
-    'comun.kpi.forecast':'Lo que esperamos cerrar: el monto de cada oportunidad abierta multiplicado por la probabilidad de su etapa, la que fija el portal en Configuración. Sale de HubSpot.',
+    'comun.kpi.forecast':'Lo que esperamos cerrar: el monto de cada oportunidad abierta multiplicado por la probabilidad de su etapa, la que fija el portal en Configuración. Es el mismo número en Recap, Overview y Forecast. Sale de HubSpot.',
     'comun.kpi.abiertas':'Cuántas oportunidades abiertas hay en HubSpot: todas las etapas menos ganada y perdida.',
     'comun.kpi.propuestas':'Oportunidades en la etapa Propuesta y, abajo, la suma de su monto. Sale de HubSpot.',
-    'comun.kpi.won':'Suma del monto de todas las oportunidades ganadas que hay en HubSpot, de cualquier fecha (no solo de este año).',
+    'comun.kpi.won':'Suma del monto de las oportunidades ganadas cuya fecha de cierre cae en este año, del 1 de enero a hoy. Las ganadas con fecha de cierre posterior a hoy no cuentan hasta que llegue su fecha. Abajo, cuántas son. Sale de HubSpot.',
     'comun.monto':'Monto de la oportunidad en HubSpot.',
     'comun.f.producto':'Los 14 productos oficiales de Great Revenue, aunque hoy no tengan nada. Otros: lo que no es de la lista o no tiene producto.',
     'comun.f.lider':'Quien lidera el producto según la ficha de productos del portal. No se edita en la oportunidad: cambia si cambias el líder en el portal.',
@@ -947,7 +908,7 @@ var GR_AYUDA_FIJA={
     'calidad.responsable':'Los mismos indicadores para cada persona, con las oportunidades donde es Responsable de la cuenta. Desempeño comercial se compara contra su propio año anterior.',
     // Recap
     'recap.pipeline':'Suma del monto de todas las oportunidades abiertas (de prospección y de venta, sin ganadas ni perdidas). Abajo, cuántas son. Sale de HubSpot.',
-    'recap.won':'Suma del monto de todas las oportunidades ganadas en HubSpot, de cualquier fecha (no solo de este año). Abajo, cuántas son.',
+    'recap.won':'Suma del monto de las oportunidades ganadas cuya fecha de cierre cae en este año, del 1 de enero a hoy. Las ganadas con fecha de cierre posterior a hoy no cuentan hasta que llegue su fecha. Abajo, cuántas son.',
     'recap.actividad':'Lo que pasó en los últimos 7 días en HubSpot: oportunidades creadas y oportunidades movidas, por Responsable de la cuenta.',
     'recap.col.creadas':'Oportunidades creadas en HubSpot en los últimos 7 días. En el total, entre paréntesis, la suma de su monto.',
     'recap.col.movidas':'Oportunidades creadas antes de la semana que tuvieron algún cambio en HubSpot en los últimos 7 días.',
@@ -978,13 +939,13 @@ var GR_AYUDA_FIJA={
     'won.historico':'Las demás oportunidades ganadas: proyectos de un solo pago. Total: la suma de su monto.',
     'won.legacy':'Oportunidades ganadas en HubSpot. URG: la fecha de cierre cae en 30 días o menos; ATN: en 60 días o menos.',
     // Clientes
-    'clientes.titulo':'Clientes que el equipo sigue de cerca. La lista y sus datos de contacto están escritos en el tablero, no salen de HubSpot.',
-    'clientes.total':'Suma del monto de las oportunidades abiertas en HubSpot cuyo nombre incluye el nombre del cliente.',
+    'clientes.titulo':'Empresas con al menos una oportunidad ganada en HubSpot, de cualquier fecha, agrupadas por el cliente del nombre de la oportunidad. Las marcadas como prueba no cuentan. De la que más ha ganado a la que menos.',
+    'clientes.total':'Suma del monto de las oportunidades ganadas del cliente, de cualquier fecha. Abajo, cuántas son, sus productos y cada oportunidad con su fecha de cierre.',
     // Pendientes
-    'pendientes.total':'Tareas abiertas (no completadas) en HubSpot, de todo el equipo. No cambia con los filtros.',
-    'pendientes.vencidas':'Tareas abiertas cuya fecha de vencimiento ya pasó. No cambia con los filtros.',
-    'pendientes.hoy':'Tareas abiertas que vencen hoy. No cambia con los filtros.',
-    'pendientes.proximas':'Tareas abiertas que vencen en los próximos 1 a 3 días. No cambia con los filtros.',
+    'pendientes.total':'Tareas que se ven con los filtros de abajo: el mismo número que la lista. Sin filtros, todas las tareas abiertas (no completadas) de HubSpot de todo el equipo.',
+    'pendientes.vencidas':'De las tareas que se ven con los filtros, las abiertas cuya fecha de vencimiento ya pasó.',
+    'pendientes.hoy':'De las tareas que se ven con los filtros, las abiertas que vencen hoy.',
+    'pendientes.proximas':'De las tareas que se ven con los filtros, las abiertas que vencen en los próximos 1 a 3 días.',
     'pendientes.f.etapa':'Etapa de la oportunidad de la tarea. Prospección: Señal, Reply, Contactado y En Conversación. Ventas: Atracción, Educación, Propuesta y Aprobación. Internas: tareas del equipo sin cliente.',
     'pendientes.f.resp':'Quien hace la tarea: el mismo nombre que va en el asunto de la tarea.',
     'pendientes.f.tiempo':'Fuera de plazo: la tarea ya venció. Por vencer: vence hoy o en los próximos 3 días. En plazo: vence después. Cerradas: las que se completaron en los últimos días que indica el botón.',
@@ -1000,15 +961,15 @@ var GR_AYUDA_FIJA={
     'alertas.vista':'Vender: alertas para avanzar o reactivar oportunidades (Cerrar y ReActivar). Arreglar: datos que hay que corregir en oportunidades, contactos, empresas y tareas de HubSpot.',
     'alertas.objeto':'El tipo de registro de HubSpot que vas a corregir.',
     'alertas.problema':'Cada opción es un problema de datos; el número es cuántos registros lo tienen.',
-    'alertas.revenue':'Suma del monto de las oportunidades de todas las alertas activas que arma el motor con datos de HubSpot. Si una oportunidad tiene dos alertas, su monto suma dos veces. No cambia con los filtros.',
-    'alertas.total':'Cuántas alertas activas hay: cada una es una acción sugerida sobre una oportunidad. No cambia con los filtros.',
-    'alertas.criticas':'Alertas de la categoría Cerrar: empujar al cierre, tarea vencida o asignar siguiente paso. No cambia con los filtros.',
-    'alertas.semana':'Alertas de Cerrar más las de ReActivar: lo que conviene atender esta semana. No cambia con los filtros.',
+    'alertas.revenue':'Suma del monto de las oportunidades de las alertas que se ven con los filtros. Cada oportunidad suma una sola vez aunque tenga dos o más alertas. Abajo, cuántas oportunidades son. Sale de HubSpot.',
+    'alertas.total':'Cuántas alertas se ven con los filtros: el mismo número que la lista. Cada una es una acción sugerida sobre una oportunidad.',
+    'alertas.criticas':'De las alertas que se ven con los filtros, las de la categoría Cerrar: empujar al cierre, tarea vencida o asignar siguiente paso.',
+    'alertas.semana':'De las alertas que se ven con los filtros, las de Cerrar más las de ReActivar: lo que conviene atender esta semana.',
     'alertas.f.etapa':'Prospección: Señal, Reply, Contactado y En Conversación (aún sin cita). Ventas: Atracción, Educación, Propuesta y Aprobación (ya hay o hubo cita). Elige el grupo o una etapa.',
     'alertas.f.buscar':'Busca en la oportunidad, el cliente y el contacto.',
     'alertas.accion':'La acción sugerida de cada alerta. El número es cuántas hay con los filtros.',
     'alertas.ordenar':'Cambia el orden de la lista: por monto, por urgencia (primero Cerrar, luego ReActivar) o por días estancado.',
-    'alertas.lista':'Alertas que se ven con los filtros y la suma del monto de sus oportunidades. Se muestran hasta 200.',
+    'alertas.lista':'Alertas que se ven con los filtros y la suma del monto de sus oportunidades, cada oportunidad una sola vez. Se muestran hasta 200.',
     'alertas.col.dias':'Días que lleva el problema de la alerta: sin actividad, con la tarea vencida o con la fecha de cierre pasada, según el motivo.',
     'alertas.limpieza':'Registros de HubSpot con este problema. Desde aquí solo se marcan para BORRAR; el borrado se hace en HubSpot.',
     'alertas.tareas':'Tareas pendientes de HubSpot con este problema, contra el total de tareas pendientes.',
@@ -1054,9 +1015,10 @@ var GR_AYUDA_FIJA={
     'am.f.canal':'SEQ: secuencias de correo. DUO: señales de DuoCopilot en Amplemarket.',
     'am.detalle':'Cada secuencia y cada señal DUO del periodo con sus números.',
     // Forecast
-    'forecast.conservador':'Monto de las oportunidades en Propuesta por 35%. Cálculo fijo de esta pestaña con el monto de HubSpot; no usa las probabilidades del portal.',
-    'forecast.base':'El conservador más el monto de las oportunidades en Educación por 20%.',
-    'forecast.optimista':'El base más el monto de las oportunidades en Atracción por 10%.',
+    'forecast.total':'El monto de cada oportunidad abierta multiplicado por la probabilidad de su etapa, la que fija el portal en Configuración. Es el mismo número que el Forecast de Recap y Overview. Sale de HubSpot.',
+    'forecast.cierre':'La parte del forecast que viene de las etapas de cierre: de Propuesta en adelante (Propuesta, Aprobación y Contract Sent), con la misma probabilidad por etapa del portal.',
+    'forecast.bruto':'Suma del monto, sin ponderar, de las oportunidades abiertas en etapas con probabilidad mayor a cero. Abajo, cuántas son.',
+    'forecast.etapas':'Cada etapa con probabilidad mayor a cero en el portal: su probabilidad, cuántas oportunidades abiertas hay, la suma de su monto y lo que aporta al forecast (monto por probabilidad). La fila Total es el forecast.',
     'forecast.cierres':'Oportunidades abiertas cuya fecha en que esperamos firmar cae entre hoy y los próximos 30 días, de la más cercana a la más lejana. En rojo, 7 días o menos; en amarillo, 15 o menos.',
     'forecast.col.dias':'Días que faltan para la fecha en que esperamos firmar.',
     // Métricas
@@ -2311,6 +2273,7 @@ function enlazaReuniones(){
 function renderRecap() {
   _recapTaskIndex = [];
   const k = DATA.kpis;
+  const _wa = grWonAnual();
   const recap = DATA.recapSemanal || { ventanaDesde: '', ventanaHasta: '', tareasCompletadas: {total:0, porPersona:{}, resumenPorPersona:{}, detalle:{}}, dealsCreados: {total:0, montoTotal:0, porOwner:{}, detalle:{}}, dealsMovidos: {total:0, porOwner:{}, detalle:{}} };
 
   // KPIs superiores
@@ -2323,7 +2286,7 @@ function renderRecap() {
       </div>
       <div class="kpi kpi-pink">
         <div class="kpi-label">Forecast ${grI('comun.kpi.forecast')}</div>
-        <div class="kpi-value">${fmtK(k.forecast)}</div>
+        <div class="kpi-value">${fmtK(grForecast(DATA.deals).total)}</div>
         <div class="kpi-sub">ponderado por etapa</div>
       </div>
       <div class="kpi kpi-cyan">
@@ -2333,8 +2296,8 @@ function renderRecap() {
       </div>
       <div class="kpi kpi-mint">
         <div class="kpi-label">Won Anual ${grI('recap.won')}</div>
-        <div class="kpi-value">${fmtK(k.wonAnual)}</div>
-        <div class="kpi-sub">${k.wonCount} oportunidades ganadas</div>
+        <div class="kpi-value">${fmtK(_wa.total)}</div>
+        <div class="kpi-sub">${_wa.n} oportunidades ganadas en ${_wa.anio}</div>
       </div>
     </div>
   `;
@@ -2467,6 +2430,7 @@ function renderRecap() {
 function renderOverview() {
   const k = DATA.kpis;
   const deals = DATA.deals;
+  const _wa = grWonAnual();
   // 16nov2026 (Mike): los productos oficiales en el orden del catalogo; lo demas se suma en Otros.
   const prods = prodAgrupa(deals, d => d.prod).map(g => [g.etiqueta, g.items.reduce((s, d) => s + (d.amount || 0), 0)]);
   const maxAmt = Math.max(1, ...prods.map(x => x[1]));
@@ -2474,11 +2438,11 @@ function renderOverview() {
   let html = `
     <div class="kpi-grid">
       <div class="kpi kpi-purple"><div class="kpi-label">Pipeline ${grI('comun.kpi.pipeline')}</div><div class="kpi-value">${fmtK(k.pipeline)}</div></div>
-      <div class="kpi kpi-pink"><div class="kpi-label">Forecast ${grI('comun.kpi.forecast')}</div><div class="kpi-value">${fmtK(k.forecast)}</div></div>
+      <div class="kpi kpi-pink"><div class="kpi-label">Forecast ${grI('comun.kpi.forecast')}</div><div class="kpi-value">${fmtK(grForecast(deals).total)}</div></div>
       <div class="kpi kpi-cyan"><div class="kpi-label">Oportunidades abiertas ${grI('comun.kpi.abiertas')}</div><div class="kpi-value">${k.totalDeals}</div></div>
       <div class="kpi kpi-mint"><div class="kpi-label">Propuestas ${grI('comun.kpi.propuestas')}</div><div class="kpi-value">${k.propuestasCount}</div><div class="kpi-sub">${fmtK(k.propuestasTotal)}</div></div>
       <div class="kpi kpi-yellow"><div class="kpi-label">Educación ${grI('overview.educacion')}</div><div class="kpi-value">${k.educacionCount}</div></div>
-      <div class="kpi kpi-purple"><div class="kpi-label">Won Anual ${grI('comun.kpi.won')}</div><div class="kpi-value">${fmtK(k.wonAnual)}</div></div>
+      <div class="kpi kpi-purple"><div class="kpi-label">Won Anual ${grI('comun.kpi.won')}</div><div class="kpi-value">${fmtK(_wa.total)}</div><div class="kpi-sub">${_wa.n} oportunidades ganadas en ${_wa.anio}</div></div>
     </div>
     <div class="section">
       <div class="section-title">Pipeline por Producto ${grI('overview.porproducto')}</div>
@@ -2505,6 +2469,28 @@ function renderOverview() {
 // 23oct2026 (Mike): perfil de Amplemarket que envio la campana o la senal; el nombre sale del equipo del portal.
 function grNombreEquipo(email){ var e=String(email||'').trim().toLowerCase(); if(!e) return ''; var c=pipeCfg()||{}; var p=(c.equipo||[]).find(function(x){ return String(x.email||'').toLowerCase()===e; }); if(p) return p.nombre; var u=e.split('@'), dom=(u[1]||'').split('.')[0]; return u[0].split(/[._-]+/).map(function(w){ return w.charAt(0).toUpperCase()+w.slice(1); }).join(' ')+(dom?' ('+dom.charAt(0).toUpperCase()+dom.slice(1)+')':''); }
 function pipeCfg(){ return (typeof DATA!=='undefined' && DATA && DATA.pipelineCfg) ? DATA.pipelineCfg : null; }
+/* 16nov2026 (Mike): UN solo calculo del forecast para Recap, Overview y Forecast. La probabilidad de cada etapa
+   sale del portal (Configuracion; la manda el motor en pipelineCfg.etapas) y es la misma que usa el motor para
+   kpis.forecast. Si el portal no trae probabilidades, el numero del motor (kpis.forecast) en las tres pestanas. */
+function grProbEtapas(){ var o={}; ((pipeCfg()||{}).etapas||[]).forEach(function(x){ if(x&&x.id&&x.probabilidad!=null&&x.probabilidad!=='') o[String(x.id)]=(Number(x.probabilidad)||0)/100; }); return o; }
+function grForecast(deals){
+  var P=grProbEtapas(), fuente='portal', E=((pipeCfg()||{}).etapas||[]);
+  if(!Object.keys(P).length) return { total:Math.round(((typeof DATA!=='undefined'&&DATA&&DATA.kpis)||{}).forecast||0), fuente:'motor', etapas:[] };
+  var orden=E.filter(function(x){ return x&&x.id; }).map(function(x){ return String(x.id); });
+  Object.keys(P).forEach(function(id){ if(orden.indexOf(id)<0) orden.push(id); });
+  var por={}; orden.forEach(function(id){ var c=_catStageById(id), e=E.filter(function(x){ return String(x.id)===id; })[0]; por[id]={id:id,label:(c&&c.label)||(e&&e.label)||id,prob:P[id]||0,n:0,monto:0,ponderado:0}; });
+  var total=0;
+  (deals||[]).forEach(function(d){ var id=String(d.stage), pr=P[id]||0, a=d.amount||0; total+=a*pr; var r=por[id]; if(r){ r.n++; r.monto+=a; r.ponderado+=a*pr; } });
+  return { total:Math.round(total), fuente:fuente, etapas:orden.map(function(id){ return por[id]; }) };
+}
+/* 16nov2026 (Mike): Won Anual = ganadas con fecha de cierre del 1 de enero de este anio a hoy. Las ganadas con fecha
+   de cierre futura (hay renovaciones capturadas con fecha de 2027) no cuentan hasta que llegue su fecha. */
+function grWonAnual(){
+  var hoy=new Date(), anio=hoy.getFullYear(), hoyTxt=hoy.toLocaleDateString('en-CA'), ini=anio+'-01-01';
+  var r={anio:anio,total:0,n:0,futuras:0};
+  ((typeof DATA!=='undefined'&&DATA&&DATA.won)||[]).forEach(function(d){ var f=String(d.closedate||'').slice(0,10); if(!/^\d{4}-\d{2}-\d{2}$/.test(f)) return; if(f>hoyTxt){ r.futuras++; return; } if(f<ini) return; r.n++; r.total+=(d.amount||0); });
+  return r;
+}
 function _catStageById(id){ return (((CAT().stages)||CAT_SITIO.stages||[]).filter(function(s){return String(s.id)===String(id);})[0])||null; }
 function stageOrder(){
   var e=((pipeCfg()||{}).etapas||[]).filter(function(x){return x&&x.id;});
@@ -3431,23 +3417,39 @@ function renderWonLegacy() {
 }
 
 // --- CLIENTES ---
+// 16nov2026 (Mike): clientes = empresas con al menos una oportunidad ganada, agrupadas por el cliente del nombre
+// de la oportunidad (el motor no manda la empresa de HubSpot en las ganadas). Monto, cuantas y productos oficiales.
+function grClientesGanados() {
+  const norm = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const g = {};
+  ((DATA && DATA.won) || []).forEach(d => {
+    if (String((d.campos || {}).gr_prueba) === 'true') return;
+    const nombre = String(d.cliente || d.name || '').trim() || 'Sin cliente';
+    const k = norm(nombre) || nombre;
+    const c = g[k] || (g[k] = { nombre: nombre, total: 0, n: 0, prods: {}, deals: [] });
+    c.total += (d.amount || 0); c.n++; c.prods[prodOficial(d.prod)] = 1; c.deals.push(d);
+  });
+  const ofi = prodOpciones();
+  return Object.values(g).map(c => {
+    c.productos = ofi.filter(p => c.prods[p]).concat(Object.keys(c.prods).filter(p => ofi.indexOf(p) < 0)).map(prodEtiqueta);
+    c.deals.sort((a, b) => String(b.closedate || '').localeCompare(String(a.closedate || '')));
+    return c;
+  }).sort((a, b) => (b.total - a.total) || a.nombre.localeCompare(b.nombre));
+}
 function renderClientes() {
-  let html = `<div class="section-title" style="margin-bottom:10px;">Clientes activos ${grI('clientes.titulo')}</div><div class="client-grid">`;
-  Object.values(ACTIVE_CLIENTS).forEach(c => {
-    const clientDeals = DATA.deals.filter(d =>
-      d.name.toUpperCase().includes(c.name.toUpperCase())
-    );
-    const total = clientDeals.reduce((s, d) => s + (d.amount || 0), 0);
+  const clientes = grClientesGanados();
+  let html = `<div class="section-title" style="margin-bottom:10px;">Clientes ${grI('clientes.titulo')} <span class="section-count">${clientes.length}</span></div><div class="client-grid">`;
+  if (clientes.length === 0) html += `<div class="empty">No hay oportunidades ganadas en HubSpot</div>`;
+  clientes.forEach(c => {
     html += `<div class="client-card">
-      <div class="client-name">${c.name}</div>
-      <div class="client-total">${fmtK(total)} ${grI('clientes.total')}</div>
-      <div class="client-contact">${c.contact}${c.email ? ' · ' + c.email : ''}</div>
-      <div class="client-contact" style="color:var(--yellow);">${c.note || ''}</div>
+      <div class="client-name">${grEsc(c.nombre)}</div>
+      <div class="client-total">${fmtK(c.total)} ${grI('clientes.total')}</div>
+      <div class="client-contact">${c.n} ${c.n === 1 ? 'oportunidad ganada' : 'oportunidades ganadas'}</div>
+      <div class="client-contact" style="color:var(--yellow);">${c.productos.map(grEsc).join(' · ') || '—'}</div>
       <div class="client-deals">
-        ${clientDeals.length === 0 ? '<div class="empty" style="padding:8px;font-size:11px;">Sin oportunidades abiertas</div>' : ''}
-        ${clientDeals.map(d => `
+        ${c.deals.map(d => `
           <div class="client-deal">
-            <span>${d.name}</span>
+            <span>${grEsc(d.name)}${d.closedate ? ' <small style="color:var(--text-mute);">' + d.closedate + '</small>' : ''}</span>
             <span>${fmt(d.amount)}</span>
           </div>
         `).join('')}
@@ -3528,14 +3530,19 @@ function renderPendientes() {
     return (a.date || '9999').localeCompare(b.date || '9999');
   });
 
-  // Stats card
-  const s = TASKS.statsTareas || { total: 0, vencidas: 0, hoy: 0, proximas: 0, personas: {} };
+  // Stats card: 16nov2026 (Mike) de la misma lista filtrada de abajo, no del total de HubSpot.
+  const s = {
+    total: filtered.length,
+    vencidas: filtered.filter(t => t.urgency === 'vencida').length,
+    hoy: filtered.filter(t => t.urgency === 'hoy').length,
+    proximas: filtered.filter(t => t.urgency === 'proxima').length
+  };
   let html = `
     <div class="kpi-grid">
       <div class="kpi kpi-purple">
         <div class="kpi-label">Total Pendientes ${grI('pendientes.total')}</div>
         <div class="kpi-value">${s.total}</div>
-        <div class="kpi-sub">en HubSpot</div>
+        <div class="kpi-sub">con los filtros</div>
       </div>
       <div class="kpi kpi-pink" style="border-left-color: var(--red);">
         <div class="kpi-label">Vencidas ${grI('pendientes.vencidas')}</div>
@@ -4603,6 +4610,10 @@ function ownerIdToPersona(ownerId) {
   return catOwnerNombre(ownerId) || 'Otro';
 }
 
+// 16nov2026 (Mike): monto de una lista de alertas contando cada oportunidad una sola vez (dos alertas = un monto).
+function grMontoUnico(alertas) { const vistos = {}; let s = 0; (alertas || []).forEach((a, i) => { const k = (a.dealId != null && a.dealId !== '') ? String(a.dealId) : ('sin-id-' + i); if (vistos[k]) return; vistos[k] = 1; s += (a.amount || 0); }); return s; }
+function grDealsUnicos(alertas) { const v = {}; (alertas || []).forEach(a => { if (a.dealId != null && a.dealId !== '') v[String(a.dealId)] = 1; }); return Object.keys(v).length; }
+
 function applyAlertasFilters(alertas) {
   let filtered = alertas.filter(a => pasaFiltro('alertas', a, 'alerta'));
   if (FILT.alertas.accion !== 'ALL') filtered = filtered.filter(a => a.accion === FILT.alertas.accion);
@@ -4634,12 +4645,13 @@ function renderAlertas() {
   const badge = $('#alerts-count');
   if (badge) badge.textContent = stats.total || 0;
 
-  // Cuántas son críticas (Cerrar) y de la semana (Cerrar + ReActivar)
-  const criticas = stats.porCategoria.Cerrar || 0;
-  const semana = (stats.porCategoria.Cerrar || 0) + (stats.porCategoria.ReActivar || 0);
-
   // Aplicar filtros
   const filtered = applyAlertasFilters(allAlertas);
+
+  // 16nov2026 (Mike): los recuadros salen de la misma lista filtrada de abajo, y cada oportunidad suma una sola vez.
+  const criticas = filtered.filter(a => a.categoria === 'Cerrar').length;
+  const semana = filtered.filter(a => a.categoria === 'Cerrar' || a.categoria === 'ReActivar').length;
+  const revenueFiltered = grMontoUnico(filtered);
 
   // Counts por acción (en el dataset filtrado por categoria/persona/etc, excepto el filtro de acción mismo)
   const accionCounts = {};
@@ -4655,13 +4667,13 @@ function renderAlertas() {
     <div class="kpi-grid" style="margin-bottom:16px;">
       <div class="kpi kpi-pink">
         <div class="kpi-label">REVENUE EN JUEGO ${grI('alertas.revenue')}</div>
-        <div class="kpi-value">${fmtK(stats.revenueEnRiesgo || 0)}</div>
-        <div class="kpi-sub">en alertas activas</div>
+        <div class="kpi-value">${fmtK(revenueFiltered)}</div>
+        <div class="kpi-sub">${grDealsUnicos(filtered)} oportunidades con alerta</div>
       </div>
       <div class="kpi kpi-cyan">
         <div class="kpi-label">TOTAL ALERTAS ${grI('alertas.total')}</div>
-        <div class="kpi-value">${stats.total || 0}</div>
-        <div class="kpi-sub">en HubSpot</div>
+        <div class="kpi-value">${filtered.length}</div>
+        <div class="kpi-sub">con los filtros</div>
       </div>
       <div class="kpi kpi-purple">
         <div class="kpi-label">CRÍTICAS ${grI('alertas.criticas')}</div>
@@ -4700,7 +4712,6 @@ function renderAlertas() {
   </div>`;
 
   // Lista
-  const revenueFiltered = filtered.reduce((s, a) => s + (a.amount || 0), 0);
   html += `<div class="section-title" style="margin-top:16px;">
     <span class="section-count">${filtered.length} alertas</span> ${grI('alertas.lista')}
     <span style="margin-left:auto;color:var(--text-dim);font-size:12px;">${fmtK(revenueFiltered)} en juego · Ordenadas por ${FILT.alertas.sort === 'monto_desc' ? 'monto descendente' : FILT.alertas.sort === 'urgencia' ? 'urgencia' : 'días estancado'}</span>
@@ -4894,7 +4905,7 @@ function buildChatContext() {
     alertasCerrar: (stats.porCategoria && stats.porCategoria.Cerrar) || 0,
     alertasReactivar: (stats.porCategoria && stats.porCategoria.ReActivar) || 0,
     alertasHigienizar: (stats.porCategoria && stats.porCategoria.Higienizar) || 0,
-    revenueEnJuego: stats.revenueEnRiesgo ? `$${stats.revenueEnRiesgo.toLocaleString('en-US')}` : '—'
+    revenueEnJuego: (function(){ const v = grMontoUnico(alertas16.filter(a => a.categoria === 'Cerrar' || a.categoria === 'ReActivar')); return v ? `$${v.toLocaleString('en-US')}` : '—'; })()
   };
 }
 
@@ -6615,19 +6626,16 @@ function setAmPeriod(days) {
 
 
 // --- FORECAST ---
+// 16nov2026 (Mike): mismas probabilidades por etapa que Recap y Overview (grForecast); antes eran 35/20/10 fijos.
 function renderForecast() {
   const deals = DATA.deals;
-  const propuestas = deals.filter(d => d.stage === 'presentationscheduled');
-  const educacion = deals.filter(d => d.stage === 'qualifiedtobuy');
-  const atraccion = deals.filter(d => d.stage === 'appointmentscheduled');
-
-  const propTotal = propuestas.reduce((s, d) => s + (d.amount || 0), 0);
-  const educTotal = educacion.reduce((s, d) => s + (d.amount || 0), 0);
-  const atrTotal = atraccion.reduce((s, d) => s + (d.amount || 0), 0);
-
-  const conservador = propTotal * 0.35;
-  const base = conservador + educTotal * 0.20;
-  const optimista = base + atrTotal * 0.10;
+  const fc = grForecast(deals);
+  const _ids = fc.etapas.map(e => e.id);
+  const _kProp = _ids.indexOf('presentationscheduled');
+  const enCierre = _kProp < 0 ? 0 : fc.etapas.slice(_kProp).reduce((s, e) => s + e.ponderado, 0);
+  const conProb = fc.etapas.filter(e => e.prob > 0);
+  const bruto = conProb.reduce((s, e) => s + e.monto, 0);
+  const brutoN = conProb.reduce((s, e) => s + e.n, 0);
 
   // Closes próximos 30 días
   const close30 = deals.filter(d => {
@@ -6637,21 +6645,31 @@ function renderForecast() {
 
   let html = `
     <div class="kpi-grid">
-      <div class="kpi kpi-mint">
-        <div class="kpi-label">Conservador ${grI('forecast.conservador')}</div>
-        <div class="kpi-value">${fmtK(conservador)}</div>
-        <div class="kpi-sub">Propuestas × 35%</div>
+      <div class="kpi kpi-pink">
+        <div class="kpi-label">Forecast ${grI('forecast.total')}</div>
+        <div class="kpi-value">${fmtK(fc.total)}</div>
+        <div class="kpi-sub">ponderado por etapa${fc.fuente === 'motor' ? ' (el portal no trae probabilidades)' : ''}</div>
       </div>
-      <div class="kpi kpi-cyan">
-        <div class="kpi-label">Base ${grI('forecast.base')}</div>
-        <div class="kpi-value">${fmtK(base)}</div>
-        <div class="kpi-sub">+ Educación × 20%</div>
+      <div class="kpi kpi-mint">
+        <div class="kpi-label">De Propuesta en adelante ${grI('forecast.cierre')}</div>
+        <div class="kpi-value">${fmtK(Math.round(enCierre))}</div>
+        <div class="kpi-sub">etapas de cierre</div>
       </div>
       <div class="kpi kpi-purple">
-        <div class="kpi-label">Optimista ${grI('forecast.optimista')}</div>
-        <div class="kpi-value">${fmtK(optimista)}</div>
-        <div class="kpi-sub">+ Atracción × 10%</div>
+        <div class="kpi-label">Monto sin ponderar ${grI('forecast.bruto')}</div>
+        <div class="kpi-value">${fmtK(bruto)}</div>
+        <div class="kpi-sub">${brutoN} oportunidades</div>
       </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Forecast por etapa ${grI('forecast.etapas')}</div>
+      <table class="tbl">
+        <thead><tr><th>Etapa</th><th class="num">Probabilidad</th><th class="num">Oportunidades</th><th class="num">Monto ${grI('comun.monto')}</th><th class="num">Forecast</th></tr></thead>
+        <tbody>
+          ${conProb.map(e => `<tr><td>${tagForStage(e.id, e.label)}</td><td class="num">${Math.round(e.prob * 100)}%</td><td class="num">${e.n}</td><td class="num">${fmt(e.monto)}</td><td class="num">${fmt(Math.round(e.ponderado))}</td></tr>`).join('')}
+          <tr><td><strong>Total</strong></td><td></td><td class="num"><strong>${brutoN}</strong></td><td class="num"><strong>${fmt(bruto)}</strong></td><td class="num"><strong>${fmt(fc.total)}</strong></td></tr>
+        </tbody>
+      </table>
     </div>
     <div class="section">
       <div class="section-title">Cierres de los próximos 30 días ${grI('forecast.cierres')} <span class="section-count">${close30.length}</span></div>
