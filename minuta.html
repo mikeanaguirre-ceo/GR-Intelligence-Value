@@ -49,6 +49,13 @@
       .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'Respuesta no válida del servidor.' }; }); })
       .catch(function () { return { ok: false, error: 'Sin conexión. Revisa tu internet y vuelve a intentar.' }; });
   }
+  // 17-nov (auditoria): quien revisa queda escrito en cada nota de Zoho (la conexion de Zoho es una sola y no dice quien fue).
+  function QUIEN() { var s = $('quienSel'); if (s && s.value) return s.value; try { var v = localStorage.getItem('itera_minuta_quien'); if (v) return v; } catch (e) {} return D ? D.remitente : ''; }
+  function selQuien(lista) {
+    var act = ''; try { act = localStorage.getItem('itera_minuta_quien') || ''; } catch (e) {}
+    if (!lista.some(function (r) { return r.correo === act; })) act = D.remitente;
+    return '<label class="campo">Quién está revisando (queda en Zoho)<select id="quienSel">' + lista.map(function (r) { return '<option value="' + h(r.correo) + '"' + (r.correo === act ? ' selected' : '') + '>' + h(r.nombre) + '</option>'; }).join('') + '</select></label>';
+  }
   function msg(id, ok, t) { GRP.msg(id, ok ? 'ok' : 'bad', t); }
   function estado(t, hecho) { return '<span class="estado' + (hecho ? ' hecho' : '') + '">' + h(t) + '</span>'; }
   function cargar() {
@@ -78,7 +85,7 @@
     if ($('bTareas')) $('bTareas').onclick = function () {
       var b = this, ts = (d.tareas || []).map(function (t, i) { return { titulo: $('tt' + i).value, fecha_limite: $('tf' + i).value, responsable: $('tr' + i).value, proposito: t.proposito, incluir: $('tk' + i).checked }; });
       b.disabled = true; msg('mTareas', true, 'Creando…');
-      api({ accion: 'tareas', tareas: ts, quien: d.remitente }).then(function (x) { if (x.ok) { msg('mTareas', true, x.mensaje); setTimeout(cargar, 1200); } else { msg('mTareas', false, x.error); b.disabled = false; } });
+      api({ accion: 'tareas', tareas: ts, quien: QUIEN() }).then(function (x) { if (x.ok) { msg('mTareas', true, x.mensaje); setTimeout(cargar, 1200); } else { msg('mTareas', false, x.error); b.disabled = false; } });
     };
     Array.prototype.forEach.call(document.querySelectorAll('[data-corr]'), function (b) { b.onclick = function () { corregir(b.getAttribute('data-corr')); }; });
   }
@@ -98,7 +105,7 @@
     H += '<div class="card"><div class="card-h"><h2>' + h(d.tipo || 'Reunión') + ' · ' + h(d.empresa || d.titulo) + '</h2>' + (enviada ? estado('Minuta enviada', true) : estado(falta ? 'Falta elegir oportunidad' : 'Por revisar')) + '</div>'
       + '<dl class="dato"><dt>Reunión</dt><dd>' + h(d.fecha) + ' · ' + h(d.titulo) + '</dd>'
       + '<dt>Oportunidad</dt><dd>' + (d.oportunidad ? h(d.oportunidad) + ' (' + h(d.fase) + ')' + (d.url_zoho ? ' · <a href="' + h(d.url_zoho) + '" target="_blank" rel="noopener">Abrir en Zoho</a>' : '') : '<b>Por elegir</b>') + '</dd>'
-      + (d.verificar ? '<dt>Por verificar</dt><dd>' + h(d.verificar) + '</dd>' : '') + '</dl></div>';
+      + (d.verificar ? '<dt>Por verificar</dt><dd>' + h(d.verificar) + '</dd>' : '') + '</dl>' + selQuien(resps.length ? resps : rems) + '</div>';
     var TABS = [['op', 'Oportunidad', falta ? 'Falta' : ''], ['co', 'Correo', enviada ? 'Enviado' : ''], ['wa', 'WhatsApp', wa ? 'Enviado' : ''], ['ta', 'Tareas', tc ? 'Creadas' : '']];
     H += '<div class="tabs" role="tablist">' + TABS.map(function (t) { return '<button type="button" role="tab" class="tab' + (TAB === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + h(t[1]) + (t[2] ? ' <small class="' + (t[2] === 'Falta' ? 'falta' : 'listo') + '">' + h(t[2]) + '</small>' : '') + '</button>'; }).join('') + '</div>';
 
@@ -108,7 +115,10 @@
       P += '<p><b>' + h(d.oportunidad) + '</b><br><small>Fase actual: ' + h(d.fase) + '</small></p>';
       P += '<label class="campo">Mover a la fase<select id="fase">' + (d.fases || []).map(function (x) { return '<option' + (x === d.fase ? ' selected' : '') + '>' + h(x) + '</option>'; }).join('') + '</select></label>'
         + (d.fase_sugerida ? '<p class="nota">Fase sugerida por el motor: <b>' + h(d.fase_sugerida) + '</b>. El motor no la cambia: la cambias tú aquí.</p>' : '')
-        + '<div class="acciones"><button class="p" id="bFase">Cambiar fase en Zoho</button><button class="s" data-corr="fase">Corregir</button><span class="msg" id="mFase"></span></div>';
+        + '<label class="campo">¿Por qué cambia? (queda en la nota de Zoho)<textarea id="faseC" rows="2"></textarea></label>'
+        + '<div class="acciones"><button class="p" id="bFase">Cambiar fase en Zoho</button><button class="s" data-corr="fase">Corregir</button><span class="msg" id="mFase"></span></div>'
+        + '<label class="campo" style="margin-top:16px">Nota para la oportunidad en Zoho<textarea id="notaT" rows="3" placeholder="Algo que el equipo deba saber de esta reunión"></textarea></label>'
+        + '<div class="acciones"><button class="s" id="bNota">Guardar nota en Zoho</button><span class="msg" id="mNota"></span></div>';
     } else {
       P += '<p class="nota">El motor no adivina. Elige la oportunidad de IT Institute a la que pertenece esta reunión; ahí se guardan la nota, la minuta enviada y las tareas. Mientras falte, no se puede enviar.</p>';
     }
@@ -162,11 +172,17 @@
     pintarTareas(tc, resps);
 
     Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function (b) { b.onclick = function () { leerTareas(); TAB = b.getAttribute('data-tab'); Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function (x) { x.classList.toggle('on', x === b); }); Array.prototype.forEach.call(document.querySelectorAll('.tabp'), function (p) { p.hidden = p.id !== 'p-' + TAB; }); }; });
+    if ($('quienSel')) $('quienSel').onchange = function () { try { localStorage.setItem('itera_minuta_quien', this.value); } catch (e) {} };
+    if ($('bNota')) $('bNota').onclick = function () {
+      var b = this, t = $('notaT').value.trim(); if (t.length < 3) { msg('mNota', false, 'Escribe la nota.'); return; }
+      b.disabled = true; msg('mNota', true, 'Guardando en Zoho…');
+      api({ accion: 'nota', texto: t, quien: QUIEN() }).then(function (x) { b.disabled = false; if (x.ok) { msg('mNota', true, x.mensaje); $('notaT').value = ''; } else { msg('mNota', false, x.error); } });
+    };
     if ($('bFase')) $('bFase').onclick = function () {
       var b = this, f = $('fase').value; if (f === d.fase) { msg('mFase', false, 'Ya está en esa fase.'); return; }
       if (!confirm('¿Mover la oportunidad a «' + f + '» en Zoho?')) return;
       b.disabled = true; msg('mFase', true, 'Guardando en Zoho…');
-      api({ accion: 'fase', fase: f, quien: d.remitente }).then(function (x) { if (x.ok) { msg('mFase', true, x.mensaje); setTimeout(cargar, 1200); } else { msg('mFase', false, x.error); b.disabled = false; } });
+      api({ accion: 'fase', fase: f, comentario: $('faseC').value, quien: QUIEN() }).then(function (x) { if (x.ok) { msg('mFase', true, x.mensaje); setTimeout(cargar, 1200); } else { msg('mFase', false, x.error); b.disabled = false; } });
     };
     if ($('bBuscar')) {
       $('bBuscar').onclick = function () {
@@ -183,13 +199,13 @@
         var r = document.querySelector('input[name=cand]:checked'); if (!r) { msg('mElegir', false, 'Marca una oportunidad.'); return; }
         if (d.oportunidad && !confirm('¿Cambiar la oportunidad de esta minuta? La nota interna se guardará también en la nueva.')) return;
         var b = this; b.disabled = true; msg('mElegir', true, 'Guardando…');
-        api({ accion: 'elegir', deal_id: r.value, quien: d.remitente }).then(function (x) { if (x.ok) { msg('mElegir', true, x.mensaje); setTimeout(cargar, 1500); } else { msg('mElegir', false, x.error); b.disabled = false; } });
+        api({ accion: 'elegir', deal_id: r.value, quien: QUIEN() }).then(function (x) { if (x.ok) { msg('mElegir', true, x.mensaje); setTimeout(cargar, 1500); } else { msg('mElegir', false, x.error); b.disabled = false; } });
       };
       $('bCrear').onclick = function () {
         if (!$('aProd').value) { msg('mCrear', false, 'Elige el producto.'); return; }
         if (!$('aCan').value) { msg('mCrear', false, 'Elige de dónde vino la oportunidad.'); return; }
         var b = this; b.disabled = true; msg('mCrear', true, 'Dando de alta en Zoho… puede tardar hasta un minuto.');
-        api({ accion: 'crear', empresa: $('aEmp').value, correo: $('aCor').value, nombre: $('aNom').value, apellido: $('aApe').value, producto: $('aProd').value, canal: $('aCan').value, empleados: $('aTam').value, quien: d.remitente })
+        api({ accion: 'crear', empresa: $('aEmp').value, correo: $('aCor').value, nombre: $('aNom').value, apellido: $('aApe').value, producto: $('aProd').value, canal: $('aCan').value, empleados: $('aTam').value, quien: QUIEN() })
           .then(function (x) { if (x.ok) { msg('mCrear', true, x.mensaje); setTimeout(cargar, 1800); } else { msg('mCrear', false, x.error); b.disabled = false; } });
       };
     }
@@ -205,10 +221,10 @@
       var b = this, de = $('rem') ? $('rem').value : d.remitente;
       if (!confirm(d.prueba ? 'Prueba: se envía solo a ' + d.solo_a + '. ¿Enviar?' : '¿Enviar la minuta desde ' + de + ' a ' + $('para').value + ($('copia').value ? ' con copia a ' + $('copia').value : '') + '?')) return;
       b.disabled = true; msg('mEnviar', true, 'Enviando…');
-      api({ accion: 'enviar', remitente: de, destinatarios: $('para').value, copia: $('copia').value, asunto: $('asunto').value, cuerpo: $('cuerpo').value, quien: d.remitente }).then(function (x) { if (x.ok) { msg('mEnviar', true, x.mensaje || 'Enviada.'); setTimeout(cargar, 1200); } else { msg('mEnviar', false, x.error); b.disabled = false; } });
+      api({ accion: 'enviar', remitente: de, destinatarios: $('para').value, copia: $('copia').value, asunto: $('asunto').value, cuerpo: $('cuerpo').value, quien: QUIEN() }).then(function (x) { if (x.ok) { msg('mEnviar', true, x.mensaje || 'Enviada.'); setTimeout(cargar, 1200); } else { msg('mEnviar', false, x.error); b.disabled = false; } });
     };
     $('bCopiar').onclick = function () { var t = $('wa').value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { msg('mWa', true, 'Copiado. Pégalo en WhatsApp.'); }, function () { $('wa').select(); msg('mWa', true, 'Selecciona y copia el texto.'); }); };
-    if ($('bWa')) $('bWa').onclick = function () { var b = this; b.disabled = true; api({ accion: 'whatsapp', texto: $('wa').value, quien: d.remitente }).then(function (x) { if (x.ok) { msg('mWa', true, x.mensaje); setTimeout(cargar, 1200); } else { msg('mWa', false, x.error); b.disabled = false; } }); };
+    if ($('bWa')) $('bWa').onclick = function () { var b = this; b.disabled = true; api({ accion: 'whatsapp', texto: $('wa').value, quien: QUIEN() }).then(function (x) { if (x.ok) { msg('mWa', true, x.mensaje); setTimeout(cargar, 1200); } else { msg('mWa', false, x.error); b.disabled = false; } }); };
     if ($('bAddT')) $('bAddT').onclick = function () { leerTareas(); var m = new Date(Date.now() + 2 * 864e5); T.push({ titulo: '', fecha_limite: m.toISOString().slice(0, 10), proposito: '', prioridad: '', tipo: 'cierre', responsables: [d.remitente], incluir: true, nueva: true }); pintarTareas(false, resps); var u = $('tt' + (T.length - 1)); if (u) u.focus(); };
     if ($('bTareas')) $('bTareas').onclick = function () {
       leerTareas();
@@ -217,7 +233,7 @@
       var sin = ts.filter(function (t) { return !t.responsables.length; });
       if (sin.length) { msg('mTareas', false, 'Elige al menos un responsable para: ' + sin.map(function (t) { return t.titulo; }).join('; ')); return; }
       var b = this; b.disabled = true; msg('mTareas', true, 'Creando…');
-      api({ accion: 'tareas', tareas: ts, quien: d.remitente }).then(function (x) { if (x.ok) { msg('mTareas', true, x.mensaje); T = null; setTimeout(cargar, 1200); } else { msg('mTareas', false, x.error); b.disabled = false; } });
+      api({ accion: 'tareas', tareas: ts, quien: QUIEN() }).then(function (x) { if (x.ok) { msg('mTareas', true, x.mensaje); T = null; setTimeout(cargar, 1200); } else { msg('mTareas', false, x.error); b.disabled = false; } });
     };
     Array.prototype.forEach.call(document.querySelectorAll('[data-corr]'), function (b) { b.onclick = function () { corregir(b.getAttribute('data-corr')); }; });
   }
@@ -251,7 +267,7 @@
       + '<div class="acciones"><button class="s" id="cX">Cancelar</button><button class="p" id="cOk">Enviar corrección</button><span class="msg" id="mC"></span></div>';
     $('modal').hidden = false;
     $('cX').onclick = function () { $('modal').hidden = true; };
-    $('cOk').onclick = function () { var b = this; b.disabled = true; api({ accion: 'corregir', medio: medio, tipo: $('cT').value, propuesta: $('cP').value, comentario: $('cC').value, quien: D.remitente }).then(function (x) { if (x.ok) { msg('mC', true, x.mensaje); setTimeout(function () { $('modal').hidden = true; }, 1500); } else { msg('mC', false, x.error); b.disabled = false; } }); };
+    $('cOk').onclick = function () { var b = this; b.disabled = true; api({ accion: 'corregir', medio: medio, tipo: $('cT').value, propuesta: $('cP').value, comentario: $('cC').value, quien: QUIEN() }).then(function (x) { if (x.ok) { msg('mC', true, x.mensaje); setTimeout(function () { $('modal').hidden = true; }, 1500); } else { msg('mC', false, x.error); b.disabled = false; } }); };
   }
   cargar();
 })();
