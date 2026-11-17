@@ -16,10 +16,19 @@
 .campo{display:grid;gap:4px}.campo textarea{min-height:120px;line-height:1.45}.campo textarea.largo{min-height:300px}
 .tarea{display:grid;grid-template-columns:auto minmax(0,1fr) 150px;gap:8px;align-items:start;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
 .tarea input[type=checkbox]{margin-top:10px;width:18px;height:18px}.tarea small{color:var(--g);display:block;margin-top:4px}
-@media(max-width:620px){.tarea{grid-template-columns:auto minmax(0,1fr)}.tarea input[type=date]{grid-column:2}}
+@media(max-width:620px){.tarea{grid-template-columns:auto minmax(0,1fr)!important}.tarea input[type=date]{grid-column:2}}
 .cand{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:10px;cursor:pointer}.cand input{width:18px;height:18px}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:grid;place-items:center;padding:16px;z-index:20}.modal[hidden]{display:none}
 .modal .card{max-width:560px;width:100%}
+/* 17-nov-2026: pestanas horizontales (como GR WF13) y tareas con responsables. */
+.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:2px solid var(--line);margin:4px 0 0}
+.tab{border:0;background:transparent;text-decoration:none;padding:10px 14px;font:inherit;font-weight:700;font-size:14px;color:var(--g);border-bottom:3px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap}
+.tab.on{color:var(--osc);border-bottom-color:var(--prim)}.tab small{font-size:11px;font-weight:700;border-radius:999px;padding:1px 7px;margin-left:4px}.tab small.falta{background:#fff4e5;color:#7a4a00}.tab small.listo{background:#e6f4ea;color:#1e6b34}
+.tabp{border-top-left-radius:0;border-top-right-radius:0}.tabp[hidden]{display:none!important}
+.tarea{grid-template-columns:auto minmax(0,1fr) 150px}.tarea.coaching{background:#faf7ff}.etq{display:inline-block;font-size:11px;font-weight:700;color:var(--prim);margin-bottom:4px}
+.tcol{display:grid;gap:6px}.quitar{font-size:12px;padding:4px 8px}
+.resp{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin-top:8px;font-size:13px}.resp span{color:var(--g)}.resp label{display:inline-flex;gap:4px;align-items:center}.resp input{width:16px;height:16px}
+@media(max-width:620px){.tab{padding:9px 10px;font-size:13px}.tcol{grid-column:2;grid-template-columns:1fr auto}}
 </style>
 </head>
 <body>
@@ -73,58 +82,93 @@
     };
     Array.prototype.forEach.call(document.querySelectorAll('[data-corr]'), function (b) { b.onclick = function () { corregir(b.getAttribute('data-corr')); }; });
   }
+  // 17-nov-2026 (entrega 1, paridad con GR WF13): pestanas horizontales Oportunidad, Correo, WhatsApp y Tareas. La oportunidad se
+  // puede cambiar o buscar aunque el motor ya la haya encontrado (mientras no haya nada enviado ni tareas creadas) y la fase se
+  // mueve desde aqui. El correo sale de la cuenta que se elija (lista blanca: remitentes) con copia editable. Cada tarea lleva uno
+  // o varios responsables (una tarea por persona en Zoho) y se pueden agregar y quitar tareas.
+  var TAB = null, T = null;
   function pintar() {
     if (D && D.interna) return pintarInterna();
     var d = D, H = '';
-    $('quien').textContent = d.remitente_nombre ? 'Envía: ' + d.remitente_nombre : '';
+    var falta = !!d.falta_oportunidad, enviada = d.estado === 'minuta_enviada', wa = !!d.whatsapp_enviado_el, tc = !!d.tareas_creadas_el;
+    var rems = d.remitentes || [], resps = d.responsables || [];
+    if (!TAB) TAB = falta ? 'op' : 'co';
+    $('quien').textContent = d.remitente_nombre ? 'Revisa: ' + d.remitente_nombre : '';
     if (d.prueba) H += '<div class="prueba"><b>PRUEBA.</b> Todo lo que envíes desde aquí llega solo a ' + h(d.solo_a) + ', no al cliente.</div>';
-    H += '<div class="card"><div class="card-h"><h2>' + h(d.tipo || 'Reunión') + ' · ' + h(d.empresa || d.titulo) + '</h2>' + (d.estado === 'minuta_enviada' ? estado('Minuta enviada', true) : estado(d.falta_oportunidad ? 'Falta elegir oportunidad' : 'Por revisar')) + '</div>'
+    H += '<div class="card"><div class="card-h"><h2>' + h(d.tipo || 'Reunión') + ' · ' + h(d.empresa || d.titulo) + '</h2>' + (enviada ? estado('Minuta enviada', true) : estado(falta ? 'Falta elegir oportunidad' : 'Por revisar')) + '</div>'
       + '<dl class="dato"><dt>Reunión</dt><dd>' + h(d.fecha) + ' · ' + h(d.titulo) + '</dd>'
-      + (d.oportunidad ? '<dt>Oportunidad</dt><dd>' + h(d.oportunidad) + ' (' + h(d.fase) + ')' + (d.url_zoho ? ' · <a href="' + h(d.url_zoho) + '" target="_blank" rel="noopener">Abrir en Zoho</a>' : '') + '</dd>' : '')
-      + (d.fase_sugerida ? '<dt>Fase sugerida</dt><dd>' + h(d.fase_sugerida) + ' (el motor no la cambia; si estás de acuerdo, cámbiala tú en Zoho)</dd>' : '')
+      + '<dt>Oportunidad</dt><dd>' + (d.oportunidad ? h(d.oportunidad) + ' (' + h(d.fase) + ')' + (d.url_zoho ? ' · <a href="' + h(d.url_zoho) + '" target="_blank" rel="noopener">Abrir en Zoho</a>' : '') : '<b>Por elegir</b>') + '</dd>'
       + (d.verificar ? '<dt>Por verificar</dt><dd>' + h(d.verificar) + '</dd>' : '') + '</dl></div>';
-    // 13-nov tarde (como GR): toda reunion con cliente trae minuta. Si el motor no pudo resolver la oportunidad, el vendedor la elige
-    // aqui (de las de la empresa o buscandola en Zoho). Mientras falte, no se puede enviar, ni marcar el WhatsApp, ni crear tareas.
-    var falta = !!d.falta_oportunidad;
-    if (falta) {
-      H += '<div class="card" id="cOpo"><div class="card-h"><h2>Elige la oportunidad de esta reunión</h2>' + estado('Falta para enviar') + '</div>'
-        + '<p class="nota">El motor no adivina. Elige la oportunidad de IT Institute a la que pertenece esta reunión; ahí se guardan la nota, la minuta enviada y las tareas.</p>'
-        + ((d.candidatos || []).length ? '<p><b>De esta empresa</b></p>' + d.candidatos.map(function (c) { return '<label class="cand"><input type="radio" name="cand" value="' + h(c.id) + '"><span><b>' + h(c.nombre) + '</b><br><small>' + h(c.fase) + '</small></span></label>'; }).join('') : '')
-        + '<label class="campo">Buscar en Zoho (empresa u oportunidad)<input id="q" value="' + h(d.empresa || '') + '"></label>'
-        + '<div class="acciones"><button class="s" id="bBuscar">Buscar</button><span class="msg" id="mBuscar"></span></div><div id="res"></div>'
-        + '<div class="acciones"><button class="p" id="bElegir">Usar esta oportunidad</button><span class="msg" id="mElegir"></span></div>'
-        // 14-nov (como GR): si la oportunidad no existe, se da de alta aqui mismo en el Zoho de Itera, a nombre del vendedor.
-        + (d.puede_crear ? (function () {
-            var dests = String(d.destinatarios || '').split(/[,;\s]+/).filter(Boolean);
-            return '<details class="alta"' + ((d.candidatos || []).length ? '' : ' open') + ' style="margin-top:14px"><summary><b>¿No existe? Dala de alta aquí</b></summary>'
-              + '<p class="nota">Se crea en el Zoho de Itera a tu nombre, con su empresa y su contacto. Si ya hay una abierta de ese contacto y producto, se usa esa.</p>'
-              + '<label class="campo">Empresa<input id="aEmp" value="' + h(d.empresa || '') + '"></label>'
-              + '<label class="campo">Correo del contacto del cliente<input id="aCor" list="aCorL" value="' + h(dests[0] || '') + '"><datalist id="aCorL">' + dests.map(function (x) { return '<option value="' + h(x) + '">'; }).join('') + '</datalist></label>'
-              + '<label class="campo">Nombre del contacto<input id="aNom"></label><label class="campo">Apellido del contacto<input id="aApe"></label>'
-              + '<label class="campo">Producto<select id="aProd"><option value="">Elige el producto</option>' + (d.productos || []).map(function (x) { return '<option value="' + h(x.codigo) + '">' + h(x.nombre) + '</option>'; }).join('') + '</select></label>'
-              + '<label class="campo">¿De dónde vino la oportunidad?<select id="aCan"><option value="">Elige</option><option value="secuencia">Secuencia o campaña de marketing</option><option value="dueno">Cuenta propia del vendedor</option><option value="fabricante">La refirió el fabricante (Udemy, Coursera…)</option><option value="renovacion">Renovación</option></select></label>'
-              + '<label class="campo">Tamaño de la empresa (Zoho lo pide si la empresa es nueva)<select id="aTam"><option value="">Ya existe en Zoho / no sé</option><option value="25">Menos de 50 empleados</option><option value="100">De 50 a 249 empleados</option><option value="1000">De 250 a 5,000 empleados</option><option value="6000">Más de 5,000 empleados</option></select></label>'
-              + '<div class="acciones"><button class="p" id="bCrear">Dar de alta y usar esta oportunidad</button><span class="msg" id="mCrear"></span></div></details>';
-          })() : '') + '</div>';
+    var TABS = [['op', 'Oportunidad', falta ? 'Falta' : ''], ['co', 'Correo', enviada ? 'Enviado' : ''], ['wa', 'WhatsApp', wa ? 'Enviado' : ''], ['ta', 'Tareas', tc ? 'Creadas' : '']];
+    H += '<div class="tabs" role="tablist">' + TABS.map(function (t) { return '<button type="button" role="tab" class="tab' + (TAB === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + h(t[1]) + (t[2] ? ' <small class="' + (t[2] === 'Falta' ? 'falta' : 'listo') + '">' + h(t[2]) + '</small>' : '') + '</button>'; }).join('') + '</div>';
+
+    // --- Oportunidad
+    var P = '';
+    if (d.oportunidad) {
+      P += '<p><b>' + h(d.oportunidad) + '</b><br><small>Fase actual: ' + h(d.fase) + '</small></p>';
+      P += '<label class="campo">Mover a la fase<select id="fase">' + (d.fases || []).map(function (x) { return '<option' + (x === d.fase ? ' selected' : '') + '>' + h(x) + '</option>'; }).join('') + '</select></label>'
+        + (d.fase_sugerida ? '<p class="nota">Fase sugerida por el motor: <b>' + h(d.fase_sugerida) + '</b>. El motor no la cambia: la cambias tú aquí.</p>' : '')
+        + '<div class="acciones"><button class="p" id="bFase">Cambiar fase en Zoho</button><button class="s" data-corr="fase">Corregir</button><span class="msg" id="mFase"></span></div>';
+    } else {
+      P += '<p class="nota">El motor no adivina. Elige la oportunidad de IT Institute a la que pertenece esta reunión; ahí se guardan la nota, la minuta enviada y las tareas. Mientras falte, no se puede enviar.</p>';
     }
-    var enviada = d.estado === 'minuta_enviada';
-    H += '<div class="card"><div class="card-h"><h2><span class="num">1</span>Minuta al cliente</h2>' + (enviada ? estado('Enviada el ' + d.enviado_el, true) : '') + '</div>'
-      + (enviada ? '<p class="nota">Enviada a ' + h(d.enviado_a) + '.</p>' : '<p class="nota">Sale desde tu cuenta a cada asistente del cliente' + (d.copia && d.copia !== d.remitente ? ', con copia a ' + h(d.copia) : '') + '. Si cambias el texto, el cambio también enseña al motor.</p>')
+    if (d.puede_cambiar) {
+      var dests = String(d.destinatarios || '').split(/[,;\s]+/).filter(Boolean);
+      var buscador = ((d.candidatos || []).length ? '<p><b>De esta empresa</b></p>' + d.candidatos.map(function (c) { return '<label class="cand"><input type="radio" name="cand" value="' + h(c.id) + '"><span><b>' + h(c.nombre) + '</b><br><small>' + h(c.fase) + '</small></span></label>'; }).join('') : '')
+        + '<label class="campo">Buscar en Zoho (empresa u oportunidad)<input id="q" value="' + h(d.empresa_busqueda || d.empresa || '') + '"></label>'
+        + '<div class="acciones"><button class="s" id="bBuscar">Buscar</button><span class="msg" id="mBuscar"></span></div><div id="res"></div>'
+        + '<div class="acciones"><button class="p" id="bElegir">' + (d.oportunidad ? 'Cambiar a esta oportunidad' : 'Usar esta oportunidad') + '</button><span class="msg" id="mElegir"></span></div>'
+        + '<details class="alta"' + (!d.oportunidad && !(d.candidatos || []).length ? ' open' : '') + ' style="margin-top:14px"><summary><b>¿No existe? Dala de alta aquí</b></summary>'
+        + '<p class="nota">Se crea en el Zoho de Itera a tu nombre, con su empresa y su contacto. Si ya hay una abierta de ese contacto y producto, se usa esa.</p>'
+        + '<label class="campo">Empresa<input id="aEmp" value="' + h(d.empresa_busqueda || d.empresa || '') + '"></label>'
+        + '<label class="campo">Correo del contacto del cliente<input id="aCor" list="aCorL" value="' + h(dests[0] || '') + '"><datalist id="aCorL">' + dests.map(function (x) { return '<option value="' + h(x) + '">'; }).join('') + '</datalist></label>'
+        + '<label class="campo">Nombre del contacto<input id="aNom"></label><label class="campo">Apellido del contacto<input id="aApe"></label>'
+        + '<label class="campo">Producto<select id="aProd"><option value="">Elige el producto</option>' + (d.productos || []).map(function (x) { return '<option value="' + h(x.codigo) + '">' + h(x.nombre) + '</option>'; }).join('') + '</select></label>'
+        + '<label class="campo">¿De dónde vino la oportunidad?<select id="aCan"><option value="">Elige</option><option value="secuencia">Secuencia o campaña de marketing</option><option value="dueno">Cuenta propia del vendedor</option><option value="fabricante">La refirió el fabricante (Udemy, Coursera…)</option><option value="renovacion">Renovación</option></select></label>'
+        + '<label class="campo">Tamaño de la empresa (Zoho lo pide si la empresa es nueva)<select id="aTam"><option value="">Ya existe en Zoho / no sé</option><option value="25">Menos de 50 empleados</option><option value="100">De 50 a 249 empleados</option><option value="1000">De 250 a 5,000 empleados</option><option value="6000">Más de 5,000 empleados</option></select></label>'
+        + '<div class="acciones"><button class="p" id="bCrear">Dar de alta y usar esta oportunidad</button><span class="msg" id="mCrear"></span></div></details>';
+      P += d.oportunidad ? '<details class="alta" style="margin-top:16px"><summary><b>¿No es esta? Cambia la oportunidad</b></summary>' + buscador + '</details>' : buscador;
+    } else if (d.oportunidad) {
+      P += '<p class="nota">La oportunidad ya no se puede cambiar porque ya se envió algo o ya se crearon tareas en ella.</p>';
+    }
+    H += '<div class="card tabp" id="p-op"' + (TAB === 'op' ? '' : ' hidden') + '>' + P + '</div>';
+
+    // --- Correo
+    var remSel = d.remitente_envio || d.remitente;
+    H += '<div class="card tabp" id="p-co"' + (TAB === 'co' ? '' : ' hidden') + '>'
+      + (enviada ? '<p>' + estado('Enviada el ' + d.enviado_el, true) + '</p><p class="nota">Enviada a ' + h(d.enviado_a) + '.</p>' : '<p class="nota">Si cambias el texto, el cambio también enseña al motor.</p>')
+      + '<label class="campo">Enviar desde<select id="rem"' + (enviada ? ' disabled' : '') + '>' + rems.map(function (r) { return '<option value="' + h(r.correo) + '"' + (r.correo === remSel ? ' selected' : '') + '>' + h(r.nombre) + ' · ' + h(r.correo) + '</option>'; }).join('') + '</select></label>'
       + '<label class="campo">Para (separa con comas)<input id="para" value="' + h(d.destinatarios) + '"' + (enviada ? ' disabled' : '') + '></label>'
+      + '<label class="campo">Copia (separa con comas)<input id="copia" value="' + h(copiaPara(remSel)) + '"' + (enviada ? ' disabled' : '') + '></label>'
       + '<label class="campo">Asunto<input id="asunto" value="' + h(d.asunto) + '"' + (enviada ? ' disabled' : '') + '></label>'
       + '<label class="campo">Texto<textarea id="cuerpo" class="largo"' + (enviada ? ' disabled' : '') + '>' + h(d.cuerpo) + '</textarea></label>'
-      + '<div class="acciones">' + (enviada ? '' : '<button class="p" id="bEnviar"' + (falta ? ' disabled title="Primero elige la oportunidad"' : '') + '>Enviar minuta</button>') + '<button class="s" data-corr="minuta">Corregir</button><span class="msg" id="mEnviar"></span></div></div>';
-    var wa = !!d.whatsapp_enviado_el;
-    H += '<div class="card"><div class="card-h"><h2><span class="num">2</span>WhatsApp sugerido</h2>' + (wa ? estado('Enviado el ' + d.whatsapp_enviado_el, true) : '') + '</div>'
+      + '<div class="acciones">' + (enviada ? '' : '<button class="p" id="bEnviar"' + (falta ? ' disabled title="Primero elige la oportunidad"' : '') + '>Enviar minuta</button>') + '<button class="s" data-corr="minuta">Corregir</button><span class="msg" id="mEnviar"></span></div>'
+      + (falta && !enviada ? '<p class="nota">Para enviar, primero elige la oportunidad en la pestaña Oportunidad.</p>' : '') + '</div>';
+
+    // --- WhatsApp
+    H += '<div class="card tabp" id="p-wa"' + (TAB === 'wa' ? '' : ' hidden') + '>'
+      + (wa ? '<p>' + estado('Enviado el ' + d.whatsapp_enviado_el, true) + '</p>' : '')
       + '<label class="campo">Mensaje<textarea id="wa"' + (wa ? ' disabled' : '') + '>' + h(d.whatsapp) + '</textarea></label>'
       + '<div class="acciones"><button class="s" id="bCopiar">Copiar</button>' + (wa ? '' : '<button class="p" id="bWa"' + (falta ? ' disabled title="Primero elige la oportunidad"' : '') + '>Ya lo envié</button>') + '<button class="s" data-corr="whatsapp">Corregir</button><span class="msg" id="mWa"></span></div></div>';
-    var tc = !!d.tareas_creadas_el;
-    H += '<div class="card"><div class="card-h"><h2><span class="num">3</span>Tareas en Zoho</h2>' + (tc ? estado('Creadas el ' + d.tareas_creadas_el, true) : '') + '</div>'
-      + (tc ? '' : '<p class="nota">Se crean en la oportunidad, a tu nombre, solo cuando las apruebes. Desmarca las que no quieras y ajusta las fechas.</p>')
-      + (d.tareas || []).map(function (t, i) { return '<div class="tarea"><input type="checkbox" id="tk' + i + '" checked' + (tc ? ' disabled' : '') + '><div><input id="tt' + i + '" value="' + h(t.titulo) + '"' + (tc ? ' disabled' : '') + ' style="width:100%"><small>' + h(t.proposito || '') + '</small></div><input type="date" id="tf' + i + '" value="' + h(t.fecha_limite) + '"' + (tc ? ' disabled' : '') + '></div>'; }).join('')
-      + '<div class="acciones">' + (tc || !(d.tareas || []).length ? '' : '<button class="p" id="bTareas"' + (falta ? ' disabled title="Primero elige la oportunidad"' : '') + '>Crear tareas aprobadas</button>') + '<button class="s" data-corr="tareas">Corregir</button><span class="msg" id="mTareas"></span></div></div>';
+
+    // --- Tareas
+    if (!T) T = (d.tareas || []).map(function (t) { return { titulo: t.titulo || '', fecha_limite: t.fecha_limite || '', proposito: t.proposito || '', prioridad: t.prioridad || '', tipo: t.tipo || '', responsables: (t.responsables && t.responsables.length) ? t.responsables.slice() : [d.remitente], incluir: t.incluir !== false }; });
+    H += '<div class="card tabp" id="p-ta"' + (TAB === 'ta' ? '' : ' hidden') + '>'
+      + (tc ? '<p>' + estado('Creadas el ' + d.tareas_creadas_el, true) + '</p>' : '<p class="nota">Se crean en la oportunidad solo cuando las apruebes. Cada responsable marcado recibe su propia tarea en Zoho. Desmarca o quita las que no quieras.</p>')
+      + '<div id="listaT"></div>'
+      + '<div class="acciones">' + (tc ? '' : '<button class="s" id="bAddT">+ Agregar tarea</button><button class="p" id="bTareas"' + (falta ? ' disabled title="Primero elige la oportunidad"' : '') + '>Crear tareas aprobadas</button>') + '<button class="s" data-corr="tareas">Corregir</button><span class="msg" id="mTareas"></span></div></div>';
+
     $('panel').innerHTML = H; GRP.revelar();
-    if (falta) {
+    pintarTareas(tc, resps);
+
+    Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function (b) { b.onclick = function () { leerTareas(); TAB = b.getAttribute('data-tab'); Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function (x) { x.classList.toggle('on', x === b); }); Array.prototype.forEach.call(document.querySelectorAll('.tabp'), function (p) { p.hidden = p.id !== 'p-' + TAB; }); }; });
+    if ($('bFase')) $('bFase').onclick = function () {
+      var b = this, f = $('fase').value; if (f === d.fase) { msg('mFase', false, 'Ya está en esa fase.'); return; }
+      if (!confirm('¿Mover la oportunidad a «' + f + '» en Zoho?')) return;
+      b.disabled = true; msg('mFase', true, 'Guardando en Zoho…');
+      api({ accion: 'fase', fase: f, quien: d.remitente }).then(function (x) { if (x.ok) { msg('mFase', true, x.mensaje); setTimeout(cargar, 1200); } else { msg('mFase', false, x.error); b.disabled = false; } });
+    };
+    if ($('bBuscar')) {
       $('bBuscar').onclick = function () {
         var b = this; b.disabled = true; msg('mBuscar', true, 'Buscando…');
         api({ accion: 'buscar', q: $('q').value }).then(function (x) {
@@ -137,10 +181,11 @@
       $('q').onkeydown = function (e) { if (e.key === 'Enter') $('bBuscar').click(); };
       $('bElegir').onclick = function () {
         var r = document.querySelector('input[name=cand]:checked'); if (!r) { msg('mElegir', false, 'Marca una oportunidad.'); return; }
+        if (d.oportunidad && !confirm('¿Cambiar la oportunidad de esta minuta? La nota interna se guardará también en la nueva.')) return;
         var b = this; b.disabled = true; msg('mElegir', true, 'Guardando…');
         api({ accion: 'elegir', deal_id: r.value, quien: d.remitente }).then(function (x) { if (x.ok) { msg('mElegir', true, x.mensaje); setTimeout(cargar, 1500); } else { msg('mElegir', false, x.error); b.disabled = false; } });
       };
-      if ($('bCrear')) $('bCrear').onclick = function () {
+      $('bCrear').onclick = function () {
         if (!$('aProd').value) { msg('mCrear', false, 'Elige el producto.'); return; }
         if (!$('aCan').value) { msg('mCrear', false, 'Elige de dónde vino la oportunidad.'); return; }
         var b = this; b.disabled = true; msg('mCrear', true, 'Dando de alta en Zoho… puede tardar hasta un minuto.');
@@ -148,19 +193,55 @@
           .then(function (x) { if (x.ok) { msg('mCrear', true, x.mensaje); setTimeout(cargar, 1800); } else { msg('mCrear', false, x.error); b.disabled = false; } });
       };
     }
+    if ($('rem')) $('rem').onchange = function () {
+      // Al cambiar la cuenta: la firma del texto y la copia sugerida cambian con ella (si no las editaste a mano).
+      var prev = this.getAttribute('data-prev') || remSel, nuevo = this.value;
+      var fp = firmaDe(prev), fn = firmaDe(nuevo), c = $('cuerpo');
+      if (fp && fn && c.value.indexOf(fp) !== -1) c.value = c.value.split(fp).join(fn);
+      if ($('copia').value === copiaPara(prev)) $('copia').value = copiaPara(nuevo);
+      this.setAttribute('data-prev', nuevo);
+    };
     if ($('bEnviar')) $('bEnviar').onclick = function () {
-      var b = this; if (!confirm(d.prueba ? 'Prueba: se envía solo a ' + d.solo_a + '. ¿Enviar?' : '¿Enviar la minuta a ' + $('para').value + '?')) return;
+      var b = this, de = $('rem') ? $('rem').value : d.remitente;
+      if (!confirm(d.prueba ? 'Prueba: se envía solo a ' + d.solo_a + '. ¿Enviar?' : '¿Enviar la minuta desde ' + de + ' a ' + $('para').value + ($('copia').value ? ' con copia a ' + $('copia').value : '') + '?')) return;
       b.disabled = true; msg('mEnviar', true, 'Enviando…');
-      api({ accion: 'enviar', destinatarios: $('para').value, asunto: $('asunto').value, cuerpo: $('cuerpo').value, quien: d.remitente }).then(function (x) { if (x.ok) { msg('mEnviar', true, x.mensaje || 'Enviada.'); setTimeout(cargar, 1200); } else { msg('mEnviar', false, x.error); b.disabled = false; } });
+      api({ accion: 'enviar', remitente: de, destinatarios: $('para').value, copia: $('copia').value, asunto: $('asunto').value, cuerpo: $('cuerpo').value, quien: d.remitente }).then(function (x) { if (x.ok) { msg('mEnviar', true, x.mensaje || 'Enviada.'); setTimeout(cargar, 1200); } else { msg('mEnviar', false, x.error); b.disabled = false; } });
     };
     $('bCopiar').onclick = function () { var t = $('wa').value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { msg('mWa', true, 'Copiado. Pégalo en WhatsApp.'); }, function () { $('wa').select(); msg('mWa', true, 'Selecciona y copia el texto.'); }); };
     if ($('bWa')) $('bWa').onclick = function () { var b = this; b.disabled = true; api({ accion: 'whatsapp', texto: $('wa').value, quien: d.remitente }).then(function (x) { if (x.ok) { msg('mWa', true, x.mensaje); setTimeout(cargar, 1200); } else { msg('mWa', false, x.error); b.disabled = false; } }); };
+    if ($('bAddT')) $('bAddT').onclick = function () { leerTareas(); var m = new Date(Date.now() + 2 * 864e5); T.push({ titulo: '', fecha_limite: m.toISOString().slice(0, 10), proposito: '', prioridad: '', tipo: 'cierre', responsables: [d.remitente], incluir: true, nueva: true }); pintarTareas(false, resps); var u = $('tt' + (T.length - 1)); if (u) u.focus(); };
     if ($('bTareas')) $('bTareas').onclick = function () {
-      var b = this, ts = (d.tareas || []).map(function (t, i) { return { titulo: $('tt' + i).value, fecha_limite: $('tf' + i).value, prioridad: t.prioridad, proposito: t.proposito, incluir: $('tk' + i).checked }; });
-      b.disabled = true; msg('mTareas', true, 'Creando…');
-      api({ accion: 'tareas', tareas: ts, quien: d.remitente }).then(function (x) { if (x.ok) { msg('mTareas', true, x.mensaje); setTimeout(cargar, 1200); } else { msg('mTareas', false, x.error); b.disabled = false; } });
+      leerTareas();
+      var ts = T.filter(function (t) { return t.incluir && String(t.titulo).trim(); });
+      if (!ts.length) { msg('mTareas', false, 'Marca al menos una tarea con título.'); return; }
+      var sin = ts.filter(function (t) { return !t.responsables.length; });
+      if (sin.length) { msg('mTareas', false, 'Elige al menos un responsable para: ' + sin.map(function (t) { return t.titulo; }).join('; ')); return; }
+      var b = this; b.disabled = true; msg('mTareas', true, 'Creando…');
+      api({ accion: 'tareas', tareas: ts, quien: d.remitente }).then(function (x) { if (x.ok) { msg('mTareas', true, x.mensaje); T = null; setTimeout(cargar, 1200); } else { msg('mTareas', false, x.error); b.disabled = false; } });
     };
     Array.prototype.forEach.call(document.querySelectorAll('[data-corr]'), function (b) { b.onclick = function () { corregir(b.getAttribute('data-corr')); }; });
+  }
+  function firmaDe(correo) { var r = (D.remitentes || []).filter(function (x) { return x.correo === correo; })[0]; return r ? r.firma : ''; }
+  function copiaPara(correo) { return (D.copia_base || []).filter(function (x) { return x !== correo; }).join(', '); }
+  function leerTareas() {
+    if (!T || !$('listaT')) return;
+    T.forEach(function (t, i) {
+      if (!$('tt' + i)) return;
+      t.titulo = $('tt' + i).value; t.fecha_limite = $('tf' + i).value; t.incluir = $('tk' + i).checked;
+      t.responsables = Array.prototype.map.call(document.querySelectorAll('input[name=tr' + i + ']:checked'), function (x) { return x.value; });
+    });
+  }
+  function pintarTareas(tc, resps) {
+    if (!$('listaT')) return;
+    $('listaT').innerHTML = T.length ? T.map(function (t, i) {
+      var dis = tc ? ' disabled' : '';
+      return '<div class="tarea' + (t.tipo === 'coaching' ? ' coaching' : '') + '"><input type="checkbox" id="tk' + i + '"' + (t.incluir ? ' checked' : '') + dis + '>'
+        + '<div>' + (t.tipo === 'coaching' ? '<span class="etq">Coaching para ti</span>' : '') + '<input id="tt' + i + '" value="' + h(t.titulo) + '" placeholder="Qué hay que hacer"' + dis + ' style="width:100%">'
+        + (t.proposito ? '<small>' + h(t.proposito) + '</small>' : '')
+        + '<div class="resp"><span>Responsable:</span>' + resps.map(function (r) { return '<label><input type="checkbox" name="tr' + i + '" value="' + h(r.correo) + '"' + (t.responsables.indexOf(r.correo) !== -1 ? ' checked' : '') + dis + '>' + h(r.nombre) + '</label>'; }).join('') + '</div></div>'
+        + '<div class="tcol"><input type="date" id="tf' + i + '" value="' + h(t.fecha_limite) + '"' + dis + '>' + (tc ? '' : '<button type="button" class="s quitar" data-quitar="' + i + '">Quitar</button>') + '</div></div>';
+    }).join('') : '<p class="nota">No hay tareas. Agrega una si hace falta.</p>';
+    Array.prototype.forEach.call(document.querySelectorAll('[data-quitar]'), function (b) { b.onclick = function () { leerTareas(); T.splice(Number(b.getAttribute('data-quitar')), 1); pintarTareas(false, resps); }; });
   }
   var TIPOS = [['tono', 'Tono o forma de decirlo'], ['dato', 'Un dato está mal'], ['oferta', 'Lo que ofrecemos'], ['destinatarios', 'A quién va'], ['persona', 'Nombre o cargo'], ['otro', 'Otro']];
   function corregir(medio) {
