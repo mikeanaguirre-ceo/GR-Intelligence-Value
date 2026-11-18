@@ -46,7 +46,7 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
 (function () {
   var API = 'https://mikea.app.n8n.cloud/webhook/motor-minuta';
   var K = (/[?&]k=([A-Za-z0-9]+)/.exec(location.search) || [])[1] || '';
-  var $ = GRP.$, h = GRP.h, D = null, HILO = null, HILO_REM = null, ADJ = [], FORM = null, HILO_ON = true;
+  var $ = GRP.$, h = GRP.h, D = null, HILO = null, HILO_REM = null, ADJ = [], FORM = null, HILO_ON = true, HILO_MSG = '', WAF = null;
   GRP.marcaPublica('Minuta por revisar', 'Revisa, corrige si hace falta y envía desde tu cuenta. Nada sale al cliente sin tu clic.');
   // 17-nov (auditoria 4): una accion a la vez. Mientras una accion que escribe (enviar, tareas, cambiar oportunidad, alta,
   // fase, nota, WhatsApp, corregir) esta en curso, todos los botones de accion quedan inactivos: asi no se cruzan.
@@ -113,6 +113,7 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
   // 18-nov (auditoria e2-1): lo que el vendedor ya escribio en Correo y WhatsApp sobrevive cuando la pagina se repinta tras otra
   // accion (fase, nota, tareas...). Asi nunca envia algo distinto de lo que ve.
   function guardarForm() {
+    if ($('wa') && !$('wa').disabled) WAF = { wa: $('wa').value, tel: $('tel') ? $('tel').value : '' };
     if (!$('cuerpo') || $('cuerpo').disabled) return;
     var a = $('asunto');
     FORM = { rem: $('rem').value, para: $('para').value, copia: $('copia').value, asunto: a.hasAttribute('data-orig') ? a.getAttribute('data-orig') : a.value, cuerpo: $('cuerpo').value,
@@ -201,8 +202,9 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
     if (enviada) FORM = null;
     if (FORM && $('cuerpo') && !$('cuerpo').disabled) {
       $('rem').value = FORM.rem; $('rem').setAttribute('data-prev', FORM.rem); $('para').value = FORM.para; $('copia').value = FORM.copia; $('asunto').value = FORM.asunto; $('cuerpo').value = FORM.cuerpo;
-      if (FORM.wa !== null && $('wa') && !$('wa').disabled) $('wa').value = FORM.wa; if (FORM.tel !== null && $('tel') && !$('tel').disabled) $('tel').value = FORM.tel;
     }
+    // El WhatsApp se conserva aparte: la minuta pudo enviarse y el WhatsApp seguir pendiente.
+    if (WAF && $('wa') && !$('wa').disabled) { $('wa').value = WAF.wa; if ($('tel')) $('tel').value = WAF.tel; } else if ($('wa') && $('wa').disabled) WAF = null;
     pintarTareas(tc, resps);
 
     Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function (b) { b.onclick = function () { leerTareas(); TAB = b.getAttribute('data-tab'); Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function (x) { x.classList.toggle('on', x === b); }); Array.prototype.forEach.call(document.querySelectorAll('.tabp'), function (p) { p.hidden = p.id !== 'p-' + TAB; }); }; });
@@ -249,12 +251,13 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
       if (on) { if (!a.hasAttribute('data-orig')) a.setAttribute('data-orig', a.value); a.value = /^re:/i.test(HILO.asunto) ? HILO.asunto : 'Re: ' + HILO.asunto; a.disabled = true; }
       else { if (a.hasAttribute('data-orig')) { a.value = a.getAttribute('data-orig'); a.removeAttribute('data-orig'); } a.disabled = false; } }
     function cargarHilo() {
-      if (!$('hiloBox') || d.prueba) return; var rem = $('rem').value; HILO = null; asuntoHilo();
+      if (!$('hiloBox') || d.prueba) return; var rem = $('rem').value, paraQ = $('para').value; HILO = null; HILO_MSG = ''; asuntoHilo();
       $('hiloBox').textContent = 'Buscando la conversación con el cliente en el correo de ' + rem + '…';
-      api({ accion: 'hilo', remitente: rem, destinatarios: $('para').value }).then(function (x) {
-        if (!$('rem') || $('rem').value !== rem) return;
-        if (!x.ok) { $('hiloBox').textContent = 'No se pudo revisar el correo (' + (x.error || '') + '). Saldrá como correo nuevo.'; return; }
-        if (!x.encontrado) { $('hiloBox').textContent = 'No hay conversación de los últimos 6 meses con estos correos en la cuenta de ' + rem + ': saldrá como correo nuevo.'; return; }
+      api({ accion: 'hilo', remitente: rem, destinatarios: paraQ }).then(function (x) {
+        // Solo vale la respuesta de la busqueda vigente (misma cuenta y mismos destinatarios).
+        if (!$('rem') || $('rem').value !== rem || $('para').value !== paraQ) return;
+        if (!x.ok) { HILO_MSG = 'No se pudo revisar el correo (' + (x.error || '') + '). Saldrá como correo nuevo.'; $('hiloBox').textContent = HILO_MSG; return; }
+        if (!x.encontrado) { HILO_MSG = 'No hay conversación de los últimos 6 meses con estos correos en la cuenta de ' + rem + ': saldrá como correo nuevo.'; $('hiloBox').textContent = HILO_MSG; return; }
         HILO = x; HILO_ON = true; $('hiloBox').innerHTML = '<label><input type="checkbox" id="enHilo" checked> Responder dentro de la conversación «' + h(x.asunto) + '» (' + h(fechaCorta(x.fecha)) + ')</label><br><small>El cliente la verá en el mismo hilo. Desmárcalo para mandarla como correo nuevo con el asunto de arriba.</small>';
         $('enHilo').onchange = function () { HILO_ON = this.checked; asuntoHilo(); }; asuntoHilo(); });
     }
@@ -265,7 +268,8 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
       pintarAdj();
       $('bDq').onclick = function () { var b = this, q = $('dq').value.trim(); if (q.length < 2) { msg('mDq', false, 'Escribe al menos 2 letras.'); return; }
         b.disabled = true; msg('mDq', true, 'Buscando en el Drive de ' + $('rem').value + '…');
-        api({ accion: 'drive', remitente: $('rem').value, q: q }).then(function (x) { b.disabled = false;
+        var remD = $('rem').value;
+        api({ accion: 'drive', remitente: remD, q: q }).then(function (x) { b.disabled = false; if (!$('rem') || $('rem').value !== remD) return;
           if (!x.ok) { msg('mDq', false, x.error); return; }
           var L = x.archivos || []; msg('mDq', true, L.length ? L.length + ' archivo(s).' : 'No encontré archivos con ese nombre.');
           $('dRes').innerHTML = L.map(function (a, i) { return '<div><span>' + h(a.nombre) + (a.mb ? ' <small>(' + a.mb + ' MB)</small>' : '') + '</span><button class="s" type="button" data-ad="' + i + '">Agregar</button></div>'; }).join('');
@@ -275,6 +279,7 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
       $('dq').onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); $('bDq').click(); } };
     }
     if ($('hiloBox') && HILO_REM !== ($('rem') ? $('rem').value : '') + '|' + ($('para') ? $('para').value : '')) { HILO_REM = ($('rem') ? $('rem').value : '') + '|' + ($('para') ? $('para').value : ''); cargarHilo(); }
+    else if (!HILO && HILO_MSG && $('hiloBox')) { $('hiloBox').textContent = HILO_MSG; }
     else if (HILO && $('hiloBox')) { $('hiloBox').innerHTML = '<label><input type="checkbox" id="enHilo"' + (HILO_ON ? ' checked' : '') + '> Responder dentro de la conversación «' + h(HILO.asunto) + '»</label>'; $('enHilo').onchange = function () { HILO_ON = this.checked; asuntoHilo(); }; asuntoHilo(); }
     if ($('para') && !$('para').disabled) $('para').onchange = function () { HILO_REM = ($('rem') ? $('rem').value : '') + '|' + this.value; cargarHilo(); };
     if ($('rem')) $('rem').onchange = function () {
