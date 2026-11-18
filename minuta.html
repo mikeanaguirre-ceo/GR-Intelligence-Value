@@ -25,6 +25,7 @@
 .tab{border:0;background:transparent;text-decoration:none;padding:10px 14px;font:inherit;font-weight:700;font-size:14px;color:var(--g);border-bottom:3px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap}
 .tab.on{color:var(--osc);border-bottom-color:var(--prim)}.tab small{font-size:11px;font-weight:700;border-radius:999px;padding:1px 7px;margin-left:4px}.tab small.falta{background:#fff4e5;color:#7a4a00}.tab small.listo{background:#e6f4ea;color:#1e6b34}
 .tabp{border-top-left-radius:0;border-top-right-radius:0}.tabp[hidden]{display:none!important}
+body.ocupado .acciones button{opacity:.5;pointer-events:none}
 .tarea{grid-template-columns:auto minmax(0,1fr) 150px}.tarea.coaching{background:#faf7ff}.etq{display:inline-block;font-size:11px;font-weight:700;color:var(--prim);margin-bottom:4px}
 .tcol{display:grid;gap:6px}.quitar{font-size:12px;padding:4px 8px}
 .resp{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin-top:8px;font-size:13px}.resp span{color:var(--g)}.resp label{display:inline-flex;gap:4px;align-items:center}.resp input{width:16px;height:16px}
@@ -43,11 +44,19 @@
   var K = (/[?&]k=([A-Za-z0-9]+)/.exec(location.search) || [])[1] || '';
   var $ = GRP.$, h = GRP.h, D = null;
   GRP.marcaPublica('Minuta por revisar', 'Revisa, corrige si hace falta y envía desde tu cuenta. Nada sale al cliente sin tu clic.');
+  // 17-nov (auditoria 4): una accion a la vez. Mientras una accion que escribe (enviar, tareas, cambiar oportunidad, alta,
+  // fase, nota, WhatsApp, corregir) esta en curso, todos los botones de accion quedan inactivos: asi no se cruzan.
+  var OCUPADO = false;
   function api(cuerpo) {
     cuerpo.k = K;
+    var escribe = ['ver', 'buscar'].indexOf(cuerpo.accion) < 0;
+    if (escribe && OCUPADO) return Promise.resolve({ ok: false, error: 'Espera a que termine la acción anterior.' });
+    if (escribe) { OCUPADO = true; document.body.classList.add('ocupado'); }
+    function fin(x) { if (escribe) { OCUPADO = false; document.body.classList.remove('ocupado'); } return x; }
     return fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(cuerpo) })
       .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'Respuesta no válida del servidor.' }; }); })
-      .catch(function () { return { ok: false, error: 'Sin conexión. Revisa tu internet y vuelve a intentar.' }; });
+      .catch(function () { return { ok: false, error: 'Sin conexión. Revisa tu internet y vuelve a intentar.' }; })
+      .then(fin);
   }
   // 17-nov (auditoria): quien revisa queda escrito en cada nota de Zoho (la conexion de Zoho es una sola y no dice quien fue).
   function QUIEN() { var s = $('quienSel'); if (s && s.value) return s.value; try { var v = localStorage.getItem('itera_minuta_quien'); if (v) return v; } catch (e) {} return D ? D.remitente : ''; }
