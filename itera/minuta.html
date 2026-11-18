@@ -65,10 +65,12 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
       // La persona revisa y dice que paso: si SI salio, se registra sin mandarlo de nuevo; si NO, se reintenta. Nada a ciegas.
       .then(function (x) {
         if (!x || !x.interrumpido || cuerpo.forzar_apartado) return x;
-        var env = x.interrumpido === 'enviar';
-        if (confirm(x.error + '\n\n' + (env ? '¿El correo SÍ aparece en Enviados?' : '¿Las tareas SÍ aparecen en la oportunidad en Zoho?') + '\nAceptar = sí: registrarlo así, sin mandar nada de nuevo.\nCancelar = no.'))
+        var q = x.interrumpido === 'enviar' || x.interrumpido === 'partner' ? ['¿El correo SÍ aparece en Enviados?', 'Entonces el correo no salió. ¿Enviarlo ahora?']
+          : x.interrumpido === 'agendar' ? ['¿La reunión SÍ aparece en el Google Calendar?', 'Entonces la reunión no se creó. ¿Agendarla ahora?']
+          : ['¿Las tareas SÍ aparecen en la oportunidad en Zoho?', 'Entonces las tareas no se crearon. ¿Crearlas ahora?'];
+        if (confirm(x.error + '\n\n' + q[0] + '\nAceptar = sí: registrarlo así, sin hacerlo de nuevo.\nCancelar = no.'))
           return api(Object.assign({}, cuerpo, { forzar_apartado: true, ya_salio: true }));
-        if (confirm(env ? 'Entonces el correo no salió. ¿Enviarlo ahora?' : 'Entonces las tareas no se crearon. ¿Crearlas ahora?')) return api(Object.assign({}, cuerpo, { forzar_apartado: true }));
+        if (confirm(q[1])) return api(Object.assign({}, cuerpo, { forzar_apartado: true }));
         return x; });
   }
   // 17-nov (auditoria): quien revisa queda escrito en cada nota de Zoho (la conexion de Zoho es una sola y no dice quien fue).
@@ -121,7 +123,11 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
   var TAB = null, T = null;
   // 18-nov (auditoria e2-1): lo que el vendedor ya escribio en Correo y WhatsApp sobrevive cuando la pagina se repinta tras otra
   // accion (fase, nota, tareas...). Asi nunca envia algo distinto de lo que ve.
+  // 18-nov (entrega 3): lo escrito en Proxima reunion y Fabricante tambien sobrevive al repintar.
+  var AGF = null, FAF = null;
   function guardarForm() {
+    if ($('agAgenda') && !$('agAgenda').disabled) AGF = { cuenta: $('agCuenta').value, titulo: $('agTitulo').value, fecha: $('agFecha').value, dur: $('agDur').value, inv: $('agInv').value, agenda: $('agAgenda').value };
+    if ($('faTexto') && !$('faTexto').disabled) FAF = { rem: $('faRem').value, para: $('faPara').value, copia: $('faCopia').value, asunto: $('faAsunto').value, texto: $('faTexto').value };
     if ($('wa') && !$('wa').disabled) WAF = { wa: $('wa').value, tel: $('tel') ? $('tel').value : '' };
     if (!$('cuerpo') || $('cuerpo').disabled) return;
     var a = $('asunto');
@@ -142,7 +148,9 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
       + '<dl class="dato"><dt>Reunión</dt><dd>' + h(d.fecha) + ' · ' + h(d.titulo) + '</dd>'
       + '<dt>Oportunidad</dt><dd>' + (d.oportunidad ? h(d.oportunidad) + ' (' + h(d.fase) + ')' + (d.url_zoho ? ' · <a href="' + h(d.url_zoho) + '" target="_blank" rel="noopener">Abrir en Zoho</a>' : '') : '<b>Por elegir</b>') + '</dd>'
       + (d.verificar ? '<dt>Por verificar</dt><dd>' + h(d.verificar) + '</dd>' : '') + '</dl>' + selQuien(resps.slice()) + '</div>';
-    var TABS = [['op', 'Oportunidad', falta ? 'Falta' : ''], ['co', 'Correo', enviada ? 'Enviado' : ''], ['wa', 'WhatsApp', wa ? 'Enviado' : ''], ['ta', 'Tareas', tc ? 'Creadas' : '']];
+    var ag = !!d.reunion_agendada_el, fe = !!d.partner_enviado_el;
+    var TABS = [['op', 'Oportunidad', falta ? 'Falta' : ''], ['co', 'Correo', enviada ? 'Enviado' : ''], ['wa', 'WhatsApp', wa ? 'Enviado' : ''], ['ta', 'Tareas', tc ? 'Creadas' : ''], ['ag', 'Próxima reunión', ag ? 'Agendada' : '']].concat(d.partner ? [['fa', 'Fabricante', fe ? 'Enviado' : '']] : []);
+    if (TAB === 'fa' && !d.partner) TAB = 'co';
     H += '<div class="tabs" role="tablist">' + TABS.map(function (t) { return '<button type="button" role="tab" class="tab' + (TAB === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + h(t[1]) + (t[2] ? ' <small class="' + (t[2] === 'Falta' ? 'falta' : 'listo') + '">' + h(t[2]) + '</small>' : '') + '</button>'; }).join('') + '</div>';
 
     // --- Oportunidad
@@ -204,11 +212,41 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
     // --- Tareas
     if (!T) T = (d.tareas || []).map(function (t) { return { titulo: t.titulo || '', fecha_limite: t.fecha_limite || '', proposito: t.proposito || '', prioridad: t.prioridad || '', tipo: t.tipo || '', responsables: (t.responsables && t.responsables.length) ? t.responsables.slice() : [d.remitente], incluir: t.incluir !== false }; });
     H += '<div class="card tabp" id="p-ta"' + (TAB === 'ta' ? '' : ' hidden') + '>'
-      + (tc ? '<p>' + estado('Creadas el ' + d.tareas_creadas_el, true) + '</p>' : '<p class="nota">Se crean en la oportunidad solo cuando las apruebes. Cada responsable marcado recibe su propia tarea en Zoho. Desmarca o quita las que no quieras.</p>')
+      + (tc ? '<p>' + estado('Creadas el ' + d.tareas_creadas_el, true) + '</p>' : '<p class="nota">Se crean en la oportunidad solo cuando las apruebes. Cada responsable marcado recibe su propia tarea en Zoho y un correo con sus tareas. Desmarca o quita las que no quieras.</p>')
       + '<div id="listaT"></div>'
       + '<div class="acciones">' + (tc ? '' : '<button class="s" id="bAddT">+ Agregar tarea</button><button class="p" id="bTareas"' + (falta ? ' disabled title="Primero elige la oportunidad"' : '') + '>Crear tareas aprobadas</button>') + '<button class="s" data-corr="tareas">Corregir</button><span class="msg" id="mTareas"></span></div></div>';
 
+    // --- Proxima reunion (18-nov, entrega 3): Google Calendar con Meet e invitacion; queda como evento en la oportunidad en Zoho.
+    var R0 = d.reunion || null;
+    var manana = (function () { var x = new Date(Date.now() + 864e5); while (x.getDay() === 0 || x.getDay() === 6) x = new Date(x.getTime() + 864e5); var p2 = function (n) { return ('0' + n).slice(-2); }; return x.getFullYear() + '-' + p2(x.getMonth() + 1) + '-' + p2(x.getDate()) + 'T10:00'; })();
+    H += '<div class="card tabp" id="p-ag"' + (TAB === 'ag' ? '' : ' hidden') + '>'
+      + (ag ? '<p>' + estado('Agendada el ' + d.reunion_agendada_el, true) + '</p>' + (R0 ? '<dl class="dato"><dt>Reunión</dt><dd>' + h(R0.titulo) + '</dd><dt>Cuándo</dt><dd>' + h(R0.cuando_txt || R0.inicio) + ' (' + h(R0.duracion) + ' min)</dd><dt>Invitados</dt><dd>' + h((R0.invitados || []).join(', ')) + '</dd>'
+          + (R0.meet ? '<dt>Meet</dt><dd><a href="' + h(R0.meet) + '" target="_blank" rel="noopener">' + h(R0.meet) + '</a></dd>' : '') + (R0.calendar ? '<dt>Calendar</dt><dd><a href="' + h(R0.calendar) + '" target="_blank" rel="noopener">Abrir el evento</a></dd>' : '') + '</dl>' : '')
+        : '<p class="nota">Se crea en el Google Calendar de la cuenta que elijas, con liga de Meet, y llega la invitación a cada invitado' + (d.prueba ? ' (en prueba, solo a ' + h(d.solo_a) + ')' : '') + '. Queda como evento en la oportunidad en Zoho.</p>'
+        + '<label class="campo">Calendario de<select id="agCuenta">' + rems.map(function (r) { return '<option value="' + h(r.correo) + '"' + (r.correo === d.remitente ? ' selected' : '') + '>' + h(r.nombre) + ' · ' + h(r.correo) + '</option>'; }).join('') + '</select></label>'
+        + '<label class="campo">Título<input id="agTitulo" value="' + h(d.reunion_titulo_base || '') + '"></label>'
+        + '<div class="fila2"><label class="campo">Fecha y hora (Ciudad de México)<input id="agFecha" type="datetime-local" value="' + h(manana) + '"></label><label class="campo">Duración (minutos)<input id="agDur" type="number" min="15" max="240" step="15" value="' + h(d.reunion_min_base || 30) + '"></label></div>'
+        + '<label class="campo">Invitados (separa con comas)<input id="agInv" value="' + h(d.destinatarios || '') + '"></label>'
+        + '<label class="campo">Agenda (sale en la invitación)<textarea id="agAgenda" class="largo">' + h(d.agenda_base || '') + '</textarea></label>')
+      + '<div class="acciones">' + (ag ? '' : '<button class="p" id="bAgendar"' + (falta ? ' disabled title="Primero elige la oportunidad"' : '') + '>Agendar reunión</button>') + '<button class="s" data-corr="agenda">Corregir</button><span class="msg" id="mAg"></span></div></div>';
+    // --- Minuta al fabricante (18-nov, entrega 3): solo a correos del fabricante, sin precios ni montos.
+    if (d.partner) {
+      var faRem = d.remitente;
+      H += '<div class="card tabp" id="p-fa"' + (TAB === 'fa' ? '' : ' hidden') + '>'
+        + (fe ? '<p>' + estado('Enviada el ' + d.partner_enviado_el, true) + '</p><p class="nota">Enviada a ' + h(d.partner_enviado_a) + '.</p>'
+          : '<p class="nota">Minuta técnica para ' + h(d.partner) + ': alcance, industria, áreas y tiempos. <b>Sin precios, montos ni descuentos</b>; la página no deja enviarla si los trae. Solo va a correos de ' + h((d.dominios_partner || []).join(', ')) + (d.prueba ? ' (en prueba, solo a ' + h(d.solo_a) + ')' : '') + '.</p>'
+          + (d.minuta_partner ? '' : '<p class="nota">El motor no escribió minuta para el fabricante en esta reunión: escríbela tú si hace falta.</p>')
+          + '<label class="campo">Enviar desde<select id="faRem">' + rems.map(function (r) { return '<option value="' + h(r.correo) + '"' + (r.correo === faRem ? ' selected' : '') + '>' + h(r.nombre) + ' · ' + h(r.correo) + '</option>'; }).join('') + '</select></label>'
+          + '<label class="campo">Para (correos de ' + h(d.partner) + ', separa con comas)<input id="faPara" value="' + h((d.contactos_fabricante || []).join(', ')) + '" placeholder="nombre@' + h((d.dominios_partner || [''])[0]) + '"></label>'
+          + '<label class="campo">Copia (solo equipo o fabricante)<input id="faCopia" value="' + h(copiaPara(faRem)) + '"></label>'
+          + '<label class="campo">Asunto<input id="faAsunto" value="' + h('Minuta · ' + (d.empresa || '') + ' · ' + (d.fecha || '')) + '"></label>'
+          + '<label class="campo">Texto (sale con el diseño de IT Institute y tu firma)<textarea id="faTexto" class="largo">' + h(d.minuta_partner ? d.minuta_partner + '\n\n' + firmaDe(faRem) : '') + '</textarea></label>')
+        + '<div class="acciones">' + (fe ? '' : '<button class="p" id="bPartner"' + (falta ? ' disabled title="Primero elige la oportunidad"' : '') + '>Enviar al fabricante</button>') + '<button class="s" data-corr="partner">Corregir</button><span class="msg" id="mFa"></span></div></div>';
+    }
     $('panel').innerHTML = H; GRP.revelar();
+    if (AGF && $('agAgenda') && !$('agAgenda').disabled) { $('agCuenta').value = AGF.cuenta; $('agTitulo').value = AGF.titulo; $('agFecha').value = AGF.fecha; $('agDur').value = AGF.dur; $('agInv').value = AGF.inv; $('agAgenda').value = AGF.agenda; } else if (!$('agAgenda')) AGF = null;
+    if (FAF && $('faTexto') && !$('faTexto').disabled) { $('faRem').value = FAF.rem; $('faRem').setAttribute('data-prev', FAF.rem); $('faPara').value = FAF.para; $('faCopia').value = FAF.copia; $('faAsunto').value = FAF.asunto; $('faTexto').value = FAF.texto; } else if (!$('faTexto')) FAF = null;
+    if ($('faRem') && !$('faRem').getAttribute('data-prev')) $('faRem').setAttribute('data-prev', $('faRem').value);
     if (enviada) FORM = null;
     if (FORM && $('cuerpo') && !$('cuerpo').disabled) {
       $('rem').value = FORM.rem; $('rem').setAttribute('data-prev', FORM.rem); $('para').value = FORM.para; $('copia').value = FORM.copia; $('asunto').value = FORM.asunto; $('cuerpo').value = FORM.cuerpo;
@@ -329,6 +367,27 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
       if (sin.length) { msg('mTareas', false, 'Elige al menos un responsable para: ' + sin.map(function (t) { return t.titulo; }).join('; ')); return; }
       var b = this; b.disabled = true; msg('mTareas', true, 'Creando…');
       api({ accion: 'tareas', tareas: ts, quien: QUIEN() }).then(function (x) { if (x.ok) { msg('mTareas', true, x.mensaje); T = null; setTimeout(cargar, 1200); } else { msg('mTareas', false, x.error); b.disabled = false; } });
+    };
+    if ($('bAgendar')) $('bAgendar').onclick = function () {
+      var b = this, inv = $('agInv').value.trim(), f = $('agFecha').value;
+      if (!f) { msg('mAg', false, 'Elige la fecha y la hora.'); return; }
+      if (!inv) { msg('mAg', false, 'Agrega al menos un invitado.'); return; }
+      if (!confirm('¿Agendar «' + $('agTitulo').value + '» el ' + f.replace('T', ' a las ') + ' en el calendario de ' + $('agCuenta').value + ' e invitar a ' + (d.prueba ? d.solo_a : inv) + '?')) return;
+      b.disabled = true; msg('mAg', true, 'Agendando…');
+      api({ accion: 'agendar', cuenta: $('agCuenta').value, titulo: $('agTitulo').value, fecha: f, duracion: $('agDur').value, invitados: inv, agenda: $('agAgenda').value, quien: QUIEN() })
+        .then(function (x) { if (x.ok) { msg('mAg', true, x.mensaje); setTimeout(cargar, 1500); } else { msg('mAg', false, x.error); b.disabled = false; } });
+    };
+    // La firma del texto acompana a la cuenta que envia al fabricante.
+    if ($('faRem')) $('faRem').onchange = function () { var prev = this.getAttribute('data-prev'), nue = this.value, fp = firmaDe(prev), fn = firmaDe(nue), t = $('faTexto');
+      if (fp && fn && t.value.indexOf(fp) >= 0) t.value = t.value.split(fp).join(fn); this.setAttribute('data-prev', nue); };
+    if ($('bPartner')) $('bPartner').onclick = function () {
+      var b = this, para = $('faPara').value.trim();
+      if (!para) { msg('mFa', false, 'Escribe a quién del fabricante va la minuta.'); return; }
+      if (!$('faTexto').value.trim()) { msg('mFa', false, 'El texto está vacío.'); return; }
+      if (!confirm(d.prueba ? 'Prueba: se envía solo a ' + d.solo_a + '. ¿Enviar?' : '¿Enviar la minuta a ' + d.partner + ' (' + para + ') desde ' + $('faRem').value + '?')) return;
+      b.disabled = true; msg('mFa', true, 'Enviando…');
+      api({ accion: 'partner', remitente: $('faRem').value, para: para, copia: $('faCopia').value, asunto: $('faAsunto').value, cuerpo: $('faTexto').value, quien: QUIEN() })
+        .then(function (x) { if (x.ok) { msg('mFa', true, x.mensaje); setTimeout(cargar, 1200); } else { msg('mFa', false, x.error); b.disabled = false; } });
     };
     Array.prototype.forEach.call(document.querySelectorAll('[data-corr]'), function (b) { b.onclick = function () { corregir(b.getAttribute('data-corr')); }; });
   }
