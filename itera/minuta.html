@@ -60,7 +60,10 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
     return fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(cuerpo) })
       .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'Respuesta no válida del servidor.' }; }); })
       .catch(function () { return { ok: false, error: 'Sin conexión. Revisa tu internet y vuelve a intentar.' }; })
-      .then(fin);
+      .then(fin)
+      // 18-nov (auditoria e2-5): un envio o una creacion de tareas anterior se interrumpio y no se sabe si salio. Solo se reintenta
+      // si la persona confirma que ya reviso (en Enviados de Gmail o en Zoho) que no salio.
+      .then(function (x) { if (x && x.interrumpido && !cuerpo.forzar_apartado && confirm(x.error + '\n\n¿Ya revisaste y NO salió? Aceptar = reintentar ahora.')) return api(Object.assign({}, cuerpo, { forzar_apartado: true })); return x; });
   }
   // 17-nov (auditoria): quien revisa queda escrito en cada nota de Zoho (la conexion de Zoho es una sola y no dice quien fue).
   function QUIEN() { var s = $('quienSel'); if (s && s.value) return s.value; try { var v = localStorage.getItem('itera_minuta_quien'); if (v) return v; } catch (e) {} return D ? D.remitente : ''; }
