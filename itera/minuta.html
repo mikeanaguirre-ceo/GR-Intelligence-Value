@@ -227,6 +227,7 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
         + '<label class="campo">Título<input id="agTitulo" value="' + h(d.reunion_titulo_base || '') + '"></label>'
         + '<div class="fila2"><label class="campo">Fecha y hora (Ciudad de México)<input id="agFecha" type="datetime-local" value="' + h(manana) + '"></label><label class="campo">Duración (minutos)<input id="agDur" type="number" min="15" max="240" step="15" value="' + h(d.reunion_min_base || 30) + '"></label></div>'
         + '<label class="campo">Invitados (separa con comas)<input id="agInv" value="' + h(d.destinatarios || '') + '"></label>'
+        + (Number(d.agenda_omitidas) > 0 ? '<p class="nota"><b>Revisa la agenda:</b> se ' + (Number(d.agenda_omitidas) === 1 ? 'quitó 1 línea' : 'quitaron ' + Number(d.agenda_omitidas) + ' líneas') + ' porque traían precios, montos, al fabricante, ligas o algo no comprometido (la invitación la recibe el cliente). Si falta algo, escríbelo sin esos datos.</p>' : '')
         + '<label class="campo">Agenda (sale en la invitación)<textarea id="agAgenda" class="largo">' + h(d.agenda_base || '') + '</textarea></label>')
       + '<div class="acciones">' + (ag ? '' : '<button class="p" id="bAgendar"' + (falta ? ' disabled title="Primero elige la oportunidad"' : '') + '>Agendar reunión</button>') + '<button class="s" data-corr="agenda">Corregir</button><span class="msg" id="mAg"></span></div></div>';
     // --- Minuta al fabricante (18-nov, entrega 3): solo a correos del fabricante, sin precios ni montos.
