@@ -174,9 +174,10 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
     var remSel = d.remitente_envio || d.remitente;
     H += '<div class="card tabp" id="p-co"' + (TAB === 'co' ? '' : ' hidden') + '>'
       + (enviada ? '<p>' + estado('Enviada el ' + d.enviado_el, true) + '</p><p class="nota">Enviada a ' + h(d.enviado_a) + '.</p>' : '<p class="nota">Si cambias el texto, el cambio también enseña al motor.</p>')
-      + '<label class="campo">Enviar desde<select id="rem"' + (enviada ? ' disabled' : '') + '>' + rems.map(function (r) { return '<option value="' + h(r.correo) + '"' + (r.correo === remSel ? ' selected' : '') + '>' + h(r.nombre) + ' · ' + h(r.correo) + '</option>'; }).join('') + '</select></label>'
-      + '<label class="campo">Para (separa con comas)<input id="para" value="' + h(d.destinatarios) + '"' + (enviada ? ' disabled' : '') + '></label>'
-      + '<label class="campo">Copia (separa con comas)<input id="copia" value="' + h(copiaPara(remSel)) + '"' + (enviada ? ' disabled' : '') + '></label>'
+      // 18-nov (auditoria e2-3): ya enviada, quien la mando, a quien y con que copia se lee en «Enviada a»; no se muestran campos viejos.
+      + (enviada ? '' : '<label class="campo">Enviar desde<select id="rem">' + rems.map(function (r) { return '<option value="' + h(r.correo) + '"' + (r.correo === remSel ? ' selected' : '') + '>' + h(r.nombre) + ' · ' + h(r.correo) + '</option>'; }).join('') + '</select></label>'
+      + '<label class="campo">Para (separa con comas)<input id="para" value="' + h(d.destinatarios) + '"></label>'
+      + '<label class="campo">Copia (separa con comas)<input id="copia" value="' + h(copiaPara(remSel)) + '"></label>')
       + (enviada ? '' : '<div class="hilo" id="hiloBox">' + (d.prueba ? 'En prueba la minuta no se responde dentro de la conversación del cliente: sale como correo nuevo a ' + h(d.solo_a) + '.' : 'Buscando la conversación con el cliente…') + '</div>')
       + '<label class="campo">Asunto<input id="asunto" value="' + h(d.asunto) + '"' + (enviada ? ' disabled' : '') + '></label>'
       + '<label class="campo">Texto (sale con el diseño de IT Institute: logo, párrafos separados y tu firma)<textarea id="cuerpo" class="largo"' + (enviada ? ' disabled' : '') + '>' + h(d.cuerpo) + '</textarea></label>'
@@ -275,7 +276,7 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
           $('dRes').innerHTML = L.map(function (a, i) { return '<div><span>' + h(a.nombre) + (a.mb ? ' <small>(' + a.mb + ' MB)</small>' : '') + '</span><button class="s" type="button" data-ad="' + i + '">Agregar</button></div>'; }).join('');
           Array.prototype.forEach.call(document.querySelectorAll('[data-ad]'), function (bt) { bt.onclick = function () { var a = L[Number(bt.getAttribute('data-ad'))];
             if (ADJ.some(function (z) { return z.id === a.id; })) return; if (ADJ.length >= 10) { msg('mDq', false, 'Máximo 10 archivos.'); return; }
-            ADJ.push({ id: a.id, nombre: a.nombre, mime: a.mime }); pintarAdj(); }; }); }); };
+            ADJ.push({ id: a.id, nombre: a.nombre, mime: a.mime, mb: a.mb || 0 }); pintarAdj(); }; }); }); };
       $('dq').onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); $('bDq').click(); } };
     }
     if ($('hiloBox') && HILO_REM !== ($('rem') ? $('rem').value : '') + '|' + ($('para') ? $('para').value : '')) { HILO_REM = ($('rem') ? $('rem').value : '') + '|' + ($('para') ? $('para').value : ''); cargarHilo(); }
@@ -289,6 +290,7 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
       if (fp && fn && c.value.indexOf(fp) !== -1) c.value = c.value.split(fp).join(fn);
       if ($('copia').value === copiaPara(prev)) $('copia').value = copiaPara(nuevo);
       this.setAttribute('data-prev', nuevo);
+      if ($('dRes')) $('dRes').innerHTML = '';
       if (ADJ.length) { ADJ = []; pintarAdj(); msg('mDq', true, 'Cambiaste la cuenta: vuelve a elegir los adjuntos desde su Drive.'); }
       HILO_REM = nuevo + '|' + $('para').value; cargarHilo();
     };
