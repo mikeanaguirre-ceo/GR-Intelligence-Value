@@ -46,7 +46,7 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
 (function () {
   var API = 'https://mikea.app.n8n.cloud/webhook/motor-minuta';
   var K = (/[?&]k=([A-Za-z0-9]+)/.exec(location.search) || [])[1] || '';
-  var $ = GRP.$, h = GRP.h, D = null, HILO = null, HILO_REM = null, ADJ = [];
+  var $ = GRP.$, h = GRP.h, D = null, HILO = null, HILO_REM = null, ADJ = [], FORM = null, HILO_ON = true;
   GRP.marcaPublica('Minuta por revisar', 'Revisa, corrige si hace falta y envía desde tu cuenta. Nada sale al cliente sin tu clic.');
   // 17-nov (auditoria 4): una accion a la vez. Mientras una accion que escribe (enviar, tareas, cambiar oportunidad, alta,
   // fase, nota, WhatsApp, corregir) esta en curso, todos los botones de accion quedan inactivos: asi no se cruzan.
@@ -110,7 +110,17 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
   // mueve desde aqui. El correo sale de la cuenta que se elija (lista blanca: remitentes) con copia editable. Cada tarea lleva uno
   // o varios responsables (una tarea por persona en Zoho) y se pueden agregar y quitar tareas.
   var TAB = null, T = null;
+  // 18-nov (auditoria e2-1): lo que el vendedor ya escribio en Correo y WhatsApp sobrevive cuando la pagina se repinta tras otra
+  // accion (fase, nota, tareas...). Asi nunca envia algo distinto de lo que ve.
+  function guardarForm() {
+    if (!$('cuerpo') || $('cuerpo').disabled) return;
+    var a = $('asunto');
+    FORM = { rem: $('rem').value, para: $('para').value, copia: $('copia').value, asunto: a.hasAttribute('data-orig') ? a.getAttribute('data-orig') : a.value, cuerpo: $('cuerpo').value,
+      wa: $('wa') && !$('wa').disabled ? $('wa').value : null, tel: $('tel') && !$('tel').disabled ? $('tel').value : null };
+    if ($('enHilo')) HILO_ON = $('enHilo').checked;
+  }
   function pintar() {
+    guardarForm();
     if (D && D.interna) return pintarInterna();
     var d = D, H = '';
     var falta = !!d.falta_oportunidad, enviada = d.estado === 'minuta_enviada', wa = !!d.whatsapp_enviado_el, tc = !!d.tareas_creadas_el;
@@ -188,6 +198,11 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
       + '<div class="acciones">' + (tc ? '' : '<button class="s" id="bAddT">+ Agregar tarea</button><button class="p" id="bTareas"' + (falta ? ' disabled title="Primero elige la oportunidad"' : '') + '>Crear tareas aprobadas</button>') + '<button class="s" data-corr="tareas">Corregir</button><span class="msg" id="mTareas"></span></div></div>';
 
     $('panel').innerHTML = H; GRP.revelar();
+    if (enviada) FORM = null;
+    if (FORM && $('cuerpo') && !$('cuerpo').disabled) {
+      $('rem').value = FORM.rem; $('rem').setAttribute('data-prev', FORM.rem); $('para').value = FORM.para; $('copia').value = FORM.copia; $('asunto').value = FORM.asunto; $('cuerpo').value = FORM.cuerpo;
+      if (FORM.wa !== null && $('wa') && !$('wa').disabled) $('wa').value = FORM.wa; if (FORM.tel !== null && $('tel') && !$('tel').disabled) $('tel').value = FORM.tel;
+    }
     pintarTareas(tc, resps);
 
     Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function (b) { b.onclick = function () { leerTareas(); TAB = b.getAttribute('data-tab'); Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function (x) { x.classList.toggle('on', x === b); }); Array.prototype.forEach.call(document.querySelectorAll('.tabp'), function (p) { p.hidden = p.id !== 'p-' + TAB; }); }; });
@@ -240,8 +255,8 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
         if (!$('rem') || $('rem').value !== rem) return;
         if (!x.ok) { $('hiloBox').textContent = 'No se pudo revisar el correo (' + (x.error || '') + '). Saldrá como correo nuevo.'; return; }
         if (!x.encontrado) { $('hiloBox').textContent = 'No hay conversación de los últimos 6 meses con estos correos en la cuenta de ' + rem + ': saldrá como correo nuevo.'; return; }
-        HILO = x; $('hiloBox').innerHTML = '<label><input type="checkbox" id="enHilo" checked> Responder dentro de la conversación «' + h(x.asunto) + '» (' + h(fechaCorta(x.fecha)) + ')</label><br><small>El cliente la verá en el mismo hilo. Desmárcalo para mandarla como correo nuevo con el asunto de arriba.</small>';
-        $('enHilo').onchange = asuntoHilo; asuntoHilo(); });
+        HILO = x; HILO_ON = true; $('hiloBox').innerHTML = '<label><input type="checkbox" id="enHilo" checked> Responder dentro de la conversación «' + h(x.asunto) + '» (' + h(fechaCorta(x.fecha)) + ')</label><br><small>El cliente la verá en el mismo hilo. Desmárcalo para mandarla como correo nuevo con el asunto de arriba.</small>';
+        $('enHilo').onchange = function () { HILO_ON = this.checked; asuntoHilo(); }; asuntoHilo(); });
     }
     function pintarAdj() { if (!$('dSel')) return;
       $('dSel').innerHTML = ADJ.length ? ADJ.map(function (a, i) { return '<span class="chip">' + h(a.nombre) + ' <a href="#" data-qa="' + i + '" title="Quitar">×</a></span>'; }).join('') : '<small>Sin adjuntos.</small>';
@@ -259,7 +274,9 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
             ADJ.push({ id: a.id, nombre: a.nombre, mime: a.mime }); pintarAdj(); }; }); }); };
       $('dq').onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); $('bDq').click(); } };
     }
-    if ($('hiloBox') && HILO_REM !== ($('rem') ? $('rem').value : '')) { HILO_REM = $('rem') ? $('rem').value : ''; cargarHilo(); } else if (HILO && $('hiloBox')) { $('hiloBox').innerHTML = '<label><input type="checkbox" id="enHilo" checked> Responder dentro de la conversación «' + h(HILO.asunto) + '»</label>'; $('enHilo').onchange = asuntoHilo; asuntoHilo(); }
+    if ($('hiloBox') && HILO_REM !== ($('rem') ? $('rem').value : '') + '|' + ($('para') ? $('para').value : '')) { HILO_REM = ($('rem') ? $('rem').value : '') + '|' + ($('para') ? $('para').value : ''); cargarHilo(); }
+    else if (HILO && $('hiloBox')) { $('hiloBox').innerHTML = '<label><input type="checkbox" id="enHilo"' + (HILO_ON ? ' checked' : '') + '> Responder dentro de la conversación «' + h(HILO.asunto) + '»</label>'; $('enHilo').onchange = function () { HILO_ON = this.checked; asuntoHilo(); }; asuntoHilo(); }
+    if ($('para') && !$('para').disabled) $('para').onchange = function () { HILO_REM = ($('rem') ? $('rem').value : '') + '|' + this.value; cargarHilo(); };
     if ($('rem')) $('rem').onchange = function () {
       // Al cambiar la cuenta: la firma del texto y la copia sugerida cambian con ella (si no las editaste a mano).
       var prev = this.getAttribute('data-prev') || remSel, nuevo = this.value;
@@ -268,7 +285,7 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
       if ($('copia').value === copiaPara(prev)) $('copia').value = copiaPara(nuevo);
       this.setAttribute('data-prev', nuevo);
       if (ADJ.length) { ADJ = []; pintarAdj(); msg('mDq', true, 'Cambiaste la cuenta: vuelve a elegir los adjuntos desde su Drive.'); }
-      HILO_REM = nuevo; cargarHilo();
+      HILO_REM = nuevo + '|' + $('para').value; cargarHilo();
     };
     if ($('bEnviar')) $('bEnviar').onclick = function () {
       var b = this, de = $('rem') ? $('rem').value : d.remitente;
@@ -277,7 +294,7 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
       b.disabled = true; msg('mEnviar', true, 'Enviando…');
       var enHilo = !!(HILO && $('enHilo') && $('enHilo').checked), a = $('asunto');
       api({ accion: 'enviar', remitente: de, destinatarios: $('para').value, copia: $('copia').value, asunto: enHilo && a.hasAttribute('data-orig') ? a.getAttribute('data-orig') : a.value, cuerpo: $('cuerpo').value, quien: QUIEN(),
-        hilo: enHilo ? { id: HILO.hilo_id, message_id: HILO.message_id, asunto: HILO.asunto } : null, adjuntos: ADJ }).then(function (x) { if (x.ok) { msg('mEnviar', true, x.mensaje || 'Enviada.'); setTimeout(cargar, 1200); } else { msg('mEnviar', false, x.error); b.disabled = false; } });
+        hilo: enHilo ? { id: HILO.hilo_id, message_id: HILO.message_id, references: HILO.references || '', asunto: HILO.asunto } : null, adjuntos: ADJ }).then(function (x) { if (x.ok) { msg('mEnviar', true, x.mensaje || 'Enviada.'); setTimeout(cargar, 1200); } else { msg('mEnviar', false, x.error); b.disabled = false; } });
     };
     $('bCopiar').onclick = function () { var t = $('wa').value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { msg('mWa', true, 'Copiado. Pégalo en WhatsApp.'); }, function () { $('wa').select(); msg('mWa', true, 'Selecciona y copia el texto.'); }); };
     function telWa() { var t = ($('tel') ? $('tel').value : '').replace(/[^0-9]/g, ''); return t.length === 10 ? '52' + t : t; }
