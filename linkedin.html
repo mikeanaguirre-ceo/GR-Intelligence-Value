@@ -99,7 +99,7 @@
   }
   function etiqueta(id){ var x = ((CAT && CAT.personas) || []).filter(function(p){ return p.id === id; })[0]; return x ? x.label : id; }
   var ESTADOS = [['por_aprobar', 'Por aprobar', 'Borradores que esperan que alguien los apruebe, los edite o los marque como No contestar.'],
-    ['en_cola', 'En cola', 'Aprobadas que Amplemarket todavía no confirma que salieron (tarda unos 15 minutos). Usa Actualizar para confirmarlo.'],
+    ['en_cola', 'En cola', 'Aprobadas que todavía no se confirman en el hilo de LinkedIn. Presiona Actualizar: revisa el hilo de cada una y las que ya salieron pasan a Entregada.'],
     ['enviadas', 'Enviadas', CO ? 'Ya salieron desde el correo de su dueño.' : 'Amplemarket ya confirmó que salieron (Entregada), o se enviaron antes de que existiera la confirmación (Enviada).'],
     ['a_mano', 'Contestadas a mano', 'Alguien ya les contestó directo en ' + T.nombre + ' (lo detectó el sistema o lo marcaron con el botón Contestado a mano), así que no se envió nada para no duplicar.'],
     ['descartadas', 'Descartadas', 'Marcadas como No contestar, o reemplazadas porque la persona volvió a escribir.'],
@@ -194,7 +194,7 @@
   function tarjeta(f){
     var quien = [f.puesto, f.empresa, f.pais].filter(Boolean).map(esc).join(' · ');
     var est = f.estado === 'pendiente' ? '<span class="etq pend">Por aprobar</span>' : f.estado === 'error' ? '<span class="etq mal">Error</span>' :
-      /enviad/.test(f.estado) ? (f.entrega === 'en_cola' ? '<span class="etq pend" title="Amplemarket aún no confirma que salió. Usa Actualizar.">En cola</span>' :
+      /enviad/.test(f.estado) ? (f.entrega === 'en_cola' ? '<span class="etq pend" title="Aún no se confirma en el hilo. Presiona Actualizar para confirmar la entrega.">En cola · presiona Actualizar</span>' :
         '<span class="etq ok">' + (f.entrega === 'entregada' ? 'Entregada' : f.estado === 'enviado_auto' ? 'Enviada sola' : f.estado === 'enviando' ? 'Enviando' : 'Enviada') + '</span>') :
       '<span class="etq">' + (f.estado === 'reemplazado' ? 'Reemplazada' : f.revisado_por === 'Contestada a mano' ? 'Contestada a mano' : 'No contestar') + '</span>';
     var h = '<article class="card' + (f.oportunidad ? ' op1' : '') + '" data-id="' + esc(f.evento_id) + '">';
