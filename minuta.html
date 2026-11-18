@@ -62,6 +62,9 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
   function QUIEN() { var s = $('quienSel'); if (s && s.value) return s.value; try { var v = localStorage.getItem('itera_minuta_quien'); if (v) return v; } catch (e) {} return D ? D.remitente : ''; }
   function selQuien(lista) {
     var act = ''; try { act = localStorage.getItem('itera_minuta_quien') || ''; } catch (e) {}
+    // 17-nov (auditoria 5): la lista incluye a responsables y remitentes, y siempre a quien recibio el aviso; nunca se queda
+    // elegida una persona que nadie escogio.
+    var vistos = {}; lista = lista.concat(D.remitentes || [], [{ correo: D.remitente, nombre: D.remitente_nombre || D.remitente }]).filter(function (r) { var c = String(r.correo || '').toLowerCase(); if (!c || vistos[c]) return false; vistos[c] = 1; return true; });
     if (!lista.some(function (r) { return r.correo === act; })) act = D.remitente;
     return '<label class="campo">Quién está revisando (queda en Zoho)<select id="quienSel">' + lista.map(function (r) { return '<option value="' + h(r.correo) + '"' + (r.correo === act ? ' selected' : '') + '>' + h(r.nombre) + '</option>'; }).join('') + '</select></label>';
   }
@@ -114,7 +117,7 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
     H += '<div class="card"><div class="card-h"><h2>' + h(d.tipo || 'Reunión') + ' · ' + h(d.empresa || d.titulo) + '</h2>' + (enviada ? estado('Minuta enviada', true) : estado(falta ? 'Falta elegir oportunidad' : 'Por revisar')) + '</div>'
       + '<dl class="dato"><dt>Reunión</dt><dd>' + h(d.fecha) + ' · ' + h(d.titulo) + '</dd>'
       + '<dt>Oportunidad</dt><dd>' + (d.oportunidad ? h(d.oportunidad) + ' (' + h(d.fase) + ')' + (d.url_zoho ? ' · <a href="' + h(d.url_zoho) + '" target="_blank" rel="noopener">Abrir en Zoho</a>' : '') : '<b>Por elegir</b>') + '</dd>'
-      + (d.verificar ? '<dt>Por verificar</dt><dd>' + h(d.verificar) + '</dd>' : '') + '</dl>' + selQuien(resps.length ? resps : rems) + '</div>';
+      + (d.verificar ? '<dt>Por verificar</dt><dd>' + h(d.verificar) + '</dd>' : '') + '</dl>' + selQuien(resps.slice()) + '</div>';
     var TABS = [['op', 'Oportunidad', falta ? 'Falta' : ''], ['co', 'Correo', enviada ? 'Enviado' : ''], ['wa', 'WhatsApp', wa ? 'Enviado' : ''], ['ta', 'Tareas', tc ? 'Creadas' : '']];
     H += '<div class="tabs" role="tablist">' + TABS.map(function (t) { return '<button type="button" role="tab" class="tab' + (TAB === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + h(t[1]) + (t[2] ? ' <small class="' + (t[2] === 'Falta' ? 'falta' : 'listo') + '">' + h(t[2]) + '</small>' : '') + '</button>'; }).join('') + '</div>';
 
