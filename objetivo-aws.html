@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Lista objetivo AWS</title>
+<style>
+  body{margin:0;font-family:Poppins,Arial,sans-serif;background:#f4f7f9;color:#10212b}
+  .h{background:linear-gradient(120deg,#00334E,#00607B);color:#fff;padding:26px 16px}
+  .h h1{margin:0;font-size:22px;font-weight:800}
+  main{max-width:640px;margin:0 auto;padding:24px 16px}
+  p{font-size:16px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="h"><h1>Lista objetivo · AWS</h1></div>
+<main><p id="msg">Cargando la lista...</p></main>
+<script>
+// Lista objetivo de AWS dentro de GR Intelligence: /<clave>/objetivo-aws?t=CLAVE (la misma clave del tablero).
+// Pide la pagina al motor (ITERA - Lista objetivo AWS (pagina)) y la muestra en esta misma direccion. Sin clave correcta: "Enlace no valido".
+(function () {
+  var MOTOR = "https://mikea.app.n8n.cloud/webhook/9e65415e-e7fa-4345-9bbc-51f3fcc43b50/motor-objetivo-aws/";
+  var c = /^\/([a-z0-9]+)\//.exec(location.pathname);
+  var cliente = c ? c[1] : "";
+  var m = /[?&]t=([^&]+)/.exec(location.search);
+  var t = m ? decodeURIComponent(m[1]) : "";
+  var msg = document.getElementById("msg");
+  if (!cliente || !t) { msg.textContent = "Este enlace no trae la clave. Pide a Great Revenue el enlace completo."; return; }
+  fetch(MOTOR + cliente + "?t=" + encodeURIComponent(t), { cache: "no-store" })
+    .then(function (r) { return r.text().then(function (x) { return { ok: r.ok, h: x }; }); })
+    .then(function (x) {
+      if (!x.ok) { msg.textContent = "Enlace no valido. Pide a Great Revenue un enlace nuevo."; return; }
+      document.open(); document.write(x.h); document.close();
+    })
+    .catch(function () { msg.textContent = "No se pudo cargar la lista. Intenta de nuevo en unos minutos."; });
+})();
+</script>
+</body>
+</html>
