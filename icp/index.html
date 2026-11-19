@@ -92,7 +92,7 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
     vista_se: 'Cada persona que reaccionó a una secuencia o a una señal de Duo, contada una vez por producto y año con su reacción más alta. Es la vista con más casos: sirve para decidir a quién apuntar.',
     vista_re: 'Oportunidades (abiertas y cerradas) que llegaron a la reunión: pasaron por Educación o más adelante, o se ganaron. Es el paso intermedio entre la reacción y la venta, con más casos que las ganadas.',
     vista_rd: 'Cómo va cada producto en el tiempo y qué pruebas tiene. Contactados, respuestas, interesados y reuniones salen de la analítica de Amplemarket (se actualiza cada lunes); oportunidades, reuniones y ganadas salen del CRM.',
-    per: 'Periodicidad. Por trimestre (la inicial) se lee estable; por mes hay pocos casos y un mes malo parece una caída. Rango: escoge los meses que quieras ver.',
+    per: 'Periodicidad: mes, trimestre, semestre (ene–jun y jul–dic), año o rango. Por trimestre (la inicial) se lee estable; por mes hay pocos casos y un mes malo parece una caída. Rango: escoge los meses que quieras ver.',
     semaforo: 'Compara el % de oportunidades que llegan a reunión del último periodo completo (dato del CRM) contra el promedio de sus 4 periodos anteriores (su línea base) y contra la mediana del portafolio. Verde: igual o mejor. Amarillo: hasta 20% peor, o abajo de la mediana. Rojo: más de 20% peor. Gris: menos de 10 oportunidades en el periodo. Los números de Amplemarket se muestran solo en los meses que llegaron completos.',
     k_cont: 'Personas contactadas por primera vez en el periodo.', k_resp: 'Respondieron entre contactados.', k_int: 'Interesados entre contactados: el indicador del semáforo.', k_cpr: 'Contactados por cada reunión agendada en Amplemarket. Menos es mejor.',
     prioridad: 'Todas las opciones del tema, no solo las primeras. Tasa = éxitos entre casos de esa opción (positivas en prospectos, reunión en oportunidades, ganadas en cerradas). Contra el promedio = la tasa de la opción entre la tasa de todo el tema. Alta: 1.2 veces o más. Media: 0.8 a 1.2. Baja: menos de 0.8. Pocos casos: menos de 10, no se toma como conclusión. «Sin dato» no entra.',
@@ -199,8 +199,8 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
   // ---------- Rendimiento y pruebas (vista rd) ----------
   var MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
   var HOY = new Date(), MES_HOY = HOY.getFullYear() + '-' + ('0' + (HOY.getMonth() + 1)).slice(-2);
-  function clavePer(m) { var y = m.slice(0, 4), mm = Number(m.slice(5, 7)); return st.per === 'm' || st.per === 'r' ? m : st.per === 'q' ? y + '-T' + Math.ceil(mm / 3) : y; }
-  function nombrePer(k) { if (/^\d{4}-\d{2}$/.test(k)) return MESES[Number(k.slice(5)) - 1] + ' ' + k.slice(2, 4); if (/-T/.test(k)) return 'T' + k.slice(-1) + ' ' + k.slice(2, 4); return k; }
+  function clavePer(m) { var y = m.slice(0, 4), mm = Number(m.slice(5, 7)); return st.per === 'm' || st.per === 'r' ? m : st.per === 'q' ? y + '-T' + Math.ceil(mm / 3) : st.per === 's' ? y + '-S' + (mm <= 6 ? 1 : 2) : y; }
+  function nombrePer(k) { if (/^\d{4}-\d{2}$/.test(k)) return MESES[Number(k.slice(5)) - 1] + ' ' + k.slice(2, 4); if (/-T/.test(k)) return 'T' + k.slice(-1) + ' ' + k.slice(2, 4); if (/-S/.test(k)) return 'S' + k.slice(-1) + ' ' + k.slice(2, 4); return k; }
   function serie(p) {
     // Contactados de Amplemarket: apagados hasta tener la fuente exacta (la analitica corta y falla, 16-nov). AMPLE = true los muestra.
     var A = AMPLE ? ((D.rendimiento || {})[p] || {}) : {}, H = ((D.productos || {})[p] || {}).mes || {}, S = {};
@@ -250,7 +250,7 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
   }
   function rendimiento() {
     var per = $('f-per'); per.style.display = '';
-    chips('f-per', [['q', 'Trimestre'], ['m', 'Mes'], ['a', 'Año'], ['r', 'Rango de meses']], 'per', 'per');
+    chips('f-per', [['q', 'Trimestre'], ['m', 'Mes'], ['s', 'Semestre'], ['a', 'Año'], ['r', 'Rango de meses']], 'per', 'per');
     if (st.per === 'r') { var meses = Object.keys(((D.rendimiento || {}).TODOS) || {}).sort(); var op = function (sel) { return meses.map(function (m) { return '<option value="' + m + '"' + (m === sel ? ' selected' : '') + '>' + nombrePer(m) + '</option>'; }).join(''); };
       per.insertAdjacentHTML('beforeend', ' <select id="r-desde" class="chip">' + '<option value="">Desde el inicio</option>' + op(st.desde) + '</select> <select id="r-hasta" class="chip"><option value="">Hasta hoy</option>' + op(st.hasta) + '</select>');
       $('r-desde').onchange = function () { st.desde = this.value; pintar(); }; $('r-hasta').onchange = function () { st.hasta = this.value; pintar(); }; }
