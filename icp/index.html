@@ -115,7 +115,7 @@ details.msj summary em { font-style:normal; color:var(--dim); font-size:12px; } 
     vista_rd: 'Cómo va cada producto en el tiempo, qué escalar o revisar, qué secuencias y señales generan y qué mensajes funcionaron. Contactados, respuestas, interesados y reuniones salen de la analítica de Amplemarket (se actualiza cada lunes); oportunidades, reuniones y ganadas salen del CRM.',
     k_reu_am: 'Reuniones agendadas registradas en Amplemarket.',
     escalar: 'Reuniones por cada 1,000 contactados del producto entre el mismo dato de toda la cuenta. Escalar: 1.2 veces o más el promedio. Mantener: de 0.8 a 1.2. Revisar: menos de 0.8. Pocos datos: menos de 400 contactados, no se toma como conclusión. Señales Dúo son las secuencias que creó Dúo sin prefijo de producto; Otros es el resto de la cuenta.',
-    reglab: 'Genera: dio al menos una reunión u oportunidad en el periodo. Si no dio nada: Apagar con 800 contactados o más, Vigilar de 400 a 799, Pocos datos con menos de 400. Es una sugerencia para decidir, no se apaga nada solo.',
+    reglab: 'Genera: dio al menos una reunión, una oportunidad con respuesta o un referido en el periodo; las oportunidades creadas solo porque la persona abrió correos sin contestar no cuentan. Si no dio nada: Apagar con 800 contactados o más, Vigilar de 400 a 799, Pocos datos con menos de 400. Es una sugerencia para decidir, no se apaga nada solo.',
     exitos: 'Cada secuencia o señal que dio interés, recomendación, cita, reunión u oportunidad en los últimos 12 meses, con el mensaje que se envió. Se guarda en las fichas de éxito del motor y alimenta la base de conocimiento; aquí solo se muestran el mensaje de GR y los totales, sin datos de las personas.',
     per: 'Periodicidad: mes, trimestre, semestre (ene–jun y jul–dic), año o rango. Por trimestre (la inicial) se lee estable; por mes hay pocos casos y un mes malo parece una caída. Un periodo es completo si tiene todos sus meses dentro de los últimos 12 y ya terminó; los incompletos van en otro color y no entran al promedio.',
     semaforo: 'Compara el % de oportunidades que llegan a reunión del último periodo completo (dato del CRM) contra el promedio de sus 4 periodos anteriores (su línea base) y contra la mediana del portafolio. Verde: igual o mejor. Amarillo: hasta 20% peor, o abajo de la mediana. Rojo: más de 20% peor. Gris: menos de 10 oportunidades en el periodo. Los números de Amplemarket se muestran solo en los meses que llegaron completos.',
@@ -306,26 +306,28 @@ details.msj summary em { font-style:normal; color:var(--dim); font-size:12px; } 
     String(t || '').split('\n').forEach(function (l) { var x = esc(l.trim()).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>'); if (!x) return;
       if (/^([-*]|\d+\.)\s/.test(l.trim())) lista += '<li>' + x.replace(/^([-*]|\d+\.)\s+/, '') + '</li>'; else { if (lista) { h += '<ul>' + lista + '</ul>'; lista = ''; } h += '<p>' + x + '</p>'; } });
     return h + (lista ? '<ul>' + lista + '</ul>' : ''); }
-  // Regla B (Mike, 19-nov): Genera = al menos 1 oportunidad o reunión; sin nada: Apagar con 800 o más contactados, Vigilar de 400 a 799, Pocos datos con menos de 400.
-  function reglaB(t) { if ((t.op || 0) + (t.m || 0) > 0) return ['p-esc', 'Genera']; if (t.c >= 800) return ['p-rev', 'Apagar']; if (t.c >= 400) return ['p-vig', 'Vigilar']; return ['p-poc', 'Pocos datos']; }
+  // Regla B (Mike, 19-nov): Genera = al menos 1 reunión, oportunidad con respuesta, referido o cita (sin oportunidades solo por aperturas);
+  // sin nada: Apagar con 800 o más contactados, Vigilar de 400 a 799, Pocos datos con menos de 400.
+  function resB(t) { return (t.op || 0) + (t.m || 0) + (t.ref || 0) + (t.ci || 0); }
+  function reglaB(t) { if (resB(t) > 0) return ['p-esc', 'Genera']; if (t.c >= 800) return ['p-rev', 'Apagar']; if (t.c >= 400) return ['p-vig', 'Vigilar']; return ['p-poc', 'Pocos datos']; }
   var ORD_B = { Genera: 0, Vigilar: 1, Apagar: 2, 'Pocos datos': 3 };
   function filasB(L) {
-    // Cada renglón: { n, meses: { 'AAAA-MM': [detectados, contactados, respondieron, interesados, reuniones, oportunidades] } }
+    // Cada renglón: { n, meses: { 'AAAA-MM': [detectados, contactados, respondieron, interesados, reuniones, oportunidades, referidos, citas] } }
     var ini = ventana()[0] || '0000-00';
-    return (L || []).map(function (x) { var t = { d: 0, c: 0, r: 0, i: 0, m: 0, op: 0 }, por = {};
+    return (L || []).map(function (x) { var t = { d: 0, c: 0, r: 0, i: 0, m: 0, op: 0, ref: 0, ci: 0 }, por = {};
       Object.keys(x.meses || {}).forEach(function (m) { if (m < ini) return; if (st.per === 'r' && ((st.desde && m < st.desde) || (st.hasta && m > st.hasta))) return; var v = x.meses[m], k = clavePer(m > MES_HOY ? MES_HOY : m);
-        ['d', 'c', 'r', 'i', 'm', 'op'].forEach(function (f, q) { t[f] += v[q] || 0; }); por[k] = (por[k] || 0) + (v[4] || 0) + (v[5] || 0); });
-      var e = reglaB(t); return { n: x.n, t: t, e: e, por: por, cpo: (t.op + t.m) ? t.c / (t.op + t.m) : 0 }; })
-      .filter(function (x) { return x.t.c > 0 || x.t.op > 0 || x.t.m > 0; })
-      .sort(function (a, b) { return (ORD_B[a.e[1]] - ORD_B[b.e[1]]) || (a.e[1] === 'Genera' ? ((a.cpo || 1e9) - (b.cpo || 1e9)) || (b.t.op + b.t.m - a.t.op - a.t.m) : b.t.c - a.t.c); });
+        ['d', 'c', 'r', 'i', 'm', 'op', 'ref', 'ci'].forEach(function (f, q) { t[f] += v[q] || 0; }); por[k] = (por[k] || 0) + (v[4] || 0) + (v[5] || 0) + (v[6] || 0) + (v[7] || 0); });
+      var e = reglaB(t); return { n: x.n, t: t, e: e, por: por, cpo: resB(t) ? t.c / resB(t) : 0 }; })
+      .filter(function (x) { return x.t.c > 0 || resB(x.t) > 0; })
+      .sort(function (a, b) { return (ORD_B[a.e[1]] - ORD_B[b.e[1]]) || (a.e[1] === 'Genera' ? ((a.cpo || 1e9) - (b.cpo || 1e9)) || (resB(b.t) - resB(a.t)) : b.t.c - a.t.c); });
   }
   function tablaB(titulo, L, senal, ayk) {
     var F = filasB(L), main = F.filter(function (x) { return x.e[1] !== 'Pocos datos'; }), poc = F.filter(function (x) { return x.e[1] === 'Pocos datos'; });
-    var cab = '<tr><th>' + (senal ? 'Señal' : 'Secuencia') + '</th>' + (senal ? '<th>Detectados</th>' : '') + '<th>Contactados</th><th>Respondieron</th><th>Interesados</th><th>Reuniones</th><th>Oportunidades</th><th>Contactados por resultado</th><th>Etiqueta</th></tr>';
-    var fila = function (x) { return '<tr><td title="' + esc(x.n) + '">' + esc(x.n) + '</td>' + (senal ? '<td>' + fmt(x.t.d) + '</td>' : '') + '<td>' + fmt(x.t.c) + '</td><td>' + fmt(x.t.r) + '</td><td>' + fmt(x.t.i) + '</td><td>' + fmt(x.t.m) + '</td><td>' + fmt(x.t.op) + '</td><td>' + (x.cpo ? fmt(x.cpo) : '—') + '</td><td><span class="pill ' + x.e[0] + '">' + x.e[1] + '</span></td></tr>'; };
+    var cab = '<tr><th>' + (senal ? 'Señal' : 'Secuencia') + '</th>' + (senal ? '<th>Detectados</th>' : '') + '<th>Contactados</th><th>Respondieron</th><th>Interesados</th><th>Reuniones</th><th>Oportunidades</th><th>Referidos</th><th>Contactados por resultado</th><th>Etiqueta</th></tr>';
+    var fila = function (x) { return '<tr><td title="' + esc(x.n) + '">' + esc(x.n) + '</td>' + (senal ? '<td>' + fmt(x.t.d) + '</td>' : '') + '<td>' + fmt(x.t.c) + '</td><td>' + fmt(x.t.r) + '</td><td>' + fmt(x.t.i) + '</td><td>' + fmt(x.t.m) + '</td><td>' + fmt(x.t.op) + '</td><td>' + fmt(x.t.ref) + '</td><td>' + (x.cpo ? fmt(x.cpo) : '—') + '</td><td><span class="pill ' + x.e[0] + '">' + x.e[1] + '</span></td></tr>'; };
     var cuenta = {}; F.forEach(function (x) { cuenta[x.e[1]] = (cuenta[x.e[1]] || 0) + 1; });
     var res = ['Genera', 'Vigilar', 'Apagar', 'Pocos datos'].filter(function (k) { return cuenta[k]; }).map(function (k) { return cuenta[k] + ' ' + k.toLowerCase(); }).join(' · ');
-    return '<div class="card" style="grid-column:1/-1"><h3>' + titulo + ay(ayk) + '</h3><p class="n">' + (F.length ? res + '. Las que generan van primero, ordenadas por cuántos contactados cuesta cada reunión u oportunidad (menos es mejor). La etiqueta es sugerencia: la decisión es tuya.' : 'Sin ' + (senal ? 'señales' : 'secuencias') + ' con actividad en el periodo elegido.') + '</p>' +
+    return '<div class="card" style="grid-column:1/-1"><h3>' + titulo + ay(ayk) + '</h3><p class="n">' + (F.length ? res + '. Las que generan van primero, ordenadas por cuántos contactados cuesta cada reunión, oportunidad o referido (menos es mejor). La etiqueta es sugerencia: la decisión es tuya.' : 'Sin ' + (senal ? 'señales' : 'secuencias') + ' con actividad en el periodo elegido.') + '</p>' +
       (main.length ? '<div class="tblx"><table class="tb">' + cab + main.map(fila).join('') + '</table></div>' : '') +
       (poc.length ? '<details class="todas"><summary>Con pocos datos, menos de 400 contactados (' + poc.length + ')</summary><div class="tblx"><table class="tb">' + cab + poc.map(fila).join('') + '</table></div></details>' : '') + '</div>';
   }
