@@ -465,7 +465,7 @@
     {
       "id": "SYN",
       "label": "Synapsis",
-      "nombre": "Synapsis (marketing)",
+      "nombre": "Synapsis pauta y orgánico",
       "prefijos": [
         "SYN",
         "GEN IA_MKT SYNAPSIS",
@@ -477,7 +477,7 @@
       "activo": true,
       "lidera": "Migue",
       "partner": "Artool o Hootsuite",
-      "ayuda": "Synapsis (marketing) · Lidera Migue · Partner: Artool o Hootsuite",
+      "ayuda": "Synapsis pauta y orgánico · Lidera Migue · Partner: Artool o Hootsuite",
       "alias": [
         "synapsis",
         "syn"
@@ -487,6 +487,33 @@
       "moneda": "USD",
       "slug": "synapsis",
       "sufijoBot": "syn"
+    },
+    {
+      "id": "SYNCX",
+      "label": "Synapsis AC",
+      "nombre": "Synapsis atención a clientes",
+      "prefijos": [
+        "SYNCX",
+        "GEN IA_CX SYNAPSIS",
+        "TW_MARKETING SYNAPSIS HELPDESK"
+      ],
+      "color": "azul",
+      "grupo": "GR",
+      "orden": 10,
+      "activo": true,
+      "lidera": "Migue",
+      "partner": "Hootsuite",
+      "ayuda": "Synapsis atención a clientes · Lidera Migue · Partner: Hootsuite",
+      "alias": [
+        "synapsis atencion",
+        "synapsis cx",
+        "syncx"
+      ],
+      "plantillaO3": "syn",
+      "monto": 10000,
+      "moneda": "USD",
+      "slug": "synapsis-atencion",
+      "sufijoBot": "syncx"
     },
     {
       "id": "ITS",
@@ -501,7 +528,7 @@
       ],
       "color": "azul",
       "grupo": "GR",
-      "orden": 10,
+      "orden": 11,
       "activo": true,
       "lidera": "Migue",
       "partner": "Roomie IT",
@@ -528,7 +555,7 @@
       ],
       "color": "azul",
       "grupo": "GR",
-      "orden": 11,
+      "orden": 12,
       "activo": true,
       "lidera": "Daniel",
       "partner": "Roomie IT",
@@ -553,7 +580,7 @@
       ],
       "color": "azul",
       "grupo": "GR",
-      "orden": 12,
+      "orden": 13,
       "activo": true,
       "lidera": "Migue",
       "partner": "Artool",
@@ -580,7 +607,7 @@
       ],
       "color": "azul",
       "grupo": "GR",
-      "orden": 13,
+      "orden": 14,
       "activo": true,
       "lidera": "Daniel",
       "partner": "Interno",
@@ -605,7 +632,7 @@
       ],
       "color": "azul",
       "grupo": "GR",
-      "orden": 14,
+      "orden": 15,
       "activo": true,
       "lidera": "Daniel",
       "partner": "Interno",
@@ -630,7 +657,7 @@
       ],
       "color": "morado",
       "grupo": "PT",
-      "orden": 15,
+      "orden": 16,
       "activo": true,
       "lidera": "Diana",
       "partner": "Por definir",
@@ -650,7 +677,7 @@
       ],
       "color": "gris",
       "grupo": "INTERNO",
-      "orden": 16,
+      "orden": 17,
       "activo": true,
       "lidera": "Mike",
       "partner": "Por definir",
@@ -667,7 +694,7 @@
       ],
       "color": "verde",
       "grupo": "IMMMU",
-      "orden": 17,
+      "orden": 18,
       "activo": true,
       "ayuda": "IMMMU"
     },
@@ -677,7 +704,7 @@
       "prefijos": [],
       "color": "gris",
       "grupo": "INTERNO",
-      "orden": 18,
+      "orden": 19,
       "activo": true,
       "ayuda": "Interno"
     },
@@ -687,7 +714,7 @@
       "prefijos": [],
       "color": "gris",
       "grupo": "INTERNO",
-      "orden": 19,
+      "orden": 20,
       "activo": true,
       "ayuda": "Otro"
     }
