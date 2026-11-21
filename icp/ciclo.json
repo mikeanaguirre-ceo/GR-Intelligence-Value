@@ -1,0 +1,77 @@
+{
+  "_nota": "Contenido fijo de la página de cada producto del tablero ICP (Diseño de la Página de Producto TW vA, 20-nov-2026). Una llave por código de producto. Lo medido (secuencias, señales, gráfica) sale de la foto gr-icp; aquí va lo que viene de documentos: ciclo de cambio, familias de campaña, ICP, propuesta de valor, lista, pruebas candidatas y estado de documentos. Colores: v verde, a amarillo, r rojo.",
+  "TW": {
+    "actualizado": "20-nov-2026",
+    "fuente": "Diseño de la Página de Producto TW vA, Hoja de Cambios TW vC y GR_Linea_Base_TW_vA",
+    "ciclo": {
+      "linea_base": "20-ago-2026",
+      "cambios_al": "20-nov-2026",
+      "cerrados": 73,
+      "abiertos": 53,
+      "abiertos_detalle": "19 de dirección, 7 del equipo y 27 del motor",
+      "siguiente_revision": "",
+      "perdido": "La secuencia del Horóscopo se archivó el 25-oct con una cita sin auditar.",
+      "alertas": [
+        { "color": "r", "texto": "La secuencia del Horóscopo se archivó el 25-oct con una cita sin auditar, y ninguna campaña arrancada desde septiembre declaró su grupo de comparación ni su fecha de revisión. Sin eso, la línea base vB no podrá decir qué cambio funcionó." }
+      ],
+      "ligas": [
+        { "nombre": "Hoja de cambios Talkwalker", "url": "https://docs.google.com/document/d/1PHlAX42EQv4M052qRRQ6RWg33mCsu1PS_h0P_Bgv5Po/edit" },
+        { "nombre": "Diseño de esta página (vA)", "url": "https://docs.google.com/document/d/1h6Pt980dUlePts6XLRQHpn4khvx7o_w5LUjHOWYWYKI/edit" }
+      ]
+    },
+    "familias": [
+      { "nombre": "Visita Chile", "contiene": ["visita chile"], "en": "secuencias", "lectura": "La visita presencial con fecha concreta: se suma la familia para que el ángulo se vea aunque cada campaña sea chica." }
+    ],
+    "icp": {
+      "documento": "ICP Talkwalker vI (15-nov)",
+      "rubros": [
+        { "rubro": "Industrias", "dice": "8 en orden (Retail, Pinturas, Educación superior, Telecom, Banca, Servicios financieros, Aerolíneas, Petróleo y gas); 5 por probar; fuera: restaurantes, agencias, hoteles, automotriz, gobierno, RH", "solo": "Sí" },
+        { "rubro": "Tamaño", "dice": "201 a 10,000; más de 10,000 solo por señal", "solo": "Sí" },
+        { "rubro": "Países", "dice": "MX, CO, CL, PE, PA, CR, RD, EC, SV, GT", "solo": "Sí" },
+        { "rubro": "Puesto", "dice": "Marketing (Head a Director), luego Insights, Contenido y PR; nunca TI, Revenue ni comunicación interna", "solo": "Sí, aproximado por título" },
+        { "rubro": "Exclusiones", "dice": "Clientes y oportunidades abiertas de cualquier producto de GR", "solo": "Sí, contra HubSpot" },
+        { "rubro": "Marca pública, franquiciado, agencia, cuenta de Hootsuite, calendario del sector", "dice": "—", "solo": "No: se marca para revisión" }
+      ],
+      "alertas": [
+        { "color": "a", "secuencia": "visita chile_gobierno", "texto": "Un choque que ya se ve: Visita Chile Gobierno produce y gobierno está fuera del ICP vI. Con menos de 150 contactados no hay veredicto, pero es la primera candidata a «por probar»." }
+      ]
+    },
+    "propuesta": {
+      "documento": "Propuesta de Valor Talkwalker vJ",
+      "problemas": [
+        { "color": "v", "problema": "1 · Decide con su propio reflejo", "conversaciones": 26, "reuniones": 3, "oportunidades": 3, "lectura": "El que más produce" },
+        { "color": "v", "problema": "2 · La confianza es mayor que la cobertura", "conversaciones": 4, "reuniones": 1, "oportunidades": 2, "lectura": "La mejor proporción; poco usado" },
+        { "color": "v", "problema": "4 · La bandeja hace dos trabajos", "conversaciones": 9, "reuniones": 0, "oportunidades": 3, "lectura": "Produce oportunidades" },
+        { "color": "a", "problema": "6 · Defiende su presupuesto con actividad", "conversaciones": 18, "reuniones": 1, "oportunidades": null, "lectura": "Mucho uso, poco resultado" },
+        { "color": "r", "problema": "3 · No sabe cómo la nombran", "conversaciones": 10, "reuniones": 0, "oportunidades": null, "lectura": "Sin reunión con 10 conversaciones" },
+        { "color": "r", "problema": "8 · Ya paga por escuchar", "conversaciones": 10, "reuniones": 0, "oportunidades": null, "lectura": "Sin reunión con 10 conversaciones" }
+      ],
+      "recomendacion": "Subir el problema 2 (mejor proporción, casi sin uso), mantener 1 y 4, y revisar 3 y 8 antes de seguir usándolos.",
+      "nota": "Es propuesta: la letra nueva de la propuesta de valor la apruebas tú. La vK (29-oct, 9 reportes y 17 industrias) se cruza contra el ICP antes de decidir si se integra."
+    },
+    "lista": {
+      "indicadores": [
+        { "color": "r", "indicador": "Not the right person", "umbral": "Más de 10% = el filtro de puesto está mal", "valor": "18% (ago)", "fuente": "Línea base TW vA" },
+        { "color": "r", "indicador": "Personas por cuenta", "umbral": "Más de 3 = se corrige", "valor": "11.1 en Perfiles (ago)", "fuente": "Línea base TW vA" },
+        { "color": "v", "indicador": "Negativas por interesado", "umbral": "Más de 2 a 1 = se rehace la lista", "valor": "0.9 a 1 (ago)", "fuente": "Línea base TW vA" },
+        { "color": "", "indicador": "Rebote y spam", "umbral": "Más de 5% = se detiene", "valor": "Se mide al construir", "fuente": "Amplemarket" }
+      ],
+      "nota": "Las cifras son de agosto; se vuelven a medir en el siguiente paso de construcción."
+    },
+    "pruebas": {
+      "regla": "Cada prueba con su hipótesis, versión A y B, volumen (400 por versión con señal, 1,500 en frío), 4 a 6 semanas en la misma ventana, una por producto, y el dato que la justifica.",
+      "candidatas": [
+        { "prueba": "Palabras clave 2 contra una lista depurada", "dato": "744 contactados de base; 197 palabras, muchas genéricas" },
+        { "prueba": "Visita Educación contra Visita en otra industria", "dato": "Visita Chile Education 2.0 es la secuencia con mejor tasa del producto" }
+      ]
+    },
+    "documentos": [
+      { "color": "v", "documento": "ICP Talkwalker vI", "estado": "Vigente (15-nov)", "falta": "Sacar Senior y Non-Manager en la siguiente letra (1,066 contactos, 0 citas)" },
+      { "color": "v", "documento": "Propuesta de Valor Talkwalker vJ", "estado": "Vigente (2-nov)", "falta": "Decidir la vK" },
+      { "color": "r", "documento": "Base de conocimiento vF", "estado": "Con el ICP anterior", "falta": "Letra nueva alineada al ICP vI" },
+      { "color": "r", "documento": "Configuración de señales de Dúo (mayo)", "estado": "Ofrece el reporte confidencial, ya retirado", "falta": "Letra nueva" },
+      { "color": "a", "documento": "Discovery Talkwalker vA", "estado": "Vigente", "falta": "Medir qué recorrido avanza a Educación" },
+      { "color": "r", "documento": "Template de propuesta y Mensajes que funcionaron", "estado": "Vacíos en el catálogo", "falta": "Ligar o crear" }
+    ]
+  }
+}
