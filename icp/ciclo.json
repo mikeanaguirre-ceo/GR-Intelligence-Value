@@ -24,6 +24,14 @@
     ],
     "icp": {
       "documento": "ICP Talkwalker vI (15-nov)",
+      "reglas": {
+        "_nota": "Reglas del ICP Talkwalker vI (15-nov) para calificar el perfil de quienes respondieron. Nombres exactos del catálogo de Amplemarket. Lo que no está en ninguna lista cuenta como «resto». ignorar = no se califica.",
+        "industria": {"dentro": ["Retail", "Retail Office Supplies and Gifts", "Retail Building Materials and Garden Equipment", "Supermarkets & Grocery Stores", "Retail Groceries", "Paint, Coating, and Adhesive Manufacturing", "Higher Education", "Telecommunications", "Telecommunications Carriers", "Banking", "Retail banking", "Financial Services", "Digital banking", "Financial technology", "Airlines and Aviation", "Oil and Gas", "Retail Gasoline"], "probar": ["Retail Apparel and Fashion", "Retail Pharmacies", "Retail Appliances, Electrical, and Electronic Equipment", "Wholesale Building Materials", "Building Materials Distribution", "E-Learning Providers", "Online education", "Wireless Services", "Insurance", "Insurance Carriers", "Interurban and Rural Bus Services", "Cruise Lines", "Utilities", "Food and Beverage Manufacturing", "Beverage Manufacturing", "Dairy Product Manufacturing", "Personal Care Product Manufacturing", "Cosmetics manufacturing", "Entertainment Providers", "Broadcast Media Production and Distribution", "Mining", "Software Development", "IT Services and IT Consulting"], "fuera": ["Food and Beverage Services", "Restaurants", "Quick Service Restaurants", "Advertising Services", "Marketing Services", "Public Relations and Communications Services", "Hospitality", "Hotels and Motels", "Motor Vehicle Manufacturing", "Retail Motor Vehicles", "Government Administration", "Education Administration Programs", "Human Resources Services", "Staffing and Recruiting"], "resto": "f"},
+        "tamano": {"dentro": ["201-500", "501-1000", "1001-5000", "5001-10000"], "probar": ["10001+"], "fuera": ["1-10", "11-50", "51-200"], "resto": "f"},
+        "pais": {"dentro": ["México", "Colombia", "Chile", "Perú", "Panamá", "Costa Rica", "República Dominicana", "Ecuador", "El Salvador", "Guatemala"], "fuera": ["Estados Unidos", "Brasil", "España"], "resto": "f"},
+        "nivel": {"dentro": ["Head", "Manager", "Director"], "probar": ["VP", "C-Suite", "Senior"], "fuera": ["Entry"], "ignorar": ["Otro"], "resto": "f"},
+        "area": {"dentro": ["Marketing"], "probar": ["Experiencia del cliente", "Dirección general"], "fuera": ["Ventas", "TI", "Comunicación interna", "Recursos humanos", "Finanzas", "Otra"], "resto": "f"}
+      },
       "rubros": [
         { "rubro": "Industrias", "dice": "8 en orden (Retail, Pinturas, Educación superior, Telecom, Banca, Servicios financieros, Aerolíneas, Petróleo y gas); 5 por probar; fuera: restaurantes, agencias, hoteles, automotriz, gobierno, RH", "solo": "Sí" },
         { "rubro": "Tamaño", "dice": "201 a 10,000; más de 10,000 solo por señal", "solo": "Sí" },

@@ -91,6 +91,8 @@ table.tb td.ref, table.tb th.ref { color:var(--mute); }
 table.tw td { white-space:normal; text-align:left; vertical-align:top; } table.tw th { text-align:left; }
 .tend { font-size:12.5px; color:var(--dim); margin-top:4px; } .tend .up { color:var(--mint); font-weight:700; } .tend .dn { color:var(--red); font-weight:700; }
 .pend { font-size:12.5px; color:var(--yellow); margin-top:8px; }
+.etq small { display:block; font-size:11px; color:var(--mute); font-weight:400; white-space:normal; } table.tb th.g { font-size:11px; }
+.icl { display:inline-block; font-size:10.5px; border-radius:6px; padding:1px 6px; margin-left:4px; } .icl.d { background:rgba(52,211,153,.18); color:#34D399; } .icl.p { background:rgba(251,191,36,.18); color:#FBBF24; } .icl.f { background:rgba(248,113,113,.18); color:#F87171; }
 ol.pasos { list-style:none; margin-top:8px; display:grid; gap:8px; } ol.pasos li { background:var(--bg-3); border-radius:8px; padding:10px 12px; font-size:13px; } ol.pasos li b { display:block; font-size:11px; color:var(--pink); text-transform:uppercase; letter-spacing:.04em; margin-bottom:2px; }
 </style>
 </head>
@@ -389,6 +391,94 @@ ol.pasos { list-style:none; margin-top:8px; display:grid; gap:8px; } ol.pasos li
   function alerta(a, extra) { var n = { r: 'Rojo', a: 'Amarillo', v: 'Verde' }[a.color] || ''; return '<div class="al ' + esc(a.color || '') + '">' + (n ? '<b class="t">' + n + '</b>' : '') + esc(a.texto) + (extra || '') + '</div>'; }
   function sem(c) { return '<span class="sem ' + esc(c || '') + '"></span>'; }
   var pendiente = function (t) { return '<p class="pend">Se completa en el siguiente paso de construcción' + (t ? ': ' + t : '') + '.</p>'; };
+  // ---------- Respuestas por etiqueta (API vL, 21-nov-2026) ----------
+  // D.etiquetas[p].<secuencias|senales>[] = { n, meses: { mes: [respondieron (correo y LinkedIn), Interested, Meeting booked, Introduction,
+  // Forwarded to the right person, Asked to circle back later, Not interested, Not the right person, Out of office, completas 1/0] } }.
+  // Una persona puede tener más de una etiqueta (Interested y Meeting booked, o Out of office y después otra): para que el desglose sume
+  // «respondieron», cada persona se cuenta una vez, en el grupo más alto: Resultado → Seguimiento → Diagnóstico de la lista → Ruido.
+  // Señales: Amplemarket solo separa Interested y Meeting booked; el resto queda como «sin etiqueta por señal».
+  AYUDA.etq = 'Etiquetas de Amplemarket tal cual. Una persona puede tener más de una etiqueta; para que el desglose sume las respuestas, cada persona cuenta una vez en el grupo más alto (Resultado, luego Seguimiento, luego Diagnóstico de la lista, luego Ruido). Unsubscribe no existe en la analítica de Amplemarket.';
+  AYUDA.perfil = 'Perfil de quienes respondieron (no de todos los contactados: la analítica de Amplemarket no trae industria, tamaño, país ni puesto de los contactados). Sale de la bitácora del motor: industria y empleados de LinkedIn, país (o el dominio del correo) y el puesto. Cada rubro se califica contra el ICP vigente: dentro, por probar o fuera.';
+  function enPer(m) { var ini = ventana()[0] || '0000-00'; if (m < ini) return false; if (st.per === 'r' && ((st.desde && m < st.desde) || (st.hasta && m > st.hasta))) return false; return true; }
+  function etqMapa(p, senal) { var M = {}; ((((D.etiquetas || {})[p] || {})[senal ? 'senales' : 'secuencias']) || []).forEach(function (x) { M[x.n] = x.meses || {}; }); return M; }
+  function etqSuma(M, nombres, senal) { var t = [0, 0, 0, 0, 0, 0, 0, 0, 0], sin = 0;
+    nombres.forEach(function (n) { var X = M[n] || {}; Object.keys(X).forEach(function (m) { if (!enPer(m)) return; var e = X[m] || []; if (!senal && e[9] !== 1) { sin++; return; } for (var q = 0; q < 9; q++) t[q] += e[q] || 0; }); });
+    return { t: t, sin: sin }; }
+  function reparto(t, senal) { var r = t[0], rem = r, g = {}; var tope = function (v) { var x = Math.max(0, Math.min(rem, v)); rem -= x; return x; };
+    g.res = tope(Math.max(t[1], t[2]) + (senal ? 0 : t[3] + t[4])); if (senal) { g.sin = rem; return g; }
+    g.seg = tope(t[5]); g.diag = tope(t[6] + t[7]); g.ooo = tope(t[8]); g.sin = rem; return g; }
+  var pctR = function (a, b) { return b ? Math.round(a * 100 / b) + '%' : '—'; };
+  function etqTabla(p, senal, renglones, fams) {
+    var M = etqMapa(p, senal); if (!Object.keys(M).length) return '<p class="pend">Las respuestas por etiqueta llegan con la carga del lunes.</p>';
+    var L = fams.map(function (x) { return { n: x.n, fam: true, nombres: x.miembros }; }).concat(renglones.map(function (x) { return { n: x.n, nombres: [x.n] }; }));
+    var inc = 0, tot = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var filasE = L.map(function (x) { var S = etqSuma(M, x.nombres, senal); inc += S.sin; if (!x.fam) for (var q = 0; q < 9; q++) tot[q] += S.t[q]; return { n: x.n, fam: x.fam, t: S.t, g: reparto(S.t, senal), sin: S.sin }; }).filter(function (x) { return x.t[0] > 0; });
+    if (!filasE.length) return '<p class="n" style="margin-top:8px">Sin respuestas con etiqueta en el periodo elegido.</p>';
+    var c = function (v, r, det) { return '<td class="etq"><b>' + fmt(v) + '</b> <span class="ref">' + pctR(v, r) + '</span>' + (det ? '<small>' + det + '</small>' : '') + '</td>'; };
+    var cab = senal ? '<tr><th>Señal</th><th>Respondieron</th><th class="g">Resultado<br>Interested · Meeting booked</th><th class="g">Sin etiqueta por señal<br>(Amplemarket no las separa)</th></tr>'
+      : '<tr><th>Secuencia</th><th>Respondieron</th><th class="g">Resultado<br>Interested · Meeting booked · Introduction · Forwarded</th><th class="g">Seguimiento<br>Asked to circle back later</th><th class="g">Diagnóstico de la lista<br>Not interested · Not the right person</th><th class="g">Ruido<br>Out of office · sin clasificar</th></tr>';
+    var fila = function (x) { var t = x.t, g = x.g, r = t[0];
+      if (senal) return '<tr' + (x.fam ? ' class="fam"' : '') + '><td title="' + esc(x.n) + '">' + esc(x.n) + '</td><td><b>' + fmt(r) + '</b></td>' + c(g.res, r, fmt(t[1]) + ' Interested · ' + fmt(t[2]) + ' Meeting booked') + c(g.sin, r) + '</tr>';
+      return '<tr' + (x.fam ? ' class="fam"' : '') + '><td title="' + esc(x.n) + '">' + esc(x.n) + (x.sin ? ' <span class="poco" title="Meses sin etiquetas todavía: no suman aquí">' + x.sin + ' mes(es) sin etiquetas</span>' : '') + '</td><td><b>' + fmt(r) + '</b></td>' +
+        c(g.res, r, fmt(t[1]) + ' Interested · ' + fmt(t[2]) + ' Meeting booked · ' + fmt(t[3]) + ' Introduction · ' + fmt(t[4]) + ' Forwarded') + c(g.seg, r, fmt(t[5]) + ' circle back') +
+        c(g.diag, r, fmt(t[6]) + ' Not interested · ' + fmt(t[7]) + ' Not the right person') + '<td class="etq" title="Out of office ' + fmt(g.ooo) + ' · sin clasificar ' + fmt(g.sin) + '"><span class="ref">' + fmt(g.ooo + g.sin) + ' · ' + pctR(g.ooo + g.sin, r) + '</span></td></tr>'; };
+    var crudo = senal ? '' : '<details class="todas"><summary>Ver cada etiqueta sin agrupar (Out of office y sin clasificar incluidas)</summary><div class="tblx"><table class="tb"><tr><th>Secuencia</th><th>Respondieron</th><th>Interested</th><th>Meeting booked</th><th>Introduction</th><th>Forwarded to the right person</th><th>Asked to circle back later</th><th>Not interested</th><th>Not the right person</th><th>Out of office</th><th>Sin clasificar</th></tr>' +
+      filasE.map(function (x) { var t = x.t; return '<tr' + (x.fam ? ' class="fam"' : '') + '><td title="' + esc(x.n) + '">' + esc(x.n) + '</td>' + [0, 1, 2, 3, 4, 5, 6, 7, 8].map(function (q) { return '<td>' + fmt(t[q]) + '</td>'; }).join('') + '<td>' + fmt(x.g.sin) + '</td></tr>'; }).join('') + '</table></div></details>';
+    return '<details class="todas" open><summary>Respuestas por etiqueta' + ay('etq') + '</summary><p class="n">' + (senal ? 'En señales, Amplemarket solo separa Interested y Meeting booked; el resto de las etiquetas está en la bitácora del motor (más abajo, en ICP).' : 'Cada grupo suma a «respondieron» (correo y LinkedIn). Debajo de cada cifra, las etiquetas de Amplemarket sin agrupar. Unsubscribe no existe en la analítica.') +
+      (inc ? ' <span class="poco">' + inc + ' meses de secuencia todavía sin etiquetas</span>' : '') + '</p><div class="tblx"><table class="tb">' + cab + filasE.map(fila).join('') + '</table></div>' + crudo + '</details>';
+  }
+  // ---------- Perfil de quienes respondieron contra el ICP (API vL) ----------
+  var nk = function (s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/&/g, ' and ').replace(/[^a-z0-9+]+/g, ' ').trim(); };
+  function clasif(R, rb, v) { var r = (R || {})[rb]; if (!r || !v || v === 'Sin dato') return ''; var x = nk(v);
+    if ((r.ignorar || []).some(function (z) { return nk(z) === x; })) return '';
+    if ((r.dentro || []).some(function (z) { return nk(z) === x; })) return 'd'; if ((r.probar || []).some(function (z) { return nk(z) === x; })) return 'p';
+    if ((r.fuera || []).some(function (z) { return nk(z) === x; })) return 'f'; return r.resto || 'f'; }
+  var CLN = { d: 'dentro', p: 'por probar', f: 'fuera' };
+  function perfilDe(p, senal, n) { var P = ((D.perfil || {})[p] || {})[senal ? 'senales' : 'secuencias'] || {}; if (P[n]) return P[n]; var k = nk(n); for (var z in P) if (nk(z) === k) return P[z]; return null; }
+  var RUBROS = [['industria', 'Industria'], ['tamano', 'Tamaño'], ['pais', 'País'], ['nivel', 'Nivel del puesto'], ['area', 'Área del puesto']];
+  function mezcla(R, X, rb, col) { var o = { d: 0, p: 0, f: 0, n: 0, sd: 0 }; Object.keys(((X || {}).d || {})[rb] || {}).forEach(function (v) { var c = X.d[rb][v][col] || 0; var k = clasif(R, rb, v); if (!k) { o.sd += c; return; } o[k] += c; o.n += c; }); return o; }
+  function celdaMezcla(o) { if (!o.n) return '<td class="ref">—</td>'; return '<td class="etq"><b>' + pctR(o.d, o.n) + '</b> dentro<small>' + pctR(o.p, o.n) + ' por probar · ' + pctR(o.f, o.n) + ' fuera · ' + fmt(o.n) + ' con dato</small></td>'; }
+  function perfilHtml(p, Fs, Fn) {
+    var I = (CICLO[p] || {}).icp || {}, R = I.reglas; if (!D.perfil || !D.perfil[p]) return pendiente('el perfil de quienes respondieron llega con la carga del lunes');
+    if (!R) return '<p class="pend">Falta cargar las reglas del ICP de este producto (dentro, por probar y fuera por rubro) para calificar el perfil.</p>';
+    var L = Fs.map(function (x) { return [x, false]; }).concat(Fn.map(function (x) { return [x, true]; })).filter(function (z) { return z[0].t.c >= MIN_VEREDICTO; })
+      .map(function (z) { return { n: z[0].n, c: z[0].t.c, senal: z[1], X: perfilDe(p, z[1], z[0].n) }; }).sort(function (a, b) { return b.c - a.c; });
+    var cab = '<tr><th>Secuencia o señal</th><th>Contactados</th><th>Respondieron con perfil</th>' + RUBROS.map(function (r) { return '<th>' + r[1] + '</th>'; }).join('') + '<th>Resultados</th></tr>';
+    var filasP = L.map(function (x) { var X = x.X; if (!X || !X.respuestas) return '<tr><td title="' + esc(x.n) + '">' + esc(x.n) + ' <span class="pill ' + (x.senal ? 'p-man' : 'p-esc') + '">' + (x.senal ? 'Señal' : 'Secuencia') + '</span></td><td>' + fmt(x.c) + '</td><td class="ref" colspan="' + (RUBROS.length + 2) + '">Sin respuestas registradas en la bitácora</td></tr>';
+      var ri = mezcla(R, X, 'industria', 1);
+      return '<tr><td title="' + esc(x.n) + '">' + esc(x.n) + ' <span class="pill ' + (x.senal ? 'p-man' : 'p-esc') + '">' + (x.senal ? 'Señal' : 'Secuencia') + '</span></td><td>' + fmt(x.c) + '</td><td>' + fmt(X.respuestas) + '</td>' +
+        RUBROS.map(function (r) { return celdaMezcla(mezcla(R, X, r[0], 0)); }).join('') + '<td class="etq"><b>' + fmt(X.resultados) + '</b>' + (X.resultados ? '<small>industria: ' + fmt(ri.d) + ' dentro · ' + fmt(ri.p) + ' por probar · ' + fmt(ri.f) + ' fuera</small>' : '') + '</td></tr>'; }).join('');
+    // Dónde salieron los resultados y qué rubro proponer, con todo el producto (todas las secuencias y señales).
+    var A = {}; ['secuencias', 'senales', 'sin_origen'].forEach(function (t) { var P = (D.perfil[p] || {})[t] || {}; Object.keys(P).forEach(function (n) { RUBROS.forEach(function (r) { var dd = (P[n].d || {})[r[0]] || {}; Object.keys(dd).forEach(function (v) { var o = (A[r[0]] = A[r[0]] || {})[v] || (A[r[0]][v] = [0, 0]); o[0] += dd[v][0] || 0; o[1] += dd[v][1] || 0; }); }); }); });
+    var recs = [];
+    var resumen = RUBROS.map(function (r) { var V = Object.keys(A[r[0]] || {}).filter(function (v) { return v !== 'Sin dato'; }).map(function (v) { return { v: v, k: clasif(R, r[0], v), n: A[r[0]][v][0], res: A[r[0]][v][1] }; });
+      V.forEach(function (o) { if (o.k === 'f' && o.res >= 2) recs.push(['v', r[1] + ' «' + o.v + '» está fuera del ICP y dio ' + o.res + ' resultados (' + o.n + ' respuestas): candidata a «por probar».']);
+        if (o.k === 'd' && o.n >= 15 && !o.res) recs.push(['a', r[1] + ' «' + o.v + '» está dentro del ICP: ' + o.n + ' respuestas y ningún resultado. Revisar si se queda.']); });
+      var top = V.filter(function (o) { return o.res > 0; }).sort(function (a, b) { return b.res - a.res || b.n - a.n; }).slice(0, 8);
+      return '<tr><td><b>' + r[1] + '</b></td><td>' + (top.length ? top.map(function (o) { return esc(o.v) + (o.k ? '<span class="icl ' + o.k + '">' + CLN[o.k] + '</span>' : '') + ' <span class="ref">' + o.res + ' de ' + o.n + '</span>'; }).join(' · ') : '<span class="ref">sin resultados con dato</span>') + '</td></tr>'; }).join('');
+    var X0 = { respuestas: 0, resultados: 0, pais_dominio: 0, sinOri: 0, d: {} }; ['secuencias', 'senales', 'sin_origen'].forEach(function (t) { var P = (D.perfil[p] || {})[t] || {}; Object.keys(P).forEach(function (n) { X0.respuestas += P[n].respuestas || 0; X0.resultados += P[n].resultados || 0; X0.pais_dominio += P[n].pais_dominio || 0; if (t === 'sin_origen') X0.sinOri += P[n].respuestas || 0; }); });
+    RUBROS.forEach(function (r) { var o = X0.d[r[0]] = {}; Object.keys(A[r[0]] || {}).forEach(function (v) { o[v] = A[r[0]][v]; }); });
+    var ri0 = mezcla(R, X0, 'industria', 1);
+    var filaTodo = '<tr class="fam"><td>Todas las respuestas del producto<br><span class="ref">' + fmt(X0.sinOri) + ' sin secuencia ni señal conocida</span></td><td>—</td><td>' + fmt(X0.respuestas) + '</td>' + RUBROS.map(function (r) { return celdaMezcla(mezcla(R, X0, r[0], 0)); }).join('') + '<td class="etq"><b>' + fmt(X0.resultados) + '</b>' + (X0.resultados ? '<small>industria: ' + fmt(ri0.d) + ' dentro · ' + fmt(ri0.p) + ' por probar · ' + fmt(ri0.f) + ' fuera</small>' : '') + '</td></tr>';
+    return '<h3 style="margin-top:14px">Perfil de quienes respondieron, contra el ICP' + ay('perfil') + '</h3><p class="n">Secuencias y señales con ' + MIN_VEREDICTO + ' contactados o más. Por rubro: qué parte de quienes respondieron cae dentro, por probar o fuera del ' + esc(I.documento || 'ICP') + ' (sin contar los que no traen dato). ' +
+      '<b>Amplemarket no da el perfil de todos los contactados</b>, solo de quienes respondieron, que el motor guarda en su bitácora. País: ' + fmt(X0.pais_dominio) + ' de ' + fmt(X0.respuestas) + ' respuestas salen del dominio del correo.</p>' +
+      '<div class="tblx"><table class="tb">' + cab + filaTodo + filasP + '</table></div>' + (L.length ? '' : '<div class="aviso">Ninguna secuencia ni señal llega a ' + MIN_VEREDICTO + ' contactados en el periodo.</div>') +
+      '<p class="n">La secuencia o señal de cada respuesta se conoce cuando la bitácora la guarda (desde el 26-oct) o cuando el rescate de origen encontró a la persona; las demás solo suman en la primera fila.</p>' +
+      '<h3 style="margin-top:14px">Dónde salieron los resultados</h3><p class="n">' + fmt(X0.resultados) + ' resultados del producto (oportunidad con conversación, reunión, referido o cita) por valor de cada rubro: resultados de respuestas.</p><div class="tblx"><table class="tb tw">' + resumen + '</table></div>' +
+      (recs.length ? recs.slice(0, 8).map(function (x) { return alerta({ color: x[0], texto: 'Sugerencia: ' + x[1] }); }).join('') : '<p class="n">Ningún rubro fuera del ICP con 2 resultados o más, ni rubro dentro con 15 respuestas sin resultado.</p>');
+  }
+  // ---------- Diagnóstico de la lista con las etiquetas (API vL) ----------
+  function listaViva(p, Fs) { var M = etqMapa(p, false); if (!Object.keys(M).length) return '';
+    var S = etqSuma(M, Fs.map(function (x) { return x.n; }), false), t = S.t; if (!t[0]) return '';
+    var nrp = t[0] ? t[7] / t[0] : 0, neg = t[1] ? t[6] / t[1] : (t[6] ? 99 : 0);
+    var peores = Fs.map(function (x) { var y = etqSuma(M, [x.n], false).t; return { n: x.n, r: y[0], nrp: y[0] ? y[7] / y[0] : 0, k: y[7] }; }).filter(function (x) { return x.r >= 5 && x.nrp > 0.10; }).sort(function (a, b) { return b.nrp - a.nrp; }).slice(0, 5);
+    var fila = function (c, ind, um, val, det) { return '<tr><td>' + sem(c) + '<b>' + ind + '</b></td><td>' + um + '</td><td><b>' + val + '</b>' + (det ? '<br><span class="ref">' + det + '</span>' : '') + '</td><td>Amplemarket, periodo elegido</td></tr>'; };
+    return '<div class="tblx"><table class="tb tw"><tr><th>Indicador</th><th>Umbral</th><th>Hoy</th><th>Fuente</th></tr>' +
+      fila(nrp > 0.10 ? 'r' : 'v', 'Not the right person', 'Más de 10% de las respuestas = el filtro de puesto está mal', (nrp * 100).toFixed(1) + '%', fmt(t[7]) + ' de ' + fmt(t[0]) + ' respuestas') +
+      fila(neg > 2 ? 'r' : 'v', 'Negativas por interesado', 'Más de 2 a 1 = se rehace la lista', t[1] ? neg.toFixed(1) + ' a 1' : (t[6] ? 'sin Interested' : '—'), fmt(t[6]) + ' Not interested contra ' + fmt(t[1]) + ' Interested') +
+      fila('', 'Respuesta útil', 'Respuestas menos Out of office y Not the right person', fmt(Math.max(t[0] - t[8] - t[7], 0)) + ' de ' + fmt(t[0]), '') + '</table></div>' +
+      (peores.length ? '<p class="n" style="margin-top:6px"><b>Secuencias con más de 10% de Not the right person</b> (5 respuestas o más): ' + peores.map(function (x) { return esc(x.n) + ' <span class="ref">' + (x.nrp * 100).toFixed(0) + '% (' + x.k + ' de ' + x.r + ')</span>'; }).join(' · ') + '</p>' : '') +
+      (S.sin ? '<p class="n">' + S.sin + ' meses de secuencia todavía sin etiquetas no entran en el cálculo.</p>' : ''); }
   // 1 · Dónde va el ciclo
   function franja(p) {
     var C = (CICLO[p] || {}).ciclo; if (!C) return sinCiclo(1, 'Dónde va el ciclo');
@@ -405,7 +495,7 @@ ol.pasos { list-style:none; margin-top:8px; display:grid; gap:8px; } ol.pasos li
     var main = F.filter(function (x) { return x.t.c >= MIN_VEREDICTO; }).sort(ordenRes), poc = F.filter(function (x) { return x.t.c < MIN_VEREDICTO; }).sort(ordenRes);
     var fams = ((CICLO[p] || {}).familias || []).filter(function (f) { return (f.en || 'secuencias') === (senal ? 'senales' : 'secuencias'); }).map(function (f) {
       var M = F.filter(function (x) { var n = String(x.n).toLowerCase(); return (f.contiene || []).some(function (k) { return n.indexOf(String(k).toLowerCase()) >= 0; }); });
-      return { f: f, k: M.length, n: 'Familia ' + f.nombre + ' · ' + M.length + (senal ? (M.length === 1 ? ' señal' : ' señales') : (M.length === 1 ? ' secuencia' : ' secuencias')), t: M.reduce(function (z, x) { return sumar(z, x.t); }, vacio()) }; }).filter(function (x) { return x.k; });
+      return { f: f, k: M.length, miembros: M.map(function (x) { return x.n; }), n: 'Familia ' + f.nombre + ' · ' + M.length + (senal ? (M.length === 1 ? ' señal' : ' señales') : (M.length === 1 ? ' secuencia' : ' secuencias')), t: M.reduce(function (z, x) { return sumar(z, x.t); }, vacio()) }; }).filter(function (x) { return x.k; });
     var cab = '<tr><th>' + (senal ? 'Señal' : 'Secuencia') + '</th>' + (senal ? '<th>Detectados</th>' : '') + '<th>Contactados</th><th>Respondieron</th><th>Interested</th><th class="ref">Meeting booked (Amplemarket)</th><th>Oportunidades</th><th>Referidos</th><th>Citas</th><th>Resultado</th><th>Tasa</th><th>Último contacto</th><th>Recomendación</th></tr>';
     var fila = function (x, fam) { var e = recomendar(x.t, prom); return '<tr' + (fam ? ' class="fam"' : '') + '><td title="' + esc(x.n) + '">' + esc(x.n) + '</td>' + (senal ? '<td>' + fmt(x.t.d) + '</td>' : '') + '<td>' + fmt(x.t.c) + '</td><td>' + fmt(x.t.r) + '</td><td>' + fmt(x.t.i) + '</td><td class="ref">' + fmt(x.t.m) + '</td><td>' + fmt(x.t.op) + '</td><td>' + fmt(x.t.ref) + '</td><td>' + fmt(x.t.ci) + '</td><td><b>' + fmt(resT(x.t)) + '</b></td><td><b>' + pct2(x.t) + '</b></td><td>' + (x.t.ult ? nombrePer(x.t.ult) : '—') + '</td><td><span class="pill ' + e[0] + '">' + esc(e[1]) + '</span></td></tr>'; };
     var cuenta = {}; main.forEach(function (x) { var k = recomendar(x.t, prom)[1].replace(/ ·.*$/, '').replace(/ desde .*$/, ''); cuenta[k] = (cuenta[k] || 0) + 1; });
@@ -415,7 +505,8 @@ ol.pasos { list-style:none; margin-top:8px; display:grid; gap:8px; } ol.pasos li
       return '<div class="al ' + (tasaT(x.t) >= prom && resT(x.t) ? 'v' : 'a') + '"><b class="t">Familia ' + esc(x.f.nombre) + '</b>' + fmt(x.t.c) + ' contactados y ' + fmt(resT(x.t)) + ' resultados: ' + pct2(x.t) + (veces ? ', ' + veces.toFixed(1) + ' veces la mejor ' + (senal ? 'señal' : 'secuencia') + ' individual con veredicto (' + esc(mejor.n) + ', ' + pct2(mejor.t) + ')' : '') + '. ' + esc(x.f.lectura || '') + '</div>'; }).join('');
     return '<div class="card" style="grid-column:1/-1">' + titulo(num, txt, 'tasa') + '<p class="n">' + (F.length ? fmt(main.length) + ' con veredicto (150 contactados o más), ordenadas por tasa de resultado. Promedio del producto: <b>' + (prom * 100).toFixed(2) + '%</b> (secuencias y señales juntas). ' + (resumen ? resumen + '. ' : '') + 'La recomendación es sugerencia: la decisión es tuya.' : 'Sin ' + (senal ? 'señales' : 'secuencias') + ' con actividad en el periodo elegido.') + '</p>' +
       (main.length || fams.length ? '<div class="tblx"><table class="tb">' + cab + fams.map(function (x) { return fila(x, true); }).join('') + main.map(function (x) { return fila(x); }).join('') + '</table></div>' : '') + lect +
-      (poc.length ? '<details class="todas"><summary>Muestra chica, sin veredicto: menos de 150 contactados (' + poc.length + ')</summary><div class="tblx"><table class="tb">' + cab + poc.map(function (x) { return fila(x); }).join('') + '</table></div></details>' : '') + '</div>';
+      (poc.length ? '<details class="todas"><summary>Muestra chica, sin veredicto: menos de 150 contactados (' + poc.length + ')</summary><div class="tblx"><table class="tb">' + cab + poc.map(function (x) { return fila(x); }).join('') + '</table></div></details>' : '') +
+      (main.length || fams.length ? etqTabla(p, senal, main, fams) : '') + '</div>';
   }
   // 5 · Qué aprendemos de Dúo: señales contra secuencias, por cada 1,000 contactados
   function duoHtml(Fs, Fn) {
@@ -439,7 +530,7 @@ ol.pasos { list-style:none; margin-top:8px; display:grid; gap:8px; } ol.pasos li
       return alerta(a, x ? ' <b>Hoy: ' + fmt(x.t.c) + ' contactados, ' + fmt(resT(x.t)) + ' resultados (' + pct2(x.t) + ').</b>' : ''); }).join('');
     return '<div class="card" style="grid-column:1/-1">' + titulo(6, 'ICP por rubro · ' + esc(I.documento || ''), 'ciclo') + '<p class="n">Cada rubro del ICP vigente y si se puede calificar solo contra lo que pasó en cada secuencia y señal.</p>' +
       '<div class="tblx"><table class="tb tw"><tr><th>Rubro</th><th>Qué dice</th><th>Se califica solo</th></tr>' + (I.rubros || []).map(function (r) { return '<tr><td><b>' + esc(r.rubro) + '</b></td><td>' + esc(r.dice) + '</td><td>' + esc(r.solo) + '</td></tr>'; }).join('') + '</table></div>' + al +
-      pendiente('por cada secuencia y señal, qué porcentaje de sus contactados cae dentro, fuera o por probar en cada rubro, y dónde salieron los resultados') + '</div>';
+      perfilHtml(p, F.filter(function (x) { return !x.senal; }), F.filter(function (x) { return x.senal; })) + '</div>';
   }
   // 7 · Propuesta de valor contra lo medido
   function pvHtml(p) {
@@ -465,10 +556,13 @@ ol.pasos { list-style:none; margin-top:8px; display:grid; gap:8px; } ol.pasos li
       pendiente('junto a cada respuesta, el mensaje que la provocó; las respuestas agrupadas por etiqueta (Interested, Meeting booked, Introduction, Forwarded to the right person, Asked to circle back later, Not interested, Not the right person), con Out of office, Unsubscribe, rebote y sin clasificar colapsadas') + '</div>';
   }
   // 9 · La lista
-  function listaHtml(p) {
-    var X = (CICLO[p] || {}).lista; if (!X) return sinCiclo(9, 'La lista');
-    return '<div class="card" style="grid-column:1/-1">' + titulo(9, 'La lista', 'ciclo') + '<p class="n">Si la lista apunta a la gente correcta, contra su umbral.</p><div class="tblx"><table class="tb tw"><tr><th>Indicador</th><th>Umbral</th><th>' + esc(NOMBRES[p] || p) + '</th><th>Fuente</th></tr>' +
-      (X.indicadores || []).map(function (x) { return '<tr><td>' + sem(x.color) + '<b>' + esc(x.indicador) + '</b></td><td>' + esc(x.umbral) + '</td><td><b>' + esc(x.valor) + '</b></td><td>' + esc(x.fuente) + '</td></tr>'; }).join('') + '</table></div>' + (X.nota ? '<p class="n" style="margin-top:6px">' + esc(X.nota) + '</p>' : '') + '</div>';
+  function listaHtml(p, Fs) {
+    var X = (CICLO[p] || {}).lista, viva = listaViva(p, Fs || []);
+    if (!X && !viva) return sinCiclo(9, 'La lista');
+    var base = X ? '<div class="tblx"><table class="tb tw"><tr><th>Indicador</th><th>Umbral</th><th>' + esc(NOMBRES[p] || p) + '</th><th>Fuente</th></tr>' +
+      (X.indicadores || []).map(function (x) { return '<tr><td>' + sem(x.color) + '<b>' + esc(x.indicador) + '</b></td><td>' + esc(x.umbral) + '</td><td><b>' + esc(x.valor) + '</b></td><td>' + esc(x.fuente) + '</td></tr>'; }).join('') + '</table></div>' + (X.nota ? '<p class="n" style="margin-top:6px">' + esc(X.nota) + '</p>' : '') : '';
+    return '<div class="card" style="grid-column:1/-1">' + titulo(9, 'La lista', 'ciclo') + '<p class="n">Si la lista apunta a la gente correcta, contra su umbral.' + (viva ? ' Medido con las etiquetas de Amplemarket de todas las secuencias del producto en el periodo elegido.' : '') + '</p>' + viva +
+      (viva && base ? '<details class="todas"><summary>Línea base y lo que todavía no se mide solo</summary>' + base + '</details>' : base) + '</div>';
   }
   // 11 · Documentos del producto: ligas del catálogo y su estado
   function docsHtml(p) {
@@ -503,7 +597,7 @@ ol.pasos { list-style:none; margin-top:8px; display:grid; gap:8px; } ol.pasos li
     html += '<div class="kpis" style="grid-column:1/-1;margin:0">' + kpisRd(se) + '</div>' + graficaRd(se, p) + tablaTodo;
     if (S) html += tablaRes(3, 'Secuencias, de mejor a peor', Fs, false, prom, p) + tablaRes(4, 'Señales de Dúo, de mejor a peor', Fn, true, prom, p) + duoHtml(Fs, Fn);
     else html += '<div class="cols2" style="grid-column:1/-1">' + tablaFoto('3 · Secuencias que generan', M.secuencias, false) + tablaFoto('4 · Señales que generan', M.senales, true) + '</div>' + duoHtml([], []);
-    html += icpHtml(p, Fs.concat(Fn)) + pvHtml(p) + mensajesHtml(p) + listaHtml(p);
+    html += icpHtml(p, Fs.concat(Fn.map(function (x) { return { n: x.n, t: x.t, senal: true }; }))) + pvHtml(p) + mensajesHtml(p) + listaHtml(p, Fs);
     html += '<div style="grid-column:1/-1">' + pruebasHtml(p, 10) + '</div>' + docsHtml(p);
     return html;
   }
