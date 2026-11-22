@@ -97,6 +97,7 @@ table.tw td { white-space:normal; text-align:left; vertical-align:top; } table.t
 .ejs { display:grid; gap:10px; margin-top:8px; } .ej { background:var(--bg-3); border:1px solid var(--border); border-radius:10px; padding:10px 12px; min-width:0; }
 .ej .ejh { display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:11.5px; color:var(--dim); margin-bottom:6px; }
 .ej h5 { font-size:11px; color:var(--pink); text-transform:uppercase; letter-spacing:.04em; margin:8px 0 3px; } .ej h5:first-of-type { margin-top:0; }
+.ej .ejr { margin-top:8px; font-size:12px; color:#FBBF24; background:rgba(245,158,11,.12); border-radius:6px; padding:6px 8px; }
 .ej .tx { white-space:pre-wrap; overflow-wrap:anywhere; font-size:13px; color:var(--text); max-height:300px; overflow:auto; } .ej .tx.r { border-left:3px solid var(--mint); padding-left:8px; }
 ol.pasos { list-style:none; margin-top:8px; display:grid; gap:8px; } ol.pasos li { background:var(--bg-3); border-radius:8px; padding:10px 12px; font-size:13px; } ol.pasos li b { display:block; font-size:11px; color:var(--pink); text-transform:uppercase; letter-spacing:.04em; margin-bottom:2px; }
 </style>
@@ -558,7 +559,8 @@ ol.pasos { list-style:none; margin-top:8px; display:grid; gap:8px; } ol.pasos li
     return '<details class="ejm"><summary>Mensajes que dieron resultado (' + ej.length + ')</summary><div class="ejs">' + ej.map(function (e) {
       return '<div class="ej"><div class="ejh"><span class="pill ' + (/^(ganada|reunion|oportunidad)$/.test(e.resultado) ? 'p-esc' : 'p-man') + '">' + esc(EJ_TXT[e.resultado] || e.resultado) + '</span>' + esc(e.canal || '') + (e.mes ? ' · ' + esc(e.mes) : '') + '</div>' +
         '<h5>Mensaje que recibió</h5><div class="tx">' + esc(e.mensaje_publico || '') + '</div>' +
-        (e.respuesta_publica ? '<h5>Lo que contestó</h5><div class="tx r">' + esc(e.respuesta_publica) + '</div>' : '<h5>Lo que contestó</h5><p class="n">La respuesta no quedó guardada; el resultado viene del CRM.</p>') + '</div>'; }).join('') +
+        (e.respuesta_publica ? '<h5>Lo que contestó</h5><div class="tx r">' + esc(e.respuesta_publica) + '</div>' : '<h5>Lo que contestó</h5><p class="n">Sin respuesta guardada</p>') +
+        ((e.reglas || []).length ? '<p class="ejr">Este mensaje rompe una regla de redacción vigente: ' + esc(e.reglas.join(', ')) + '. Sirve como referencia del ángulo, no del texto.</p>' : '') + '</div>'; }).join('') +
       '</div><p class="n">Nombre, empresa, correo, teléfono y ligas reemplazados por {nombre}, {empresa}, [correo], [teléfono] y [enlace].</p></details>';
   }
   function mensajesHtml(p) {
