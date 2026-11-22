@@ -1,6 +1,6 @@
 {
   "_nota": "Contenido fijo de la página de cada producto del tablero ICP (Diseño de la Página de Producto TW vA, 20-nov-2026). Una llave por código de producto. Lo medido (secuencias, señales, gráfica) sale de la foto gr-icp; aquí va lo que viene de documentos: ciclo de cambio, familias de campaña, ICP, propuesta de valor, lista, pruebas candidatas y estado de documentos. Colores: v verde, a amarillo, r rojo.",
-  "_decisiones": {"documento": "Decisiones del Portafolio vC", "url": "https://docs.google.com/document/d/1ttHWCJ_VT-EQeT4XcgYkMlo-akvLirhwpzYcuAheDwM/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
+  "_decisiones": {"documento": "Decisiones del Portafolio vD", "url": "https://docs.google.com/document/d/1NUlqfmcZct7xLWrs8lXNHjEkkKCw-Lz8M4qjTDefSkg/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
   "TW": {
     "decisiones": [
       {"que": "Regla de la lista en alarma (AM ya la tiene; AEO en el punto 17)", "recomendacion": "Sí: sin cargas nuevas en frío hasta rehacer la lista con el ICP; las señales siguen", "si_no": "Se sigue cargando en frío con 23.2% de persona equivocada"},
@@ -1213,7 +1213,7 @@
   },
   "LT": {
     "actualizado": "22-nov-2026",
-    "fuente": "Hoja de Cambios LT vB, GR_Linea_Base_LT_vA, ICP Legacy Takeover vI, Propuesta de Valor Legacy Systems Takeover vF, Mensajes de interés contra la Propuesta de Valor LT vB y GR_KB_LT_vB",
+    "fuente": "Hoja de Cambios LT vC, GR_Linea_Base_LT_vA, ICP Legacy Takeover vI, Propuesta de Valor Legacy Systems Takeover vF, Mensajes de interés contra la Propuesta de Valor LT vB y GR_KB_LT_vB",
     "decisiones": [
       {
         "que": "Lista en alarma y señales detenidas en noviembre (decisión 20)",
@@ -1244,9 +1244,9 @@
     "ciclo": {
       "linea_base": "20-ago-2026",
       "cambios_al": "22-nov-2026",
-      "cerrados": 6,
-      "abiertos": 19,
-      "abiertos_detalle": "6 de dirección, 4 del equipo y 9 del motor",
+      "cerrados": 11,
+      "abiertos": 17,
+      "abiertos_detalle": "6 de dirección, 4 del equipo y 7 del motor",
       "siguiente_revision": "4-dic-2026",
       "perdido": "Once campañas se archivaron en lugar de pausarse (siete de COBOL, dos de SAP, Java Mythos y Java Enterprise 3.0): su historia ya no está en Amplemarket, aunque el tablero conserva sus cifras. Las dos 3.0 se archivaron con 4 y 6 contactados y no se pudieron medir.",
       "alertas": [
@@ -1260,7 +1260,7 @@
         },
         {
           "color": "a",
-          "texto": "De las seis reuniones del año, tres fueron con consultoras, que el ICP vI trata como canal y no como comprador. Se recomienda medirlas aparte (decisión 23)."
+          "texto": "De las siete reuniones del año, cuatro fueron con compradores y tres con consultoras, que el ICP vI trata como canal y no como comprador. Se recomienda medirlas aparte (decisión 23)."
         },
         {
           "color": "a",
@@ -1272,13 +1272,13 @@
         },
         {
           "color": "v",
-          "texto": "Las reuniones grabadas ya cuentan como reunión aunque la etapa de HubSpot no haya avanzado: LT sube de 4 a 6 reuniones en sus fichas (22-nov)."
+          "texto": "Corregido el 22-nov: la reunión con un banco de Colombia (sector 1 del ICP) estaba en una oportunidad de IT Support de alguien que no asistió; ya es una oportunidad de LT en Educación. Las notas de las reuniones con compradores ya se leyeron y las reuniones grabadas cuentan como reunión."
         }
       ],
       "ligas": [
         {
-          "nombre": "Hoja de cambios LT vB",
-          "url": "https://docs.google.com/document/d/1miSRQdhPV8qNycoYXa8xiNOkyOeFWZghDJUs6rir4Ek/edit"
+          "nombre": "Hoja de cambios LT vC",
+          "url": "https://docs.google.com/document/d/1mbeYFX3FgZ0mYWS4zBbk3sH3lzhIlVWOb9ffzkBBJHg/edit"
         },
         {
           "nombre": "Línea base LT vA",
@@ -1660,7 +1660,7 @@
         },
         {
           "prueba": "Lista de socios aparte (consultoras de ciberseguridad y transformación)",
-          "dato": "Tres de las seis reuniones del año fueron con consultoras"
+          "dato": "Tres de las siete reuniones del año fueron con consultoras"
         }
       ]
     },
@@ -1681,13 +1681,13 @@
         "color": "a",
         "documento": "Base de conocimiento GR_KB_LT_vB",
         "estado": "Del 25-oct, antes del ICP vI",
-        "falta": "Letra C (decisión 22) con las notas de las reuniones que faltan en la base"
+        "falta": "Letra C (decisión 22), con lo que dejaron las reuniones ya leídas"
       },
       {
         "color": "v",
-        "documento": "Hoja de cambios LT vB",
+        "documento": "Hoja de cambios LT vC",
         "estado": "Vigente (22-nov)",
-        "falta": "19 cambios abiertos; siguiente revisión 4-dic"
+        "falta": "17 cambios abiertos; siguiente revisión 4-dic"
       },
       {
         "color": "a",
