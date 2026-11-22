@@ -1,6 +1,6 @@
 {
   "_nota": "Contenido fijo de la página de cada producto del tablero ICP (Diseño de la Página de Producto TW vA, 20-nov-2026). Una llave por código de producto. Lo medido (secuencias, señales, gráfica) sale de la foto gr-icp; aquí va lo que viene de documentos: ciclo de cambio, familias de campaña, ICP, propuesta de valor, lista, pruebas candidatas y estado de documentos. Colores: v verde, a amarillo, r rojo.",
-  "_decisiones": {"documento": "Decisiones del Portafolio vJ", "url": "https://docs.google.com/document/d/10T7QQKzAm9SweALX8eqeRZacGDY05UegSTdcxkxXriI/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
+  "_decisiones": {"documento": "Decisiones del Portafolio vK", "url": "https://docs.google.com/document/d/1GYZ_JdLEAbfUa9teXrmSz3m0PE_CQhmr_CWBkIhCDyA/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
   "TW": {
     "decisiones": [
       {"que": "Regla de la lista en alarma (AM ya la tiene; AEO en el punto 17)", "recomendacion": "Sí: sin cargas nuevas en frío hasta rehacer la lista con el ICP; las señales siguen", "si_no": "Se sigue cargando en frío con 23.2% de persona equivocada"},
@@ -3786,6 +3786,267 @@
         "icp": "mixta",
         "motivo": "ICP vJ: por probar hasta 150 con otro mensaje; lleva 29",
         "recomendacion": "Pausar: sin contactos pendientes; cambiar su primer LinkedIn (decisión 45)"
+      }
+    ]
+  },
+  "SYN": {
+    "actualizado": "22-nov-2026",
+    "fuente": "Hoja de Cambios SYN vD, Guion Discovery Marketing Synapsis vC, Señales DuoCopilot · Marketing Synapsis (12-oct). ICP vJ y Propuesta vN describen Synapsis atención a clientes",
+    "decisiones": [
+      {
+        "que": "Las seis señales mandan desde noviembre el mensaje de Synapsis atención a clientes a marcas de consumo; hay envíos programados para el 23 y 24-nov (decisión 53)",
+        "recomendacion": "Apagar la 3, la 4, la 5 y la que no lleva número; pasar la 2 y cambio de puesto a atención a clientes, solo banca, financieras y puestos de servicio",
+        "si_no": "Siguen saliendo"
+      },
+      {
+        "que": "Ejecutar la nomenclatura de productos del 22-nov (decisión 52)",
+        "recomendacion": "Sí, con GEA en este producto",
+        "si_no": "No se toca nada"
+      },
+      {
+        "que": "ICP, propuesta y base propios de pauta y orgánico (decisión 54)",
+        "recomendacion": "Sí, antes de relanzar",
+        "si_no": "Se mide contra otro producto"
+      },
+      {
+        "que": "Producto en HubSpot de una propuesta enviada de pauta (decisión 55)",
+        "recomendacion": "A este producto, si la propuesta no incluye licencia de Talkwalker",
+        "si_no": "Sigue en Talkwalker"
+      },
+      {
+        "que": "Un documento de propuesta por revisar contra el guion (decisión 56)",
+        "recomendacion": "Revisarlo antes del 30-nov",
+        "si_no": "Queda sin revisar"
+      }
+    ],
+    "ciclo": {
+      "linea_base": "No tiene",
+      "cambios_al": "22-nov-2026",
+      "cerrados": 29,
+      "abiertos": 13,
+      "abiertos_detalle": "10 de dirección, 1 del equipo y 2 del motor",
+      "siguiente_revision": "4-dic-2026",
+      "perdido": "Desde el 20-nov atención a clientes es otro producto y se llevó los documentos y casi todos los cambios. La Hoja Synapsis vB (12-oct) se medía contra la línea base de Talkwalker.",
+      "alertas": [
+        {
+          "color": "r",
+          "texto": "Las seis señales contactaron a 102 personas en noviembre sin ningún interesado, y los correos leídos llevan el mensaje de Synapsis atención a clientes, fuera de su ICP (decisión 53)."
+        },
+        {
+          "color": "r",
+          "texto": "No tiene ICP, propuesta ni base propios: los catalogados describen Synapsis atención a clientes (decisión 54)."
+        },
+        {
+          "color": "r",
+          "texto": "En frío no contacta desde agosto (731). Cero ganadas: 3 oportunidades perdidas y 1 abierta (COMINON, en Educación)."
+        },
+        {
+          "color": "a",
+          "texto": "Lista en alarma: 30% de persona equivocada y 12 negativas contra 2 interesados en 30 respuestas, de las dos campañas pausadas. No se recarga."
+        },
+        {
+          "color": "a",
+          "texto": "Varias fichas de este producto contestaron mensajes de otro: cuentan aquí por el agente o por HubSpot (cambio 41)."
+        },
+        {
+          "color": "v",
+          "texto": "Corregido el 22-nov: octubre y noviembre ya muestran sus señales (138 y 102 contactados) y septiembre ya no suma las campañas de atención a clientes."
+        }
+      ],
+      "ligas": [
+        {
+          "nombre": "Hoja de cambios SYN vD",
+          "url": "https://docs.google.com/document/d/13M3ehUFeFTn6RS0Qn99eEgE_QOeV3AHOxMppJYbnPsA/edit"
+        },
+        {
+          "nombre": "Hoja de cambios Synapsis vB (12-oct)",
+          "url": "https://docs.google.com/document/d/12LpWYKQjGMnOs6OhmK1z3DFnu1o-g6D9Eoy0wKoX7lA/edit"
+        },
+        {
+          "nombre": "Guion Discovery Marketing Synapsis vC",
+          "url": "https://docs.google.com/document/d/1sYzKt26EDA8IsLoyeOTCmYnlDQP14VUbI3jSiROgSdI/edit"
+        }
+      ]
+    },
+    "familias": [
+      {
+        "nombre": "Cambio de puesto",
+        "contiene": [
+          "job changes"
+        ],
+        "en": "senales",
+        "lectura": "La de más volumen en noviembre (53). En su vida: 2 interesados y 3 oportunidades; en octubre y noviembre, ningún interesado."
+      },
+      {
+        "nombre": "Publicaciones con palabras clave",
+        "contiene": [
+          "keywords"
+        ],
+        "en": "senales",
+        "lectura": "Cinco señales. La que no lleva número vendía Talkwalker hasta julio: sus resultados de febrero a julio no son de este producto."
+      }
+    ],
+    "icp": {
+      "documento": "sin ICP propio",
+      "rubros": [
+        {
+          "rubro": "Todos",
+          "dice": "El ICP vJ catalogado aquí describe Synapsis atención a clientes (banca, financieras y puestos de servicio). El de pauta y orgánico está por escribirse (decisión 54)",
+          "solo": "No: no hay ICP"
+        }
+      ],
+      "alertas": [
+        {
+          "color": "r",
+          "texto": "Sin ICP propio no se califica el perfil de quienes respondieron."
+        }
+      ]
+    },
+    "propuesta": {
+      "documento": "sin propuesta propia",
+      "problemas": [
+        {
+          "color": "a",
+          "problema": "Decisiones de pauta: los reportes llegan tarde y por canal",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Guion vC. Sin medir en frío"
+        },
+        {
+          "color": "a",
+          "problema": "Lo que se escucha en redes no mueve la pauta",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Guion vC. Sin medir en frío"
+        },
+        {
+          "color": "a",
+          "problema": "El contenido orgánico se decide sin evidencia",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Guion vC. Sin medir en frío"
+        }
+      ],
+      "recomendacion": "Escribir el ICP y la propuesta con el guion vC y la propuesta en curso, antes de volver a contactar (decisión 54).",
+      "nota": "Los tres problemas son del guion de Discovery (16-nov). No se midieron en campaña: la propuesta vN describe otro producto."
+    },
+    "lista": {
+      "indicadores": [
+        {
+          "color": "r",
+          "indicador": "Not the right person",
+          "umbral": "Más de 10% = el filtro de puesto está mal",
+          "valor": "30% (9 de 30 respuestas)",
+          "fuente": "Tablero ICP, 22-nov"
+        },
+        {
+          "color": "r",
+          "indicador": "Negativas por interesado",
+          "umbral": "Más de 2 a 1 = se rehace la lista",
+          "valor": "6 a 1 (12 Not interested, 2 Interested)",
+          "fuente": "Tablero ICP, 22-nov"
+        }
+      ],
+      "nota": "Son las dos campañas de marketing de consumo de agosto, ya pausadas. Esa lista no se recarga."
+    },
+    "pruebas": {
+      "regla": "Cada prueba con su hipótesis, versión A y B, volumen (400 por versión con señal, 1,500 en frío), 4 a 6 semanas en la misma ventana, una por producto, y el dato que la justifica.",
+      "candidatas": [
+        {
+          "prueba": "Líderes de marketing con pauta propia, decisiones de pauta contra escucha que mueve la pauta",
+          "dato": "Es lo que dice el guion vC. Después del ICP (decisión 54)"
+        },
+        {
+          "prueba": "Señal de cambio de puesto limitada a marketing con pauta",
+          "dato": "232 contactados, 2 interesados y 3 oportunidades en su vida, con varios mensajes"
+        }
+      ]
+    },
+    "documentos": [
+      {
+        "color": "r",
+        "documento": "ICP",
+        "estado": "El vJ catalogado describe Synapsis atención a clientes",
+        "falta": "Escribirlo (decisión 54)"
+      },
+      {
+        "color": "r",
+        "documento": "Propuesta de Valor",
+        "estado": "La vN catalogada describe Synapsis atención a clientes",
+        "falta": "Escribirla (decisión 54)"
+      },
+      {
+        "color": "r",
+        "documento": "Base de conocimiento",
+        "estado": "La vB describe Synapsis atención a clientes",
+        "falta": "Escribirla (decisión 54)"
+      },
+      {
+        "color": "v",
+        "documento": "Hoja de cambios SYN vD",
+        "estado": "Vigente (22-nov)",
+        "falta": "13 cambios abiertos; siguiente revisión 4-dic"
+      },
+      {
+        "color": "r",
+        "documento": "Línea base",
+        "estado": "No existe",
+        "falta": "Escribirla al relanzar"
+      },
+      {
+        "color": "a",
+        "documento": "Guion Discovery Marketing Synapsis vC",
+        "estado": "Del 16-nov; es el único que define pauta y orgánico",
+        "falta": "Quitar la duración de la sesión de mapeo en la letra siguiente (cambio 36)"
+      },
+      {
+        "color": "a",
+        "documento": "Presentación Discovery",
+        "estado": "Hay presentaciones más nuevas (18-nov) que la catalogada",
+        "falta": "Ligar la vigente"
+      },
+      {
+        "color": "a",
+        "documento": "Template de propuesta",
+        "estado": "Hay una propuesta en curso (11-nov)",
+        "falta": "Revisarla (decisión 56)"
+      }
+    ],
+    "campanas": [
+      {
+        "contiene": [
+          "vip-mk_lat_b2c"
+        ],
+        "icp": "na",
+        "motivo": "Sin ICP propio; lista de marketing de consumo en alarma",
+        "recomendacion": "Se queda pausada; no se recarga"
+      },
+      {
+        "contiene": [
+          "job changes"
+        ],
+        "senal": true,
+        "motivo": "Manda el mensaje de atención a clientes",
+        "recomendacion": "Pasarla a atención a clientes, solo banca, financieras y servicio (decisión 53)"
+      },
+      {
+        "contiene": [
+          "keywords 2"
+        ],
+        "senal": true,
+        "motivo": "Manda el mensaje de atención a clientes",
+        "recomendacion": "Pasarla a atención a clientes, solo banca, financieras y servicio (decisión 53)"
+      },
+      {
+        "contiene": [
+          "keywords"
+        ],
+        "senal": true,
+        "motivo": "La 3, la 4, la 5 y la que no lleva número: mensaje de atención a clientes a marcas de consumo (la 3 no se leyó)",
+        "recomendacion": "Apagarlas en Dúo (decisión 53)"
       }
     ]
   }
