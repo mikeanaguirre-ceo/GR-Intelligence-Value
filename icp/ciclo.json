@@ -1,6 +1,6 @@
 {
   "_nota": "Contenido fijo de la página de cada producto del tablero ICP (Diseño de la Página de Producto TW vA, 20-nov-2026). Una llave por código de producto. Lo medido (secuencias, señales, gráfica) sale de la foto gr-icp; aquí va lo que viene de documentos: ciclo de cambio, familias de campaña, ICP, propuesta de valor, lista, pruebas candidatas y estado de documentos. Colores: v verde, a amarillo, r rojo.",
-  "_decisiones": {"documento": "Decisiones del Portafolio vH", "url": "https://docs.google.com/document/d/1rWfEda0YM4NISUarjvX7quYmzjhJ8ZsLmLNytFCYiJU/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
+  "_decisiones": {"documento": "Decisiones del Portafolio vI", "url": "https://docs.google.com/document/d/10SQ5IkSYpyGl95UfpX4uAok-eJaZ2DR2pP8LrWhh9-I/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
   "TW": {
     "decisiones": [
       {"que": "Regla de la lista en alarma (AM ya la tiene; AEO en el punto 17)", "recomendacion": "Sí: sin cargas nuevas en frío hasta rehacer la lista con el ICP; las señales siguen", "si_no": "Se sigue cargando en frío con 23.2% de persona equivocada"},
@@ -2873,7 +2873,7 @@
   },
   "GenIA": {
     "actualizado": "22-nov-2026",
-    "fuente": "Hoja de Cambios GenIA DWF vB, GR_Linea_Base_GenIA_vA, ICP GenIA vD, Propuesta de Valor Agente GenIA vB y GR_KB_GenIA_vC",
+    "fuente": "Hoja de Cambios GenIA DWF vC, GR_Linea_Base_GenIA_vA, ICP GenIA vD, Propuesta de Valor Agente GenIA vB y GR_KB_GenIA_vC",
     "decisiones": [
       {
         "que": "Relanzar GenIA DWF con el ICP vD: líderes de servicio al cliente en restaurantes y financieras no bancarias (decisión 38)",
@@ -2901,6 +2901,11 @@
         "si_no": "Scania sigue sin producto"
       },
       {
+        "que": "Una ficha con un mensaje de IT Support cuenta en GenIA DWF y en Amplemarket (decisión 44)",
+        "recomendacion": "Corregirla con un registro por ficha",
+        "si_no": "Sigue contando en los dos"
+      },
+      {
         "que": "Señales de «Producto 3» en Dúo sin producto (pendiente, 22-nov)",
         "recomendacion": "Con un sí, contarlas en GenIA DWF como se hizo con AM",
         "si_no": "Siguen sin verse"
@@ -2910,8 +2915,8 @@
       "linea_base": "20-ago-2026",
       "cambios_al": "22-nov-2026",
       "cerrados": 5,
-      "abiertos": 14,
-      "abiertos_detalle": "10 de dirección y 4 del motor",
+      "abiertos": 15,
+      "abiertos_detalle": "11 de dirección y 4 del motor",
       "siguiente_revision": "4-dic-2026",
       "perdido": "El producto no contacta en frío desde septiembre y sus señales propias, que casi se detuvieron en agosto, no se ven en el tablero porque caen en «Dúo sin producto».",
       "alertas": [
@@ -2937,13 +2942,13 @@
         },
         {
           "color": "v",
-          "texto": "Corregido el 22-nov: las señales de GenIA RH (605 contactados) ya no se suman a este producto, y la oportunidad de Scania de la primera línea sigue siendo de GenIA DWF."
+          "texto": "Corregido el 22-nov: las señales de GenIA RH (605 contactados) ya no se suman a este producto; junio, julio y octubre quedaron en cero, confirmado, y la oportunidad de Scania de la primera línea sigue siendo de GenIA DWF."
         }
       ],
       "ligas": [
         {
-          "nombre": "Hoja de cambios GenIA DWF vB",
-          "url": "https://docs.google.com/document/d/1g4wqsu99jxo7ivePo1jsZCmVihVW8gywHC4xCxm7L1s/edit"
+          "nombre": "Hoja de cambios GenIA DWF vC",
+          "url": "https://docs.google.com/document/d/18NINfCHOfilGn4_zMhGtpzwvgoBV8IQC12Yfk1n-1U0/edit"
         },
         {
           "nombre": "Línea base GenIA vA",
@@ -3256,9 +3261,9 @@
       },
       {
         "color": "v",
-        "documento": "Hoja de cambios GenIA DWF vB",
+        "documento": "Hoja de cambios GenIA DWF vC",
         "estado": "Vigente (22-nov)",
-        "falta": "14 cambios abiertos; siguiente revisión 4-dic"
+        "falta": "15 cambios abiertos; siguiente revisión 4-dic"
       },
       {
         "color": "a",
