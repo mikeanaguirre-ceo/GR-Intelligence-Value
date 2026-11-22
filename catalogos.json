@@ -264,7 +264,8 @@
       "label": "TW",
       "nombre": "Talkwalker (Discovery Marketing)",
       "prefijos": [
-        "TW"
+        "TW",
+        "REF_TW"
       ],
       "color": "azul",
       "grupo": "GR",
@@ -288,7 +289,8 @@
       "label": "HS",
       "nombre": "Hootsuite",
       "prefijos": [
-        "HS"
+        "HS",
+        "REF_HS"
       ],
       "color": "azul",
       "grupo": "GR",
@@ -312,7 +314,8 @@
       "label": "AM",
       "nombre": "Amplemarket",
       "prefijos": [
-        "AM"
+        "AM",
+        "REF_AM"
       ],
       "color": "azul",
       "grupo": "GR",
@@ -339,7 +342,8 @@
         "AEO",
         "AEO + SEO",
         "AEO+SEO",
-        "AEO +SEO"
+        "AEO +SEO",
+        "REF_AEO"
       ],
       "color": "azul",
       "grupo": "GR",
@@ -364,7 +368,8 @@
       "nombre": "GenIA Digital Workforce Factory",
       "prefijos": [
         "GENIA",
-        "GEN IA"
+        "GEN IA",
+        "REF_GENIA"
       ],
       "color": "azul",
       "grupo": "GR",
@@ -393,7 +398,8 @@
         "GENIA RH",
         "GEN IA_RH",
         "GENIA_VIP-HR",
-        "GEN IA_LAT_VIP-VP HR"
+        "GEN IA_LAT_VIP-VP HR",
+        "REF_GENIARH"
       ],
       "color": "azul",
       "grupo": "GR",
@@ -418,7 +424,8 @@
       "nombre": "GenIA Ventas",
       "prefijos": [
         "GENIAVTA",
-        "GENIA VTA"
+        "GENIA VTA",
+        "REF_GENIAVTA"
       ],
       "color": "azul",
       "grupo": "GR",
@@ -443,7 +450,8 @@
       "nombre": "GenIA Cobranza",
       "prefijos": [
         "GENIACOB",
-        "GENIA COB"
+        "GENIA COB",
+        "REF_GENIACOB"
       ],
       "color": "azul",
       "grupo": "GR",
@@ -471,7 +479,8 @@
         "GEN IA_MKT SYNAPSIS",
         "TW_MARKETING SYNAPSIS",
         "TW_MKT SYNAPSIS",
-        "SYNAPSIS"
+        "SYNAPSIS",
+        "REF_SYN"
       ],
       "color": "azul",
       "grupo": "GR",
@@ -526,7 +535,8 @@
         "ITS_MUL",
         "ITS_MULT",
         "ITS_VIP-IT",
-        "IT SUPPORT"
+        "IT SUPPORT",
+        "REF_ITS"
       ],
       "color": "azul",
       "grupo": "GR",
@@ -553,7 +563,8 @@
       "label": "LT",
       "nombre": "Legacy Systems Takeover",
       "prefijos": [
-        "LT"
+        "LT",
+        "REF_LT"
       ],
       "color": "azul",
       "grupo": "GR",
@@ -578,7 +589,8 @@
       "label": "BD",
       "nombre": "Blindaje Digital",
       "prefijos": [
-        "BD"
+        "BD",
+        "REF_BD"
       ],
       "color": "azul",
       "grupo": "GR",
@@ -605,7 +617,8 @@
       "prefijos": [
         "360",
         "3V",
-        "3V/360"
+        "3V/360",
+        "REF_360"
       ],
       "color": "azul",
       "grupo": "GR",
@@ -630,7 +643,8 @@
       "label": "WB",
       "nombre": "Web Development",
       "prefijos": [
-        "WB"
+        "WB",
+        "REF_WB"
       ],
       "color": "azul",
       "grupo": "GR",

@@ -256,7 +256,7 @@ ol.pasos { list-style:none; margin-top:8px; display:grid; gap:8px; } ol.pasos li
   function serie(p) {
     // Contactados de Amplemarket: apagados hasta tener la fuente exacta (la analitica corta y falla, 16-nov). AMPLE = true los muestra.
     var A = AMPLE ? ((D.rendimiento || {})[p] || {}) : {}, H = ((D.productos || {})[p] || {}).mes || {}, S = {}, ini = ventana()[0] || '0000-00';
-    function add(m, f) { if (m < ini) return; if (m > MES_HOY) m = MES_HOY; if (st.per === 'r' && ((st.desde && m < st.desde) || (st.hasta && m > st.hasta))) return; var k = clavePer(m); var x = S[k] || (S[k] = { c: 0, r: 0, i: 0, m: 0, op: 0, op3: 0, reu: 0, gan: 0, monto: 0, tope: false }); f(x); }
+    function add(m, f) { if (m < ini) return; if (m > MES_HOY) return; /* 22-nov: una ganada con fecha de cierre futura (renovación registrada por adelantado) cuenta en su mes, no en el mes en curso */ if (st.per === 'r' && ((st.desde && m < st.desde) || (st.hasta && m > st.hasta))) return; var k = clavePer(m); var x = S[k] || (S[k] = { c: 0, r: 0, i: 0, m: 0, op: 0, op3: 0, reu: 0, gan: 0, monto: 0, tope: false }); f(x); }
     Object.keys(A).forEach(function (m) { var a = A[m]; add(m, function (x) { x.c += a.c; x.r += a.r; x.i += a.i; x.m += a.m; x.tope = x.tope || a.tope; }); });
     Object.keys(H).forEach(function (m) { var h = H[m]; add(m, function (x) { x.op += h.op || 0; x.op3 += h.op3 || 0; x.reu += h.reu || 0; x.gan += h.gan || 0; x.monto += h.monto || 0; }); });
     return Object.keys(S).sort().map(function (k) { return [k, S[k]]; });
