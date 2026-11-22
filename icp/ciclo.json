@@ -1,6 +1,6 @@
 {
   "_nota": "Contenido fijo de la página de cada producto del tablero ICP (Diseño de la Página de Producto TW vA, 20-nov-2026). Una llave por código de producto. Lo medido (secuencias, señales, gráfica) sale de la foto gr-icp; aquí va lo que viene de documentos: ciclo de cambio, familias de campaña, ICP, propuesta de valor, lista, pruebas candidatas y estado de documentos. Colores: v verde, a amarillo, r rojo.",
-  "_decisiones": {"documento": "Decisiones del Portafolio vI", "url": "https://docs.google.com/document/d/10SQ5IkSYpyGl95UfpX4uAok-eJaZ2DR2pP8LrWhh9-I/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
+  "_decisiones": {"documento": "Decisiones del Portafolio vJ", "url": "https://docs.google.com/document/d/10T7QQKzAm9SweALX8eqeRZacGDY05UegSTdcxkxXriI/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
   "TW": {
     "decisiones": [
       {"que": "Regla de la lista en alarma (AM ya la tiene; AEO en el punto 17)", "recomendacion": "Sí: sin cargas nuevas en frío hasta rehacer la lista con el ICP; las señales siguen", "si_no": "Se sigue cargando en frío con 23.2% de persona equivocada"},
@@ -3351,6 +3351,441 @@
         ],
         "icp": "mixta",
         "motivo": "Retail entra, pero a TI y CEO, no a servicio al cliente"
+      }
+    ]
+  },
+  "SYNCX": {
+    "actualizado": "22-nov-2026",
+    "fuente": "Hoja de Cambios SYNCX vC (integra los cambios de servicio de la Hoja Synapsis vB), ICP Marketing Synapsis vJ, Propuesta de Valor Marketing Synapsis vN y vO, Mensajes que Produjeron Synapsis vB",
+    "decisiones": [
+      {
+        "que": "Pausar las tres campañas activas sin pendientes (decisión 45)",
+        "recomendacion": "Sí: pausar, nunca archivar",
+        "si_no": "Siguen activas sin enviar"
+      },
+      {
+        "que": "Relanzar: 17 borradores para clientes de Hootsuite y la lista nueva de banca (decisión 46)",
+        "recomendacion": "Confirmar con Hootsuite que se les puede mencionar; luego banca, Dueño y Puerta; después la lista de 393",
+        "si_no": "Nada se envía"
+      },
+      {
+        "que": "Base de conocimiento y línea base propias, propuesta vigente y nombre hacia afuera (decisión 47)",
+        "recomendacion": "La base de Synapsis pasa a este producto en letra nueva; la propuesta vO si se confirma",
+        "si_no": "Sin base para contestar"
+      },
+      {
+        "que": "FirstBank a este producto en HubSpot (decisión 48)",
+        "recomendacion": "Sí",
+        "si_no": "Sigue en Synapsis pauta y orgánico"
+      },
+      {
+        "que": "Leer las notas del Discovery de FirstBank del 8-sep (decisión 49)",
+        "recomendacion": "Sí: unos 0.08 USD",
+        "si_no": "La base nace sin su única reunión de banca"
+      },
+      {
+        "que": "Nombres: la Open+3 de servicio y la secuencia de referidos (decisión 50)",
+        "recomendacion": "Renombrar la primera y crear la segunda en borrador",
+        "si_no": "Sus resultados cuentan en Synapsis pauta y orgánico"
+      },
+      {
+        "que": "«Ya tiene esa conectividad» en banca y telecom (decisión 51)",
+        "recomendacion": "Cambiarla si el caso no está en producción",
+        "si_no": "El texto se queda y no se reusa"
+      }
+    ],
+    "ciclo": {
+      "linea_base": "No tiene",
+      "cambios_al": "22-nov-2026",
+      "cerrados": 13,
+      "abiertos": 22,
+      "abiertos_detalle": "9 de dirección, 1 del equipo y 12 del motor",
+      "siguiente_revision": "4-dic-2026",
+      "perdido": "El producto se separó el 20-nov y no tiene línea base ni base de conocimiento propias. Sus cambios venían en la Hoja Synapsis vB (12-oct), medida contra la línea base de Talkwalker.",
+      "alertas": [
+        {
+          "color": "r",
+          "texto": "No contacta a nadie desde septiembre: 320 contactados (banca 210, telecom 81 y aerolíneas 29). Las tres campañas siguen activas sin pendientes (decisión 45)."
+        },
+        {
+          "color": "r",
+          "texto": "Cero ganadas: 6 oportunidades perdidas entre el 23-sep y el 29-oct, cada una en su fecha, y 1 abierta (Grupo Cinemex, con Discovery el 5-nov)."
+        },
+        {
+          "color": "a",
+          "texto": "Hay 17 borradores para clientes de Hootsuite, corregidos el 21-nov y sin activar. Falta confirmar con Hootsuite que la alianza permite mencionarlos (decisión 46)."
+        },
+        {
+          "color": "a",
+          "texto": "Sin base de conocimiento ni línea base propias; la base de Synapsis pauta y orgánico describe este producto (decisión 47)."
+        },
+        {
+          "color": "a",
+          "texto": "Los textos de las tres campañas dicen «Marketing Sinapsis» y los de banca y telecom afirman que otra empresa «ya tiene esa conectividad». Hoy no se envían; se corrigen antes de reusarlos (decisión 51)."
+        },
+        {
+          "color": "a",
+          "texto": "La lista marca alarma con 7 respuestas (1 persona equivocada): son muy pocas para un veredicto. Las dos respuestas de una aerolínea leyeron el mensaje como queja y el ICP no las cuenta."
+        },
+        {
+          "color": "v",
+          "texto": "Corregido el 22-nov: las campañas renombradas cuentan una sola vez (320 contactados, no 640) y ya muestran sus seis oportunidades; el producto tiene volumen por mes, y su ICP, propuesta y mensajes ya están ligados."
+        }
+      ],
+      "ligas": [
+        {
+          "nombre": "Hoja de cambios SYNCX vC",
+          "url": "https://docs.google.com/document/d/1M3bL2YyDSCVwuM39vmEAfoxLRJpE4grq86mm9cW-y7E/edit"
+        },
+        {
+          "nombre": "Hoja de cambios Synapsis vB (12-oct)",
+          "url": "https://docs.google.com/document/d/12LpWYKQjGMnOs6OhmK1z3DFnu1o-g6D9Eoy0wKoX7lA/edit"
+        },
+        {
+          "nombre": "ICP Marketing Synapsis vJ",
+          "url": "https://docs.google.com/document/d/1kGRTl4eEwfOEl4uP48njLblwRKaRP4zM9J18-Oh2nM8/edit"
+        },
+        {
+          "nombre": "Propuesta de Valor Marketing Synapsis vN",
+          "url": "https://docs.google.com/document/d/17wWEzEqtDv9TZos0NQZ9xqC_xUzbiHB67nYjMaLUEfs/edit"
+        },
+        {
+          "nombre": "Mensajes que Produjeron Synapsis vB",
+          "url": "https://docs.google.com/document/d/1GsOskTs7oMfcFAKEheIe2uNbtj4iM2KzBg7REFynjo4/edit"
+        }
+      ]
+    },
+    "familias": [
+      {
+        "nombre": "Banca",
+        "contiene": [
+          "synapsis_banking"
+        ],
+        "en": "secuencias",
+        "lectura": "La de banca y cooperativas: de aquí salieron las cuatro conversaciones reales, una de ellas de servicios financieros. Los mensajes que produjeron son los dos primeros de LinkedIn."
+      },
+      {
+        "nombre": "Telecom y aerolíneas",
+        "contiene": [
+          "synapsis_telecom",
+          "synapsis_airlines"
+        ],
+        "en": "secuencias",
+        "lectura": "Pruebas cortas: telecom sin respuestas en 81 y aerolíneas con dos respuestas que leyeron el mensaje como queja. Ninguna llegó a los 150 que pide el ICP vJ."
+      }
+    ],
+    "icp": {
+      "documento": "ICP Marketing Synapsis vJ (12-oct)",
+      "reglas": {
+        "_nota": "Reglas del ICP Marketing Synapsis vJ (12-oct) para calificar el perfil de quienes respondieron. Nombres exactos del catálogo de Amplemarket, como los trae el ICP vJ. Lo que no está en ninguna lista cuenta como «resto». ignorar = no se califica.",
+        "industria": {
+          "dentro": [
+            "Banking",
+            "Financial Services"
+          ],
+          "probar": [
+            "Airlines and Aviation",
+            "Telecommunications"
+          ],
+          "fuera": [
+            "Wholesale Import and Export",
+            "IT Services and IT Consulting",
+            "Advertising Services",
+            "Marketing Services",
+            "Public Relations and Communications Services"
+          ],
+          "resto": "f"
+        },
+        "tamano": {
+          "dentro": [
+            "201-500",
+            "501-1000",
+            "1001-5000",
+            "5001-10000"
+          ],
+          "probar": [],
+          "fuera": [
+            "1-10",
+            "11-50",
+            "51-200",
+            "10001+"
+          ],
+          "resto": "f"
+        },
+        "pais": {
+          "dentro": [
+            "Puerto Rico",
+            "México",
+            "Costa Rica",
+            "Ecuador",
+            "Bolivia",
+            "Colombia",
+            "Perú",
+            "Chile",
+            "Guatemala",
+            "Panamá"
+          ],
+          "probar": [
+            "Uruguay",
+            "El Salvador",
+            "Honduras",
+            "República Dominicana",
+            "Paraguay"
+          ],
+          "fuera": [
+            "Brasil",
+            "Argentina"
+          ],
+          "resto": "f"
+        },
+        "nivel": {
+          "dentro": [
+            "Manager",
+            "Head",
+            "Director",
+            "VP"
+          ],
+          "probar": [
+            "C-Suite"
+          ],
+          "fuera": [
+            "Entry"
+          ],
+          "ignorar": [
+            "Otro"
+          ],
+          "resto": "f"
+        },
+        "area": {
+          "dentro": [
+            "Experiencia del cliente"
+          ],
+          "probar": [
+            "Comunicación interna",
+            "Marketing"
+          ],
+          "fuera": [
+            "TI",
+            "Ventas",
+            "Finanzas",
+            "Recursos humanos",
+            "Dirección general",
+            "Otra"
+          ],
+          "resto": "f"
+        }
+      },
+      "rubros": [
+        {
+          "rubro": "Industrias",
+          "dice": "En orden: bancos y cooperativas, y servicios financieros de consumo; por probar hasta 150: aerolíneas y telecom; fuera: importación y exportación, servicios de TI, agencias y la lista de marketing de consumo",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Tamaño",
+          "dice": "De 201 a 10,000 empleados: cuatro de las cinco cuentas que respondieron tienen menos de 5,001",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Países",
+          "dice": "Con interés: Puerto Rico, México, Costa Rica, Ecuador y Bolivia; después Colombia, Perú, Chile, Guatemala y Panamá. Solo español",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Puesto",
+          "dice": "Dos personas por cuenta: el dueño (servicio al cliente o experiencia del cliente; compra) y la puerta (comunicación y relaciones públicas; reenvía). A la puerta nunca se le escribe sola; sin cobranza ni marketing general",
+          "solo": "Sí, aproximado por nivel y área"
+        },
+        {
+          "rubro": "Reclamos en redes",
+          "dice": "Que sus clientes ya reclamen en público, que la empresa maneje sus redes y que su service desk ya reciba casos del teléfono",
+          "solo": "No: se revisa en la lista antes de cargar"
+        },
+        {
+          "rubro": "Exclusiones",
+          "dice": "Clientes, oportunidades abiertas y las seis cuentas que ya hablaron con nosotros",
+          "solo": "Sí, contra HubSpot"
+        }
+      ],
+      "alertas": [
+        {
+          "color": "a",
+          "texto": "El ICP vJ se escribió para Marketing Synapsis y describe este producto; está en inglés. Se apoya en 5 conversaciones y una reunión: el orden es una hipótesis."
+        }
+      ]
+    },
+    "propuesta": {
+      "documento": "Propuesta de Valor Marketing Synapsis vN",
+      "problemas": [
+        {
+          "color": "v",
+          "problema": "P1 · La queja por redes se mueve a mano; por teléfono llega sola",
+          "conversaciones": 5,
+          "reuniones": 1,
+          "oportunidades": 5,
+          "lectura": "El único que abre conversaciones. La vO lo pone como pilar central"
+        },
+        {
+          "color": "a",
+          "problema": "P2 · El caso que entra por redes no deja rastro",
+          "conversaciones": 0,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Sin respuestas en frío. A un banco de Puerto Rico le interesó por su proyecto de quejas"
+        },
+        {
+          "color": "a",
+          "problema": "P3 · Nadie es dueño de la queja",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Sin probar como apertura; es lo que se repite en los reenvíos (cambio S27)"
+        },
+        {
+          "color": "r",
+          "problema": "P4 · La misma queja doscientas veces",
+          "conversaciones": 0,
+          "reuniones": 0,
+          "oportunidades": 0,
+          "lectura": "Sin respuestas en aerolíneas y telecom"
+        },
+        {
+          "color": "r",
+          "problema": "P5 · Las piezas no hablan entre sí",
+          "conversaciones": 0,
+          "reuniones": 0,
+          "oportunidades": 0,
+          "lectura": "Sin respuestas como apertura; sirve para contestar «ya tenemos con qué»"
+        }
+      ],
+      "recomendacion": "Abrir siempre con P1 y la comparación con el teléfono, sin «agentes de IA» ni «marketing conectado». Definir si la vO, que baja a tres problemas, es la vigente (decisión 47).",
+      "nota": "Fuente: Propuesta vO y Mensajes que Produjeron Synapsis vB (12-oct), sobre 61 conversaciones leídas. Un mismo caso puede contar en dos problemas. No es tasa por problema."
+    },
+    "lista": {
+      "indicadores": [
+        {
+          "color": "a",
+          "indicador": "Not the right person",
+          "umbral": "Más de 10% = el filtro de puesto está mal",
+          "valor": "14.3% (1 de 7 respuestas)",
+          "fuente": "Tablero ICP, 22-nov"
+        },
+        {
+          "color": "v",
+          "indicador": "Negativas por interesado",
+          "umbral": "Más de 2 a 1 = se rehace la lista",
+          "valor": "0 a 3 (0 Not interested, 3 Interested)",
+          "fuente": "Tablero ICP, 22-nov"
+        }
+      ],
+      "nota": "Con 7 respuestas no hay veredicto. Dos de los tres interesados son de la aerolínea que leyó el mensaje como queja."
+    },
+    "pruebas": {
+      "regla": "Cada prueba con su hipótesis, versión A y B, volumen (400 por versión con señal, 1,500 en frío), 4 a 6 semanas en la misma ventana, una por producto, y el dato que la justifica.",
+      "candidatas": [
+        {
+          "prueba": "Clientes de Hootsuite por industria, Dueño y Puerta en la misma cuenta",
+          "dato": "Ya tienen la herramienta; 18 cuentas en el diseño del 21-oct"
+        },
+        {
+          "prueba": "Lista de banca con los dueños del problema (393 personas) contra los 210 de septiembre",
+          "dato": "Banca dio 4 de las 5 conversaciones y la única reunión (ICP vJ)"
+        },
+        {
+          "prueba": "Publicaciones sobre centro de contacto, solo banca y financieras",
+          "dato": "La señal trajo una reunión que se cayó por falta de volumen (ICP vJ)"
+        }
+      ]
+    },
+    "documentos": [
+      {
+        "color": "a",
+        "documento": "ICP Marketing Synapsis vJ",
+        "estado": "Del 12-oct, en inglés; describe este producto",
+        "falta": "Letra nueva con el nombre del producto"
+      },
+      {
+        "color": "a",
+        "documento": "Propuesta de Valor Marketing Synapsis vN",
+        "estado": "Del 12-oct; hay una vO más nueva en Word",
+        "falta": "Confirmar cuál es la vigente (decisión 47)"
+      },
+      {
+        "color": "r",
+        "documento": "Base de conocimiento",
+        "estado": "No existe propia; la de Synapsis pauta y orgánico describe este producto",
+        "falta": "Pasarla en letra nueva con lo de las reuniones (decisión 47)"
+      },
+      {
+        "color": "v",
+        "documento": "Hoja de cambios SYNCX vC",
+        "estado": "Vigente (22-nov)",
+        "falta": "22 cambios abiertos; siguiente revisión 4-dic"
+      },
+      {
+        "color": "r",
+        "documento": "Línea base",
+        "estado": "No existe",
+        "falta": "Escribirla con los 320 contactados de septiembre (decisión 47)"
+      },
+      {
+        "color": "r",
+        "documento": "Presentación Discovery",
+        "estado": "No existe propia",
+        "falta": "Definir con la base"
+      },
+      {
+        "color": "r",
+        "documento": "Template de propuesta",
+        "estado": "No existe",
+        "falta": "Escribirlo cuando haya una propuesta enviada"
+      },
+      {
+        "color": "v",
+        "documento": "Mensajes que Produjeron Synapsis vB",
+        "estado": "Del 12-oct, con las 61 conversaciones",
+        "falta": "Ninguna"
+      },
+      {
+        "color": "v",
+        "documento": "Llamado a la acción",
+        "estado": "Demo del flujo con un canal del cliente",
+        "falta": "Ninguna"
+      }
+    ],
+    "campanas": [
+      {
+        "contiene": [
+          "clientes hootsuite",
+          "alianza hootsuite"
+        ],
+        "icp": "na",
+        "motivo": "Clientes de Hootsuite: lista por cuenta, en borrador",
+        "recomendacion": "En borrador: decisión 46"
+      },
+      {
+        "contiene": [
+          "synapsis_banking"
+        ],
+        "icp": "dentro",
+        "motivo": "ICP vJ: banca es el sector 1",
+        "recomendacion": "Pausar: sin contactos pendientes; relanzar con la lista nueva (decisiones 45 y 46)"
+      },
+      {
+        "contiene": [
+          "synapsis_telecom"
+        ],
+        "icp": "mixta",
+        "motivo": "ICP vJ: por probar hasta 150; lleva 81",
+        "recomendacion": "Pausar: sin contactos pendientes (decisión 45)"
+      },
+      {
+        "contiene": [
+          "synapsis_airlines"
+        ],
+        "icp": "mixta",
+        "motivo": "ICP vJ: por probar hasta 150 con otro mensaje; lleva 29",
+        "recomendacion": "Pausar: sin contactos pendientes; cambiar su primer LinkedIn (decisión 45)"
       }
     ]
   }
