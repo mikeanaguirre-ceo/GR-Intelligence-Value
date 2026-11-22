@@ -265,7 +265,8 @@
       "nombre": "Talkwalker (Discovery Marketing)",
       "prefijos": [
         "TW",
-        "REF_TW"
+        "REF_TW",
+        "DASH_"
       ],
       "color": "azul",
       "grupo": "GR",
