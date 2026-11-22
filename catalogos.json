@@ -469,6 +469,8 @@
       "prefijos": [
         "SYN",
         "GEN IA_MKT SYNAPSIS",
+        "TW_MARKETING SYNAPSIS",
+        "TW_MKT SYNAPSIS",
         "SYNAPSIS"
       ],
       "color": "azul",
