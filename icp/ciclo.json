@@ -1,6 +1,6 @@
 {
   "_nota": "Contenido fijo de la página de cada producto del tablero ICP (Diseño de la Página de Producto TW vA, 20-nov-2026). Una llave por código de producto. Lo medido (secuencias, señales, gráfica) sale de la foto gr-icp; aquí va lo que viene de documentos: ciclo de cambio, familias de campaña, ICP, propuesta de valor, lista, pruebas candidatas y estado de documentos. Colores: v verde, a amarillo, r rojo.",
-  "_decisiones": {"documento": "Decisiones del Portafolio vF", "url": "https://docs.google.com/document/d/1JHVjnCk-Oa2KbmSrFpe0bmIb-iDibIuFl8otts09V7U/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
+  "_decisiones": {"documento": "Decisiones del Portafolio vG", "url": "https://docs.google.com/document/d/1N4z3PhaZpxcBvVLVgtoMLSK2lvqu4kwBI6WZG70oDpo/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
   "TW": {
     "decisiones": [
       {"que": "Regla de la lista en alarma (AM ya la tiene; AEO en el punto 17)", "recomendacion": "Sí: sin cargas nuevas en frío hasta rehacer la lista con el ICP; las señales siguen", "si_no": "Se sigue cargando en frío con 23.2% de persona equivocada"},
@@ -2347,7 +2347,7 @@
   },
   "GENIARH": {
     "actualizado": "22-nov-2026",
-    "fuente": "Hoja de Cambios GenIA RH vB, ICP GenIA RH vF, Propuesta de Valor Agente GenIA RH vC, Mensajes que funcionaron GenIA RH vG y GR_KB_GENIARH_vC",
+    "fuente": "Hoja de Cambios GenIA RH vC (integra la hoja oficial del 5-oct), ICP GenIA RH vF, Propuesta de Valor Agente GenIA RH vC, Mensajes que funcionaron GenIA RH vG y GR_KB_GENIARH_vC",
     "decisiones": [
       {
         "que": "Campaña de alimentos y bebidas: su paso 10 ofrece un diagnóstico «sin costo» (decisión 31, urgente)",
@@ -2355,9 +2355,9 @@
         "si_no": "El paso sigue saliendo a los contactos en curso"
       },
       {
-        "que": "Agentes de Dúo de GenIA RH: duración de la reunión, «Amplemarket» en el texto y la señal de cambio de puesto que el ICP vF apaga (decisión 32)",
-        "recomendacion": "Revisarlo juntos en la pantalla de Dúo, con el bloque que ya usa AM, y apagar cambio de puesto",
-        "si_no": "Siguen saliendo «30 minutos» y «Amplemarket», y cambio de puesto sigue contactando"
+        "que": "Plantilla de Dúo que dice «en Amplemarket» y confirmar en pantalla los cambios del 26-oct (30 minutos, cambio de puesto y vacantes) (decisión 32)",
+        "recomendacion": "Revisarlo juntos en la pantalla de Dúo",
+        "si_no": "La plantilla sigue igual"
       },
       {
         "que": "Pausar la campaña de logística: 552 contactados y ningún interesado (decisión 33)",
@@ -2370,32 +2370,32 @@
         "si_no": "Se carga con el filtro actual"
       },
       {
-        "que": "Línea base vA y Propuesta de Valor vD en español, alineada al ICP vF y sin diagnóstico gratuito (decisión 35)",
+        "que": "Línea base propia de GenIA RH (hoy se mide contra la de GenIA) y Propuesta de Valor vD en español, sin diagnóstico gratuito (decisión 35)",
         "recomendacion": "Sí, para tener contra qué medir",
-        "si_no": "El producto sigue sin línea base y con la Propuesta vC"
+        "si_no": "Se sigue midiendo contra una base que no es suya y con la Propuesta vC"
       },
       {
-        "que": "Consultoras de RH contadas como oportunidades (decisión 36)",
-        "recomendacion": "Sacarlas de la cuenta de compradores, como pide el ICP vF",
-        "si_no": "Deloitte sigue contando como oportunidad de compra"
+        "que": "Registrar el origen de la segunda oportunidad de Heineken México y corregir el producto de Oben, Hochschild y Job&Talent en HubSpot (decisión 37)",
+        "recomendacion": "Sí, con la tabla del documento de decisiones",
+        "si_no": "Esa oportunidad sigue sin ficha y las otras tres en GenIA"
       }
     ],
     "ciclo": {
-      "linea_base": "Sin línea base propia",
+      "linea_base": "20-ago-2026 (la de GenIA)",
       "cambios_al": "22-nov-2026",
-      "cerrados": 4,
-      "abiertos": 10,
-      "abiertos_detalle": "8 de dirección, 1 del equipo y 1 del motor",
+      "cerrados": 36,
+      "abiertos": 20,
+      "abiertos_detalle": "8 de dirección, 3 del equipo y 9 del motor",
       "siguiente_revision": "4-dic-2026",
-      "perdido": "GenIA RH nació en septiembre, separado de GenIA, y no tiene línea base propia: no hay contra qué medir los cambios hasta emitirla (decisión 35).",
+      "perdido": "GenIA RH nació en septiembre separado de GenIA y se mide contra la línea base de GenIA (20-ago). La hoja del 26-oct ya pedía corregirla: hay cinco cuentas con reunión, no cero (decisión 35).",
       "alertas": [
         {
           "color": "r",
           "texto": "La campaña de alimentos y bebidas está activa y su paso 10 ofrece «un Diagnóstico Ejecutivo, sin costo»: rompe la línea roja de diagnóstico gratuito. Lleva 722 contactados (338 en noviembre). Retail y transporte no lo traen (decisión 31)."
         },
         {
-          "color": "r",
-          "texto": "Los agentes de Dúo mencionan la duración de la reunión («¿Le dedicarías 30 minutos…?») y uno se presenta como Amplemarket (decisión 32)."
+          "color": "a",
+          "texto": "La plantilla de señal a Deloitte dice «en Amplemarket uso IA» y sigue igual. Lo demás ya lo habías cambiado el 26-oct (la frase de 30 minutos y la señal de cambio de puesto); falta confirmarlo en la pantalla de Dúo (decisión 32)."
         },
         {
           "color": "a",
@@ -2412,12 +2412,16 @@
         {
           "color": "v",
           "texto": "Corregido el 22-nov: las señales de GenIA RH ya cuentan en su producto (se sumaban a GenIA), noviembre ya cuadra (contaba un duplicado borrado de Heineken México) y «Mensajes que funcionaron» ya está ligado."
+        },
+        {
+          "color": "v",
+          "texto": "Heineken México tiene dos oportunidades con origen verificado: la de julio (dirección de Compensaciones, campaña general de RH, sesión el 18-sep) y la de noviembre (gerencia de Capacitación, campaña de alimentos y bebidas: le llegó «onboarding sin perseguir» el 4-nov y agendó sola ese mismo día)."
         }
       ],
       "ligas": [
         {
-          "nombre": "Hoja de cambios GenIA RH vB",
-          "url": "https://docs.google.com/document/d/1lolLRVorOpvy0qNMAmW8gpCqukZ0xMyCNhQ77VKu3ZU/edit"
+          "nombre": "Hoja de cambios GenIA RH vC",
+          "url": "https://docs.google.com/document/d/1rOUK9PcIpEvDXyqcUkVq76o25XgkdGwESUaQFyfCO7o/edit"
         },
         {
           "nombre": "ICP GenIA RH vF",
@@ -2739,15 +2743,15 @@
       },
       {
         "color": "v",
-        "documento": "Hoja de cambios GenIA RH vB",
+        "documento": "Hoja de cambios GenIA RH vC",
         "estado": "Vigente (22-nov)",
-        "falta": "10 cambios abiertos; siguiente revisión 4-dic"
+        "falta": "20 cambios abiertos; siguiente revisión 4-dic"
       },
       {
         "color": "r",
         "documento": "Línea base",
-        "estado": "No existe",
-        "falta": "Emitir la vA (decisión 35)"
+        "estado": "Se mide contra GR_Linea_Base_GenIA_vA",
+        "falta": "Emitir una propia o corregir la de GenIA (decisión 35)"
       },
       {
         "color": "v",
@@ -2833,8 +2837,486 @@
           "recent job changes"
         ],
         "senal": true,
-        "motivo": "El ICP vF la apaga como señal sola (hoja de cambios GenIA RH vB, cambio 12)",
-        "recomendacion": "Apagarla en Dúo (decisión 32)"
+        "motivo": "El ICP vF la apaga como señal sola; Mike la pausó el 26-oct (hoja de cambios GenIA RH vC, cambio 26)",
+        "recomendacion": "Confirmar en Dúo que está pausada (decisión 32)"
+      }
+    ]
+  },
+  "GenIA": {
+    "actualizado": "22-nov-2026",
+    "fuente": "Hoja de Cambios GenIA DWF vB, GR_Linea_Base_GenIA_vA, ICP GenIA vD, Propuesta de Valor Agente GenIA vB y GR_KB_GenIA_vC",
+    "decisiones": [
+      {
+        "que": "Relanzar GenIA DWF con el ICP vD: líderes de servicio al cliente en restaurantes y financieras no bancarias (decisión 38)",
+        "recomendacion": "Sí, en borrador para revisión",
+        "si_no": "El producto sigue sin volumen"
+      },
+      {
+        "que": "Pausar las campañas activas sin pendientes (decisión 39)",
+        "recomendacion": "Sí: pausar, nunca archivar",
+        "si_no": "Siguen activas sin enviar"
+      },
+      {
+        "que": "Lista en alarma: 22.9% de persona equivocada y 5 negativas por interesado (decisión 40)",
+        "recomendacion": "Sin cargas en frío hasta armar la lista con el ICP vD",
+        "si_no": "No se carga a nadie"
+      },
+      {
+        "que": "Propuesta de Valor y base de conocimiento nuevas, en español y sin diagnóstico gratuito (decisión 41)",
+        "recomendacion": "Sí",
+        "si_no": "Propuesta vB del 31-mar y base vC del 31-oct"
+      },
+      {
+        "que": "Frontera con Synapsis atención a clientes y el producto de «GEN IA Atención a Clientes_Scania Peru» (decisión 42)",
+        "recomendacion": "Scania a Synapsis atención a clientes, como Cinemex",
+        "si_no": "Scania sigue sin producto"
+      },
+      {
+        "que": "Señales de «Producto 3» en Dúo sin producto (pendiente, 22-nov)",
+        "recomendacion": "Con un sí, contarlas en GenIA DWF como se hizo con AM",
+        "si_no": "Siguen sin verse"
+      }
+    ],
+    "ciclo": {
+      "linea_base": "20-ago-2026",
+      "cambios_al": "22-nov-2026",
+      "cerrados": 5,
+      "abiertos": 14,
+      "abiertos_detalle": "10 de dirección y 4 del motor",
+      "siguiente_revision": "4-dic-2026",
+      "perdido": "El producto no contacta en frío desde septiembre y sus señales propias, que casi se detuvieron en agosto, no se ven en el tablero porque caen en «Dúo sin producto».",
+      "alertas": [
+        {
+          "color": "r",
+          "texto": "GenIA DWF no contacta en frío desde septiembre: ago 418, sep 50, oct 0 y nov 0. Las campañas activas no tienen contactos pendientes y el ICP vD (atención a clientes) no tiene campaña escrita (decisión 38)."
+        },
+        {
+          "color": "r",
+          "texto": "La propuesta de valor vigente (vB, 31-mar) ofrece un «Diagnóstico Ejecutivo… 10 minutos · Sin costo» y una «Sesión Exploratoria 30 min · Sin costo»: rompe la línea roja y no habla de atención a clientes (decisión 41)."
+        },
+        {
+          "color": "r",
+          "texto": "La lista está en alarma: 22.9% de persona equivocada y 5 negativas por interesado, con 35 respuestas (decisión 40)."
+        },
+        {
+          "color": "a",
+          "texto": "Las señales propias de GenIA DWF («Producto 3», 897 contactados, 12 interesados y 3 reuniones de diciembre a julio) están en «Dúo sin producto»: pediste dejarlas pendientes hasta definir GenIA."
+        },
+        {
+          "color": "a",
+          "texto": "Cero ganadas: 57 oportunidades cerradas en el año, todas perdidas, y 7 abiertas. El ICP vD se apoya en interés, no en compras."
+        },
+        {
+          "color": "v",
+          "texto": "Corregido el 22-nov: las señales de GenIA RH (605 contactados) ya no se suman a este producto, y la oportunidad de Scania de la primera línea sigue siendo de GenIA DWF."
+        }
+      ],
+      "ligas": [
+        {
+          "nombre": "Hoja de cambios GenIA DWF vB",
+          "url": "https://docs.google.com/document/d/1g4wqsu99jxo7ivePo1jsZCmVihVW8gywHC4xCxm7L1s/edit"
+        },
+        {
+          "nombre": "Línea base GenIA vA",
+          "url": "https://docs.google.com/document/d/1tHBVVIMTmIauUld-x_K8QhKInRYSwNemu3ZBtACB0yo/edit"
+        },
+        {
+          "nombre": "ICP GenIA vD",
+          "url": "https://docs.google.com/document/d/17c-yNPZmRua81U9csyPZj1qZcg2Uwi_SKWRSCM6_z64/edit"
+        },
+        {
+          "nombre": "Propuesta de Valor Agente GenIA vB",
+          "url": "https://docs.google.com/document/d/1w2OFAEb9VYld3encUhzeNWezvhwVKvTxKeuD00_ZHQk/edit"
+        },
+        {
+          "nombre": "Base de conocimiento GR_KB_GenIA_vC",
+          "url": "https://docs.google.com/document/d/1hMfEOsuRcbPrVpQ0-nzedRyrpbxVTDa5immbMKlcE-g/edit"
+        }
+      ]
+    },
+    "familias": [
+      {
+        "nombre": "Retail y genéricas",
+        "contiene": [
+          "retail",
+          "generica"
+        ],
+        "en": "secuencias",
+        "lectura": "Campañas a retail y genéricas a CEO y TI. La genérica fue la última en contactar (septiembre)."
+      },
+      {
+        "nombre": "Financieras y logística",
+        "contiene": [
+          "finan",
+          "vip-fin",
+          "vip-log"
+        ],
+        "en": "secuencias",
+        "lectura": "Finanzas (dos campañas) y logística, sin contactos desde mayo. Solo la del chiste y el diagnóstico sigue activa."
+      },
+      {
+        "nombre": "Open+3 de febrero",
+        "contiene": [
+          "open +3"
+        ],
+        "en": "secuencias",
+        "lectura": "Reactivación de febrero; sin pendientes."
+      }
+    ],
+    "icp": {
+      "documento": "ICP GenIA vD (15-nov)",
+      "reglas": {
+        "_nota": "Reglas del ICP GenIA vD (15-nov) para calificar el perfil de quienes respondieron. Nombres exactos del catálogo de Amplemarket, como los trae el ICP vD. Lo que no está en ninguna lista cuenta como «resto». ignorar = no se califica. 10,001 o más y 501-1,000 solo para probar; C-Suite solo con señal de atención a clientes.",
+        "industria": {
+          "dentro": [
+            "Food and Beverage Services",
+            "Restaurants",
+            "Quick Service Restaurants",
+            "Financial Services",
+            "Non-Bank Lending",
+            "Construction",
+            "Civil Engineering",
+            "IT Services and IT Consulting",
+            "Retail",
+            "Supermarkets & Grocery Stores"
+          ],
+          "probar": [
+            "Business Consulting and Services",
+            "Real Estate",
+            "Facilities Services",
+            "Telephone Call Centers"
+          ],
+          "fuera": [
+            "Motor Vehicle Manufacturing",
+            "Hospitals and Health Care",
+            "Hospitals",
+            "Insurance",
+            "Insurance Carriers",
+            "Higher Education",
+            "E-Learning Providers",
+            "Outsourcing and Offshoring Consulting",
+            "Banking",
+            "Retail banking",
+            "Human Resources Services",
+            "Staffing and Recruiting",
+            "Software Development"
+          ],
+          "resto": "f"
+        },
+        "tamano": {
+          "dentro": [
+            "1001-5000",
+            "5001-10000"
+          ],
+          "probar": [
+            "10001+",
+            "51-200"
+          ],
+          "fuera": [
+            "1-10",
+            "11-50",
+            "201-500",
+            "501-1000"
+          ],
+          "resto": "f"
+        },
+        "pais": {
+          "dentro": [
+            "Perú",
+            "Colombia",
+            "Chile",
+            "México",
+            "Ecuador",
+            "Panamá",
+            "Costa Rica"
+          ],
+          "probar": [],
+          "fuera": [
+            "Argentina",
+            "Brasil",
+            "España"
+          ],
+          "resto": "f"
+        },
+        "nivel": {
+          "dentro": [
+            "Manager",
+            "Head",
+            "Director",
+            "VP"
+          ],
+          "probar": [
+            "C-Suite",
+            "Senior"
+          ],
+          "fuera": [
+            "Entry"
+          ],
+          "ignorar": [
+            "Otro"
+          ],
+          "resto": "f"
+        },
+        "area": {
+          "dentro": [
+            "Experiencia del cliente"
+          ],
+          "probar": [
+            "TI",
+            "Ventas"
+          ],
+          "fuera": [
+            "Finanzas",
+            "Marketing",
+            "Recursos humanos",
+            "Dirección general",
+            "Comunicación interna",
+            "Otra"
+          ],
+          "resto": "f"
+        }
+      },
+      "rubros": [
+        {
+          "rubro": "Industrias",
+          "dice": "En orden: restaurantes y servicios de alimentos, servicios financieros no bancarios, construcción, servicios de TI y retail; por probar: consultoría, inmobiliario y contact centers; fuera: fabricantes de autos, salud, seguros, educación, outsourcing, bancos, servicios de RH y quien vende chatbots",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Tamaño",
+          "dice": "De 1,001 a 10,000 empleados; 10,001 o más y 51 a 200 por probar; 501 a 1,000 fuera",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Países",
+          "dice": "Primero Perú, Colombia y Chile; después México, Ecuador, Panamá y Costa Rica; España fuera; solo equipos de habla hispana",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Puesto",
+          "dice": "Comprador: líder de servicio al cliente o contact center (gerente a VP). Influenciador: digital y tecnología. Ventas por probar. Nunca RH ni finanzas",
+          "solo": "Sí, aproximado por nivel y área"
+        },
+        {
+          "rubro": "Operación de atención a clientes",
+          "dice": "Operación de servicio o contact center con consultas repetidas y un líder que ya habla de experiencia del cliente o de IA conversacional",
+          "solo": "No: se revisa en la lista antes de cargar"
+        },
+        {
+          "rubro": "Exclusiones",
+          "dice": "Que la persona sea dueña del servicio al cliente; vendedores de IA y consultoras que venden lo mismo, fuera; nadie de RH; nadie con oportunidad abierta de cualquier producto",
+          "solo": "Sí, contra HubSpot"
+        }
+      ],
+      "alertas": [
+        {
+          "color": "a",
+          "texto": "El producto no ha ganado ninguna oportunidad (58 cerradas al 15-nov, todas perdidas) y pocos sectores llegan a 10 personas reaccionando: el orden es una hipótesis por probar."
+        }
+      ]
+    },
+    "propuesta": {
+      "documento": "Propuesta de Valor Agente GenIA vB",
+      "problemas": [
+        {
+          "color": "r",
+          "problema": "1 · La empresa necesita más capacidad y el modelo de contratar ya no la da",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Sin medición por problema. No habla de atención a clientes"
+        },
+        {
+          "color": "r",
+          "problema": "2 · El talento más caro está atrapado sosteniendo el presente",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Sin medición por problema"
+        },
+        {
+          "color": "r",
+          "problema": "3 · La operación tiene horario de oficina; el mercado no",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Sin medición por problema; es el más cercano a atención a clientes"
+        },
+        {
+          "color": "r",
+          "problema": "4 · Los errores y reprocesos cuestan más de lo que se admite",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Sin medición por problema"
+        },
+        {
+          "color": "r",
+          "problema": "5 · La ventana competitiva se está cerrando",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Sin medición por problema"
+        },
+        {
+          "color": "r",
+          "problema": "6 · Todos saben que deben actuar con IA y nadie sabe por dónde empezar",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Sin medición por problema; es el origen del «Diagnóstico Ejecutivo… sin costo»"
+        }
+      ],
+      "recomendacion": "Propuesta nueva alineada al ICP vD (agentes que atienden a los clientes), sin diagnóstico gratuito ni duración, que abra con la atención que hoy no se da a tiempo (decisión 41).",
+      "nota": "La propuesta vB es de antes de que se separara GenIA RH y no está medida por problema: no se sabe qué mensaje abrió cada conversación."
+    },
+    "lista": {
+      "indicadores": [
+        {
+          "color": "r",
+          "indicador": "Not the right person",
+          "umbral": "Más de 10% = el filtro de puesto está mal",
+          "valor": "22.9% (35 respuestas)",
+          "fuente": "Tablero ICP, 22-nov"
+        },
+        {
+          "color": "r",
+          "indicador": "Negativas por interesado",
+          "umbral": "Más de 2 a 1 = se rehace la lista",
+          "valor": "5 a 1 (15 Not interested, 3 Interested)",
+          "fuente": "Tablero ICP, 22-nov"
+        }
+      ],
+      "nota": "Con 35 respuestas las dos alarmas coinciden: no se recomienda cargar en frío hasta armar la lista con el ICP vD."
+    },
+    "pruebas": {
+      "regla": "Cada prueba con su hipótesis, versión A y B, volumen (400 por versión con señal, 1,500 en frío), 4 a 6 semanas en la misma ventana, una por producto, y el dato que la justifica.",
+      "candidatas": [
+        {
+          "prueba": "Vacantes de contact center (20 títulos, se le escribe al jefe)",
+          "dato": "InterConsumo y Dalton Efectivo Seguro respondieron a una vacante de atención telefónica (ICP vD)"
+        },
+        {
+          "prueba": "Publicaciones sobre experiencia del cliente e IA conversacional",
+          "dato": "Las señales con más resultado del producto (ICP vD, pocos casos)"
+        },
+        {
+          "prueba": "Señal de crecimiento de plantilla (6 meses)",
+          "dato": "Sin probar (ICP vD)"
+        }
+      ]
+    },
+    "documentos": [
+      {
+        "color": "a",
+        "documento": "ICP GenIA vD",
+        "estado": "Vigente (15-nov), en inglés",
+        "falta": "Pasarlo a español"
+      },
+      {
+        "color": "r",
+        "documento": "Propuesta de Valor Agente GenIA vB",
+        "estado": "Del 31-mar, antes de separar RH y del ICP vD",
+        "falta": "Letra nueva sin diagnóstico gratuito ni minutos (decisión 41)"
+      },
+      {
+        "color": "a",
+        "documento": "Base de conocimiento GR_KB_GenIA_vC",
+        "estado": "Del 31-oct, antes del ICP vD",
+        "falta": "Letra nueva (decisión 41)"
+      },
+      {
+        "color": "v",
+        "documento": "Hoja de cambios GenIA DWF vB",
+        "estado": "Vigente (22-nov)",
+        "falta": "14 cambios abiertos; siguiente revisión 4-dic"
+      },
+      {
+        "color": "a",
+        "documento": "Línea base GenIA vA",
+        "estado": "Del 20-ago",
+        "falta": "La comparte GenIA RH (decisión 35)"
+      },
+      {
+        "color": "v",
+        "documento": "Presentación Discovery Agente GenIA vC",
+        "estado": "Vigente",
+        "falta": "Ninguna"
+      },
+      {
+        "color": "v",
+        "documento": "Template de propuesta",
+        "estado": "Plantilla de agente conversacional vA",
+        "falta": "Ninguna"
+      },
+      {
+        "color": "r",
+        "documento": "Mensajes que funcionaron",
+        "estado": "No existe",
+        "falta": "Escribirlo cuando haya resultados con el ICP vD"
+      },
+      {
+        "color": "v",
+        "documento": "Llamado a la acción",
+        "estado": "Demo",
+        "falta": "Ninguna"
+      }
+    ],
+    "campanas": [
+      {
+        "contiene": [
+          "open +3",
+          "open+3"
+        ],
+        "icp": "na",
+        "motivo": "Open+3: reactiva a quien abrió tres veces; no es una lista por industria",
+        "recomendacion": "Pausar: sin contactos pendientes (decisión 39)"
+      },
+      {
+        "contiene": [
+          "genia_call"
+        ],
+        "icp": "na",
+        "motivo": "Llamadas a quien abrió",
+        "recomendacion": "Pausar: sin contactos pendientes (decisión 39)"
+      },
+      {
+        "contiene": [
+          "ref_genia"
+        ],
+        "icp": "na",
+        "motivo": "Referidos: no es una lista por industria"
+      },
+      {
+        "contiene": [
+          "generica"
+        ],
+        "icp": "fuera",
+        "motivo": "ICP GenIA vD: CEO y TI no son los compradores (líder de servicio al cliente)",
+        "recomendacion": "Pausar: sin contactos pendientes desde septiembre (decisión 39)"
+      },
+      {
+        "contiene": [
+          "finan"
+        ],
+        "icp": "fuera",
+        "motivo": "ICP GenIA vD: le habla a TI y CEO a la vez, y sus correos cierran con un chiste",
+        "recomendacion": "Pausar: sin contactos pendientes desde marzo (decisión 39)"
+      },
+      {
+        "contiene": [
+          "vip-fin",
+          "vip-log"
+        ],
+        "icp": "fuera",
+        "motivo": "ICP GenIA vD: finanzas y logística no son el comprador"
+      },
+      {
+        "contiene": [
+          "retail"
+        ],
+        "icp": "mixta",
+        "motivo": "Retail entra, pero a TI y CEO, no a servicio al cliente"
       }
     ]
   }
