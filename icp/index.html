@@ -399,6 +399,8 @@ ol.pasos { list-style:none; margin-top:8px; display:grid; gap:8px; } ol.pasos li
     var t = x.t, r = resT(t), arriba = r > 0 && tasaT(t) >= prom, sv = sinVolumen(t.ult), mes = mesLargo(t.ult), I = icpDe(p, x.n, senal), e = estadoDe(x, I), ic = I && !senal ? I.icp : '';
     if (e === 'no_listada') return ['p-poc', 'Archivada'];
     if (e === 'draft') return ['p-poc', 'Borrador'];
+    // Decisión documentada para esta campaña (Decisiones del Portafolio): la página dice lo mismo que el documento.
+    if (I && I.recomendacion && e !== 'paused') return ['p-vig', I.recomendacion];
     if (ic === 'fuera') return e === 'active' ? ['p-rev', 'Fuera del ICP: pausar'] : ['p-poc', 'Fuera del ICP' + (e === 'paused' ? ' · pausada' : '')];
     if (e === 'paused') return [arriba && t.c >= MIN_VEREDICTO ? 'p-man' : 'p-poc', 'Pausada' + (arriba && t.c >= MIN_VEREDICTO ? ' · rindió arriba del promedio' : '')];
     if (t.c < MIN_VEREDICTO) return ['p-poc', 'Sin veredicto' + (sv && mes ? ' · sin volumen desde ' + mes : '')];

@@ -1,6 +1,6 @@
 {
   "_nota": "Contenido fijo de la página de cada producto del tablero ICP (Diseño de la Página de Producto TW vA, 20-nov-2026). Una llave por código de producto. Lo medido (secuencias, señales, gráfica) sale de la foto gr-icp; aquí va lo que viene de documentos: ciclo de cambio, familias de campaña, ICP, propuesta de valor, lista, pruebas candidatas y estado de documentos. Colores: v verde, a amarillo, r rojo.",
-  "_decisiones": {"documento": "Decisiones del Portafolio vA", "url": "https://docs.google.com/document/d/1P0tHRn1TuIptCkAgKQR0W_X5MhxmPlEdhdvwyfeYOIo/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
+  "_decisiones": {"documento": "Decisiones del Portafolio vB", "url": "https://docs.google.com/document/d/1TgZUw5DCcOVx_ijJBFV0fx7rpo57wEoUqZR2a_pJ-XM/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
   "TW": {
     "decisiones": [
       {"que": "Regla de la lista en alarma (AM ya la tiene; AEO en el punto 17)", "recomendacion": "Sí: sin cargas nuevas en frío hasta rehacer la lista con el ICP; las señales siguen", "si_no": "Se sigue cargando en frío con 23.2% de persona equivocada"},
@@ -34,6 +34,10 @@
       { "nombre": "Visita Chile", "contiene": ["visita chile"], "en": "secuencias", "lectura": "La visita presencial con fecha concreta: se suma la familia para que el ángulo se vea aunque cada campaña sea chica." }
     ],
     "campanas": [
+      {"contiene": ["posts from competitors talkwalker"], "senal": true, "motivo": "Señal de competidores: 4 contactados en el año", "recomendacion": "Apagarla en Dúo (decisión 5)"},
+      {"contiene": ["visita chile_gobierno"], "icp": "fuera", "motivo": "ICP Talkwalker vI: gobierno fuera", "recomendacion": "Fuera del ICP: dejar terminar lo cargado y no recargar (decisión 6)"},
+      {"contiene": ["total_trendsetter", "job changes same_trendsetter"], "icp": "dentro", "motivo": "ICP Talkwalker vI: servicios financieros dentro", "recomendacion": "Pausar: sin envíos desde enero y febrero (decisión 3)"},
+      {"contiene": ["19/01 al 24/02", "ejemplo open +3"], "icp": "na", "motivo": "Open+3 de prueba de febrero", "recomendacion": "Pausar: prueba de febrero sin volumen (decisión 3)"},
       {"contiene": ["open +3", "open+3"], "icp": "na", "motivo": "Open+3: reactiva a quien abrió tres veces; no es una lista por industria"},
       {"contiene": ["restaurants"], "icp": "fuera", "motivo": "ICP Talkwalker vI: restaurantes fuera"},
       {"contiene": ["gobierno"], "icp": "fuera", "motivo": "ICP Talkwalker vI: gobierno fuera"},
@@ -660,20 +664,547 @@
     ]
   },
   "AEO": {
+    "actualizado": "22-nov-2026",
+    "fuente": "Hoja de Cambios AEO vE, GR_Linea_Base_AEO_vA, ICP AEO & SEO vG, Propuesta de Valor AEO & SEO vD y GR_KB_AEO_vD",
     "decisiones": [
-      {"que": "Argentina: el ICP de AM y el de AEO la incluyen y el REA la excluye", "recomendacion": "Mantenerla fuera hasta tener un caso", "si_no": "Sigue fuera (como hoy en página y bases)"},
-      {"que": "Regla de la lista en alarma (48) y limpiar la lista de IT SERVICES 2.0 (55)", "recomendacion": "Sí a las dos: sin cargas nuevas en frío, y la lista limpia antes de su siguiente paso", "si_no": "Sin cargas nuevas; IT SERVICES 2.0 sale como está"},
-      {"que": "Señales en Dúo: prefijo del agente de cambio de puesto (52) y pasar palabras clave base a 2.0 (22)", "recomendacion": "Revisarlo juntos en la pantalla de Dúo", "si_no": "Quedan como están"},
-      {"que": "Cohorte y fecha de revisión de las campañas nuevas (39) y borrador duplicado de hotelería (53)", "recomendacion": "Declarar 300 por campaña; dejar el borrador sin activar", "si_no": "Sin cohorte declarada"}
+      {
+        "que": "Argentina: el ICP de AM y el de AEO la incluyen y el REA la excluye",
+        "recomendacion": "Mantenerla fuera hasta tener un caso",
+        "si_no": "Sigue fuera (como hoy en página y bases)"
+      },
+      {
+        "que": "Regla de la lista en alarma (48) y limpiar la lista de IT SERVICES 2.0 (55)",
+        "recomendacion": "Sí a las dos: sin cargas nuevas en frío, y la lista limpia antes de su siguiente paso",
+        "si_no": "Sin cargas nuevas; IT SERVICES 2.0 sale como está"
+      },
+      {
+        "que": "Señales en Dúo: prefijo del agente de cambio de puesto (52) y pasar palabras clave base a 2.0 (22)",
+        "recomendacion": "Revisarlo juntos en la pantalla de Dúo",
+        "si_no": "Quedan como están"
+      },
+      {
+        "que": "Cohorte y fecha de revisión de las campañas nuevas (39) y borrador duplicado de hotelería (53)",
+        "recomendacion": "Declarar 300 por campaña; dejar el borrador sin activar",
+        "si_no": "Sin cohorte declarada"
+      }
     ],
-    "_nota": "Solo la clasificación por ICP de cada campaña (22-nov-2026), para que la recomendación por secuencia tome en cuenta el ICP. El resto de la página de AEO llega con su entrada completa.",
+    "ciclo": {
+      "linea_base": "20-ago-2026",
+      "cambios_al": "22-nov-2026",
+      "cerrados": 28,
+      "abiertos": 27,
+      "abiertos_detalle": "10 de dirección, 5 del equipo y 12 del motor",
+      "siguiente_revision": "6-dic-2026",
+      "perdido": "Nada: ninguna campaña de AEO se archivó; las que salen del ICP se pausaron y conservan su historia en Amplemarket.",
+      "alertas": [
+        {
+          "color": "r",
+          "texto": "La lista está en alarma: 21.3% de las respuestas dicen «persona equivocada» (el umbral es 10%) y hay 2.3 negativas por interesado (el umbral es 2). Se propone la misma regla que AM: sin cargas nuevas en frío hasta rehacer la lista con el ICP vG; las señales siguen. Decisión de dirección."
+        },
+        {
+          "color": "a",
+          "texto": "IT SERVICES 2.0 está activa (208 contactados, 0 resultados) y su lista no cumple el ICP: en los primeros 50 pendientes hay una cuenta con 6 personas (el máximo es 3), una telecom, una de bebidas y filiales de fabricantes globales de software. Limpiarla antes de su siguiente paso es decisión de dirección."
+        },
+        {
+          "color": "v",
+          "texto": "FINAN SERV ya no le escribe a bancos ni aseguradoras: el 22-nov se quitaron 140 (91 de bancos y 49 de aseguradoras) y siguen 175 financieras no bancarias, pagos, cooperativas, cajas y fintechs. Lleva 3 resultados en 359 contactados."
+        },
+        {
+          "color": "v",
+          "texto": "Las campañas fuera del ICP vG están pausadas, sin archivar: BANKING, INSURANCE 2.0 y 3.0, SOFT DEVEL, BUSINESS CONSULTING 2.0, STAFFING y B2B."
+        },
+        {
+          "color": "a",
+          "texto": "Dúo: la señal base de palabras clave sigue contactando (0.65%) junto a la 2.0 (0.82%), y el agente de cambio de puesto aparece sin el prefijo de AEO en dos fichas. Se revisa en la pantalla de Dúo."
+        }
+      ],
+      "ligas": [
+        {
+          "nombre": "Hoja de cambios AEO vE",
+          "url": "https://docs.google.com/document/d/1qyQehHO4KAyW44r6A1lh2wQW0QK3JNqMawF81oVdndY/edit"
+        },
+        {
+          "nombre": "Línea base AEO vA",
+          "url": "https://docs.google.com/document/d/1wpFydFIUMTUUrc7SMVrQk91RNYZTjww6cbbJPttx7gg/edit"
+        },
+        {
+          "nombre": "ICP AEO & SEO vG",
+          "url": "https://docs.google.com/document/d/1oOHPg_X330zU4r85S4Tb--PYIpwddo-isxqBJC8XFAQ/edit"
+        },
+        {
+          "nombre": "Propuesta de Valor AEO & SEO vD",
+          "url": "https://docs.google.com/document/d/1Wl6Fic-mPHcu9OrQdhnB6aCeOgSO_WTxKMujOFWxCCU/edit"
+        },
+        {
+          "nombre": "Base de conocimiento GR_KB_AEO_vD",
+          "url": "https://docs.google.com/document/d/1ZNosCv9z_q5za04ZPEdp2TgJiM-AK0E32jk4MR8IuF8/edit"
+        }
+      ]
+    },
+    "familias": [
+      {
+        "nombre": "Retail",
+        "contiene": [
+          "retail",
+          "supermarket"
+        ],
+        "en": "secuencias",
+        "lectura": "Cadenas de retail, sector 2 del ICP vG: retail general, supermercados, materiales para el hogar y abarrotes."
+      },
+      {
+        "nombre": "Hotelería",
+        "contiene": [
+          "hospitality",
+          "hotels"
+        ],
+        "en": "secuencias",
+        "lectura": "Hoteles y cadenas, sector 3 del ICP vG."
+      },
+      {
+        "nombre": "Servicios de TI",
+        "contiene": [
+          "it services"
+        ],
+        "en": "secuencias",
+        "lectura": "Sector 1 del ICP vG y el del único cliente del producto."
+      },
+      {
+        "nombre": "Seguros y banca",
+        "contiene": [
+          "insurance",
+          "banking"
+        ],
+        "en": "secuencias",
+        "lectura": "Fuera del ICP vG desde el 15-nov (seguros: 10 cerradas, todas perdidas; banca: 12). Pausadas."
+      },
+      {
+        "nombre": "Palabras clave",
+        "contiene": [
+          "posts mentioning specific keywords"
+        ],
+        "en": "senales",
+        "lectura": "Las tres versiones de la señal de publicaciones; la 2.0 es la que más produce."
+      }
+    ],
+    "icp": {
+      "documento": "ICP AEO & SEO vG (15-nov)",
+      "reglas": {
+        "_nota": "Reglas del ICP AEO & SEO vG (15-nov) para calificar el perfil de quienes respondieron. Nombres exactos del catálogo de Amplemarket, como los trae el ICP vG. Lo que no está en ninguna lista cuenta como «resto». ignorar = no se califica. Argentina: el ICP vG la incluye y el REA la excluye; queda fuera hasta que dirección decida.",
+        "industria": {
+          "dentro": [
+            "IT Services and IT Consulting",
+            "Retail",
+            "Retail Groceries",
+            "Retail Luxury Goods and Jewelry",
+            "Retail Building Materials and Garden Equipment",
+            "Retail Office Supplies and Gifts",
+            "Hotels and Motels",
+            "Hospitality",
+            "Personal Care Product Manufacturing",
+            "Credit Unions",
+            "Savings Institutions",
+            "Broadcast Media Production and Distribution",
+            "Radio and Television Broadcasting",
+            "Spectator Sports",
+            "Sports Teams and Clubs"
+          ],
+          "probar": [
+            "Real Estate",
+            "Commercial real estate",
+            "Real estate management",
+            "Non-Bank Lending",
+            "Financial Services",
+            "Retail Furniture and Home Furnishings",
+            "Retail Appliances, Electrical, and Electronic Equipment",
+            "Retail Pharmacies",
+            "Retail Health and Personal Care Products",
+            "Newspaper Publishing",
+            "Internet News",
+            "Online Audio and Video Media",
+            "Periodical Publishing"
+          ],
+          "fuera": [
+            "Banking",
+            "Retail banking",
+            "Digital banking",
+            "Insurance",
+            "Insurance Carriers",
+            "Insurance Agencies and Brokerages",
+            "Insurance and Employee Benefit Funds",
+            "Software Development",
+            "Software Services (SaaS)",
+            "Technology, Information and Internet",
+            "Advertising Services",
+            "Marketing Services",
+            "Telecommunications",
+            "Telecommunications Carriers",
+            "Food and Beverage Services",
+            "Restaurants",
+            "Entertainment Providers"
+          ],
+          "resto": "f"
+        },
+        "tamano": {
+          "dentro": [
+            "201-500",
+            "501-1000"
+          ],
+          "probar": [
+            "1001-5000",
+            "5001-10000"
+          ],
+          "fuera": [
+            "1-10",
+            "11-50",
+            "51-200",
+            "10001+"
+          ],
+          "resto": "f"
+        },
+        "pais": {
+          "dentro": [
+            "México",
+            "Ecuador",
+            "Perú",
+            "Colombia",
+            "Chile",
+            "Guatemala",
+            "Costa Rica",
+            "Panamá",
+            "República Dominicana"
+          ],
+          "probar": [
+            "Puerto Rico"
+          ],
+          "fuera": [
+            "Argentina",
+            "Estados Unidos",
+            "Brasil",
+            "España"
+          ],
+          "resto": "f"
+        },
+        "nivel": {
+          "dentro": [
+            "C-Suite",
+            "VP",
+            "Head",
+            "Director"
+          ],
+          "probar": [
+            "Manager",
+            "Senior"
+          ],
+          "fuera": [
+            "Entry"
+          ],
+          "ignorar": [
+            "Otro"
+          ],
+          "resto": "f"
+        },
+        "area": {
+          "dentro": [
+            "Marketing"
+          ],
+          "probar": [
+            "Experiencia del cliente",
+            "Dirección general"
+          ],
+          "fuera": [
+            "Ventas",
+            "TI",
+            "Recursos humanos",
+            "Finanzas",
+            "Comunicación interna",
+            "Otra"
+          ],
+          "resto": "f"
+        }
+      },
+      "rubros": [
+        {
+          "rubro": "Industrias",
+          "dice": "En orden: servicios de TI, cadenas de retail, hotelería, cuidado personal, cooperativas y cajas de ahorro, y medios; por probar: inmobiliarias, financieras no bancarias, muebles y electrodomésticos; fuera: bancos, aseguradoras, software, agencias (son competencia), telecom, restaurantes y entretenimiento",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Tamaño",
+          "dice": "Núcleo de 201 a 1,000 empleados; de 1,001 a 10,000 como segunda ola (1,001 a 5,000 tiene 25 perdidas)",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Países",
+          "dice": "México, Ecuador, Perú, Colombia, Chile, Guatemala, Costa Rica, Panamá y República Dominicana; Puerto Rico permitido por el REA; Argentina fuera hasta que dirección decida",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Puesto",
+          "dice": "Líder de marketing (Director, Head, VP o C-Suite); Gerente solo en la campaña de e-commerce y digital; el rol SEO sin probar",
+          "solo": "Sí, aproximado por título"
+        },
+        {
+          "rubro": "Una persona por cuenta",
+          "dice": "Máximo 3 personas por cuenta y un solo rol por campaña",
+          "solo": "No: se revisa en la lista antes de cargar"
+        },
+        {
+          "rubro": "Exclusiones",
+          "dice": "Clientes y oportunidades abiertas, agencias, bancos, aseguradoras, empresas que venden por licitación y equipos en inglés",
+          "solo": "Sí, contra HubSpot"
+        }
+      ],
+      "alertas": [
+        {
+          "color": "a",
+          "texto": "Gerente es el nivel que más pierde (24 oportunidades perdidas, reacciones en -4.4): solo entra en la campaña de e-commerce y digital."
+        },
+        {
+          "color": "a",
+          "texto": "Una sola ganada en el año (Itera Process, empresa de la casa): el ICP vG se apoya en interés y reacciones, no en ganadas."
+        }
+      ]
+    },
+    "propuesta": {
+      "documento": "Propuesta de Valor AEO & SEO vD",
+      "problemas": [
+        {
+          "color": "v",
+          "problema": "P2 · La IA recomienda a otros, y no te enteras",
+          "conversaciones": null,
+          "reuniones": 8,
+          "oportunidades": 4,
+          "lectura": "5 reuniones verificadas y 3 agendadas por señal; el único ángulo que produjo en seis de siete industrias"
+        },
+        {
+          "color": "a",
+          "problema": "P1 · Lo construido en Google no se transfiere solo a la IA",
+          "conversaciones": null,
+          "reuniones": 2,
+          "oportunidades": null,
+          "lectura": "2 reuniones verificadas; cerró la mejor cuenta del producto"
+        },
+        {
+          "color": "a",
+          "problema": "P3 · Los clics desaparecen aunque la búsqueda existe",
+          "conversaciones": null,
+          "reuniones": 1,
+          "oportunidades": 2,
+          "lectura": "1 reunión y 2 oportunidades vivas"
+        },
+        {
+          "color": "a",
+          "problema": "P4 · Nadie mide cuántas veces te nombra la IA",
+          "conversaciones": 3,
+          "reuniones": null,
+          "oportunidades": 2,
+          "lectura": "3 respuestas directas; funciona en el segundo o tercer paso, con la fuente en el mismo mensaje"
+        },
+        {
+          "color": "r",
+          "problema": "P5 · El contenido que Google premia no es el que la IA cita",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Sin medición por ángulo"
+        },
+        {
+          "color": "r",
+          "problema": "P6 · Los problemas técnicos del sitio castigan en los dos mundos",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Sin medición por ángulo"
+        },
+        {
+          "color": "r",
+          "problema": "P7 · Nadie sabe por dónde empezar",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Sin medición por ángulo"
+        },
+        {
+          "color": "r",
+          "problema": "P8 · Ya tienes agencia de SEO, y nadie te ha dicho qué le falta",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Sin medición por ángulo"
+        }
+      ],
+      "recomendacion": "Mantener P2 (la pregunta real del cliente, con la competencia en la respuesta) como apertura y cerrar con el reporte ya preparado: 5 de las 9 reuniones verificadas cierran así. P4 va en el segundo o tercer paso, con la fuente en el mismo mensaje.",
+      "nota": "Fuente: Propuesta de Valor AEO & SEO vD, sección 10, que toma «Ángulos y problemas AEO & SEO vB» (10-nov): reuniones verificadas contra grabación más agendadas por señal sin auditar, y oportunidades vivas al 17-sep. Un mismo caso puede contar en dos ángulos. No es tasa por problema: no se sabe cuántos recibieron cada mensaje."
+    },
+    "lista": {
+      "indicadores": [
+        {
+          "color": "r",
+          "indicador": "Not the right person",
+          "umbral": "Más de 10% = el filtro de puesto está mal",
+          "valor": "21.3% (80 respuestas)",
+          "fuente": "Tablero ICP, 22-nov"
+        },
+        {
+          "color": "r",
+          "indicador": "Negativas por interesado",
+          "umbral": "Más de 2 a 1 = se rehace la lista",
+          "valor": "2.3 a 1 (36 Not interested, 16 Interested)",
+          "fuente": "Tablero ICP, 22-nov"
+        },
+        {
+          "color": "a",
+          "indicador": "Personas por cuenta",
+          "umbral": "Más de 3 = se corrige",
+          "valor": "Una cuenta con 6 en los primeros 50 pendientes de IT SERVICES 2.0",
+          "fuente": "Hoja de cambios AEO vE, cambio 55"
+        },
+        {
+          "color": "v",
+          "indicador": "Rebote y spam",
+          "umbral": "Más de 5% = se detiene",
+          "valor": "4.1% y 3.8%",
+          "fuente": "Línea base AEO vA (ago)"
+        }
+      ],
+      "nota": "La lista es el problema del producto: más de una de cada cinco respuestas dice que no es la persona. La regla que se propone es la de AM: sin cargas nuevas en frío hasta rehacerla con el ICP vG."
+    },
+    "pruebas": {
+      "regla": "Cada prueba con su hipótesis, versión A y B, volumen (400 por versión con señal, 1,500 en frío), 4 a 6 semanas en la misma ventana, una por producto, y el dato que la justifica.",
+      "candidatas": [
+        {
+          "prueba": "Financieras no bancarias contra el núcleo actual",
+          "dato": "FINAN SERV ya limpia: 175 contactos sin bancos ni aseguradoras; 3 resultados en 359 contactados"
+        },
+        {
+          "prueba": "Vacantes de marketing en la forma nueva (20 títulos, se contacta al jefe)",
+          "dato": "La forma vieja dio 0 interesados en 94 contactos; la nueva no se ha probado (ICP vG)"
+        },
+        {
+          "prueba": "Rol SEO (P3) sin el filtro de tamaño",
+          "dato": "135 personas de SEO de gerente para arriba, 23 dentro del tamaño (ICP vF); el especialista SEO de Vidri tomó conversación"
+        },
+        {
+          "prueba": "Señal de crecimiento de plantilla (6 meses, más de 10%)",
+          "dato": "Sin probar (ICP vG)"
+        }
+      ]
+    },
+    "documentos": [
+      {
+        "color": "v",
+        "documento": "ICP AEO & SEO vG",
+        "estado": "Vigente (15-nov)",
+        "falta": "Decidir Argentina: el ICP la incluye y el REA la excluye"
+      },
+      {
+        "color": "v",
+        "documento": "Propuesta de Valor AEO & SEO vD",
+        "estado": "Vigente (22-nov), alineada al ICP vG",
+        "falta": "Ninguna: ligada en el catálogo y en el motor (22-nov)"
+      },
+      {
+        "color": "v",
+        "documento": "Base de conocimiento GR_KB_AEO_vD",
+        "estado": "Vigente (22-nov), alineada al ICP vG",
+        "falta": "Ninguna: ligada en el catálogo y en el motor (22-nov)"
+      },
+      {
+        "color": "v",
+        "documento": "Hoja de cambios AEO vE",
+        "estado": "Vigente (22-nov)",
+        "falta": "27 cambios abiertos; siguiente revisión 6-dic"
+      },
+      {
+        "color": "a",
+        "documento": "Línea base AEO vA",
+        "estado": "Del 20-ago, antes del ICP vG",
+        "falta": "Letra nueva al reactivar el frío con la lista nueva"
+      },
+      {
+        "color": "v",
+        "documento": "Discovery (Cliente) GEO + SEO",
+        "estado": "Vigente",
+        "falta": "Ninguna"
+      },
+      {
+        "color": "v",
+        "documento": "Propuesta_(Cliente)_vB",
+        "estado": "Vigente (template de propuesta)",
+        "falta": "Ninguna"
+      },
+      {
+        "color": "a",
+        "documento": "Mensajes que funcionaron",
+        "estado": "Existe como «Ángulos y problemas AEO & SEO vB» (10-nov)",
+        "falta": "Ligarlo en el catálogo"
+      },
+      {
+        "color": "v",
+        "documento": "Llamado a la acción",
+        "estado": "Reporte de visibilidad en IA, preparado antes de hablar",
+        "falta": "Ninguna"
+      }
+    ],
     "campanas": [
-      {"contiene": ["open+3", "open +3"], "icp": "na", "motivo": "Open+3: reactiva a quien abrió tres veces; no es una lista por industria"},
-      {"contiene": ["banking", "insurance", "soft devel", "business consulting", "staffing", "b2b"], "icp": "fuera", "motivo": "ICP AEO & SEO vG: banca, seguros y software fuera; consultoría de negocio, staffing y B2B general no están en el ICP"},
-      {"contiene": ["all ind"], "icp": "mixta", "motivo": "Lista de varias industrias: solo con las industrias del ICP vG"},
-      {"contiene": ["finan serv"], "icp": "probar", "motivo": "ICP AEO & SEO vG: financieras no bancarias por probar (bancos y aseguradoras fuera)"},
-      {"contiene": ["retail", "supermarket", "personal care", "it services", "hospitality", "hotels", "savings institutions"], "icp": "dentro", "motivo": "ICP AEO & SEO vG: servicios de TI, cadenas de retail, hotelería, cuidado personal y cooperativas dentro"},
-      {"contiene": ["keywords aeo + seo general 3.0", "job openings aeo"], "senal": true, "estado": "paused", "motivo": "Agente de Dúo apagado (hoja de cambios AEO vD, cambios 20 y 21)"}
+      {"contiene": ["it services & it consulting_lat_mk_+200-10,000_2.0"], "icp": "dentro", "motivo": "ICP AEO & SEO vG: servicios de TI dentro", "recomendacion": "Limpiar la lista antes de su siguiente paso (decisión 17)"},
+      {"contiene": ["aeo + seo general  2026"], "senal": true, "motivo": "Señal base de palabras clave", "recomendacion": "Pasar su volumen a la versión 2.0 (decisión 18)"},
+      {
+        "contiene": [
+          "open+3",
+          "open +3"
+        ],
+        "icp": "na",
+        "motivo": "Open+3: reactiva a quien abrió tres veces; no es una lista por industria"
+      },
+      {
+        "contiene": [
+          "banking",
+          "insurance",
+          "soft devel",
+          "business consulting",
+          "staffing",
+          "b2b"
+        ],
+        "icp": "fuera",
+        "motivo": "ICP AEO & SEO vG: banca, seguros y software fuera; consultoría de negocio, staffing y B2B general no están en el ICP"
+      },
+      {
+        "contiene": [
+          "all ind"
+        ],
+        "icp": "mixta",
+        "motivo": "Lista de varias industrias: solo con las industrias del ICP vG"
+      },
+      {
+        "contiene": [
+          "finan serv"
+        ],
+        "icp": "probar",
+        "motivo": "ICP AEO & SEO vG: financieras no bancarias por probar (bancos y aseguradoras fuera)"
+      },
+      {
+        "contiene": [
+          "retail",
+          "supermarket",
+          "personal care",
+          "it services",
+          "hospitality",
+          "hotels",
+          "savings institutions"
+        ],
+        "icp": "dentro",
+        "motivo": "ICP AEO & SEO vG: servicios de TI, cadenas de retail, hotelería, cuidado personal y cooperativas dentro"
+      },
+      {
+        "contiene": [
+          "keywords aeo + seo general 3.0",
+          "job openings aeo"
+        ],
+        "senal": true,
+        "estado": "paused",
+        "motivo": "Agente de Dúo apagado (hoja de cambios AEO vD, cambios 20 y 21)"
+      }
     ]
   }
 }
