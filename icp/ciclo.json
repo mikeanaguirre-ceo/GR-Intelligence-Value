@@ -81,5 +81,107 @@
       { "color": "a", "documento": "Discovery Talkwalker vA", "estado": "Vigente", "falta": "Medir qué recorrido avanza a Educación" },
       { "color": "r", "documento": "Template de propuesta y Mensajes que funcionaron", "estado": "Vacíos en el catálogo", "falta": "Ligar o crear" }
     ]
+  },
+  "AM": {
+    "actualizado": "21-nov-2026",
+    "fuente": "Hoja de Cambios AM vF, GR_Linea_Base_AM_vC, ICP Amplemarket vG, Propuesta de Valor Amplemarket vD, GR_KB_AM_vH y Guía de señales de Duo vB",
+    "ciclo": {
+      "linea_base": "24-ago-2026",
+      "cambios_al": "21-nov-2026",
+      "cerrados": 25,
+      "abiertos": 40,
+      "abiertos_detalle": "12 de dirección, 6 del equipo y 22 del motor",
+      "siguiente_revision": "4-dic-2026",
+      "perdido": "Diez campañas (seis de Fintech y cuatro de Logística) se archivaron en agosto en vez de pausarse: su historia ya no está en Amplemarket y solo el tablero conserva sus cifras.",
+      "alertas": [
+        { "color": "r", "texto": "El frío está parado: no se carga nadie en secuencias hasta rehacer la lista con el ICP vG (decisión de dirección, 21-nov). Contactados en secuencias: 670 en septiembre, 52 en octubre y 2 en noviembre. Las señales de Dúo siguen corriendo." },
+        { "color": "a", "texto": "El 21-nov se pausaron 15 campañas sin volumen o fuera del ICP, sin archivar ninguna. De AM quedan activas solo REF_AM_Correo+LinkedIn_vA y AM_Open+3 sin WhatsApp_vD. Las señales AM_Job openings y AM_Posts from competitors quedaron pausadas en Dúo el mismo día." },
+        { "color": "a", "texto": "AM_IT SERVICES & CONSULTING vA está pausada antes de su primer envío. Para reactivarla faltan dos cosas: limpiar su lista (una cuenta con 5 personas, cuentas con conversación abierta o reunión previa y una persona en dos secuencias de AM) y corregir el paso 7, que pide la reunión de frente." },
+        { "color": "a", "texto": "AM_SOFTWARE DEVELOPMENT vA está pausada antes de su primer envío porque Software Development está fuera del ICP vG (0 ganadas, 13 perdidas). Falta decidir si se reescribe para una industria dentro del ICP o se queda pausada." }
+      ],
+      "ligas": [
+        { "nombre": "Hoja de cambios Amplemarket vF", "url": "https://docs.google.com/document/d/1HCouOVndamdqG1jz0V1Zqqfjho8XAm-XyX467IjSiQE/edit" },
+        { "nombre": "Línea base Amplemarket vC", "url": "https://docs.google.com/document/d/1WbUb23D3eaATjGPyFUqEa5wqwVifQHjAfZHsCPWN1ac/edit" },
+        { "nombre": "ICP Amplemarket vG", "url": "https://docs.google.com/document/d/1lqno0HItx7Ikzomvt2pRBPRKuh-yHIfOM5YqnPoJbOY/edit" },
+        { "nombre": "Propuesta de Valor Amplemarket vD", "url": "https://docs.google.com/document/d/1W_zR8OrZ-pFYs0P-oonQPJzRdMtbPUrDNE4PIwJh7Js/edit" },
+        { "nombre": "Base de conocimiento GR_KB_AM_vH", "url": "https://docs.google.com/document/d/1olU5ufqO4IqE6VwrqbvIMQg3Ni-g40c4bcUkUEcXcOU/edit" },
+        { "nombre": "Guía de señales de Duo vB", "url": "https://docs.google.com/document/d/1aBBfZHDJcvA0gYJuKeMCMNylhcIkEqGINY6msY8wM54/edit" }
+      ]
+    },
+    "familias": [
+      { "nombre": "Software & Services", "contiene": ["am_software & services"], "en": "secuencias", "lectura": "Las tres de software de junio a agosto: VIP-S es la secuencia con más resultados en frío, pero el ICP vG saca Software Development y ya no tienen pendientes." },
+      { "nombre": "Servicios de TI", "contiene": ["am_it", "am_cybersecurity"], "en": "secuencias", "lectura": "IT, IT Services, IT Outsourcing y Ciberseguridad: servicios de TI es la industria número 1 del ICP vG; outsourcing y ciberseguridad pasan a «por probar». Todas sin pendientes desde octubre." },
+      { "nombre": "Fintech", "contiene": ["am_fint_"], "en": "secuencias", "lectura": "Servicios financieros quedó fuera del ICP vG: ninguna cita en el año. Archivadas en agosto." },
+      { "nombre": "Logística", "contiene": ["am_logis_"], "en": "secuencias", "lectura": "Logística entra como industria número 3 del ICP vG, pero estas cuatro se archivaron en agosto: hay que volver a probarla con lista nueva." },
+      { "nombre": "Open+3", "contiene": ["open +3", "open+3"], "en": "secuencias", "lectura": "A quien ya abrió tres veces y no contestó: no cuesta un contacto nuevo. Solo cuenta lo que llega a conversación." },
+      { "nombre": "Palabras clave", "contiene": ["posts mentioning specific keywords"], "en": "senales", "lectura": "Posts que mencionan las palabras del tema: junto con cambio de puesto, es el motor real del producto." },
+      { "nombre": "Cambio de puesto", "contiene": ["recent job changes"], "en": "senales", "lectura": "El ICP vG prioriza la promoción en la misma empresa; el cambio a otra empresa baja a P3 y solo para líderes de ventas." }
+    ],
+    "icp": {
+      "documento": "ICP Amplemarket vG (15-nov)",
+      "reglas": {
+        "_nota": "Reglas del ICP Amplemarket vG (15-nov) para calificar el perfil de quienes respondieron. Nombres exactos del catálogo de Amplemarket, como los trae el ICP vG (get_industries del 15-nov). Lo que no está en ninguna lista cuenta como «resto». ignorar = no se califica. Argentina queda fuera hasta que dirección decida (el ICP vG la incluye y el REA la excluye).",
+        "industria": {"dentro": ["IT Services and IT Consulting", "Managed Services Providers", "Cloud computing", "IT outsourcing", "Human Resources Services", "Staffing and Recruiting", "IT staffing", "IT recruitment", "Transportation, Logistics, Supply Chain and Storage", "Truck Transportation", "Freight and Package Transportation", "Freight Brokerage"], "probar": ["IT System Custom Software Development", "Payroll Providers", "Employer of Record Providers", "Outsourcing and Offshoring Consulting", "Business process outsourcing", "Telephone Call Centers", "Computer and Network Security", "Information security", "Government Administration", "Broadcast Media Production and Distribution", "Food and Beverage Manufacturing", "Retail", "Retail Apparel and Fashion"], "fuera": ["Software Development", "Software Services (SaaS)", "Technology, Information and Internet", "Financial Services", "Banking", "Insurance", "Business Consulting and Services", "Strategic Management Services", "Food and Beverage Services", "Restaurants", "Telecommunications", "Telecommunications Carriers", "Advertising Services", "Marketing Services"], "resto": "f"},
+        "tamano": {"dentro": ["201-500", "501-1000", "1001-5000", "5001-10000"], "probar": ["10001+"], "fuera": ["1-10", "11-50", "51-200"], "resto": "f"},
+        "pais": {"dentro": ["México", "Colombia", "Perú", "Chile", "Costa Rica", "Ecuador", "Uruguay", "Panamá", "Guatemala"], "probar": ["España"], "fuera": ["Estados Unidos", "Brasil", "Argentina"], "resto": "f"},
+        "nivel": {"dentro": ["Head", "Director", "VP"], "probar": ["C-Suite", "Manager", "Senior"], "fuera": ["Entry"], "ignorar": ["Otro"], "resto": "f"},
+        "area": {"dentro": ["Ventas", "Marketing"], "probar": ["Dirección general", "TI"], "fuera": ["Experiencia del cliente", "Comunicación interna", "Recursos humanos", "Finanzas", "Otra"], "resto": "f"}
+      },
+      "rubros": [
+        { "rubro": "Industrias", "dice": "3 en orden (servicios de TI, staffing y servicios de RH, logística y transporte); por probar: outsourcing, ciberseguridad, gobierno, medios y marcas de consumo; fuera: software de producto, servicios financieros y banca, consultoría, restaurantes, telecom y agencias", "solo": "Sí" },
+        { "rubro": "Tamaño", "dice": "201 a 10,000; más de 10,000 solo con el líder de tecnología o equipos de canal; 51 a 200 fuera (0 ganadas, 44 perdidas)", "solo": "Sí" },
+        { "rubro": "Países", "dice": "MX, CO, PE, CL, CR, EC, UY, PA, GT; España por probar; fuera Estados Unidos y Brasil. Argentina fuera hasta que dirección decida", "solo": "Sí" },
+        { "rubro": "Puesto", "dice": "Líder de ventas (Head, Director o VP) o líder de marketing en campaña propia; Manager sale del núcleo (0 ganadas, 69 perdidas); nunca servicio al cliente ni puestos sin mando", "solo": "Sí, aproximado por título" },
+        { "rubro": "Una persona por campaña", "dice": "Un solo rol por campaña, máximo 3 personas por cuenta, una secuencia y un remitente", "solo": "No: se revisa en la lista antes de cargar" },
+        { "rubro": "Exclusiones", "dice": "Clientes y oportunidades abiertas de cualquier producto de GR, y competidores", "solo": "Sí, contra HubSpot" },
+        { "rubro": "Equipo que prospecta hoy, sin herramienta propia, decide en el país", "dice": "—", "solo": "No: se marca para revisión" }
+      ],
+      "alertas": [
+        { "color": "a", "secuencia": "am_software & services_lat_vip-s", "texto": "Un choque que ya se ve: Software & Services VIP-S fue la secuencia que más produjo en frío y Software Development está fuera del ICP vG. Las ganadas y perdidas mandan sobre la reacción: 0 ganadas y 13 perdidas en software de producto." },
+        { "color": "a", "texto": "Argentina: el ICP vG la incluye y el REA la excluye de forma permanente. Mientras dirección no decida, aquí cuenta como fuera." }
+      ]
+    },
+    "propuesta": {
+      "documento": "Propuesta de Valor Amplemarket vD",
+      "problemas": [
+        { "color": "v", "problema": "1 · No sé quién me busca ahora y llego tarde", "conversaciones": 16, "reuniones": 8, "oportunidades": 14, "lectura": "El que más produce; 8 oportunidades vivas, 8 de 16 con señal" },
+        { "color": "v", "problema": "3 · Mis vendedores se van en trabajo operativo", "conversaciones": 10, "reuniones": 6, "oportunidades": 4, "lectura": "Produjo también con el mensaje fijo de campaña, sin señal" },
+        { "color": "v", "problema": "2 · Para crecer tengo que contratar", "conversaciones": 6, "reuniones": 6, "oportunidades": 4, "lectura": "Todas sus conversaciones llegaron a cita; 5 de 6 con señal, sin probar en frío" },
+        { "color": "a", "problema": "5 · Dependo del inbound y de mis contactos", "conversaciones": 4, "reuniones": 2, "oportunidades": 1, "lectura": "El único probado en frío; ninguna oportunidad viva" },
+        { "color": "a", "problema": "6 · Dirección pide marca y leads a la vez", "conversaciones": 5, "reuniones": 3, "oportunidades": null, "lectura": "1 oportunidad viva; venta cruzada, solo con marketing" },
+        { "color": "r", "problema": "4 · Tengo herramientas que no se hablan", "conversaciones": 4, "reuniones": 2, "oportunidades": 0, "lectura": "Sin oportunidad con 4 conversaciones" }
+      ],
+      "recomendacion": "Abrir con el problema 1 (llegar tarde), mantener 3 y 2, y probar el 2 en frío, que hoy solo ha producido con señal. El 4 queda como apoyo, no como apertura.",
+      "nota": "La columna de reuniones cuenta citas persona por persona (Mensajes que Funcionaron AM vB, 13-nov), no reuniones verificadas contra grabación; oportunidades generadas en el CRM al 13-nov. No hay tasa por problema y el conteo es piso: siete citas de señales siguen sin identificar."
+    },
+    "lista": {
+      "indicadores": [
+        { "color": "r", "indicador": "Not the right person", "umbral": "Más de 10% = el filtro de puesto está mal", "valor": "20.4% (12 meses)", "fuente": "Tablero ICP, 21-nov (226 respuestas)" },
+        { "color": "r", "indicador": "Negativas por interesado", "umbral": "Más de 2 a 1 = se rehace la lista", "valor": "2.5 a 1 (12 meses)", "fuente": "Tablero ICP, 21-nov (226 respuestas)" },
+        { "color": "r", "indicador": "Personas por cuenta", "umbral": "Más de 3 = se corrige", "valor": "5 en una cuenta de la muestra de IT Services & Consulting vA (nov); 13.2 en Fintech (ago)", "fuente": "Hoja de cambios AM vF y Línea base AM vC" },
+        { "color": "r", "indicador": "Rebote y spam", "umbral": "Más de 5% = se detiene", "valor": "6.8% y 1.3% (ago); dos campañas en 22.4% y 16.1%", "fuente": "Línea base AM vC" }
+      ],
+      "nota": "Por la alarma de la lista, dirección decidió el 21-nov no cargar a nadie en frío hasta rehacerla con el ICP vG; las señales siguen corriendo. Rebote y personas por cuenta se vuelven a medir al construir la lista nueva."
+    },
+    "pruebas": {
+      "regla": "Cada prueba con su hipótesis, versión A y B, volumen (400 por versión con señal, 1,500 en frío), 4 a 6 semanas en la misma ventana, una por producto, y el dato que la justifica.",
+      "candidatas": [
+        { "prueba": "Problema 2 (para crecer tengo que contratar) en frío contra el problema 1", "dato": "6 conversaciones y 6 citas, pero 5 de 6 llegaron con señal (Propuesta vD)" },
+        { "prueba": "Campaña dirigida a CEO escrita para CEO contra el texto de marketing", "dato": "El mismo correo abrió al 80.4% y contestó al 0.38% con CEO, contra 1.75% con marketing (Línea base vC)" },
+        { "prueba": "Posts from thought-leaders contra palabras clave", "dato": "Primera de la Guía de señales vB: los autores ya abrieron conversaciones por palabras clave; se apaga a los 250 contactos sin cita" },
+        { "prueba": "Vacantes con títulos en texto libre, escribiéndole al jefe", "dato": "Por probar en el ICP vG; con el formato anterior dio 1 cita en 1,650 contactos. No se prende sin decisión de dirección" }
+      ]
+    },
+    "documentos": [
+      { "color": "v", "documento": "ICP Amplemarket vG", "estado": "Vigente (15-nov)", "falta": "Decidir Argentina: el ICP la incluye y el REA la excluye" },
+      { "color": "v", "documento": "Propuesta de Valor Amplemarket vD", "estado": "Vigente (21-nov), con recuento por problema", "falta": "El catálogo todavía liga la vC" },
+      { "color": "v", "documento": "Base de conocimiento GR_KB_AM_vH", "estado": "Vigente (21-nov), alineada al ICP vG", "falta": "El catálogo todavía liga la vG; revisar el texto de los AI snippets" },
+      { "color": "v", "documento": "Guía de señales de Duo vB", "estado": "Vigente (21-nov), alineada al ICP vG", "falta": "Decidir si se prueba vacantes con el formato del ICP vG" },
+      { "color": "a", "documento": "Hoja de cambios AM vF", "estado": "Vigente (21-nov)", "falta": "40 cambios abiertos; la lista y el paso 7 de IT Services & Consulting vA siguen sin corregir" },
+      { "color": "a", "documento": "Línea base AM vC", "estado": "Del 24-ago, antes del ICP vG", "falta": "Letra nueva al reactivar el frío con la lista nueva" },
+      { "color": "a", "documento": "Presentación Discovery Amplemarket vG", "estado": "Vigente", "falta": "Dar fuente a sus cifras de base de datos o quitarlas" },
+      { "color": "r", "documento": "Mensajes que funcionaron", "estado": "Existe (13-nov), vacío en el catálogo", "falta": "Ligar" },
+      { "color": "r", "documento": "Llamado a la acción", "estado": "El catálogo dice «Demo»", "falta": "Cambiar al cierre de permiso: la propuesta dice que pedir la demo de frente no produce" }
+    ]
   }
 }
