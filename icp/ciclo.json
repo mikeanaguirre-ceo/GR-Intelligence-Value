@@ -1,6 +1,6 @@
 {
   "_nota": "Contenido fijo de la página de cada producto del tablero ICP (Diseño de la Página de Producto TW vA, 20-nov-2026). Una llave por código de producto. Lo medido (secuencias, señales, gráfica) sale de la foto gr-icp; aquí va lo que viene de documentos: ciclo de cambio, familias de campaña, ICP, propuesta de valor, lista, pruebas candidatas y estado de documentos. Colores: v verde, a amarillo, r rojo.",
-  "_decisiones": {"documento": "Decisiones del Portafolio vG", "url": "https://docs.google.com/document/d/1N4z3PhaZpxcBvVLVgtoMLSK2lvqu4kwBI6WZG70oDpo/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
+  "_decisiones": {"documento": "Decisiones del Portafolio vH", "url": "https://docs.google.com/document/d/1rWfEda0YM4NISUarjvX7quYmzjhJ8ZsLmLNytFCYiJU/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
   "TW": {
     "decisiones": [
       {"que": "Regla de la lista en alarma (AM ya la tiene; AEO en el punto 17)", "recomendacion": "Sí: sin cargas nuevas en frío hasta rehacer la lista con el ICP; las señales siguen", "si_no": "Se sigue cargando en frío con 23.2% de persona equivocada"},
@@ -1213,12 +1213,12 @@
   },
   "LT": {
     "actualizado": "22-nov-2026",
-    "fuente": "Hoja de Cambios LT vC, GR_Linea_Base_LT_vA, ICP Legacy Takeover vI, Propuesta de Valor Legacy Systems Takeover vF, Mensajes de interés contra la Propuesta de Valor LT vB y GR_KB_LT_vB",
+    "fuente": "Hoja de Cambios LT vD, GR_Linea_Base_LT_vA, ICP Legacy Takeover vI, Propuesta de Valor Legacy Systems Takeover vF, Mensajes de interés contra la Propuesta de Valor LT vB y GR_KB_LT_vB",
     "decisiones": [
       {
-        "que": "Lista en alarma y señales detenidas en noviembre (decisión 20)",
-        "recomendacion": "Sin cargas en frío hasta tener una lista con el stack legacy verificado; revisar en Dúo por qué las cuatro señales dejaron de contactar",
-        "si_no": "No se carga nada y LT sigue detenido"
+        "que": "Lista en alarma y señales sin interesados en noviembre (decisión 20)",
+        "recomendacion": "Sin cargas en frío hasta tener una lista con el stack legacy verificado; en Dúo, dejar palabras clave 1 y revisar el mensaje de cambio de puesto y de vacantes",
+        "si_no": "No se carga a nadie en frío y las cuatro señales siguen"
       },
       {
         "que": "Pausar siete campañas activas sin pendientes (decisión 21)",
@@ -1256,7 +1256,7 @@
         },
         {
           "color": "r",
-          "texto": "LT está detenido: en noviembre no contactó a nadie, ni en frío ni por señales (en octubre fueron 538 en frío y 284 por señales). Lo que produjo noviembre salió de personas contactadas antes. Hay cinco campañas en frío y dos Open+3 activas sin pendientes (decisión 21)."
+          "texto": "El frío de LT está detenido: 0 contactados en noviembre (538 en octubre). Las señales siguen (284 en octubre y 255 en noviembre), pero en noviembre no dieron un interesado: cambio de puesto y vacantes llevan 421 contactados y 4 respuestas en dos meses. Corregido el 22-nov: la página decía que las señales estaban en cero porque el motor no preguntaba ese mes. Hay cinco campañas en frío y dos Open+3 activas sin pendientes (decisión 21)."
         },
         {
           "color": "a",
@@ -1277,8 +1277,8 @@
       ],
       "ligas": [
         {
-          "nombre": "Hoja de cambios LT vC",
-          "url": "https://docs.google.com/document/d/1mbeYFX3FgZ0mYWS4zBbk3sH3lzhIlVWOb9ffzkBBJHg/edit"
+          "nombre": "Hoja de cambios LT vD",
+          "url": "https://docs.google.com/document/d/1ijFwAu89Tn6kdGhZagwW7Cy6E_d75RGB2bV7ueRjthM/edit"
         },
         {
           "nombre": "Línea base LT vA",
@@ -1685,7 +1685,7 @@
       },
       {
         "color": "v",
-        "documento": "Hoja de cambios LT vC",
+        "documento": "Hoja de cambios LT vD",
         "estado": "Vigente (22-nov)",
         "falta": "17 cambios abiertos; siguiente revisión 4-dic"
       },
@@ -1727,6 +1727,30 @@
       }
     ],
     "campanas": [
+      {
+        "contiene": [
+          "lt_recent job changes legacy takeover cobol general 2026 30/09/26"
+        ],
+        "senal": true,
+        "motivo": "Señal del 30-sep: 247 contactados, 1 respuesta y ningún interesado",
+        "recomendacion": "Revisar su mensaje en Dúo (decisión 20)"
+      },
+      {
+        "contiene": [
+          "lt_job openings legacy takeover general 2026 30/09/26"
+        ],
+        "senal": true,
+        "motivo": "Señal del 30-sep: 174 contactados, 3 respuestas y ningún interesado",
+        "recomendacion": "Revisar su mensaje en Dúo (decisión 20)"
+      },
+      {
+        "contiene": [
+          "lt_posts mentioning specific keywords legacy takeover cobol"
+        ],
+        "senal": true,
+        "motivo": "Señal anterior al 30-sep; no contacta desde septiembre",
+        "recomendacion": "Reemplazada el 30-sep por palabras clave 1 y 2"
+      },
       {
         "contiene": [
           "open +3",
@@ -1773,7 +1797,7 @@
   },
   "ITS": {
     "actualizado": "22-nov-2026",
-    "fuente": "Hoja de Cambios ITS vB, GR_Linea_Base_ITS_vA, ICP ITS vG, Propuesta de Valor IT Support vH, Mensajes que Funcionaron ITS vA y GR_KB_ITS_vC",
+    "fuente": "Hoja de Cambios ITS vC, GR_Linea_Base_ITS_vA, ICP ITS vG, Propuesta de Valor IT Support vH, Mensajes que Funcionaron ITS vA y GR_KB_ITS_vC",
     "decisiones": [
       {
         "que": "Lista en alarma (decisión 24)",
@@ -1842,13 +1866,13 @@
         },
         {
           "color": "v",
-          "texto": "Corregido el 22-nov: las señales de ITS ya se ven en el tablero; Cinemex pasó a Synapsis atención a clientes; el Discovery de WarnerInstitutional, que había fallado, ya se leyó; una persona con dos fichas quedó en una; «Mensajes que funcionaron» ya está ligado, y el motor ya pide las señales de los meses sin campañas (enero y mayo de ITS)."
+          "texto": "Corregido el 22-nov: las señales de ITS ya se ven en el tablero; Cinemex pasó a Synapsis atención a clientes; el Discovery de WarnerInstitutional, que había fallado, ya se leyó; una persona con dos fichas quedó en una; «Mensajes que funcionaron» ya está ligado, y el motor ya pide las señales de los meses sin campañas (enero y mayo de ITS). Mayo fue el mes con más contactos por señales: 579, con 8 interesados y 2 reuniones."
         }
       ],
       "ligas": [
         {
-          "nombre": "Hoja de cambios ITS vB",
-          "url": "https://docs.google.com/document/d/1uX0oB6z982vJ_XzsswURF77JcaOWD-sgPrbKHSIVdJQ/edit"
+          "nombre": "Hoja de cambios ITS vC",
+          "url": "https://docs.google.com/document/d/1gVbL3xPYm6Z3mrQJBFBcL8F0YNKS6G3idK_JN9MUXMc/edit"
         },
         {
           "nombre": "Línea base ITS vA",
@@ -2234,7 +2258,7 @@
       },
       {
         "color": "v",
-        "documento": "Hoja de cambios ITS vB",
+        "documento": "Hoja de cambios ITS vC",
         "estado": "Vigente (22-nov)",
         "falta": "17 cambios abiertos; siguiente revisión 4-dic"
       },
@@ -2347,7 +2371,7 @@
   },
   "GENIARH": {
     "actualizado": "22-nov-2026",
-    "fuente": "Hoja de Cambios GenIA RH vC (integra la hoja oficial del 5-oct), ICP GenIA RH vF, Propuesta de Valor Agente GenIA RH vC, Mensajes que funcionaron GenIA RH vG y GR_KB_GENIARH_vC",
+    "fuente": "Hoja de Cambios GenIA RH vD (integra la hoja oficial del 5-oct), ICP GenIA RH vF, Propuesta de Valor Agente GenIA RH vC, Mensajes que funcionaron GenIA RH vG y GR_KB_GENIARH_vC",
     "decisiones": [
       {
         "que": "Campaña de alimentos y bebidas: su paso 10 ofrece un diagnóstico «sin costo» (decisión 31, urgente)",
@@ -2355,7 +2379,7 @@
         "si_no": "El paso sigue saliendo a los contactos en curso"
       },
       {
-        "que": "Plantilla de Dúo que dice «en Amplemarket» y confirmar en pantalla los cambios del 26-oct (30 minutos, cambio de puesto y vacantes) (decisión 32)",
+        "que": "Plantilla de Dúo que dice «en Amplemarket» y confirmar en pantalla la frase de 30 minutos y las vacantes solo de RH; cambio de puesto ya está confirmado en pausa (decisión 32)",
         "recomendacion": "Revisarlo juntos en la pantalla de Dúo",
         "si_no": "La plantilla sigue igual"
       },
@@ -2378,14 +2402,19 @@
         "que": "Registrar el origen de la segunda oportunidad de Heineken México y corregir el producto de Oben, Hochschild y Job&Talent en HubSpot (decisión 37)",
         "recomendacion": "Sí, con la tabla del documento de decisiones",
         "si_no": "Esa oportunidad sigue sin ficha y las otras tres en GenIA"
+      },
+      {
+        "que": "Activar la secuencia «Problemas», en borrador desde el 19-nov (decisión 43)",
+        "recomendacion": "Sí, con los primeros 300 de una lista solo de RH corporativo y en lugar de la de logística",
+        "si_no": "Sigue en borrador"
       }
     ],
     "ciclo": {
       "linea_base": "20-ago-2026 (la de GenIA)",
       "cambios_al": "22-nov-2026",
       "cerrados": 36,
-      "abiertos": 20,
-      "abiertos_detalle": "8 de dirección, 3 del equipo y 9 del motor",
+      "abiertos": 21,
+      "abiertos_detalle": "9 de dirección, 3 del equipo y 9 del motor",
       "siguiente_revision": "4-dic-2026",
       "perdido": "GenIA RH nació en septiembre separado de GenIA y se mide contra la línea base de GenIA (20-ago). La hoja del 26-oct ya pedía corregirla: hay cinco cuentas con reunión, no cero (decisión 35).",
       "alertas": [
@@ -2395,7 +2424,7 @@
         },
         {
           "color": "a",
-          "texto": "La plantilla de señal a Deloitte dice «en Amplemarket uso IA» y sigue igual. Lo demás ya lo habías cambiado el 26-oct (la frase de 30 minutos y la señal de cambio de puesto); falta confirmarlo en la pantalla de Dúo (decisión 32)."
+          "texto": "La plantilla de señal a Deloitte dice «en Amplemarket uso IA» y sigue igual. La señal de cambio de puesto quedó en pausa, confirmado: 92 contactados en octubre y 0 en noviembre (437 en total, 1 interesado y ninguna oportunidad). Falta confirmar en la pantalla de Dúo la frase de 30 minutos y las vacantes (decisión 32)."
         },
         {
           "color": "a",
@@ -2411,7 +2440,7 @@
         },
         {
           "color": "v",
-          "texto": "Corregido el 22-nov: las señales de GenIA RH ya cuentan en su producto (se sumaban a GenIA), noviembre ya cuadra (contaba un duplicado borrado de Heineken México) y «Mensajes que funcionaron» ya está ligado."
+          "texto": "Corregido el 22-nov: las señales de GenIA RH ya cuentan en su producto (se sumaban a GenIA), noviembre ya cuadra (contaba un duplicado borrado de Heineken México) y «Mensajes que funcionaron» ya está ligado. Las señales de junio a noviembre ya están cargadas: 1,429 contactados, 2 reuniones y 7 oportunidades con conversación."
         },
         {
           "color": "v",
@@ -2420,8 +2449,8 @@
       ],
       "ligas": [
         {
-          "nombre": "Hoja de cambios GenIA RH vC",
-          "url": "https://docs.google.com/document/d/1rOUK9PcIpEvDXyqcUkVq76o25XgkdGwESUaQFyfCO7o/edit"
+          "nombre": "Hoja de cambios GenIA RH vD",
+          "url": "https://docs.google.com/document/d/1w-BhRSo9tR8m6drO-Ipc1IaSifAKMp6UJMayC9fK71E/edit"
         },
         {
           "nombre": "ICP GenIA RH vF",
@@ -2473,7 +2502,7 @@
           "recent job changes"
         ],
         "en": "senales",
-        "lectura": "Vacantes dio la reunión con Oben y la oportunidad de Cushman & Wakefield. Cambio de puesto no ha dado resultado y el ICP vF la apaga como señal sola."
+        "lectura": "Vacantes dio la reunión con Oben y la oportunidad de Cushman & Wakefield. Cambio de puesto contactó a 437, con un interesado y ninguna oportunidad; está en pausa y el ICP vF la apaga como señal sola."
       }
     ],
     "icp": {
@@ -2743,9 +2772,9 @@
       },
       {
         "color": "v",
-        "documento": "Hoja de cambios GenIA RH vC",
+        "documento": "Hoja de cambios GenIA RH vD",
         "estado": "Vigente (22-nov)",
-        "falta": "20 cambios abiertos; siguiente revisión 4-dic"
+        "falta": "21 cambios abiertos; siguiente revisión 4-dic"
       },
       {
         "color": "r",
@@ -2837,8 +2866,8 @@
           "recent job changes"
         ],
         "senal": true,
-        "motivo": "El ICP vF la apaga como señal sola; Mike la pausó el 26-oct (hoja de cambios GenIA RH vC, cambio 26)",
-        "recomendacion": "Confirmar en Dúo que está pausada (decisión 32)"
+        "motivo": "El ICP vF la apaga como señal sola; Mike la pausó el 26-oct (hoja de cambios GenIA RH vD, cambio 26)",
+        "recomendacion": "Pausada: 0 contactados en noviembre"
       }
     ]
   },
