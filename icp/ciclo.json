@@ -83,7 +83,7 @@
     ]
   },
   "AM": {
-    "actualizado": "21-nov-2026",
+    "actualizado": "22-nov-2026",
     "fuente": "Hoja de Cambios AM vF, GR_Linea_Base_AM_vC, ICP Amplemarket vG, Propuesta de Valor Amplemarket vD, GR_KB_AM_vH y Guía de señales de Duo vB",
     "ciclo": {
       "linea_base": "24-ago-2026",
@@ -96,7 +96,7 @@
       "alertas": [
         { "color": "r", "texto": "El frío está parado: no se carga nadie en secuencias hasta rehacer la lista con el ICP vG (decisión de dirección, 21-nov). Contactados en secuencias: 670 en septiembre, 52 en octubre y 2 en noviembre. Las señales de Dúo siguen corriendo." },
         { "color": "a", "texto": "El 21-nov se pausaron 15 campañas sin volumen o fuera del ICP, sin archivar ninguna. De AM quedan activas solo REF_AM_Correo+LinkedIn_vA y AM_Open+3 sin WhatsApp_vD. Las señales AM_Job openings y AM_Posts from competitors quedaron pausadas en Dúo el mismo día." },
-        { "color": "a", "texto": "AM_IT SERVICES & CONSULTING vA está pausada antes de su primer envío. Para reactivarla faltan dos cosas: limpiar su lista (una cuenta con 5 personas, cuentas con conversación abierta o reunión previa y una persona en dos secuencias de AM) y corregir el paso 7, que pide la reunión de frente." },
+        { "color": "a", "texto": "AM_IT SERVICES & CONSULTING vA sigue pausada. El 22-nov se limpió su lista: de 397 a 273 contactos (fuera quienes ya estuvieron en otra secuencia de AM, empresas con reunión previa u oportunidad abierta, cuentas con más de 3 personas y un banco, que el ICP vG deja fuera). Su paso 7 pide la reunión de frente a propósito: es una prueba que decidió dirección el 19-nov. Reactivarla es decisión de dirección." },
         { "color": "a", "texto": "AM_SOFTWARE DEVELOPMENT vA está pausada antes de su primer envío porque Software Development está fuera del ICP vG (0 ganadas, 13 perdidas). Falta decidir si se reescribe para una industria dentro del ICP o se queda pausada." }
       ],
       "ligas": [
@@ -174,14 +174,14 @@
     },
     "documentos": [
       { "color": "v", "documento": "ICP Amplemarket vG", "estado": "Vigente (15-nov)", "falta": "Decidir Argentina: el ICP la incluye y el REA la excluye" },
-      { "color": "v", "documento": "Propuesta de Valor Amplemarket vD", "estado": "Vigente (21-nov), con recuento por problema", "falta": "El catálogo todavía liga la vC" },
-      { "color": "v", "documento": "Base de conocimiento GR_KB_AM_vH", "estado": "Vigente (21-nov), alineada al ICP vG", "falta": "El catálogo todavía liga la vG; revisar el texto de los AI snippets" },
+      { "color": "v", "documento": "Propuesta de Valor Amplemarket vD", "estado": "Vigente (21-nov), con recuento por problema", "falta": "Ninguna: ligada en el catálogo y en el motor (22-nov)" },
+      { "color": "v", "documento": "Base de conocimiento GR_KB_AM_vH", "estado": "Vigente (21-nov), alineada al ICP vG", "falta": "Ligada en el catálogo y en el motor (22-nov). Falta copiarla en Duo (Migue) y revisar el texto de los AI snippets" },
       { "color": "v", "documento": "Guía de señales de Duo vB", "estado": "Vigente (21-nov), alineada al ICP vG", "falta": "Decidir si se prueba vacantes con el formato del ICP vG" },
-      { "color": "a", "documento": "Hoja de cambios AM vF", "estado": "Vigente (21-nov)", "falta": "40 cambios abiertos; la lista y el paso 7 de IT Services & Consulting vA siguen sin corregir" },
+      { "color": "a", "documento": "Hoja de cambios AM vF", "estado": "Vigente (21-nov)", "falta": "40 cambios abiertos; la lista de IT Services & Consulting vA ya se limpió (22-nov); su paso 7 es una prueba que decidió dirección el 19-nov" },
       { "color": "a", "documento": "Línea base AM vC", "estado": "Del 24-ago, antes del ICP vG", "falta": "Letra nueva al reactivar el frío con la lista nueva" },
       { "color": "a", "documento": "Presentación Discovery Amplemarket vG", "estado": "Vigente", "falta": "Dar fuente a sus cifras de base de datos o quitarlas" },
-      { "color": "r", "documento": "Mensajes que funcionaron", "estado": "Existe (13-nov), vacío en el catálogo", "falta": "Ligar" },
-      { "color": "r", "documento": "Llamado a la acción", "estado": "El catálogo dice «Demo»", "falta": "Cambiar al cierre de permiso: la propuesta dice que pedir la demo de frente no produce" }
+      { "color": "v", "documento": "Mensajes que funcionaron", "estado": "Mensajes Completos vC (13-nov), ligado en el catálogo (22-nov)", "falta": "Ninguna" },
+      { "color": "v", "documento": "Llamado a la acción", "estado": "Cierre de permiso de la Propuesta vD (10.1), en el catálogo desde el 22-nov", "falta": "Ninguna" }
     ]
   }
 }
