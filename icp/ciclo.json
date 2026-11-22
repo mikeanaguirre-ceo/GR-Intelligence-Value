@@ -1,6 +1,6 @@
 {
   "_nota": "Contenido fijo de la página de cada producto del tablero ICP (Diseño de la Página de Producto TW vA, 20-nov-2026). Una llave por código de producto. Lo medido (secuencias, señales, gráfica) sale de la foto gr-icp; aquí va lo que viene de documentos: ciclo de cambio, familias de campaña, ICP, propuesta de valor, lista, pruebas candidatas y estado de documentos. Colores: v verde, a amarillo, r rojo.",
-  "_decisiones": {"documento": "Decisiones del Portafolio vD", "url": "https://docs.google.com/document/d/1NUlqfmcZct7xLWrs8lXNHjEkkKCw-Lz8M4qjTDefSkg/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
+  "_decisiones": {"documento": "Decisiones del Portafolio vE", "url": "https://docs.google.com/document/d/1npU0v9DCyiWHDyLejpLeE-QHHl7jYH7OFF1T6XAQq7I/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
   "TW": {
     "decisiones": [
       {"que": "Regla de la lista en alarma (AM ya la tiene; AEO en el punto 17)", "recomendacion": "Sí: sin cargas nuevas en frío hasta rehacer la lista con el ICP; las señales siguen", "si_no": "Se sigue cargando en frío con 23.2% de persona equivocada"},
@@ -1768,6 +1768,580 @@
         ],
         "icp": "mixta",
         "motivo": "Lista por tecnología de varias industrias: solo con las industrias del ICP vI"
+      }
+    ]
+  },
+  "ITS": {
+    "actualizado": "22-nov-2026",
+    "fuente": "Hoja de Cambios ITS vB, GR_Linea_Base_ITS_vA, ICP ITS vG, Propuesta de Valor IT Support vH, Mensajes que Funcionaron ITS vA y GR_KB_ITS_vC",
+    "decisiones": [
+      {
+        "que": "Lista en alarma (decisión 24)",
+        "recomendacion": "Sin cargas nuevas en frío hasta rehacer la lista con las nueve preguntas del ICP vG; las señales siguen",
+        "si_no": "No se carga nada en frío; las señales siguen"
+      },
+      {
+        "que": "Pausar cuatro campañas activas sin pendientes y corregir el nombre de Atlassian 2.0 (decisión 25)",
+        "recomendacion": "Sí: pausar, nunca archivar; vacantes se relanza en la forma nueva del ICP vG, sin el monto",
+        "si_no": "Siguen activas sin enviar nada"
+      },
+      {
+        "que": "Agentes de Dúo de ITS con casos de GenIA y AM, y cuatro de sus seis señales sin contactar desde octubre (decisión 26)",
+        "recomendacion": "Revisarlo juntos en la pantalla de Dúo, con el mismo bloque que ya usa AM",
+        "si_no": "Siguen saliendo casos de otros productos y solo contactan dos señales"
+      },
+      {
+        "que": "Base de conocimiento vD en español, alineada al ICP vG y a la Propuesta vH (decisión 27)",
+        "recomendacion": "Sí, después de leer las reuniones viejas (decisión 29)",
+        "si_no": "El motor sigue con la KB vC, armada con la Propuesta vG"
+      },
+      {
+        "que": "Aliados y consultoras en una lista aparte (decisión 28)",
+        "recomendacion": "Medirlos aparte, como en LT",
+        "si_no": "Siguen contados como oportunidades de compra"
+      },
+      {
+        "que": "Leer una vez las 14 reuniones de ITS de más de 90 días con notas (decisión 29)",
+        "recomendacion": "Sí: unos 1.2 USD en total",
+        "si_no": "Se quedan sin leer y la KB vD sale sin ellas"
+      },
+      {
+        "que": "Profuturo y Banobras como casos citables (decisión 30)",
+        "recomendacion": "No citarlos afuera hasta confirmar que son nuestros",
+        "si_no": "La Propuesta vH los sigue citando con porcentajes"
+      }
+    ],
+    "ciclo": {
+      "linea_base": "20-ago-2026",
+      "cambios_al": "22-nov-2026",
+      "cerrados": 9,
+      "abiertos": 17,
+      "abiertos_detalle": "11 de dirección, 3 del equipo y 3 del motor",
+      "siguiente_revision": "4-dic-2026",
+      "perdido": "La línea base no se puede repetir tal cual: las nueve campañas que midió están pausadas o sin pendientes, y en noviembre la única que envió en frío fue Atlassian 2.0 (87 contactados), que va contra el ICP vG.",
+      "alertas": [
+        {
+          "color": "r",
+          "texto": "La lista está en alarma: 22.9% de las respuestas dicen «persona equivocada» (el umbral es 10%) y hay 4.8 negativas por interesado (el umbral es 2), con 118 respuestas. Se recomienda no cargar a nadie en frío hasta rehacer la lista con las nueve preguntas del ICP vG (decisión 24)."
+        },
+        {
+          "color": "r",
+          "texto": "Cero ganadas: 88 oportunidades cerradas en el año, todas perdidas, y 21 abiertas. El ICP vG se apoya en reacciones e interés, no en ganadas."
+        },
+        {
+          "color": "a",
+          "texto": "Cuatro campañas activas sin pendientes. La única que envió en noviembre (Atlassian 2.0) le escribe en frío a empresas de 5,001 o más, trae cifras sin fuente y su nombre empieza con un espacio (decisión 25)."
+        },
+        {
+          "color": "a",
+          "texto": "Los agentes de Dúo de ITS citan casos de GenIA y AM, y uno se presentó como Amplemarket. Además, cuatro de las seis señales no contactan a nadie desde octubre: en noviembre solo contactan las dos de palabras clave, 145 personas (decisión 26)."
+        },
+        {
+          "color": "a",
+          "texto": "La base de conocimiento vC es anterior al ICP vG y a la Propuesta vH, y el ICP está en inglés. Antes de la vD conviene leer las 14 reuniones viejas con notas (decisiones 27 y 29)."
+        },
+        {
+          "color": "v",
+          "texto": "Corregido el 22-nov: las señales de ITS ya se ven en el tablero; Cinemex pasó a Synapsis atención a clientes; el Discovery de WarnerInstitutional, que había fallado, ya se leyó; una persona con dos fichas quedó en una; «Mensajes que funcionaron» ya está ligado, y el motor ya pide las señales de los meses sin campañas (enero y mayo de ITS)."
+        }
+      ],
+      "ligas": [
+        {
+          "nombre": "Hoja de cambios ITS vB",
+          "url": "https://docs.google.com/document/d/1uX0oB6z982vJ_XzsswURF77JcaOWD-sgPrbKHSIVdJQ/edit"
+        },
+        {
+          "nombre": "Línea base ITS vA",
+          "url": "https://docs.google.com/document/d/1WVtyi3KXikzqKULJNwI1LQ0hSdbx9fXO0CbOutveINg/edit"
+        },
+        {
+          "nombre": "ICP ITS vG",
+          "url": "https://docs.google.com/document/d/1_bJ8qcBj3A6_uVks5hr3vzGk7zoQBmO5ebtLevHVy5E/edit"
+        },
+        {
+          "nombre": "Propuesta de Valor IT Support vH",
+          "url": "https://docs.google.com/document/d/1hr7cE8HTVpP9nOea49yJsEtOGJlNEZ_Hd7Dn9DNpO4U/edit"
+        },
+        {
+          "nombre": "Base de conocimiento GR_KB_ITS_vC",
+          "url": "https://docs.google.com/document/d/1O0r9diWqQy3wfbM6f6ensYmM9pbF-rk4mBNuRIjOk7Q/edit"
+        }
+      ]
+    },
+    "familias": [
+      {
+        "nombre": "Plataforma de mesa",
+        "contiene": [
+          "atlassian",
+          "zendesk",
+          "servicenow"
+        ],
+        "en": "secuencias",
+        "lectura": "Nombran la mesa que la empresa ya usa y marcan su límite. Siete conversaciones de interés y la sesión con PepsiCo; solo funciona si la plataforma está verificada (a clientes de ServiceNow se les habló de Jira)."
+      },
+      {
+        "nombre": "Vacantes",
+        "contiene": [
+          "job o"
+        ],
+        "en": "secuencias",
+        "lectura": "La campaña de vacantes: 184 contactados, 2 citas y la reunión con Evertec, la mejor proporción del producto. Sin pendientes desde febrero."
+      },
+      {
+        "nombre": "Financiero e Itera",
+        "contiene": [
+          "lat_fin",
+          "itera"
+        ],
+        "en": "secuencias",
+        "lectura": "Listas de servicios financieros y de cuentas de Itera, pausadas desde junio a agosto."
+      },
+      {
+        "nombre": "Palabras clave",
+        "contiene": [
+          "posts mentioning specific keywords"
+        ],
+        "en": "senales",
+        "lectura": "Publicaciones sobre mesa de ayuda, MTTR, presupuesto de TI o ServiceNow. Es la señal que más reuniones produjo, entre ellas WarnerInstitutional."
+      },
+      {
+        "nombre": "Cambio de puesto y vacantes",
+        "contiene": [
+          "recent job changes",
+          "job openings"
+        ],
+        "en": "senales",
+        "lectura": "Puesto nuevo con presión de resultados; el ICP vG pide contactar al jefe del puesto vacante, nunca al puesto."
+      }
+    ],
+    "icp": {
+      "documento": "ICP ITS vG (18-nov)",
+      "reglas": {
+        "_nota": "Reglas del ICP ITS vG (18-nov) para calificar el perfil de quienes respondieron. Nombres exactos del catálogo de Amplemarket, como los trae el ICP vG. Lo que no está en ninguna lista cuenta como «resto». ignorar = no se califica. 5,001 o más y C-Suite solo con señal: se califican como «probar». Servicios de TI está dentro con advertencia: muchos revenden la plataforma.",
+        "industria": {
+          "dentro": [
+            "Banking",
+            "Retail banking",
+            "Financial Services",
+            "Pension Funds",
+            "Insurance Carriers",
+            "Insurance",
+            "Payment processing",
+            "IT Services and IT Consulting",
+            "Managed Services Providers",
+            "Outsourcing and Offshoring Consulting",
+            "IT outsourcing",
+            "Food and Beverage Manufacturing",
+            "Beverage Manufacturing",
+            "Utilities",
+            "Electric Power Generation",
+            "Mining",
+            "Oil and Gas",
+            "Government Administration",
+            "Utilities Administration",
+            "Real Estate",
+            "Commercial property leasing"
+          ],
+          "probar": [
+            "Non-Bank Lending",
+            "Credit Unions",
+            "Savings Institutions",
+            "Digital banking",
+            "Financial technology",
+            "Data Centers",
+            "Renewable Energy Power Generation",
+            "Consumer Packaged Goods (CPG) Brands",
+            "Personal Care Product Manufacturing",
+            "Retail",
+            "Supermarkets & Grocery Stores",
+            "Retail Pharmacies",
+            "Convenience Stores",
+            "Entertainment Providers",
+            "Hospitals and Health Care",
+            "Medical and Diagnostic Laboratories",
+            "Chemical Manufacturing",
+            "Motor Vehicle Manufacturing",
+            "Pharmaceutical Manufacturing",
+            "Transportation, Logistics, Supply Chain and Storage",
+            "Airlines and Aviation",
+            "Telecommunications",
+            "Telecommunications Carriers",
+            "Higher Education",
+            "Hotels and Motels",
+            "Telephone Call Centers"
+          ],
+          "fuera": [
+            "Software Development",
+            "Software Services (SaaS)",
+            "Help Desk Software",
+            "Business Consulting and Services",
+            "Municipal government",
+            "Local government administration"
+          ],
+          "resto": "f"
+        },
+        "tamano": {
+          "dentro": [
+            "201-500",
+            "501-1000",
+            "1001-5000"
+          ],
+          "probar": [
+            "5001-10000",
+            "10001+"
+          ],
+          "fuera": [
+            "1-10",
+            "11-50",
+            "51-200"
+          ],
+          "resto": "f"
+        },
+        "pais": {
+          "dentro": [
+            "Perú",
+            "Colombia",
+            "México",
+            "Chile",
+            "Costa Rica",
+            "Panamá",
+            "Guatemala",
+            "República Dominicana",
+            "Ecuador"
+          ],
+          "probar": [],
+          "fuera": [
+            "Argentina",
+            "Brasil"
+          ],
+          "resto": "f"
+        },
+        "nivel": {
+          "dentro": [
+            "Director",
+            "Head",
+            "Manager"
+          ],
+          "probar": [
+            "VP",
+            "C-Suite",
+            "Senior"
+          ],
+          "fuera": [
+            "Entry"
+          ],
+          "ignorar": [
+            "Otro"
+          ],
+          "resto": "f"
+        },
+        "area": {
+          "dentro": [
+            "TI"
+          ],
+          "probar": [],
+          "fuera": [
+            "Dirección general",
+            "Marketing",
+            "Ventas",
+            "Recursos humanos",
+            "Experiencia del cliente",
+            "Comunicación interna",
+            "Otra"
+          ],
+          "resto": "f"
+        }
+      },
+      "rubros": [
+        {
+          "rubro": "Industrias",
+          "dice": "En orden: servicios financieros (bancos, afores, aseguradoras y pagos), servicios de TI y outsourcing (revisar cuenta por cuenta: muchos revenden), alimentos y bebidas, energía y minería, gobierno y centros de negocios; por probar: retail, entretenimiento, salud, manufactura, logística, telecomunicaciones, educación superior, hotelería y centros de contacto; fuera: software, plataformas de mesa de ayuda, consultoras como compradoras y empresas sin TI propia",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Tamaño",
+          "dice": "Núcleo de 201 a 5,000 empleados; 5,001 o más solo con señal (10,001+ reacciona en −8.5 y tiene 19 oportunidades perdidas); de 1 a 200 suelen ser proveedores",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Países",
+          "dice": "Perú, Colombia, México, Chile, Costa Rica, Panamá, Guatemala, República Dominicana y Ecuador; Argentina y Brasil fuera",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Puesto",
+          "dice": "P1: quien opera la mesa y las operaciones de TI (Director, Head o Gerente); P2: liderazgo de TI, C-Suite solo con señal; P3: supervisores, sin probar. Nunca dirección general como primer contacto",
+          "solo": "Sí, aproximado por nivel y área"
+        },
+        {
+          "rubro": "Mesa propia que resuelve a mano",
+          "dice": "Mesa de servicio propia que registra bien y resuelve a mano los mismos incidentes; tener ServiceNow no descalifica, ya automatizar la resolución sí. La mesa se nombra solo si está verificada",
+          "solo": "No: se revisa en la lista antes de cargar"
+        },
+        {
+          "rubro": "Exclusiones",
+          "dice": "Clientes, oportunidades abiertas y cuentas que ya se reunieron con nosotros por cualquier producto; quien revende va a la lista de aliados; máximo tres personas por empresa; sin rebotes ni contactos redirigidos",
+          "solo": "Sí, contra HubSpot"
+        }
+      ],
+      "alertas": [
+        {
+          "color": "a",
+          "texto": "C-Suite reacciona en −12.7 (39 personas, 23 negativas), el peor nivel del producto; Manager reacciona en +11.2. La mesa la contesta quien la opera."
+        },
+        {
+          "color": "r",
+          "texto": "Servicios de TI tiene la mayor cantidad de oportunidades perdidas (20 en el año): muchos revenden la plataforma. Revisar cuenta por cuenta antes de cargar."
+        }
+      ]
+    },
+    "propuesta": {
+      "documento": "Propuesta de Valor IT Support vH",
+      "problemas": [
+        {
+          "color": "v",
+          "problema": "P3 · La mesa registra el ticket y alguien lo resuelve a mano",
+          "conversaciones": 7,
+          "reuniones": 1,
+          "oportunidades": 1,
+          "lectura": "El que más conversaciones abrió: la sesión con PepsiCo y la oportunidad de Banco Pichincha. Solo funciona con la plataforma verificada"
+        },
+        {
+          "color": "v",
+          "problema": "P1 · El conocimiento para resolver vive en dos o tres personas",
+          "conversaciones": 4,
+          "reuniones": null,
+          "oportunidades": 2,
+          "lectura": "Dos oportunidades (Ministerio de Ciencia y One), todo por señales. Falta probarlo como campaña general"
+        },
+        {
+          "color": "v",
+          "problema": "P7 · Llegas a un puesto nuevo con presión de resultados",
+          "conversaciones": 6,
+          "reuniones": null,
+          "oportunidades": 2,
+          "lectura": "Seis interesados y las dos oportunidades más recientes; solo existe con la señal de cambio de puesto"
+        },
+        {
+          "color": "v",
+          "problema": "P2 · Para sostener la mesa, la única salida conocida es contratar",
+          "conversaciones": 2,
+          "reuniones": 1,
+          "oportunidades": null,
+          "lectura": "La campaña de vacantes: 2 citas en 184 contactados y la reunión con Evertec, la mejor proporción del producto"
+        },
+        {
+          "color": "a",
+          "problema": "P4 · El presupuesto se va en sostener",
+          "conversaciones": 2,
+          "reuniones": null,
+          "oportunidades": 1,
+          "lectura": "La respuesta más rápida del año y la oportunidad más grande (Toyota del Perú); los pasos siguientes rompían líneas rojas"
+        },
+        {
+          "color": "a",
+          "problema": "P5 · Los mismos incidentes regresan",
+          "conversaciones": 4,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Cuatro interesados por señales; los cuatro se cayeron por errores nuestros de seguimiento, no por el mensaje"
+        },
+        {
+          "color": "a",
+          "problema": "P8 · Automatizar sin control ni evidencia es un riesgo que nadie quiere firmar",
+          "conversaciones": 2,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Techshare y Banco GNB lo pidieron antes de avanzar: es el criterio de compra, no una objeción tardía"
+        },
+        {
+          "color": "r",
+          "problema": "P6 · La mesa cumple el SLA y el negocio siente el golpe antes que TI",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Sin mensaje propio todavía; sale de lo que dijo Emtelco sobre centros de contacto"
+        }
+      ],
+      "recomendacion": "Abrir las campañas generales con P3 y P2, que no dependen de un dato de la persona; probar P1 como campaña general, y dejar P7 en su carril de señales. P8 va en el segundo mensaje de toda campaña: es lo que pide quien está por comprar.",
+      "nota": "Fuente: «Mensajes que Funcionaron ITS — Problemas y Angulos vA» (23-oct), sobre los 17 hilos útiles de campañas del año, 27 registros de señales con interés o cita y los 90 pasos de las nueve campañas. Un mismo caso puede contar en dos problemas. No es tasa por problema: en señales no se sabe cuántos recibieron cada mensaje."
+    },
+    "lista": {
+      "indicadores": [
+        {
+          "color": "r",
+          "indicador": "Not the right person",
+          "umbral": "Más de 10% = el filtro de puesto está mal",
+          "valor": "22.9% (118 respuestas)",
+          "fuente": "Tablero ICP, 22-nov"
+        },
+        {
+          "color": "r",
+          "indicador": "Negativas por interesado",
+          "umbral": "Más de 2 a 1 = se rehace la lista",
+          "valor": "4.8 a 1 (58 Not interested, 12 Interested)",
+          "fuente": "Tablero ICP, 22-nov"
+        },
+        {
+          "color": "a",
+          "indicador": "C-Suite en frío",
+          "umbral": "Negativo = no se carga en frío",
+          "valor": "−12.7 (39 personas, 23 negativas)",
+          "fuente": "ICP ITS vG, 15-nov"
+        }
+      ],
+      "nota": "Una de cada cuatro respuestas dice que no es la persona. El ICP vG pide nueve preguntas antes de cargar a alguien (mesa propia, que no revenda, máximo tres por empresa, sin C-Suite en frío); sin eso no se recomienda cargar a nadie en frío."
+    },
+    "pruebas": {
+      "regla": "Cada prueba con su hipótesis, versión A y B, volumen (400 por versión con señal, 1,500 en frío), 4 a 6 semanas en la misma ventana, una por producto, y el dato que la justifica.",
+      "candidatas": [
+        {
+          "prueba": "Vacantes en la forma nueva (20 títulos de soporte, se le escribe al jefe)",
+          "dato": "La campaña de vacantes tuvo 2 citas en 184 contactados y la reunión con Evertec (Mensajes que funcionaron ITS vA)"
+        },
+        {
+          "prueba": "El conocimiento en dos o tres personas (P1) como campaña general",
+          "dato": "Dos oportunidades detrás, todas por señales; nunca se midió en frío"
+        },
+        {
+          "prueba": "Señal de crecimiento de plantilla (6 meses, más de 10%)",
+          "dato": "Sin probar (ICP vG)"
+        },
+        {
+          "prueba": "Lista de aliados aparte (consultoras que revenden)",
+          "dato": "NEXUM entró como prospecto y terminó como aliado que revende (18-nov)"
+        }
+      ]
+    },
+    "documentos": [
+      {
+        "color": "a",
+        "documento": "ICP ITS vG",
+        "estado": "Vigente (18-nov), en inglés",
+        "falta": "Pasarlo a español; Cinemex sale de la evidencia (es de Synapsis atención a clientes)"
+      },
+      {
+        "color": "a",
+        "documento": "Propuesta de Valor IT Support vH",
+        "estado": "Vigente (18-nov)",
+        "falta": "Confirmar si Profuturo es caso propio antes de citarlo con porcentajes (decisión 30)"
+      },
+      {
+        "color": "a",
+        "documento": "Base de conocimiento GR_KB_ITS_vC",
+        "estado": "Del 25-oct, armada con la Propuesta vG",
+        "falta": "Letra D con el ICP vG, la Propuesta vH y las reuniones leídas (decisiones 27 y 29)"
+      },
+      {
+        "color": "v",
+        "documento": "Hoja de cambios ITS vB",
+        "estado": "Vigente (22-nov)",
+        "falta": "17 cambios abiertos; siguiente revisión 4-dic"
+      },
+      {
+        "color": "a",
+        "documento": "Línea base ITS vA",
+        "estado": "Del 20-ago, antes del ICP vG",
+        "falta": "Letra nueva al relanzar el frío con la lista nueva"
+      },
+      {
+        "color": "v",
+        "documento": "Presentación Discovery IT Support vB",
+        "estado": "Vigente",
+        "falta": "Ninguna"
+      },
+      {
+        "color": "r",
+        "documento": "Template de propuesta",
+        "estado": "No existe uno oficial; se usa la propuesta más reciente",
+        "falta": "Crearlo en Documentos de Ventas de ITS"
+      },
+      {
+        "color": "v",
+        "documento": "Mensajes que funcionaron",
+        "estado": "«Mensajes que Funcionaron ITS — Problemas y Angulos vA» (23-oct)",
+        "falta": "Ninguna: ligado en el catálogo (22-nov)"
+      },
+      {
+        "color": "v",
+        "documento": "Llamado a la acción",
+        "estado": "Demo sobre un caso del prospecto",
+        "falta": "Sin duración de la reunión ni cifras sin fuente"
+      }
+    ],
+    "campanas": [
+      {
+        "contiene": [
+          "open +3",
+          "open+3"
+        ],
+        "icp": "na",
+        "motivo": "Open+3: reactiva a quien abrió tres veces; no es una lista por industria",
+        "recomendacion": "Pausar: sin contactos pendientes (decisión 25)"
+      },
+      {
+        "contiene": [
+          "ref_its"
+        ],
+        "icp": "na",
+        "motivo": "Referidos: no es una lista por industria"
+      },
+      {
+        "contiene": [
+          "technologyatlassian_+5,000 - 10,001 2.0"
+        ],
+        "icp": "fuera",
+        "motivo": "ICP ITS vG: 5,001 o más solo con señal, y esta escribe en frío; trae cifras sin fuente y su nombre empieza con un espacio",
+        "recomendacion": "Pausar: sin contactos pendientes; va contra el ICP vG en frío (decisión 25)"
+      },
+      {
+        "contiene": [
+          "zendesk +5,000 - 10,001 3.0"
+        ],
+        "icp": "fuera",
+        "motivo": "ICP ITS vG: 5,001 o más solo con señal, y esta escribe en frío",
+        "recomendacion": "Pausar: sin contactos pendientes desde abril (decisión 25)"
+      },
+      {
+        "contiene": [
+          "all_job o"
+        ],
+        "icp": "mixta",
+        "motivo": "Vacantes es señal: el ICP vG admite 5,001 o más con ella, pero en la forma nueva (20 títulos y se le escribe al jefe)",
+        "recomendacion": "Pausar: sin contactos pendientes desde febrero; relanzar en la forma nueva del ICP vG, sin el monto (decisión 25)"
+      },
+      {
+        "contiene": [
+          "servicenow"
+        ],
+        "icp": "fuera",
+        "motivo": "ICP ITS vG: 5,001 o más solo con señal; además le hablaba de Jira a clientes de ServiceNow"
+      },
+      {
+        "contiene": [
+          "lat_fin",
+          "tech atlassian_1,000-10,001"
+        ],
+        "icp": "mixta",
+        "motivo": "Servicios financieros es el sector 1, pero el rango de 1,000 a 10,001 mezcla tamaños que en frío quedan fuera"
+      },
+      {
+        "contiene": [
+          "itera"
+        ],
+        "icp": "mixta",
+        "motivo": "Lista de cuentas de Itera de varios sectores: solo con los del ICP vG"
+      },
+      {
+        "contiene": [
+          "its_recent job changes",
+          "its_job openings",
+          "general 3.0 2026",
+          "prueba b"
+        ],
+        "senal": true,
+        "motivo": "No contacta a nadie desde octubre (hoja de cambios ITS vB, cambio 25)",
+        "recomendacion": "Revisar en Dúo por qué dejó de contactar desde octubre (decisión 26)"
       }
     ]
   }
