@@ -186,11 +186,11 @@
   },
   "360": {
     "actualizado": "22-nov-2026",
-    "fuente": "Hoja de Cambios 360 vA, GR_Linea_Base_360_vA, ICP Marketing 360 vB, Propuesta de Valor Marketing 360 vA y GR_KB_360_vA",
+    "fuente": "Hoja de Cambios 360 vB, GR_Linea_Base_360_vA, ICP Marketing 360 vB, Propuesta de Valor Marketing 360 vA y GR_KB_360_vA",
     "ciclo": {
       "linea_base": "20-ago-2026",
       "cambios_al": "22-nov-2026",
-      "cerrados": 7,
+      "cerrados": 8,
       "abiertos": 11,
       "abiertos_detalle": "4 de dirección, 5 del equipo y 2 en medición",
       "siguiente_revision": "4-dic-2026",
@@ -215,8 +215,8 @@
       ],
       "ligas": [
         {
-          "nombre": "Hoja de cambios 360 vA",
-          "url": "https://docs.google.com/document/d/1BHMMUCG77oqmzI1kRETDtyXQPw5PHgkIsEfHXHkuRZ0/edit"
+          "nombre": "Hoja de cambios 360 vB",
+          "url": "https://docs.google.com/document/d/1t9vgPL-ZusuHaGmw_62gbbexZf5GnuV6qXmfkLF3N8Q/edit"
         },
         {
           "nombre": "Línea base 360 vA",
@@ -562,7 +562,7 @@
       },
       {
         "color": "v",
-        "documento": "Hoja de cambios 360 vA",
+        "documento": "Hoja de cambios 360 vB",
         "estado": "Vigente (22-nov)",
         "falta": "11 cambios abiertos; siguiente revisión 4-dic"
       },
