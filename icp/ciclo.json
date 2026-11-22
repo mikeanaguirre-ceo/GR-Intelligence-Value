@@ -1,6 +1,6 @@
 {
   "_nota": "Contenido fijo de la página de cada producto del tablero ICP (Diseño de la Página de Producto TW vA, 20-nov-2026). Una llave por código de producto. Lo medido (secuencias, señales, gráfica) sale de la foto gr-icp; aquí va lo que viene de documentos: ciclo de cambio, familias de campaña, ICP, propuesta de valor, lista, pruebas candidatas y estado de documentos. Colores: v verde, a amarillo, r rojo.",
-  "_decisiones": {"documento": "Decisiones del Portafolio vB", "url": "https://docs.google.com/document/d/1TgZUw5DCcOVx_ijJBFV0fx7rpo57wEoUqZR2a_pJ-XM/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
+  "_decisiones": {"documento": "Decisiones del Portafolio vC", "url": "https://docs.google.com/document/d/1ttHWCJ_VT-EQeT4XcgYkMlo-akvLirhwpzYcuAheDwM/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
   "TW": {
     "decisiones": [
       {"que": "Regla de la lista en alarma (AM ya la tiene; AEO en el punto 17)", "recomendacion": "Sí: sin cargas nuevas en frío hasta rehacer la lista con el ICP; las señales siguen", "si_no": "Se sigue cargando en frío con 23.2% de persona equivocada"},
@@ -1208,6 +1208,566 @@
         "senal": true,
         "estado": "paused",
         "motivo": "Agente de Dúo apagado (hoja de cambios AEO vD, cambios 20 y 21)"
+      }
+    ]
+  },
+  "LT": {
+    "actualizado": "22-nov-2026",
+    "fuente": "Hoja de Cambios LT vB, GR_Linea_Base_LT_vA, ICP Legacy Takeover vI, Propuesta de Valor Legacy Systems Takeover vF, Mensajes de interés contra la Propuesta de Valor LT vB y GR_KB_LT_vB",
+    "decisiones": [
+      {
+        "que": "Lista en alarma y señales detenidas en noviembre (decisión 20)",
+        "recomendacion": "Sin cargas en frío hasta tener una lista con el stack legacy verificado; revisar en Dúo por qué las cuatro señales dejaron de contactar",
+        "si_no": "No se carga nada y LT sigue detenido"
+      },
+      {
+        "que": "Pausar siete campañas activas sin pendientes (decisión 21)",
+        "recomendacion": "Sí: pausar, nunca archivar",
+        "si_no": "Siguen activas sin enviar nada"
+      },
+      {
+        "que": "Base de conocimiento vC y Propuesta de Valor vG en español, alineadas al ICP vI (decisión 22)",
+        "recomendacion": "Sí, como en AM y AEO",
+        "si_no": "El motor sigue con la KB vB y la Propuesta vF"
+      },
+      {
+        "que": "Consultoras como canal, en una lista aparte (decisión 23)",
+        "recomendacion": "Medirlas aparte",
+        "si_no": "Siguen contadas como oportunidades de compra"
+      },
+      {
+        "que": "Argentina: el ICP vI la incluye y el REA la excluye (decisión 2)",
+        "recomendacion": "Mantenerla fuera hasta tener un caso. España sí entra: el REA la permite para todos los productos",
+        "si_no": "Sigue fuera (como hoy en página y bases)"
+      }
+    ],
+    "ciclo": {
+      "linea_base": "20-ago-2026",
+      "cambios_al": "22-nov-2026",
+      "cerrados": 6,
+      "abiertos": 19,
+      "abiertos_detalle": "6 de dirección, 4 del equipo y 9 del motor",
+      "siguiente_revision": "4-dic-2026",
+      "perdido": "Once campañas se archivaron en lugar de pausarse (siete de COBOL, dos de SAP, Java Mythos y Java Enterprise 3.0): su historia ya no está en Amplemarket, aunque el tablero conserva sus cifras. Las dos 3.0 se archivaron con 4 y 6 contactados y no se pudieron medir.",
+      "alertas": [
+        {
+          "color": "r",
+          "texto": "La lista tiene la peor alarma del portafolio: 41.2% de las respuestas dicen «persona equivocada» (el umbral es 10%) y hay 7.3 negativas por interesado (el umbral es 2). Se recomienda no cargar a nadie en frío hasta tener una lista con el stack legacy verificado (decisión 20)."
+        },
+        {
+          "color": "r",
+          "texto": "LT está detenido: en noviembre no contactó a nadie, ni en frío ni por señales (en octubre fueron 538 en frío y 284 por señales). Lo que produjo noviembre salió de personas contactadas antes. Hay cinco campañas en frío y dos Open+3 activas sin pendientes (decisión 21)."
+        },
+        {
+          "color": "a",
+          "texto": "De las seis reuniones del año, tres fueron con consultoras, que el ICP vI trata como canal y no como comprador. Se recomienda medirlas aparte (decisión 23)."
+        },
+        {
+          "color": "a",
+          "texto": "Los textos de las campañas sin pendientes traen una regla de México enviada a Perú, un caso retirado, cifras sin fuente, «sin costo» y una cita de otro producto. Hoy no se envían; se corrigen antes de reusar cada campaña."
+        },
+        {
+          "color": "a",
+          "texto": "La base de conocimiento vB y la propuesta de valor vF son anteriores al ICP vI, y el ICP está en inglés. Se proponen letras nuevas en español (decisión 22)."
+        },
+        {
+          "color": "v",
+          "texto": "Las reuniones grabadas ya cuentan como reunión aunque la etapa de HubSpot no haya avanzado: LT sube de 4 a 6 reuniones en sus fichas (22-nov)."
+        }
+      ],
+      "ligas": [
+        {
+          "nombre": "Hoja de cambios LT vB",
+          "url": "https://docs.google.com/document/d/1miSRQdhPV8qNycoYXa8xiNOkyOeFWZghDJUs6rir4Ek/edit"
+        },
+        {
+          "nombre": "Línea base LT vA",
+          "url": "https://docs.google.com/document/d/1FYEDXJY9uprkyvKv6w8JGzB6p5FZLPsxAk84FzCeNNw/edit"
+        },
+        {
+          "nombre": "ICP Legacy Takeover vI",
+          "url": "https://docs.google.com/document/d/15kktBIRCS0bS4TvUsDgTMtEEGlD1e0V-x3wHQ2FvToI/edit"
+        },
+        {
+          "nombre": "Propuesta de Valor Legacy Systems Takeover vF",
+          "url": "https://docs.google.com/document/d/1kvLXD-LTZC0doQKUPI91A3pOLH07FEgMKSoycI0-QuM/edit"
+        },
+        {
+          "nombre": "Base de conocimiento GR_KB_LT_vB",
+          "url": "https://docs.google.com/document/d/1iwWersrAV4X4ODuu_hDxVW53Q7IaJ3yyJEw51iE_j4g/edit"
+        }
+      ]
+    },
+    "familias": [
+      {
+        "nombre": "Java",
+        "contiene": [
+          "tec-java"
+        ],
+        "en": "secuencias",
+        "lectura": "Listas por tecnología Java (web, enterprise y general) de varias industrias. Tres siguen activas sin pendientes."
+      },
+      {
+        "nombre": "COBOL",
+        "contiene": [
+          "tec-cobol"
+        ],
+        "en": "secuencias",
+        "lectura": "Siete versiones archivadas el 25-ago y una pausada."
+      },
+      {
+        "nombre": "Oracle y SAP",
+        "contiene": [
+          "tec-oracle",
+          "tec-sap"
+        ],
+        "en": "secuencias",
+        "lectura": "Oracle pausada (dos versiones); SAP archivada."
+      },
+      {
+        "nombre": "Banca y retail",
+        "contiene": [
+          "lt_banking",
+          "lt_retail"
+        ],
+        "en": "secuencias",
+        "lectura": "Las dos campañas por sector del ICP (banca, sector 1; retail con crédito propio, sector 2), lanzadas en septiembre."
+      },
+      {
+        "nombre": "Palabras clave",
+        "contiene": [
+          "posts mentioning specific keywords"
+        ],
+        "en": "senales",
+        "lectura": "La señal que más produjo del producto; de aquí salieron la mayoría de las reuniones."
+      },
+      {
+        "nombre": "Cambio de puesto y vacantes",
+        "contiene": [
+          "recent job changes",
+          "job openings"
+        ],
+        "en": "senales",
+        "lectura": "Cambio de puesto y vacantes de desarrolladores legacy; el ICP vI pide contactar al jefe, nunca al puesto vacante."
+      }
+    ],
+    "icp": {
+      "documento": "ICP Legacy Takeover vI (15-nov)",
+      "reglas": {
+        "_nota": "Reglas del ICP Legacy Takeover vI (15-nov) para calificar el perfil de quienes respondieron. Nombres exactos del catálogo de Amplemarket, como los trae el ICP vI. Lo que no está en ninguna lista cuenta como «resto». ignorar = no se califica. Argentina: el ICP vI la incluye y el REA la excluye; queda fuera hasta que dirección decida. España entra: el REA §5.2 la permite para todos los productos.",
+        "industria": {
+          "dentro": [
+            "Banking",
+            "Retail banking",
+            "Retail",
+            "Retail Furniture and Home Furnishings",
+            "Furniture and Home Furnishings Manufacturing",
+            "Retail Appliances, Electrical, and Electronic Equipment",
+            "Financial Services",
+            "Insurance Carriers",
+            "Insurance",
+            "Life insurance",
+            "Pension Funds",
+            "Credit Unions",
+            "Savings Institutions",
+            "Non-Bank Lending",
+            "Payment processing",
+            "Credit Intermediation",
+            "Investment Management",
+            "Non-profit Organizations",
+            "Food and Beverage Manufacturing",
+            "Meat Products Manufacturing",
+            "Dairy Product Manufacturing",
+            "Industrial Machinery Manufacturing",
+            "Machinery Manufacturing",
+            "Government Administration",
+            "Public Policy Offices",
+            "Telecommunications",
+            "Telecommunications Carriers",
+            "Wireless Services"
+          ],
+          "probar": [
+            "Supermarkets & Grocery Stores",
+            "Retail Pharmacies",
+            "Wholesale Food and Beverage",
+            "Chemical Manufacturing",
+            "Farming",
+            "Hospitals and Health Care",
+            "Health insurance",
+            "Airlines and Aviation",
+            "Aviation and Aerospace Component Manufacturing",
+            "Electric Power Transmission, Control, and Distribution",
+            "Water Supply and Irrigation Systems",
+            "Transportation, Logistics, Supply Chain and Storage",
+            "Customs brokerage",
+            "Higher Education",
+            "Education Administration Programs",
+            "Real Estate",
+            "Construction"
+          ],
+          "fuera": [
+            "IT Services and IT Consulting",
+            "Managed Services Providers",
+            "IT outsourcing",
+            "IT System Custom Software Development",
+            "IT System Operations and Maintenance",
+            "Software Development",
+            "Custom software development",
+            "Software Services (SaaS)",
+            "Enterprise software solutions",
+            "Technology, Information and Internet",
+            "Data Centers",
+            "Web hosting services",
+            "Cloud computing",
+            "Financial technology",
+            "E-commerce platform",
+            "Internet Marketplace Platforms",
+            "Computer and Network Security",
+            "Business Consulting and Services",
+            "Municipal government",
+            "Local government administration"
+          ],
+          "resto": "f"
+        },
+        "tamano": {
+          "dentro": [
+            "1001-5000",
+            "5001-10000",
+            "10001+"
+          ],
+          "probar": [
+            "501-1000"
+          ],
+          "fuera": [
+            "1-10",
+            "11-50",
+            "51-200",
+            "201-500"
+          ],
+          "resto": "f"
+        },
+        "pais": {
+          "dentro": [
+            "Colombia",
+            "Perú",
+            "México",
+            "Chile",
+            "Costa Rica",
+            "Panamá",
+            "República Dominicana",
+            "Uruguay",
+            "España"
+          ],
+          "probar": [],
+          "fuera": [
+            "Argentina",
+            "Brasil",
+            "Estados Unidos"
+          ],
+          "resto": "f"
+        },
+        "nivel": {
+          "dentro": [
+            "C-Suite",
+            "VP",
+            "Head",
+            "Director",
+            "Manager"
+          ],
+          "probar": [],
+          "fuera": [
+            "Senior",
+            "Entry"
+          ],
+          "ignorar": [
+            "Otro"
+          ],
+          "resto": "f"
+        },
+        "area": {
+          "dentro": [
+            "TI"
+          ],
+          "probar": [
+            "Finanzas",
+            "Dirección general"
+          ],
+          "fuera": [
+            "Marketing",
+            "Ventas",
+            "Recursos humanos",
+            "Experiencia del cliente",
+            "Comunicación interna",
+            "Otra"
+          ],
+          "resto": "f"
+        }
+      },
+      "rubros": [
+        {
+          "rubro": "Industrias",
+          "dice": "En orden: banca, retail con crédito propio, otros servicios financieros, casas de empeño y fundaciones, manufactura y agroindustria, gobierno y telecomunicaciones; por probar: salud, aviación, energía, logística, educación e inmobiliario; fuera: servicios de TI e integradores (el peor puntaje del producto), software, centros de datos y empresas nacidas digitales",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Tamaño",
+          "dice": "Núcleo de 1,001 empleados en adelante, encabezado por 10,001+; de 501 a 1,000 solo con el stack legacy verificado; abajo de 500 no funciona",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Países",
+          "dice": "Colombia, Perú, México, Chile, Costa Rica, Panamá, República Dominicana, Uruguay y España; Brasil fuera; Argentina fuera hasta que dirección decida",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Puesto",
+          "dice": "P1: arquitectura y aplicaciones (Director, VP, Head o Gerente); P2: sistemas centrales, programas y patrocinadores; P3: compras y finanzas",
+          "solo": "Sí, aproximado por nivel y área"
+        },
+        {
+          "rubro": "Stack legacy verificado",
+          "dice": "Al menos una tecnología legacy verificada antes de cargar: COBOL, RPG / IBM i, Natural, PL/I, Oracle Forms, Java legacy, .NET Framework, Visual Basic 6 o PowerBuilder",
+          "solo": "No: se revisa en la lista antes de cargar"
+        },
+        {
+          "rubro": "Exclusiones",
+          "dice": "Clientes, oportunidades abiertas y cuentas que ya se reunieron con nosotros por cualquier producto; consultoras en una lista aparte de socios; máximo tres personas por empresa",
+          "solo": "Sí, contra HubSpot"
+        }
+      ],
+      "alertas": [
+        {
+          "color": "a",
+          "texto": "TI como área reacciona en -5.6 (77 personas, 28 negativas): el interés vino de arquitectura y modernización con un tema activo, no del liderazgo general de TI."
+        },
+        {
+          "color": "r",
+          "texto": "Cero ganadas: 56 oportunidades cerradas en el año, todas perdidas. El ICP vI se apoya en reacciones e interés, no en ganadas."
+        }
+      ]
+    },
+    "propuesta": {
+      "documento": "Propuesta de Valor Legacy Systems Takeover vF",
+      "problemas": [
+        {
+          "color": "v",
+          "problema": "P4 · La caja negra que camina",
+          "conversaciones": 2,
+          "reuniones": 2,
+          "oportunidades": null,
+          "lectura": "El dolor más productivo: cinco de los nueve mensajes con interés lo usan; 2 reuniones, 1 cita y 2 interesados. El mercado lo dice como dependencia, conocimiento tribal y visibilidad para decidir"
+        },
+        {
+          "color": "v",
+          "problema": "P3 · El riesgo que no aparece en ningún tablero",
+          "conversaciones": null,
+          "reuniones": 2,
+          "oportunidades": null,
+          "lectura": "Las dos reuniones donde el prospecto de verdad se sentó salieron de aquí; hoy está en el paso 4 y debería abrir"
+        },
+        {
+          "color": "a",
+          "problema": "P5 · Demasiados orígenes y demasiados destinos",
+          "conversaciones": 1,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "1 cita agendada y 1 canal abierto; el prospecto lo vive como pérdida de poder frente al proveedor"
+        },
+        {
+          "color": "a",
+          "problema": "P2 · Nadie te dice qué tan grande es el proyecto",
+          "conversaciones": 2,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "2 interesados que pidieron material por escrito; se atiende con un documento, no con una llamada"
+        },
+        {
+          "color": "a",
+          "problema": "P7 · El presupuesto que se va en sobrevivir",
+          "conversaciones": 1,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "1 cita y 1 interesado; respondió a la comparación de velocidad, no a los porcentajes"
+        },
+        {
+          "color": "a",
+          "problema": "P8 · Ya tienes equipo y herramientas de IA, y nadie te ha dicho qué les falta",
+          "conversaciones": 3,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Tres prospectos lo dijeron con sus palabras y ningún mensaje lo usa"
+        },
+        {
+          "color": "r",
+          "problema": "P6 · La cicatriz de la última migración",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Solo no ha abierto nada: cierra objeciones, no abre conversaciones"
+        },
+        {
+          "color": "r",
+          "problema": "P1 · La promesa que nadie cumple",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Sin evidencia: vive en los pasos 5, 8 y 10, donde ya casi nadie contesta"
+        }
+      ],
+      "recomendacion": "Abrir con P4 (dependencia, conocimiento tribal y visibilidad para decidir) y P3 (el riesgo escondido en el código), y escribir P8 como el segundo mensaje de toda campaña. La prueba sobre un módulo va al frente, sin «sin costo» ni plazos sin respaldo.",
+      "nota": "Fuente: «Mensajes de interés contra la Propuesta de Valor LT vB» (28-sep), sobre los diez registros de interés del año y el texto completo de las cuatro campañas medidas. Un mismo caso puede contar en dos problemas. No es tasa por problema: no se sabe cuántos recibieron cada mensaje."
+    },
+    "lista": {
+      "indicadores": [
+        {
+          "color": "r",
+          "indicador": "Not the right person",
+          "umbral": "Más de 10% = el filtro de puesto está mal",
+          "valor": "41.2% (85 respuestas)",
+          "fuente": "Tablero ICP, 22-nov"
+        },
+        {
+          "color": "r",
+          "indicador": "Negativas por interesado",
+          "umbral": "Más de 2 a 1 = se rehace la lista",
+          "valor": "7.3 a 1 (29 Not interested, 4 Interested)",
+          "fuente": "Tablero ICP, 22-nov"
+        },
+        {
+          "color": "r",
+          "indicador": "«No tenemos esa tecnología»",
+          "umbral": "Cualquiera = falta verificar el stack",
+          "valor": "11 respuestas",
+          "fuente": "Línea base LT vA (ago)"
+        }
+      ],
+      "nota": "Cuatro de cada diez respuestas dicen que no es la persona. La regla 1 del ICP vI es verificar el stack legacy antes de cargar; sin eso no se recomienda cargar a nadie en frío."
+    },
+    "pruebas": {
+      "regla": "Cada prueba con su hipótesis, versión A y B, volumen (400 por versión con señal, 1,500 en frío), 4 a 6 semanas en la misma ventana, una por producto, y el dato que la justifica.",
+      "candidatas": [
+        {
+          "prueba": "Vacantes en la forma nueva (20 títulos legacy, se contacta al jefe)",
+          "dato": "Una vacante de líder técnico de canales digitales produjo respuesta en banca; la forma vieja contactaba al puesto (ICP vI)"
+        },
+        {
+          "prueba": "Telecomunicaciones como sector",
+          "dato": "10 personas reaccionando, 7 positivas, sin reunión todavía (ICP vI)"
+        },
+        {
+          "prueba": "Señal de crecimiento de plantilla (6 meses, más de 10%)",
+          "dato": "Sin probar (ICP vI)"
+        },
+        {
+          "prueba": "Lista de socios aparte (consultoras de ciberseguridad y transformación)",
+          "dato": "Tres de las seis reuniones del año fueron con consultoras"
+        }
+      ]
+    },
+    "documentos": [
+      {
+        "color": "a",
+        "documento": "ICP Legacy Takeover vI",
+        "estado": "Vigente (15-nov), en inglés",
+        "falta": "Decidir Argentina; pasarlo a español"
+      },
+      {
+        "color": "a",
+        "documento": "Propuesta de Valor Legacy Systems Takeover vF",
+        "estado": "Del 21-sep, antes del ICP vI",
+        "falta": "Letra G en español con los dolores 9 a 13 y sin las promesas retiradas (decisión 22)"
+      },
+      {
+        "color": "a",
+        "documento": "Base de conocimiento GR_KB_LT_vB",
+        "estado": "Del 25-oct, antes del ICP vI",
+        "falta": "Letra C (decisión 22) con las notas de las reuniones que faltan en la base"
+      },
+      {
+        "color": "v",
+        "documento": "Hoja de cambios LT vB",
+        "estado": "Vigente (22-nov)",
+        "falta": "19 cambios abiertos; siguiente revisión 4-dic"
+      },
+      {
+        "color": "a",
+        "documento": "Línea base LT vA",
+        "estado": "Del 20-ago, antes del ICP vI",
+        "falta": "Letra nueva al relanzar el frío con la lista nueva"
+      },
+      {
+        "color": "v",
+        "documento": "Presentación Discovery Legacy Takeover vB",
+        "estado": "Vigente",
+        "falta": "Ninguna"
+      },
+      {
+        "color": "r",
+        "documento": "Template de propuesta",
+        "estado": "No existe",
+        "falta": "Crearlo en Documentos de Ventas de LT (Daniel)"
+      },
+      {
+        "color": "v",
+        "documento": "Mensajes que funcionaron",
+        "estado": "«Mensajes que funcionaron y el problema detrás LT vA» (29-sep)",
+        "falta": "Ninguna: ligado en el catálogo (22-nov)"
+      },
+      {
+        "color": "v",
+        "documento": "Dolores y mensajes por industria",
+        "estado": "Dolores Legacy Takeover vA y Mensajes Legacy Takeover por industria vA (sep)",
+        "falta": "Insumos de la Propuesta vG"
+      },
+      {
+        "color": "a",
+        "documento": "Llamado a la acción",
+        "estado": "Demo y migración de un módulo",
+        "falta": "Sin «sin costo» ni plazos sin respaldo (Dolores vA)"
+      }
+    ],
+    "campanas": [
+      {
+        "contiene": [
+          "open +3",
+          "open+3"
+        ],
+        "icp": "na",
+        "motivo": "Open+3: reactiva a quien abrió tres veces; no es una lista por industria",
+        "recomendacion": "Pausar: sin contactos pendientes desde febrero (decisión 21)"
+      },
+      {
+        "contiene": [
+          "lt_banking"
+        ],
+        "icp": "dentro",
+        "motivo": "ICP Legacy Takeover vI: banca es el sector 1",
+        "recomendacion": "Pausar: sin contactos pendientes; relanzar solo con la lista nueva (decisiones 20 y 21)"
+      },
+      {
+        "contiene": [
+          "lt_retail"
+        ],
+        "icp": "dentro",
+        "motivo": "ICP Legacy Takeover vI: retail con crédito propio es el sector 2",
+        "recomendacion": "Pausar: sin contactos pendientes; relanzar solo con la lista nueva (decisiones 20 y 21)"
+      },
+      {
+        "contiene": [
+          "tec-java"
+        ],
+        "icp": "mixta",
+        "motivo": "Lista por tecnología de varias industrias: solo con las industrias del ICP vI",
+        "recomendacion": "Pausar: sin contactos pendientes; sus textos traen promesas retiradas (decisión 21)"
+      },
+      {
+        "contiene": [
+          "tec-cobol",
+          "tec-oracle",
+          "tec-sap"
+        ],
+        "icp": "mixta",
+        "motivo": "Lista por tecnología de varias industrias: solo con las industrias del ICP vI"
       }
     ]
   }
