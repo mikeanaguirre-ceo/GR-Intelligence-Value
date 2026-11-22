@@ -22,6 +22,15 @@
     "familias": [
       { "nombre": "Visita Chile", "contiene": ["visita chile"], "en": "secuencias", "lectura": "La visita presencial con fecha concreta: se suma la familia para que el ángulo se vea aunque cada campaña sea chica." }
     ],
+    "campanas": [
+      {"contiene": ["open +3", "open+3"], "icp": "na", "motivo": "Open+3: reactiva a quien abrió tres veces; no es una lista por industria"},
+      {"contiene": ["restaurants"], "icp": "fuera", "motivo": "ICP Talkwalker vI: restaurantes fuera"},
+      {"contiene": ["gobierno"], "icp": "fuera", "motivo": "ICP Talkwalker vI: gobierno fuera"},
+      {"contiene": ["hospi"], "icp": "fuera", "motivo": "ICP Talkwalker vI: hotelería fuera"},
+      {"contiene": ["all industries", "evento", "perfiles", "b2c", "exatec", "ob jacopo"], "icp": "mixta", "motivo": "Lista de varias industrias o de evento: solo con las industrias del ICP vI"},
+      {"contiene": ["food", "beauty", "electro", "pharmacies", "insurance", "utilities"], "icp": "probar", "motivo": "ICP Talkwalker vI: sector por probar"},
+      {"contiene": ["finan", "fintech", "banking", "telco", "telecommunications", "airlines", "education", "supermarkets", "lat_ret"], "icp": "dentro", "motivo": "ICP Talkwalker vI: sector dentro"}
+    ],
     "icp": {
       "documento": "ICP Talkwalker vI (15-nov)",
       "reglas": {
@@ -84,23 +93,23 @@
   },
   "AM": {
     "actualizado": "22-nov-2026",
-    "fuente": "Hoja de Cambios AM vF, GR_Linea_Base_AM_vC, ICP Amplemarket vG, Propuesta de Valor Amplemarket vD, GR_KB_AM_vH y Guía de señales de Duo vB",
+    "fuente": "Hoja de Cambios AM vG, GR_Linea_Base_AM_vC, ICP Amplemarket vG, Propuesta de Valor Amplemarket vD, GR_KB_AM_vH y Guía de señales de Duo vB",
     "ciclo": {
       "linea_base": "24-ago-2026",
-      "cambios_al": "21-nov-2026",
-      "cerrados": 25,
-      "abiertos": 40,
-      "abiertos_detalle": "12 de dirección, 6 del equipo y 22 del motor",
+      "cambios_al": "22-nov-2026",
+      "cerrados": 27,
+      "abiertos": 38,
+      "abiertos_detalle": "10 de dirección, 6 del equipo y 22 del motor",
       "siguiente_revision": "4-dic-2026",
       "perdido": "Diez campañas (seis de Fintech y cuatro de Logística) se archivaron en agosto en vez de pausarse: su historia ya no está en Amplemarket y solo el tablero conserva sus cifras.",
       "alertas": [
         { "color": "r", "texto": "El frío está parado: no se carga nadie en secuencias hasta rehacer la lista con el ICP vG (decisión de dirección, 21-nov). Contactados en secuencias: 670 en septiembre, 52 en octubre y 2 en noviembre. Las señales de Dúo siguen corriendo." },
-        { "color": "a", "texto": "El 21-nov se pausaron 15 campañas sin volumen o fuera del ICP, sin archivar ninguna. De AM quedan activas solo REF_AM_Correo+LinkedIn_vA y AM_Open+3 sin WhatsApp_vD. Las señales AM_Job openings y AM_Posts from competitors quedaron pausadas en Dúo el mismo día." },
-        { "color": "a", "texto": "AM_IT SERVICES & CONSULTING vA sigue pausada. El 22-nov se limpió su lista: de 397 a 273 contactos (fuera quienes ya estuvieron en otra secuencia de AM, empresas con reunión previa u oportunidad abierta, cuentas con más de 3 personas y un banco, que el ICP vG deja fuera). Su paso 7 pide la reunión de frente a propósito: es una prueba que decidió dirección el 19-nov. Reactivarla es decisión de dirección." },
-        { "color": "a", "texto": "AM_SOFTWARE DEVELOPMENT vA está pausada antes de su primer envío porque Software Development está fuera del ICP vG (0 ganadas, 13 perdidas). Falta decidir si se reescribe para una industria dentro del ICP o se queda pausada." }
+        { "color": "a", "texto": "El 21-nov se pausaron 15 campañas sin volumen o fuera del ICP, sin archivar ninguna. De AM quedaron activas solo REF_AM_Correo+LinkedIn_vA y AM_Open+3 sin WhatsApp_vD, y el 22-nov se reactivó AM_IT SERVICES & CONSULTING vA. Las señales AM_Job openings y AM_Posts from competitors quedaron pausadas en Dúo el mismo día." },
+        { "color": "a", "texto": "AM_IT SERVICES & CONSULTING vA está activa desde el 22-nov (sí de Mike), con su lista limpia: de 397 a 273 contactos (fuera quienes ya estuvieron en otra secuencia de AM, empresas con reunión previa u oportunidad abierta, cuentas con más de 3 personas y un banco) y 4 contactos más de dos cuentas con conversación previa. Su paso 7 pide la reunión de frente a propósito: es una prueba que decidió dirección el 19-nov. Su cohorte se cuenta desde el 22-nov." },
+        { "color": "a", "texto": "AM_SOFTWARE DEVELOPMENT vA se queda pausada (decisión de Mike, 22-nov): Software Development está fuera del ICP vG (0 ganadas, 13 perdidas). Se detuvo antes de su primer envío." }
       ],
       "ligas": [
-        { "nombre": "Hoja de cambios Amplemarket vF", "url": "https://docs.google.com/document/d/1HCouOVndamdqG1jz0V1Zqqfjho8XAm-XyX467IjSiQE/edit" },
+        { "nombre": "Hoja de cambios Amplemarket vG", "url": "https://docs.google.com/document/d/1WCMqaT9Z8govsyOMCwEsurg6tjIx9bvLjwu2luzjIiw/edit" },
         { "nombre": "Línea base Amplemarket vC", "url": "https://docs.google.com/document/d/1WbUb23D3eaATjGPyFUqEa5wqwVifQHjAfZHsCPWN1ac/edit" },
         { "nombre": "ICP Amplemarket vG", "url": "https://docs.google.com/document/d/1lqno0HItx7Ikzomvt2pRBPRKuh-yHIfOM5YqnPoJbOY/edit" },
         { "nombre": "Propuesta de Valor Amplemarket vD", "url": "https://docs.google.com/document/d/1W_zR8OrZ-pFYs0P-oonQPJzRdMtbPUrDNE4PIwJh7Js/edit" },
@@ -116,6 +125,14 @@
       { "nombre": "Open+3", "contiene": ["open +3", "open+3"], "en": "secuencias", "lectura": "A quien ya abrió tres veces y no contestó: no cuesta un contacto nuevo. Solo cuenta lo que llega a conversación." },
       { "nombre": "Palabras clave", "contiene": ["posts mentioning specific keywords"], "en": "senales", "lectura": "Posts que mencionan las palabras del tema: junto con cambio de puesto, es el motor real del producto." },
       { "nombre": "Cambio de puesto", "contiene": ["recent job changes"], "en": "senales", "lectura": "El ICP vG prioriza la promoción en la misma empresa; el cambio a otra empresa baja a P3 y solo para líderes de ventas." }
+    ],
+    "campanas": [
+      {"contiene": ["open +3", "open+3"], "icp": "na", "motivo": "Open+3: reactiva a quien abrió tres veces; no es una lista por industria"},
+      {"contiene": ["fint", "software development", "business & consulting", "business consulting"], "icp": "fuera", "motivo": "ICP Amplemarket vG: servicios financieros, software de producto y consultoría de negocio fuera"},
+      {"contiene": ["software & services", "planeación"], "icp": "mixta", "motivo": "Mezcla software de producto (fuera) con servicios de TI (dentro): solo con la lista del ICP vG"},
+      {"contiene": ["cybersecurity"], "icp": "probar", "motivo": "ICP Amplemarket vG: ciberseguridad por probar"},
+      {"contiene": ["it outsourcing", "it_lat", "it services", "logis"], "icp": "dentro", "motivo": "ICP Amplemarket vG: servicios de TI, outsourcing de TI y logística dentro"},
+        {"contiene": ["job openings amplemarket", "posts from competitors"], "senal": true, "estado": "paused", "motivo": "Agente de Dúo pausado el 21-nov-2026 (hoja de cambios AM)"}
     ],
     "icp": {
       "documento": "ICP Amplemarket vG (15-nov)",
@@ -177,7 +194,7 @@
       { "color": "v", "documento": "Propuesta de Valor Amplemarket vD", "estado": "Vigente (21-nov), con recuento por problema", "falta": "Ninguna: ligada en el catálogo y en el motor (22-nov)" },
       { "color": "v", "documento": "Base de conocimiento GR_KB_AM_vH", "estado": "Vigente (21-nov), alineada al ICP vG", "falta": "Ligada en el catálogo y en el motor (22-nov). Falta copiarla en Duo (Migue) y revisar el texto de los AI snippets" },
       { "color": "v", "documento": "Guía de señales de Duo vB", "estado": "Vigente (21-nov), alineada al ICP vG", "falta": "Decidir si se prueba vacantes con el formato del ICP vG" },
-      { "color": "a", "documento": "Hoja de cambios AM vF", "estado": "Vigente (21-nov)", "falta": "40 cambios abiertos; la lista de IT Services & Consulting vA ya se limpió (22-nov); su paso 7 es una prueba que decidió dirección el 19-nov" },
+      { "color": "a", "documento": "Hoja de cambios AM vG", "estado": "Vigente (22-nov)", "falta": "38 cambios abiertos; IT Services & Consulting vA reactivada el 22-nov y Software Development vA se queda pausada" },
       { "color": "a", "documento": "Línea base AM vC", "estado": "Del 24-ago, antes del ICP vG", "falta": "Letra nueva al reactivar el frío con la lista nueva" },
       { "color": "a", "documento": "Presentación Discovery Amplemarket vG", "estado": "Vigente", "falta": "Dar fuente a sus cifras de base de datos o quitarlas" },
       { "color": "v", "documento": "Mensajes que funcionaron", "estado": "Mensajes Completos vC (13-nov), ligado en el catálogo (22-nov)", "falta": "Ninguna" },
@@ -266,6 +283,11 @@
         "en": "secuencias",
         "lectura": "Personas que recomendó un contacto de 360 (desde el 5-nov). En medición."
       }
+    ],
+    "campanas": [
+      {"contiene": ["3v_ceo-fou"], "icp": "mixta", "motivo": "Industrias del ICP 360 vB, pero apunta a 51-500 empleados y el ICP vB pide 11-200"},
+      {"contiene": ["open+3", "open +3"], "icp": "na", "motivo": "Open+3: reactiva a quien abrió tres veces; no es una lista por industria"},
+      {"contiene": ["ref_360"], "icp": "na", "motivo": "Referidos: personas recomendadas por un contacto; no es una lista por industria"}
     ],
     "icp": {
       "documento": "ICP Marketing 360 vB (15-nov)",
@@ -612,6 +634,17 @@
         "estado": "Lo pidió por escrito y sin reunión (línea base vA); sin envío en el CRM ni en el correo al 22-nov",
         "falta": "Mandarlo como lo pidió"
       }
+    ]
+  },
+  "AEO": {
+    "_nota": "Solo la clasificación por ICP de cada campaña (22-nov-2026), para que la recomendación por secuencia tome en cuenta el ICP. El resto de la página de AEO llega con su entrada completa.",
+    "campanas": [
+      {"contiene": ["open+3", "open +3"], "icp": "na", "motivo": "Open+3: reactiva a quien abrió tres veces; no es una lista por industria"},
+      {"contiene": ["banking", "insurance", "soft devel", "business consulting", "staffing", "b2b"], "icp": "fuera", "motivo": "ICP AEO & SEO vG: banca, seguros y software fuera; consultoría de negocio, staffing y B2B general no están en el ICP"},
+      {"contiene": ["all ind"], "icp": "mixta", "motivo": "Lista de varias industrias: solo con las industrias del ICP vG"},
+      {"contiene": ["finan serv"], "icp": "probar", "motivo": "ICP AEO & SEO vG: financieras no bancarias por probar (bancos y aseguradoras fuera)"},
+      {"contiene": ["retail", "supermarket", "personal care", "it services", "hospitality", "hotels", "savings institutions"], "icp": "dentro", "motivo": "ICP AEO & SEO vG: servicios de TI, cadenas de retail, hotelería, cuidado personal y cooperativas dentro"},
+      {"contiene": ["keywords aeo + seo general 3.0", "job openings aeo"], "senal": true, "estado": "paused", "motivo": "Agente de Dúo apagado (hoja de cambios AEO vD, cambios 20 y 21)"}
     ]
   }
 }
