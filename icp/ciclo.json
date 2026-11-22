@@ -186,13 +186,13 @@
   },
   "360": {
     "actualizado": "22-nov-2026",
-    "fuente": "Hoja de Cambios 360 vB, GR_Linea_Base_360_vA, ICP Marketing 360 vB, Propuesta de Valor Marketing 360 vA y GR_KB_360_vA",
+    "fuente": "Hoja de Cambios 360 vC, GR_Linea_Base_360_vA, ICP Marketing 360 vB, Propuesta de Valor Marketing 360 vA y GR_KB_360_vA",
     "ciclo": {
       "linea_base": "20-ago-2026",
       "cambios_al": "22-nov-2026",
       "cerrados": 8,
-      "abiertos": 11,
-      "abiertos_detalle": "4 de dirección, 5 del equipo y 2 en medición",
+      "abiertos": 12,
+      "abiertos_detalle": "5 de dirección, 5 del equipo y 2 en medición",
       "siguiente_revision": "4-dic-2026",
       "perdido": "Nada: la única secuencia en frío (3V_CEO-FOU) nunca se archivó y conserva toda su historia en Amplemarket.",
       "alertas": [
@@ -202,7 +202,7 @@
         },
         {
           "color": "a",
-          "texto": "Todo el frío depende de una secuencia y un remitente: 3V_CEO-FOU contactó 1,998 personas de junio a noviembre y produjo 28 resultados (1.40%). Su volumen cae: 575 en septiembre, 178 en octubre y 125 en noviembre."
+          "texto": "Todo el frío depende de una secuencia y un remitente: 3V_CEO-FOU contactó 1,998 personas de junio a noviembre y produjo 28 oportunidades con conversación (1.40%): 18 llegaron a reunión y 10 se quedaron en oportunidad. Su volumen cae: 575 en septiembre, 178 en octubre y 125 en noviembre. Las reuniones agendadas por cada 1,000 contactados bajaron de 16.7 en junio y julio a 4.9 de agosto a octubre."
         },
         {
           "color": "a",
@@ -210,13 +210,17 @@
         },
         {
           "color": "a",
-          "texto": "La Propuesta de Valor 360 vA cierra con «En 20 minutos» y «¿Hacemos el diagnóstico juntos?»: las dos son líneas rojas. Se propone la letra B; la vA no se edita."
+          "texto": "La Propuesta de Valor 360 vA dice «En 20 minutos»: mencionar la duración de la reunión es línea roja. Se propone la letra B; la vA no se edita."
+        },
+        {
+          "color": "a",
+          "texto": "La secuencia activa 3V_CEO-FOU ofrece el Benchmark «sin costo» en su quinto paso (LinkedIn), que equivale a un diagnóstico gratuito, y trae dos errores de redacción: «estan» sin acento en el primer correo y una frase rota en el segundo («contra los referentes de su industria ya tienen»). La activa no se edita: va en una versión nueva, decisión de dirección."
         }
       ],
       "ligas": [
         {
-          "nombre": "Hoja de cambios 360 vB",
-          "url": "https://docs.google.com/document/d/1t9vgPL-ZusuHaGmw_62gbbexZf5GnuV6qXmfkLF3N8Q/edit"
+          "nombre": "Hoja de cambios 360 vC",
+          "url": "https://docs.google.com/document/d/1vURpwBLSyXh1QKJ-hz1fFHcDbmnMYTaMM719hoigu6s/edit"
         },
         {
           "nombre": "Línea base 360 vA",
@@ -527,7 +531,7 @@
         },
         {
           "prueba": "Campaña propia de consultoría de negocio",
-          "dato": "Una cita cada 21 contactos en la línea base vA; 13 personas, 8 positivas en el ICP vB"
+          "dato": "Una cita cada 27 contactos (64 contactos, cifra por industria de la línea base vA que retoma el ICP vB); 13 personas, 8 positivas y 5 perdidas en el ICP vB"
         },
         {
           "prueba": "Mensaje que cite la operación del prospecto contra el texto actual",
@@ -546,7 +550,7 @@
         "color": "a",
         "documento": "Propuesta de Valor Marketing 360 vA",
         "estado": "Vigente (versión 1.0)",
-        "falta": "Letra B sin «En 20 minutos» ni «diagnóstico» (líneas rojas)"
+        "falta": "Letra B sin «En 20 minutos» (línea roja: duración de la reunión)"
       },
       {
         "color": "a",
@@ -562,9 +566,9 @@
       },
       {
         "color": "v",
-        "documento": "Hoja de cambios 360 vB",
+        "documento": "Hoja de cambios 360 vC",
         "estado": "Vigente (22-nov)",
-        "falta": "11 cambios abiertos; siguiente revisión 4-dic"
+        "falta": "12 cambios abiertos; siguiente revisión 4-dic"
       },
       {
         "color": "v",
@@ -595,6 +599,18 @@
         "documento": "Llamado a la acción",
         "estado": "Benchmark de imagen digital (ficha de productos)",
         "falta": "Ninguna"
+      },
+      {
+        "color": "a",
+        "documento": "Secuencia 3V_CEO-FOU (versión activa)",
+        "estado": "Activa desde el 9-jun",
+        "falta": "Versión nueva sin «sin costo» y sin los dos errores de redacción"
+      },
+      {
+        "color": "r",
+        "documento": "Benchmark para Melissa Manrique",
+        "estado": "Lo pidió por escrito y sin reunión (línea base vA); sin envío en el CRM ni en el correo al 22-nov",
+        "falta": "Mandarlo como lo pidió"
       }
     ]
   }
