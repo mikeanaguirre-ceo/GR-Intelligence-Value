@@ -183,5 +183,419 @@
       { "color": "v", "documento": "Mensajes que funcionaron", "estado": "Mensajes Completos vC (13-nov), ligado en el catálogo (22-nov)", "falta": "Ninguna" },
       { "color": "v", "documento": "Llamado a la acción", "estado": "Cierre de permiso de la Propuesta vD (10.1), en el catálogo desde el 22-nov", "falta": "Ninguna" }
     ]
+  },
+  "360": {
+    "actualizado": "22-nov-2026",
+    "fuente": "Hoja de Cambios 360 vA, GR_Linea_Base_360_vA, ICP Marketing 360 vB, Propuesta de Valor Marketing 360 vA y GR_KB_360_vA",
+    "ciclo": {
+      "linea_base": "20-ago-2026",
+      "cambios_al": "22-nov-2026",
+      "cerrados": 7,
+      "abiertos": 11,
+      "abiertos_detalle": "4 de dirección, 5 del equipo y 2 en medición",
+      "siguiente_revision": "4-dic-2026",
+      "perdido": "Nada: la única secuencia en frío (3V_CEO-FOU) nunca se archivó y conserva toda su historia en Amplemarket.",
+      "alertas": [
+        {
+          "color": "r",
+          "texto": "360 sigue sin señales de Dúo. La línea base de agosto lo marcó como la acción de mayor retorno (Dúo le gana a las secuencias en los cinco productos donde opera) y el ICP vB propone vacantes de marketing con el fundador como contacto. Prenderlas es decisión de dirección."
+        },
+        {
+          "color": "a",
+          "texto": "Todo el frío depende de una secuencia y un remitente: 3V_CEO-FOU contactó 1,998 personas de junio a noviembre y produjo 28 resultados (1.40%). Su volumen cae: 575 en septiembre, 178 en octubre y 125 en noviembre."
+        },
+        {
+          "color": "a",
+          "texto": "La lista activa apunta a 51-500 empleados y el ICP vB (15-nov) pone el núcleo en 11-200 y deja 201-500 fuera (12 personas, 4 negativas, negativo por peso). Alinear la lista es decisión de dirección."
+        },
+        {
+          "color": "a",
+          "texto": "La Propuesta de Valor 360 vA cierra con «En 20 minutos» y «¿Hacemos el diagnóstico juntos?»: las dos son líneas rojas. Se propone la letra B; la vA no se edita."
+        }
+      ],
+      "ligas": [
+        {
+          "nombre": "Hoja de cambios 360 vA",
+          "url": "https://docs.google.com/document/d/1BHMMUCG77oqmzI1kRETDtyXQPw5PHgkIsEfHXHkuRZ0/edit"
+        },
+        {
+          "nombre": "Línea base 360 vA",
+          "url": "https://docs.google.com/document/d/12vPFxSKIW0-KDAnSaV5J77c-RORQi7Am5SPxyU9F6-4/edit"
+        },
+        {
+          "nombre": "ICP Marketing 360 vB",
+          "url": "https://docs.google.com/document/d/1vf0DCrub4l4g7H2_xoXryTpAOEGofdQF3yMODCuSYzg/edit"
+        },
+        {
+          "nombre": "Propuesta de Valor Marketing 360 vA",
+          "url": "https://docs.google.com/document/d/1vMSLMtnAak1OZUbO2Tlb7uTz7PO4Lpy3vp_O9Gyw7gY/edit"
+        },
+        {
+          "nombre": "Base de conocimiento GR_KB_360_vA",
+          "url": "https://docs.google.com/document/d/1KOp9ytC1owEv1P2UhBbfQVoT_8Xro72_aMzLDyJO_pQ/edit"
+        }
+      ]
+    },
+    "familias": [
+      {
+        "nombre": "Fundadores México",
+        "contiene": [
+          "3v_ceo-fou"
+        ],
+        "en": "secuencias",
+        "lectura": "La única secuencia en frío desde el 9-jun: fundadores y dirección general en México. Abre con la trayectoria que no se ve en digital y ofrece el Benchmark de imagen digital."
+      },
+      {
+        "nombre": "Open+3",
+        "contiene": [
+          "open+3",
+          "open +3"
+        ],
+        "en": "secuencias",
+        "lectura": "A quien ya abrió tres veces y no contestó (desde el 2-nov). Solo cuenta lo que llega a conversación."
+      },
+      {
+        "nombre": "Referidos",
+        "contiene": [
+          "ref_360"
+        ],
+        "en": "secuencias",
+        "lectura": "Personas que recomendó un contacto de 360 (desde el 5-nov). En medición."
+      }
+    ],
+    "icp": {
+      "documento": "ICP Marketing 360 vB (15-nov)",
+      "reglas": {
+        "_nota": "Reglas del ICP Marketing 360 vB (15-nov) para calificar el perfil de quienes respondieron. Nombres exactos del catálogo de Amplemarket, como los trae el ICP vB (lectura del 15-nov). Lo que no está en ninguna lista cuenta como «resto». ignorar = no se califica. Las empresas de la casa (STIL, IMMMU, Itera, KONNEN) no se cargan en frío.",
+        "industria": {
+          "dentro": [
+            "IT Services and IT Consulting",
+            "Business Consulting and Services",
+            "Human Resources Services",
+            "Financial Services",
+            "Software Development",
+            "Events Services"
+          ],
+          "probar": [
+            "Managed Services Providers",
+            "Computer and Network Security",
+            "Strategic Management Services",
+            "Operations Consulting",
+            "Staffing and Recruiting",
+            "Investment Management",
+            "Investment Banking",
+            "Software Services (SaaS)",
+            "Industry Associations",
+            "Insurance",
+            "Insurance Agencies and Brokerages",
+            "Legal Services",
+            "Law Practice",
+            "Airlines and Aviation",
+            "Oil and Gas",
+            "Construction",
+            "Chemical Manufacturing"
+          ],
+          "fuera": [
+            "Transportation, Logistics, Supply Chain and Storage",
+            "Real Estate",
+            "Telecommunications",
+            "Technology, Information and Internet",
+            "Manufacturing",
+            "Advertising Services",
+            "Marketing Services",
+            "Banking"
+          ],
+          "resto": "f"
+        },
+        "tamano": {
+          "dentro": [
+            "11-50",
+            "51-200"
+          ],
+          "probar": [
+            "1-10"
+          ],
+          "fuera": [
+            "201-500",
+            "501-1000",
+            "1001-5000",
+            "5001-10000",
+            "10001+"
+          ],
+          "resto": "f"
+        },
+        "pais": {
+          "dentro": [
+            "México"
+          ],
+          "probar": [
+            "Ecuador",
+            "Perú"
+          ],
+          "fuera": [
+            "Chile",
+            "Colombia",
+            "Estados Unidos"
+          ],
+          "resto": "f"
+        },
+        "nivel": {
+          "dentro": [
+            "C-Suite"
+          ],
+          "probar": [
+            "Director",
+            "VP",
+            "Head"
+          ],
+          "fuera": [
+            "Manager",
+            "Senior",
+            "Entry"
+          ],
+          "ignorar": [
+            "Otro"
+          ],
+          "resto": "f"
+        },
+        "area": {
+          "dentro": [
+            "Dirección general"
+          ],
+          "probar": [
+            "Ventas"
+          ],
+          "fuera": [
+            "Marketing",
+            "Experiencia del cliente",
+            "Comunicación interna",
+            "Recursos humanos",
+            "Finanzas",
+            "TI",
+            "Otra"
+          ],
+          "resto": "f"
+        }
+      },
+      "rubros": [
+        {
+          "rubro": "Industrias",
+          "dice": "Dentro: servicios de TI, consultoría de negocio, servicios de RH, servicios financieros no bancarios, software y eventos y asociaciones (única ganada fuera de la casa: COMIR); por probar: seguros, legal, aerolíneas, petróleo y gas, construcción y química; fuera: logística, inmobiliario, telecom, internet, manufactura, agencias (son competencia) y bancos",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Tamaño",
+          "dice": "Núcleo de 11 a 200 empleados; 1 a 10 por probar (2 ganadas, 1 perdida: pocos casos); 201 a 500 fuera",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Países",
+          "dice": "México (163 personas, 136 positivas, las tres ganadas); Ecuador y Perú por probar; fuera Chile, Colombia y Estados Unidos",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Puesto",
+          "dice": "Fundador, dueño, socio o dirección general: quien lee es quien decide. Director, VP y Head para ampliar; marketing solo después de que el fundador reenvía",
+          "solo": "Sí, aproximado por título"
+        },
+        {
+          "rubro": "Una persona por cuenta",
+          "dice": "Un solo rol por campaña y una persona por cuenta (la línea base midió 1.12 personas por cuenta)",
+          "solo": "No: se revisa en la lista antes de cargar"
+        },
+        {
+          "rubro": "Exclusiones",
+          "dice": "Clientes, oportunidades abiertas de cualquier producto de GR, agencias y empresas de la casa",
+          "solo": "Sí, contra HubSpot"
+        },
+        {
+          "rubro": "B2B con trayectoria, que vende por relación y no se ve en digital",
+          "dice": "—",
+          "solo": "No: se marca para revisión"
+        }
+      ],
+      "alertas": [
+        {
+          "color": "a",
+          "secuencia": "3v_ceo-fou",
+          "texto": "Choque con la lista activa: la secuencia apunta a 51-500 empleados y el ICP vB saca 201-500 y pone el núcleo en 11-200. Las ganadas y perdidas mandan: 22 perdidas en 11-50 y 15 en 51-200."
+        },
+        {
+          "color": "a",
+          "texto": "Pocas ganadas: 3 en el año y solo una fuera de la casa (COMIR). El ICP vB marca eventos y asociaciones como pista para probar, no como conclusión."
+        }
+      ]
+    },
+    "propuesta": {
+      "documento": "Propuesta de Valor Marketing 360 vA",
+      "problemas": [
+        {
+          "color": "v",
+          "problema": "P3 · Expertise real que no se ve en digital (con P2: competidores más chicos se ven más sólidos)",
+          "conversaciones": 27,
+          "reuniones": 12,
+          "oportunidades": 21,
+          "lectura": "Es la apertura de la secuencia: el mensaje de LinkedIn y el correo «imagen prestada»"
+        },
+        {
+          "color": "v",
+          "problema": "P5 · Comunicación sin sistema, esfuerzo sin acumulación",
+          "conversaciones": 5,
+          "reuniones": 5,
+          "oportunidades": 5,
+          "lectura": "Correo «imagen miente» y el cierre: todas sus conversaciones llegaron a reunión"
+        },
+        {
+          "color": "a",
+          "problema": "P1 · Invisibilidad donde se forman las decisiones",
+          "conversaciones": 3,
+          "reuniones": 2,
+          "oportunidades": 2,
+          "lectura": "Correo «todavía hay tiempo»: pocos casos"
+        },
+        {
+          "color": "r",
+          "problema": "P4 · Ausencia en las respuestas de las IAs",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Sin probar en los mensajes de 360"
+        },
+        {
+          "color": "r",
+          "problema": "P6 · Sin capacidad interna para sostener un programa",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Sin probar en los mensajes de 360"
+        },
+        {
+          "color": "r",
+          "problema": "P7 · Sin inteligencia para saber qué comunicar",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Sin probar como apertura; es lo que entrega el Benchmark"
+        }
+      ],
+      "recomendacion": "Mantener P3 con P2 como apertura y P5 como segundo toque. P1 tiene pocos casos: probarlo como apertura en la segunda campaña en frío, no reemplazar al que produce.",
+      "nota": "Calculado el 22-nov con las 44 fichas de 360 y el mensaje exacto que contestó cada persona. Conversaciones = interesado, oportunidad o reunión; reuniones = llegó a Atracción o más; oportunidades = oportunidad o reunión. No cuentan 8 fichas sin mensaje rescatado (6 Open+3 y 2 positivas). No es tasa por problema: no se sabe cuántos recibieron cada mensaje."
+    },
+    "lista": {
+      "indicadores": [
+        {
+          "color": "v",
+          "indicador": "Not the right person",
+          "umbral": "Más de 10% = el filtro de puesto está mal",
+          "valor": "5.4% (junio a noviembre)",
+          "fuente": "Tablero ICP, 22-nov (92 respuestas)"
+        },
+        {
+          "color": "v",
+          "indicador": "Negativas por interesado",
+          "umbral": "Más de 2 a 1 = se rehace la lista",
+          "valor": "1.1 a 1 (39 Not interested, 34 Interested)",
+          "fuente": "Tablero ICP, 22-nov"
+        },
+        {
+          "color": "v",
+          "indicador": "Personas por cuenta",
+          "umbral": "Más de 3 = se corrige",
+          "valor": "1.12 (913 contactos en 818 cuentas)",
+          "fuente": "Línea base 360 vA (ago)"
+        },
+        {
+          "color": "v",
+          "indicador": "Rebote y spam",
+          "umbral": "Más de 5% = se detiene",
+          "valor": "Sin rebote ni spam relevantes",
+          "fuente": "Línea base 360 vA (ago)"
+        }
+      ],
+      "nota": "La lista mejor apuntada del portafolio. El riesgo no es la calidad sino el tamaño: apunta a 51-500 y el ICP vB pide 11-200. Personas por cuenta y rebote se vuelven a medir al construir la lista nueva."
+    },
+    "pruebas": {
+      "regla": "Cada prueba con su hipótesis, versión A y B, volumen (400 por versión con señal, 1,500 en frío), 4 a 6 semanas en la misma ventana, una por producto, y el dato que la justifica.",
+      "candidatas": [
+        {
+          "prueba": "Señal de vacantes de marketing con el fundador como contacto",
+          "dato": "360 no tiene señales y Dúo le gana a las secuencias en los cinco productos donde opera (línea base vA); vacantes de marketing dieron 3 positivas en 6 en 2025 (ICP vB)"
+        },
+        {
+          "prueba": "Lista de 11 a 200 empleados contra la actual de 51 a 500",
+          "dato": "ICP vB: 201-500 es negativo por peso (12 personas, 4 negativas); las ganadas fuera de la casa están por debajo de 50 empleados"
+        },
+        {
+          "prueba": "Campaña propia de consultoría de negocio",
+          "dato": "Una cita cada 21 contactos en la línea base vA; 13 personas, 8 positivas en el ICP vB"
+        },
+        {
+          "prueba": "Mensaje que cite la operación del prospecto contra el texto actual",
+          "dato": "Lo pidió un prospecto por escrito (línea base vA §4); es la regla 3 del prompt de campañas"
+        }
+      ]
+    },
+    "documentos": [
+      {
+        "color": "v",
+        "documento": "ICP Marketing 360 vB",
+        "estado": "Vigente (15-nov)",
+        "falta": "Alinear la lista activa (51-500) al núcleo de 11 a 200 empleados"
+      },
+      {
+        "color": "a",
+        "documento": "Propuesta de Valor Marketing 360 vA",
+        "estado": "Vigente (versión 1.0)",
+        "falta": "Letra B sin «En 20 minutos» ni «diagnóstico» (líneas rojas)"
+      },
+      {
+        "color": "a",
+        "documento": "Base de conocimiento GR_KB_360_vA",
+        "estado": "Vigente (27-oct)",
+        "falta": "vB: faltan 16 choques de Daniel y 14 propuestas de Mike"
+      },
+      {
+        "color": "a",
+        "documento": "Línea base 360 vA",
+        "estado": "Del 20-ago, antes del ICP vB",
+        "falta": "Letra nueva al cargar la lista con el ICP vB"
+      },
+      {
+        "color": "v",
+        "documento": "Hoja de cambios 360 vA",
+        "estado": "Vigente (22-nov)",
+        "falta": "11 cambios abiertos; siguiente revisión 4-dic"
+      },
+      {
+        "color": "v",
+        "documento": "Sesión de Benchmark (ejemplo BICO)",
+        "estado": "Vigente; no hay Discovery aparte (decisión del 9-nov)",
+        "falta": "Ninguna"
+      },
+      {
+        "color": "v",
+        "documento": "Template · 360 · Great Revenue",
+        "estado": "Vigente",
+        "falta": "Ninguna"
+      },
+      {
+        "color": "r",
+        "documento": "Mensajes que funcionaron",
+        "estado": "No existe para 360",
+        "falta": "Armarlo con las 29 oportunidades y reuniones de 360: las 29 tienen su mensaje exacto"
+      },
+      {
+        "color": "r",
+        "documento": "Configuración de señales de Dúo",
+        "estado": "No existe para 360",
+        "falta": "Va con la decisión de prender señales"
+      },
+      {
+        "color": "v",
+        "documento": "Llamado a la acción",
+        "estado": "Benchmark de imagen digital (ficha de productos)",
+        "falta": "Ninguna"
+      }
+    ]
   }
 }
