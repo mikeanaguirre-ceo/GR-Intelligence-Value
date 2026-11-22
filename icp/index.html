@@ -68,6 +68,7 @@ table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding
 .rrow .meta { display:flex; gap:8px; align-items:center; justify-content:flex-end; } .rrow .num { font-weight:700; min-width:44px; text-align:right; font-variant-numeric:tabular-nums; }
 @media (max-width:560px) { .rrow { grid-template-columns:minmax(0,1fr) auto; } .rrow .tr { grid-column:1 / -1; order:3; } }
 .pill { font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:20px; white-space:nowrap; }
+table.tb.dec td, table.tb.dec td:first-child, table.tb.dec th { white-space:normal; max-width:none; overflow:visible; text-overflow:clip; text-align:left; vertical-align:top; min-width:140px; }
 .p-esc { background:rgba(16,185,129,.16); color:#34D399; } .p-man { background:rgba(139,92,246,.18); color:#C4B5FD; } .p-rev { background:rgba(239,68,68,.15); color:#F87171; } .p-vig { background:rgba(245,158,11,.16); color:#FBBF24; } .p-poc { background:var(--bg-3); color:var(--mute); }
 .rec { display:grid; gap:8px; list-style:none; margin-top:8px; } .rec li { display:grid; gap:2px; padding:10px 12px; background:var(--bg-3); border-radius:10px; font-size:13px; }
 .rec b { font-size:11.5px; color:var(--pink); text-transform:uppercase; letter-spacing:.04em; }
@@ -505,6 +506,15 @@ ol.pasos { list-style:none; margin-top:8px; display:grid; gap:8px; } ol.pasos li
       (peores.length ? '<p class="n" style="margin-top:6px"><b>Secuencias con más de 10% de Not the right person</b> (5 respuestas o más): ' + peores.map(function (x) { return esc(x.n) + ' <span class="ref">' + (x.nrp * 100).toFixed(0) + '% (' + x.k + ' de ' + x.r + ')</span>'; }).join(' · ') + '</p>' : '') +
       (S.sin ? '<p class="n">' + S.sin + ' meses de secuencia todavía sin etiquetas no entran en el cálculo.</p>' : ''); }
   // 1 · Dónde va el ciclo
+  // Lo que decides tú (22-nov-2026, Mike: «todas las recomendaciones en un solo lugar»): resumen por producto de CICLO[p].decisiones con la
+  // liga al documento único de decisiones (CICLO._decisiones), donde cada una trae datos, opciones, recomendación y qué pasa si no contestas.
+  function decisionesHtml(p) { var L = (CICLO[p] || {}).decisiones || [], G = CICLO._decisiones || {}; if (!L.length) return '';
+    return '<div class="card" style="grid-column:1/-1"><h3><span class="nsec">!</span>Lo que decides tú</h3><p class="n">' + L.length + (L.length === 1 ? ' decisión pendiente' : ' decisiones pendientes') + '. El análisis completo de cada una (datos, opciones, recomendación y qué pasa si no contestas) está en ' + (G.url ? '<a href="' + esc(G.url) + '" target="_blank" rel="noopener">' + esc(G.documento || 'el documento de decisiones') + ' ↗</a>' : 'el documento de decisiones') + (G.revision ? '. Siguiente revisión: ' + esc(G.revision) : '') + '.</p>' +
+      '<div class="tblx"><table class="tb dec"><tr><th>Qué se decide</th><th>Mi recomendación</th><th>Si no contestas</th></tr>' + L.map(function (d) { return '<tr><td>' + esc(d.que) + '</td><td>' + esc(d.recomendacion) + '</td><td>' + esc(d.si_no) + '</td></tr>'; }).join('') + '</table></div></div>'; }
+  function decisionesTodos() { var G = CICLO._decisiones || {}, R = [];
+    Object.keys(CICLO).forEach(function (k) { if (k.charAt(0) !== '_' && ((CICLO[k] || {}).decisiones || []).length) R.push([k, CICLO[k].decisiones.length]); }); if (!R.length) return '';
+    return '<div class="card" style="grid-column:1/-1"><h3>Lo que decides tú, por producto</h3><p class="n">' + (G.url ? '<a href="' + esc(G.url) + '" target="_blank" rel="noopener">' + esc(G.documento || 'Documento de decisiones') + ' ↗</a> · ' : '') + 'Cada decisión con su análisis completo. Siguiente revisión: ' + esc(G.revision || '—') + '.</p><div class="tblx"><table class="tb"><tr><th>Producto</th><th>Decisiones pendientes</th></tr>' +
+      R.map(function (r) { return '<tr><td>' + esc(NOMBRES[r[0]] || r[0]) + '</td><td>' + fmt(r[1]) + '</td></tr>'; }).join('') + '</table></div></div>'; }
   function franja(p) {
     var C = (CICLO[p] || {}).ciclo; if (!C) return sinCiclo(1, 'Dónde va el ciclo');
     var box = function (l, v, e) { return '<div><span>' + l + '</span><b>' + v + '</b>' + (e ? '<em>' + e + '</em>' : '') + '</div>'; };
@@ -625,13 +635,13 @@ ol.pasos { list-style:none; margin-top:8px; display:grid; gap:8px; } ol.pasos li
     var tablaTodo = '<div class="card" style="grid-column:1/-1"><details class="todas"><summary>Ver la tabla por ' + DUR[st.per] + ' con todas las cifras</summary>' + tablaPer(se, p === 'TODOS') + '</details></div>';
     if (p === 'TODOS') {
       $('kpis').innerHTML = kpisRd(se);
-      return graficaRd(se, p) + rankingRd() + tablaTodo + '<div style="grid-column:1/-1">' + pruebasHtml(p) + '</div>';
+      return decisionesTodos() + graficaRd(se, p) + rankingRd() + tablaTodo + '<div style="grid-column:1/-1">' + pruebasHtml(p) + '</div>';
     }
     // Página del producto, en el orden del diseño TW vA.
     $('kpis').innerHTML = '';
     var S = (D.secuencias || {})[p], M = (D.mensajes || {})[p] || {}, Fs = S ? filas(S.secuencias) : [], Fn = S ? filas(S.senales) : [];
     var prom = tasaT(Fs.concat(Fn).reduce(function (z, x) { return sumar(z, x.t); }, vacio()));
-    html += franja(p);
+    html += franja(p) + decisionesHtml(p);
     html += '<div class="kpis" style="grid-column:1/-1;margin:0">' + kpisRd(se) + '</div>' + graficaRd(se, p) + tablaTodo;
     if (S) html += tablaRes(3, 'Secuencias, de mejor a peor', Fs, false, prom, p) + tablaRes(4, 'Señales de Dúo, de mejor a peor', Fn, true, prom, p) + duoHtml(Fs, Fn);
     else html += '<div class="cols2" style="grid-column:1/-1">' + tablaFoto('3 · Secuencias que generan', M.secuencias, false) + tablaFoto('4 · Señales que generan', M.senales, true) + '</div>' + duoHtml([], []);

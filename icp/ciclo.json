@@ -1,6 +1,17 @@
 {
   "_nota": "Contenido fijo de la página de cada producto del tablero ICP (Diseño de la Página de Producto TW vA, 20-nov-2026). Una llave por código de producto. Lo medido (secuencias, señales, gráfica) sale de la foto gr-icp; aquí va lo que viene de documentos: ciclo de cambio, familias de campaña, ICP, propuesta de valor, lista, pruebas candidatas y estado de documentos. Colores: v verde, a amarillo, r rojo.",
+  "_decisiones": {"documento": "Decisiones del Portafolio vA", "url": "https://docs.google.com/document/d/1P0tHRn1TuIptCkAgKQR0W_X5MhxmPlEdhdvwyfeYOIo/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
   "TW": {
+    "decisiones": [
+      {"que": "Regla de la lista en alarma (AM ya la tiene; AEO en el punto 17)", "recomendacion": "Sí: sin cargas nuevas en frío hasta rehacer la lista con el ICP; las señales siguen", "si_no": "Se sigue cargando en frío con 23.2% de persona equivocada"},
+      {"que": "Paquete de orden: pausar 7 campañas activas sin volumen y corregir 2 nombres", "recomendacion": "Sí, en una sola ronda", "si_no": "Siguen activas sin volumen y con nombres que ninguna consulta separa"},
+      {"que": "Apagar la señal de vacantes (cambio 29)", "recomendacion": "No apagarla: hoy rinde arriba del promedio", "si_no": "Sigue corriendo"},
+      {"que": "Apagar la señal de competidores (cambio 33)", "recomendacion": "Sí: 4 contactados en el año", "si_no": "Sigue configurada sin uso"},
+      {"que": "Visita Chile Gobierno: fuera del ICP pero con 2 resultados en 57", "recomendacion": "Dejarla terminar y no recargarla", "si_no": "Sigue activa"},
+      {"que": "Escalar las dos Trendsetter (cambio 27)", "recomendacion": "No: se cierra como «no se hará»", "si_no": "Queda abierto"},
+      {"que": "Nombre externo Discovery Marketing y nombre Synapsis (cambios 78 y 100)", "recomendacion": "Aprobar Discovery Marketing hacia afuera; revisar marca antes de impulsar Synapsis", "si_no": "Queda como hoy"},
+      {"que": "Permiso para nombrar la cuenta del caso propio (81) y documentar las tres versiones de palabras clave (35)", "recomendacion": "Pedir el permiso; documentarlo yo con el histórico", "si_no": "Sin caso con nombre"}
+    ],
     "actualizado": "20-nov-2026",
     "fuente": "Diseño de la Página de Producto TW vA, Hoja de Cambios TW vC y GR_Linea_Base_TW_vA",
     "ciclo": {
@@ -92,6 +103,12 @@
     ]
   },
   "AM": {
+    "decisiones": [
+      {"que": "Argentina: el ICP de AM y el de AEO la incluyen y el REA la excluye", "recomendacion": "Mantenerla fuera hasta tener un caso", "si_no": "Sigue fuera (como hoy en página y bases)"},
+      {"que": "Correcciones de textos en Outsourcing y Ciberseguridad (39 a 43)", "recomendacion": "Hacerlas solo si se reactivan", "si_no": "Quedan pausadas con el texto viejo"},
+      {"que": "Campaña de Marketing en borrador (51) y frases prohibidas restantes (59)", "recomendacion": "Terminar la de Marketing con lista del ICP; quitar «24/7»", "si_no": "Siguen en borrador"},
+      {"que": "Homónimo de FINT Total en borrador (12) y regla de no agendar por un producto y presentar otro (35)", "recomendacion": "Renombrar el borrador; adoptar la regla", "si_no": "Quedan abiertos"}
+    ],
     "actualizado": "22-nov-2026",
     "fuente": "Hoja de Cambios AM vG, GR_Linea_Base_AM_vC, ICP Amplemarket vG, Propuesta de Valor Amplemarket vD, GR_KB_AM_vH y Guía de señales de Duo vB",
     "ciclo": {
@@ -202,6 +219,12 @@
     ]
   },
   "360": {
+    "decisiones": [
+      {"que": "Corregir la secuencia activa: «sin costo» y dos errores", "recomendacion": "Sí, versión nueva ya", "si_no": "El texto con línea roja sigue saliendo"},
+      {"que": "Prender señales de Dúo", "recomendacion": "Sí, prueba de 400", "si_no": "Sin señales"},
+      {"que": "Lista de 11 a 200 y campaña de consultoría", "recomendacion": "Sí, juntas en una campaña nueva", "si_no": "Todo el frío en una secuencia que apunta a 51-500"},
+      {"que": "Propuesta de valor vB sin «En 20 minutos»", "recomendacion": "Sí (Daniel)", "si_no": "La vA sigue con línea roja"}
+    ],
     "actualizado": "22-nov-2026",
     "fuente": "Hoja de Cambios 360 vC, GR_Linea_Base_360_vA, ICP Marketing 360 vB, Propuesta de Valor Marketing 360 vA y GR_KB_360_vA",
     "ciclo": {
@@ -637,6 +660,12 @@
     ]
   },
   "AEO": {
+    "decisiones": [
+      {"que": "Argentina: el ICP de AM y el de AEO la incluyen y el REA la excluye", "recomendacion": "Mantenerla fuera hasta tener un caso", "si_no": "Sigue fuera (como hoy en página y bases)"},
+      {"que": "Regla de la lista en alarma (48) y limpiar la lista de IT SERVICES 2.0 (55)", "recomendacion": "Sí a las dos: sin cargas nuevas en frío, y la lista limpia antes de su siguiente paso", "si_no": "Sin cargas nuevas; IT SERVICES 2.0 sale como está"},
+      {"que": "Señales en Dúo: prefijo del agente de cambio de puesto (52) y pasar palabras clave base a 2.0 (22)", "recomendacion": "Revisarlo juntos en la pantalla de Dúo", "si_no": "Quedan como están"},
+      {"que": "Cohorte y fecha de revisión de las campañas nuevas (39) y borrador duplicado de hotelería (53)", "recomendacion": "Declarar 300 por campaña; dejar el borrador sin activar", "si_no": "Sin cohorte declarada"}
+    ],
     "_nota": "Solo la clasificación por ICP de cada campaña (22-nov-2026), para que la recomendación por secuencia tome en cuenta el ICP. El resto de la página de AEO llega con su entrada completa.",
     "campanas": [
       {"contiene": ["open+3", "open +3"], "icp": "na", "motivo": "Open+3: reactiva a quien abrió tres veces; no es una lista por industria"},
