@@ -1,6 +1,6 @@
 {
   "_nota": "Contenido fijo de la página de cada producto del tablero ICP (Diseño de la Página de Producto TW vA, 20-nov-2026). Una llave por código de producto. Lo medido (secuencias, señales, gráfica) sale de la foto gr-icp; aquí va lo que viene de documentos: ciclo de cambio, familias de campaña, ICP, propuesta de valor, lista, pruebas candidatas y estado de documentos. Colores: v verde, a amarillo, r rojo.",
-  "_decisiones": {"documento": "Decisiones del Portafolio vL", "url": "https://docs.google.com/document/d/1HEmtXvV2UMtKppbXiYZPsMH9r3fV23wuMAslzwXU0Lg/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
+  "_decisiones": {"documento": "Decisiones del Portafolio vM", "url": "https://docs.google.com/document/d/1fvs_88sHAEgs9CuaDW2gEQCs0MZTwHllqfthbvT5EXw/edit", "fecha": "23-nov-2026", "revision": "4-dic-2026"},
   "TW": {
     "decisiones": [
       {"que": "Regla de la lista en alarma (AM ya la tiene; AEO en el punto 17)", "recomendacion": "Sí: sin cargas nuevas en frío hasta rehacer la lista con el ICP; las señales siguen", "si_no": "Se sigue cargando en frío con 23.2% de persona equivocada"},
@@ -4513,6 +4513,1063 @@
         "senal": true,
         "motivo": "Mensajes que rompen las reglas y sectores fuera del ICP",
         "recomendacion": "Corregir el texto y limitar al ICP vC en Dúo (decisión 57)"
+      }
+    ]
+  },
+  "HS": {
+    "actualizado": "23-nov-2026",
+    "fuente": "Hoja de Cambios HS vA, ICP Hootsuite vB, Propuesta de Valor Hootsuite vD, Mensajes que Produjeron HS vA",
+    "decisiones": [
+      {
+        "que": "Monto real de los clientes, si vuelve a prospectar en frío, permiso para citar un cliente y el texto de una señal (decisión 64)",
+        "recomendacion": "Las cuatro: montos con las facturas al socio, campaña en borrador, permiso y corregir la señal",
+        "si_no": "El tablero sigue con monto base y sin prospección"
+      },
+      {
+        "que": "Primera campaña en borrador (decisión 69)",
+        "recomendacion": "Escribirla; activarla cuando haya caso con permiso",
+        "si_no": "Sin campaña"
+      }
+    ],
+    "ciclo": {
+      "linea_base": "GR_Linea_Base_HS_vA (23-nov-2026)",
+      "cambios_al": "23-nov-2026",
+      "cerrados": 4,
+      "abiertos": 10,
+      "abiertos_detalle": "6 de dirección, 1 del equipo y 3 del motor",
+      "siguiente_revision": "4-dic-2026",
+      "perdido": "Hootsuite nunca había tenido línea base, hoja ni página.",
+      "alertas": [
+        {
+          "color": "r",
+          "texto": "Cero contactados en frío en 365 días. Todo lo vendido llegó por el socio, por renovación o por señales de otros productos."
+        },
+        {
+          "color": "r",
+          "texto": "Las diez ganadas son nueve clientes y traen el monto base de 15,000: los 150,000 no son facturación medida (decisión 64)."
+        },
+        {
+          "color": "a",
+          "texto": "Los tres mensajes que el tablero le cuenta a Hootsuite venden otro producto; uno de señal menciona la duración de la reunión."
+        },
+        {
+          "color": "a",
+          "texto": "Una abierta, en Educación, con cierre al 31-dic."
+        },
+        {
+          "color": "v",
+          "texto": "Corregido el 23-nov: ICP vB, propuesta vD, base vC y mensajes vA ligados; secuencias con guion bajo ya cuentan como Hootsuite."
+        }
+      ],
+      "ligas": [
+        {
+          "nombre": "Hoja de cambios HS vA",
+          "url": "https://docs.google.com/document/d/1bFL7HcXh0ZlCIHSF7qaMagywoDO0EF9dAOf78Zl5C7g/edit"
+        },
+        {
+          "nombre": "Línea base HS vA",
+          "url": "https://docs.google.com/document/d/1cMEKnoZydTKwxKQlp0IWpWRNEzVwfDDVku45RfoUZtU/edit"
+        },
+        {
+          "nombre": "ICP Hootsuite vB",
+          "url": "https://docs.google.com/document/d/14aC2O_DeaDu03K2Rdmt2TbtY1nZ_1cRV5wCcpdLHNlc/edit"
+        },
+        {
+          "nombre": "Propuesta de Valor Hootsuite vD",
+          "url": "https://docs.google.com/document/d/1ez0CgWSPamt5ORoQLihtZYzxJFu40WNMwt4ebo3tEak/edit"
+        },
+        {
+          "nombre": "Mensajes que Produjeron HS vA",
+          "url": "https://docs.google.com/document/d/1gozPqGDQhlGcu9qQGodwnG_P_Iz17fHNz0icArT2eEw/edit"
+        }
+      ]
+    },
+    "familias": [
+      {
+        "nombre": "Eventos y webinars del socio",
+        "contiene": [
+          "evento",
+          "trends"
+        ],
+        "en": "secuencias",
+        "lectura": "Fuera de la ventana: en 2024 contestaron 129 personas, 73 en positivo. Los de 2026 se quedaron en borrador."
+      },
+      {
+        "nombre": "Palabras clave de Hootsuite",
+        "contiene": [
+          "hootsuite"
+        ],
+        "en": "senales",
+        "lectura": "Una respuesta que reenvió a la persona correcta. El mensaje vendía Talkwalker."
+      }
+    ],
+    "icp": {
+      "documento": "ICP Hootsuite vB (23-nov)",
+      "reglas": {
+        "_nota": "Reglas del ICP Hootsuite vB (23-nov). Nombres del catálogo de Amplemarket.",
+        "industria": {
+          "dentro": [
+            "Higher Education",
+            "Retail",
+            "Retail Apparel and Fashion",
+            "Retail Appliances, Electrical, and Electronic Equipment",
+            "Hospitals and Health Care",
+            "Health insurance",
+            "Medical Equipment Manufacturing",
+            "Advertising Services",
+            "Marketing Services",
+            "Social media marketing"
+          ],
+          "probar": [
+            "E-Learning Providers",
+            "Education Administration Programs",
+            "Supermarkets & Grocery Stores",
+            "Retail Groceries",
+            "Pharmaceutical Manufacturing",
+            "Public Relations and Communications Services",
+            "Entertainment Providers",
+            "Broadcast Media Production and Distribution",
+            "Financial Services",
+            "Hospitality",
+            "Food and Beverage Services",
+            "Manufacturing",
+            "Personal Care Product Manufacturing",
+            "Telecommunications",
+            "Paint, Coating, and Adhesive Manufacturing"
+          ],
+          "fuera": [
+            "Outsourcing and Offshoring Consulting",
+            "Telephone Call Centers",
+            "Transportation, Logistics, Supply Chain and Storage",
+            "Staffing and Recruiting",
+            "Banking",
+            "Government Administration"
+          ],
+          "resto": "f"
+        },
+        "tamano": {
+          "dentro": [
+            "501-1000",
+            "1001-5000",
+            "10001+"
+          ],
+          "probar": [
+            "51-200",
+            "201-500",
+            "5001-10000"
+          ],
+          "fuera": [
+            "1-10",
+            "11-50"
+          ],
+          "resto": "f"
+        },
+        "pais": {
+          "dentro": [
+            "México",
+            "Colombia",
+            "Ecuador",
+            "Panamá",
+            "Honduras"
+          ],
+          "probar": [
+            "Chile",
+            "Guatemala",
+            "Costa Rica",
+            "República Dominicana"
+          ],
+          "fuera": [
+            "Perú"
+          ],
+          "resto": "f"
+        },
+        "nivel": {
+          "dentro": [
+            "Manager",
+            "Head"
+          ],
+          "probar": [
+            "Director",
+            "VP",
+            "C-Suite"
+          ],
+          "fuera": [
+            "Entry"
+          ],
+          "ignorar": [
+            "Otro",
+            "Senior"
+          ],
+          "resto": "f"
+        },
+        "area": {
+          "dentro": [
+            "Marketing"
+          ],
+          "probar": [
+            "Atención a clientes"
+          ],
+          "fuera": [
+            "Ventas",
+            "Finanzas",
+            "Recursos humanos"
+          ],
+          "resto": "f"
+        }
+      },
+      "rubros": [
+        {
+          "rubro": "Industrias",
+          "dice": "En orden: educación superior, retail, salud y agencias; pinturas por confirmar",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Puesto",
+          "dice": "Gerente o head de redes, digital o comunicación; dirección para ampliar",
+          "solo": "Sí, por nivel y área"
+        },
+        {
+          "rubro": "Países",
+          "dice": "México, Colombia, Ecuador, Panamá y Honduras; Perú fuera",
+          "solo": "Sí"
+        }
+      ],
+      "alertas": [
+        {
+          "color": "a",
+          "texto": "Sale de las ventas del socio, no de campañas propias: ninguna de las diez ganadas tiene un mensaje que la explique."
+        }
+      ]
+    },
+    "propuesta": {
+      "documento": "Propuesta de Valor Hootsuite vD",
+      "problemas": [],
+      "recomendacion": "La vD deja la demo como entrada y no cita clientes sin permiso.",
+      "nota": "Sin recuento por problema: no hay mensajes de Hootsuite que hayan producido reunión."
+    },
+    "lista": {
+      "indicadores": [],
+      "nota": "Sin respuestas de campaña en la ventana: la lista se mide con la primera campaña."
+    },
+    "pruebas": {
+      "regla": "Cada prueba con su hipótesis, versión A y B, volumen (400 por versión con señal, 1,500 en frío), 4 a 6 semanas en la misma ventana, una por producto, y el dato que la justifica.",
+      "candidatas": [
+        {
+          "prueba": "Gerentes de redes en educación superior y retail contra salud y agencias",
+          "dato": "Los cuatro sectores con ventas, dos cada uno"
+        }
+      ]
+    },
+    "documentos": [
+      {
+        "color": "v",
+        "documento": "ICP Hootsuite vB",
+        "estado": "Vigente (23-nov)",
+        "falta": "Ninguna"
+      },
+      {
+        "color": "v",
+        "documento": "Propuesta de Valor Hootsuite vD",
+        "estado": "Vigente (23-nov)",
+        "falta": "Caso con permiso"
+      },
+      {
+        "color": "a",
+        "documento": "GR_KB_HS_vC",
+        "estado": "Escrita el 23-nov; el motor sigue con la vB",
+        "falta": "Copiarla al motor"
+      },
+      {
+        "color": "v",
+        "documento": "Mensajes que Produjeron HS vA",
+        "estado": "23-nov",
+        "falta": "Ninguno es de Hootsuite"
+      },
+      {
+        "color": "a",
+        "documento": "Discovery_Marketing_Hootsuite_GR_vB",
+        "estado": "Compartida con Talkwalker y Synapsis",
+        "falta": "Ninguna mientras sirva"
+      },
+      {
+        "color": "r",
+        "documento": "Template de propuesta",
+        "estado": "No existe",
+        "falta": "Migue"
+      }
+    ],
+    "campanas": [
+      {
+        "contiene": [
+          "hs_open+3"
+        ],
+        "icp": "mixta",
+        "motivo": "Común del portafolio",
+        "recomendacion": "Se queda"
+      },
+      {
+        "contiene": [
+          "ref_hs"
+        ],
+        "icp": "mixta",
+        "motivo": "Común del portafolio",
+        "recomendacion": "Se queda"
+      },
+      {
+        "contiene": [
+          "evento",
+          "trends",
+          "assessment"
+        ],
+        "icp": "fuera",
+        "motivo": "De 2023 y 2024",
+        "recomendacion": "Se quedan pausadas"
+      }
+    ]
+  },
+  "GENIACOB": {
+    "actualizado": "23-nov-2026",
+    "fuente": "Hoja de Cambios GENIACOB vA, ICP GenIA Cobranza vA, Propuesta de Valor Agente GenIA Cobranza vB",
+    "decisiones": [
+      {
+        "que": "Pasar a IT Support la oportunidad que no es de Cobranza y confirmar si la de banca sigue viva (decisión 65)",
+        "recomendacion": "Corregirla ya y preguntar por la de banca esta semana",
+        "si_no": "Cobranza sigue con una oportunidad que no es suya"
+      },
+      {
+        "que": "Primera campaña en borrador (decisión 69)",
+        "recomendacion": "Reescribir la de servicios financieros con el ICP vA",
+        "si_no": "Sin campaña"
+      }
+    ],
+    "ciclo": {
+      "linea_base": "GR_Linea_Base_GENIACOB_vA (23-nov-2026)",
+      "cambios_al": "23-nov-2026",
+      "cerrados": 4,
+      "abiertos": 8,
+      "abiertos_detalle": "4 de dirección, 1 del equipo y 3 del motor",
+      "siguiente_revision": "4-dic-2026",
+      "perdido": "Cobranza nunca había tenido línea base, hoja ni página.",
+      "alertas": [
+        {
+          "color": "r",
+          "texto": "Nunca salió a prospectar: cero envíos y una campaña en borrador desde el 14-ago."
+        },
+        {
+          "color": "a",
+          "texto": "La oportunidad abierta es de IT Support (decidido el 18-nov y confirmado con sus cuatro reuniones), pero HubSpot la sigue marcando como Cobranza (decisión 65)."
+        },
+        {
+          "color": "a",
+          "texto": "La única conversación real de cobranza (banca hipotecaria, junio) está perdida en HubSpot aunque las notas dicen que es prioridad para este año."
+        },
+        {
+          "color": "v",
+          "texto": "Corregido el 23-nov: ICP vA, propuesta vB y base vC ligados; la secuencia de aperturas ya cuenta como Cobranza."
+        }
+      ],
+      "ligas": [
+        {
+          "nombre": "Hoja de cambios GENIACOB vA",
+          "url": "https://docs.google.com/document/d/1BU5czNzHavrMujMLlgkwNk1zGs5-rALrJn8KcwD9bV4/edit"
+        },
+        {
+          "nombre": "Línea base GENIACOB vA",
+          "url": "https://docs.google.com/document/d/1ZOo9eErl2UY6OAqrehYASLYtqnzF4ZmiWfxrGBsL_2M/edit"
+        },
+        {
+          "nombre": "ICP GenIA Cobranza vA",
+          "url": "https://docs.google.com/document/d/1WLbEFp6IV14o2hhEy0EJPkwPXwYxgJzMNDoO95XTwW4/edit"
+        },
+        {
+          "nombre": "Propuesta de Valor Agente GenIA Cobranza vB",
+          "url": "https://docs.google.com/document/d/1QJ8RKKjqbSBq0gsnFMSV2XPXnUsr41PTuywKLcivztM/edit"
+        }
+      ]
+    },
+    "familias": [],
+    "icp": {
+      "documento": "ICP GenIA Cobranza vA (23-nov)",
+      "reglas": {
+        "_nota": "Reglas del ICP GenIA Cobranza vA (23-nov). Evidencia mínima.",
+        "industria": {
+          "dentro": [
+            "Banking",
+            "Retail banking",
+            "Home loans",
+            "Real estate financing",
+            "Non-Bank Lending",
+            "Installment lending",
+            "Vehicle financing",
+            "Credit Intermediation",
+            "Financial Services",
+            "Credit Unions",
+            "Savings Institutions"
+          ],
+          "probar": [
+            "Telecommunications",
+            "Telecommunications Carriers",
+            "Utilities",
+            "Wholesale distribution",
+            "Industrial Distributors",
+            "Commercial and Industrial Equipment Rental",
+            "Private education",
+            "Healthcare provider"
+          ],
+          "fuera": [
+            "Collection Agencies",
+            "Debt recovery",
+            "Payday lending",
+            "Invoice factoring",
+            "Human Resources Services",
+            "Staffing and Recruiting",
+            "Government Administration"
+          ],
+          "resto": "f"
+        },
+        "tamano": {
+          "dentro": [
+            "1001-5000",
+            "5001-10000"
+          ],
+          "probar": [
+            "10001+",
+            "501-1000"
+          ],
+          "fuera": [
+            "1-10",
+            "11-50",
+            "51-200"
+          ],
+          "resto": "f"
+        },
+        "pais": {
+          "dentro": [
+            "México"
+          ],
+          "probar": [
+            "Colombia",
+            "Perú",
+            "Chile"
+          ],
+          "fuera": [],
+          "resto": "f"
+        },
+        "nivel": {
+          "dentro": [
+            "Manager",
+            "Head",
+            "Director",
+            "VP"
+          ],
+          "probar": [
+            "C-Suite"
+          ],
+          "fuera": [
+            "Entry"
+          ],
+          "ignorar": [
+            "Otro",
+            "Senior"
+          ],
+          "resto": "f"
+        },
+        "area": {
+          "dentro": [
+            "Finanzas"
+          ],
+          "probar": [
+            "TI"
+          ],
+          "fuera": [
+            "Marketing",
+            "Recursos humanos"
+          ],
+          "resto": "f"
+        }
+      },
+      "rubros": [
+        {
+          "rubro": "Industrias",
+          "dice": "Bancos y financieras hipotecarias, financieras de consumo, cajas y cooperativas",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Puesto",
+          "dice": "Cobranza, crédito y pagos; producto digital como puerta",
+          "solo": "Sí, aproximado"
+        }
+      ],
+      "alertas": [
+        {
+          "color": "a",
+          "texto": "Un solo caso de cobranza: todo el ICP está marcado sin probar."
+        }
+      ]
+    },
+    "propuesta": {
+      "documento": "Propuesta de Valor Agente GenIA Cobranza vB",
+      "problemas": [],
+      "recomendacion": "La vB pasa de cobranza entre empresas a cobranza a personas por tramo de atraso, como habló el banco.",
+      "nota": "Sin recuento por problema: una sola conversación."
+    },
+    "lista": {
+      "indicadores": [],
+      "nota": "Sin respuestas de campaña."
+    },
+    "pruebas": {
+      "regla": "Cada prueba con su hipótesis, versión A y B, volumen (400 por versión con señal, 1,500 en frío), 4 a 6 semanas en la misma ventana, una por producto, y el dato que la justifica.",
+      "candidatas": [
+        {
+          "prueba": "Cobranza de cartera de consumo en bancos y financieras",
+          "dato": "Un banco dijo que es prioridad para este año (junio)"
+        }
+      ]
+    },
+    "documentos": [
+      {
+        "color": "a",
+        "documento": "ICP GenIA Cobranza vA",
+        "estado": "Vigente (23-nov), evidencia mínima",
+        "falta": "Probarlo"
+      },
+      {
+        "color": "v",
+        "documento": "Propuesta de Valor Agente GenIA Cobranza vB",
+        "estado": "Vigente (23-nov)",
+        "falta": "Caso con permiso"
+      },
+      {
+        "color": "a",
+        "documento": "GR_KB_GENIACOB_vC",
+        "estado": "Escrita el 23-nov",
+        "falta": "El motor todavía no separa esta línea"
+      },
+      {
+        "color": "a",
+        "documento": "Discovery Order to Cash",
+        "estado": "Del enfoque entre empresas",
+        "falta": "Revisarla con la vB"
+      },
+      {
+        "color": "r",
+        "documento": "Template de propuesta económica",
+        "estado": "No existe",
+        "falta": "Mike"
+      }
+    ],
+    "campanas": [
+      {
+        "contiene": [
+          "cobranza_serviciosfinancieros"
+        ],
+        "icp": "mixta",
+        "motivo": "Escrita antes del ICP",
+        "recomendacion": "Reescribirla con el ICP vA antes de activar (decisión 69)"
+      },
+      {
+        "contiene": [
+          "geniacob_open+3",
+          "ref_geniacob"
+        ],
+        "icp": "mixta",
+        "motivo": "Común del portafolio",
+        "recomendacion": "Se queda"
+      }
+    ]
+  },
+  "GENIAVTA": {
+    "actualizado": "23-nov-2026",
+    "fuente": "Hoja de Cambios SYNVTA vB (une la del 22-nov), ICP Synapsis Ventas vA, Propuesta de Valor Synapsis Ventas vA. En el sistema todavía se llama GenIA Ventas",
+    "decisiones": [
+      {
+        "que": "Dar de alta Synapsis Ventas y pasarle su venta (decisión 52)",
+        "recomendacion": "Sí, con la nomenclatura",
+        "si_no": "El producto no existe en el sistema"
+      },
+      {
+        "que": "Permiso para contar el caso del cliente, separar la licencia de Amplemarket y el código de los clientes de prospección como servicio (decisión 66)",
+        "recomendacion": "Pedir el permiso y separar con la factura",
+        "si_no": "Sin caso con nombre"
+      },
+      {
+        "que": "Primera campaña en borrador (decisión 69)",
+        "recomendacion": "Escribirla para capacitación y servicios profesionales",
+        "si_no": "Sin campaña"
+      }
+    ],
+    "ciclo": {
+      "linea_base": "GR_Linea_Base_SYNVTA_vA (23-nov-2026)",
+      "cambios_al": "23-nov-2026",
+      "cerrados": 2,
+      "abiertos": 11,
+      "abiertos_detalle": "6 de dirección, 2 del equipo y 3 del motor",
+      "siguiente_revision": "4-dic-2026",
+      "perdido": "La hoja del 22-nov (5 cambios) se integró en la vB.",
+      "alertas": [
+        {
+          "color": "v",
+          "texto": "Una venta cerrada con monto real: 20,800 el 15-nov. La cerraron dos demos (julio y septiembre), no una campaña."
+        },
+        {
+          "color": "r",
+          "texto": "Cero contactados en frío, sin señales y sin campañas propias."
+        },
+        {
+          "color": "a",
+          "texto": "El producto todavía se llama GenIA Ventas en el sistema (decisión 52)."
+        },
+        {
+          "color": "a",
+          "texto": "Ninguna reunión trae una cifra de resultado: el caso se cuenta por lo implementado."
+        },
+        {
+          "color": "v",
+          "texto": "Corregido el 23-nov: ICP, propuesta y base ligados; la secuencia de aperturas ya cuenta en el producto."
+        }
+      ],
+      "ligas": [
+        {
+          "nombre": "Hoja de cambios SYNVTA vB",
+          "url": "https://docs.google.com/document/d/1U2DeN-MP5y0SrJMTMa4N-4d7pd5-bPNeBX0VDicZK3k/edit"
+        },
+        {
+          "nombre": "Hoja de cambios SYNVTA vA (22-nov)",
+          "url": "https://docs.google.com/document/d/1xgOZ6Gx0Pv5Zz2Hgd8oW_Dc-W2M7jF4awRW9IIQ-khg/edit"
+        },
+        {
+          "nombre": "Línea base SYNVTA vA",
+          "url": "https://docs.google.com/document/d/13ZLqaeEBdxEJ6fO0_neN2ZlrMHHo7UBJ674YXcEuKlM/edit"
+        },
+        {
+          "nombre": "ICP Synapsis Ventas vA",
+          "url": "https://docs.google.com/document/d/1P_P9n1u8yRBTuvHXqjn3gIzcKkgRVnUyh_f4GVfY05g/edit"
+        },
+        {
+          "nombre": "Propuesta de Valor Synapsis Ventas vA",
+          "url": "https://docs.google.com/document/d/10gDiV_MRlnmftIuLdmJr5Ot5wp_YJxNgMbSAvZEEOQs/edit"
+        }
+      ]
+    },
+    "familias": [],
+    "icp": {
+      "documento": "ICP Synapsis Ventas vA (23-nov)",
+      "reglas": {
+        "_nota": "Reglas del ICP Synapsis Ventas vA (23-nov). Un solo cliente.",
+        "industria": {
+          "dentro": [
+            "Professional Training and Coaching"
+          ],
+          "probar": [
+            "E-Learning Providers",
+            "Technical and Vocational Training",
+            "IT Services and IT Consulting",
+            "Software Development",
+            "Software Services (SaaS)",
+            "Business Consulting and Services",
+            "Staffing and Recruiting",
+            "Managed Services Providers"
+          ],
+          "fuera": [
+            "Banking",
+            "Financial Services",
+            "Advertising Services",
+            "Marketing Services",
+            "Public Relations and Communications Services",
+            "Retail",
+            "Consumer goods retail",
+            "Government Administration"
+          ],
+          "resto": "f"
+        },
+        "tamano": {
+          "dentro": [
+            "51-200",
+            "201-500",
+            "501-1000"
+          ],
+          "probar": [
+            "11-50",
+            "1001-5000"
+          ],
+          "fuera": [
+            "1-10"
+          ],
+          "resto": "f"
+        },
+        "pais": {
+          "dentro": [
+            "México",
+            "Colombia",
+            "Perú",
+            "España"
+          ],
+          "probar": [
+            "Chile"
+          ],
+          "fuera": [],
+          "resto": "f"
+        },
+        "nivel": {
+          "dentro": [
+            "C-Suite",
+            "Director",
+            "Head",
+            "Manager"
+          ],
+          "probar": [
+            "VP"
+          ],
+          "fuera": [
+            "Entry"
+          ],
+          "ignorar": [
+            "Otro",
+            "Senior"
+          ],
+          "resto": "f"
+        },
+        "area": {
+          "dentro": [
+            "Ventas",
+            "Dirección general"
+          ],
+          "probar": [
+            "TI"
+          ],
+          "fuera": [
+            "Marketing",
+            "Recursos humanos"
+          ],
+          "resto": "f"
+        }
+      },
+      "rubros": [
+        {
+          "rubro": "Industrias",
+          "dice": "Capacitación y servicios profesionales con equipo de ventas en varios países; TI y software por probar",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Puesto",
+          "dice": "Dirección general y dirección comercial",
+          "solo": "Sí, aproximado"
+        }
+      ],
+      "alertas": [
+        {
+          "color": "a",
+          "texto": "Un solo cliente: todo lo demás está sin probar."
+        }
+      ]
+    },
+    "propuesta": {
+      "documento": "Propuesta de Valor Synapsis Ventas vA",
+      "problemas": [],
+      "recomendacion": "La entrada es una demo sobre el proceso del prospecto, como se vendió a Itera.",
+      "nota": "Sin recuento por problema: un solo cliente."
+    },
+    "lista": {
+      "indicadores": [],
+      "nota": "Sin respuestas de campaña."
+    },
+    "pruebas": {
+      "regla": "Cada prueba con su hipótesis, versión A y B, volumen (400 por versión con señal, 1,500 en frío), 4 a 6 semanas en la misma ventana, una por producto, y el dato que la justifica.",
+      "candidatas": [
+        {
+          "prueba": "Capacitación y servicios profesionales con varios vendedores",
+          "dato": "El único cliente es de ahí"
+        }
+      ]
+    },
+    "documentos": [
+      {
+        "color": "a",
+        "documento": "ICP Synapsis Ventas vA",
+        "estado": "Vigente (23-nov), un solo cliente",
+        "falta": "Probarlo"
+      },
+      {
+        "color": "v",
+        "documento": "Propuesta de Valor Synapsis Ventas vA",
+        "estado": "Vigente (23-nov)",
+        "falta": "Caso con permiso"
+      },
+      {
+        "color": "a",
+        "documento": "GR_KB_SYNVTA_vA",
+        "estado": "Escrita el 23-nov",
+        "falta": "El motor todavía no separa esta línea"
+      },
+      {
+        "color": "r",
+        "documento": "GR_Discovery_Ventas_vD",
+        "estado": "Con el nombre de GenIA Ventas",
+        "falta": "Letra nueva"
+      },
+      {
+        "color": "r",
+        "documento": "Template de propuesta",
+        "estado": "No existe",
+        "falta": "Migue"
+      }
+    ],
+    "campanas": [
+      {
+        "contiene": [
+          "geniavta_open+3",
+          "ref_geniavta"
+        ],
+        "icp": "mixta",
+        "motivo": "Común del portafolio; nombre viejo",
+        "recomendacion": "Renombrar con la nomenclatura"
+      }
+    ]
+  },
+  "WB": {
+    "actualizado": "23-nov-2026",
+    "fuente": "Hoja de Cambios WB vA, ICP Web Development vA, Propuesta de Valor Web Development vA",
+    "decisiones": [
+      {
+        "que": "Oportunidad vencida desde el 31-oct y piezas viejas con «diagnóstico gratuito» (decisión 67)",
+        "recomendacion": "Retomarla en diciembre y mover el cierre al 27-feb-2027; no usar las piezas",
+        "si_no": "Sigue vencida"
+      },
+      {
+        "que": "Primera campaña en borrador (decisión 69)",
+        "recomendacion": "Escribirla para cámaras, asociaciones y transporte",
+        "si_no": "Sin campaña"
+      }
+    ],
+    "ciclo": {
+      "linea_base": "GR_Linea_Base_WB_vA (23-nov-2026)",
+      "cambios_al": "23-nov-2026",
+      "cerrados": 3,
+      "abiertos": 9,
+      "abiertos_detalle": "4 de dirección, 2 del equipo y 3 del motor",
+      "siguiente_revision": "4-dic-2026",
+      "perdido": "Web nunca había tenido línea base, hoja ni página; su material estaba en Drive sin ligar.",
+      "alertas": [
+        {
+          "color": "r",
+          "texto": "La única oportunidad abierta tiene el cierre vencido desde el 31-oct: el cliente aplazó la página por presupuesto (decisión 67)."
+        },
+        {
+          "color": "a",
+          "texto": "Se vende como complemento de 360 y AEO; cero contactados en frío."
+        },
+        {
+          "color": "a",
+          "texto": "Tres piezas viejas dicen «diagnóstico gratuito» o la duración de la sesión: no se usan."
+        },
+        {
+          "color": "v",
+          "texto": "Corregido el 23-nov: ICP, propuesta y base ligados; la secuencia de aperturas ya cuenta en Web."
+        }
+      ],
+      "ligas": [
+        {
+          "nombre": "Hoja de cambios WB vA",
+          "url": "https://docs.google.com/document/d/1D22c9F9IgDvtGs6Sj2x69qtZV-RINOGHSLcy79Fn6lU/edit"
+        },
+        {
+          "nombre": "Línea base WB vA",
+          "url": "https://docs.google.com/document/d/1fBzdxjnfOg2VV5LYGiCmisCQNQaRs0kLLGTUeIwB27E/edit"
+        },
+        {
+          "nombre": "ICP Web Development vA",
+          "url": "https://docs.google.com/document/d/1oy5_0LSASXG1U4DF3C4wecp0uUFvQwKNaDvVIRrsBxA/edit"
+        },
+        {
+          "nombre": "Propuesta de Valor Web Development vA",
+          "url": "https://docs.google.com/document/d/1AcawqzWOBkviCcYc7WMTM1JR_T_yj2GPAR9iwIeykpo/edit"
+        }
+      ]
+    },
+    "familias": [],
+    "icp": {
+      "documento": "ICP Web Development vA (23-nov)",
+      "reglas": {
+        "_nota": "Reglas del ICP Web Development vA (23-nov). Dos casos.",
+        "industria": {
+          "dentro": [
+            "Industry Associations",
+            "Professional Organizations",
+            "Events Services",
+            "Truck Transportation",
+            "Freight and Package Transportation",
+            "Third-Party Logistics Providers",
+            "Freight Brokerage",
+            "Transportation, Logistics, Supply Chain and Storage"
+          ],
+          "probar": [
+            "Civic and Social Organizations",
+            "Destination Marketing Organizations & Tourism Boards",
+            "Hospitality",
+            "Conference facilities",
+            "Customs brokerage",
+            "Import export logistics",
+            "International trade",
+            "Manufacturing",
+            "Industrial manufacturing"
+          ],
+          "fuera": [
+            "Web development",
+            "Custom web development",
+            "Web design services",
+            "Website development",
+            "Software Development",
+            "Web hosting services",
+            "Advertising Services",
+            "Marketing Services",
+            "Branding services",
+            "IT Services and IT Consulting"
+          ],
+          "resto": "f"
+        },
+        "tamano": {
+          "dentro": [
+            "51-200",
+            "201-500",
+            "501-1000",
+            "1001-5000"
+          ],
+          "probar": [],
+          "fuera": [
+            "1-10",
+            "11-50"
+          ],
+          "resto": "f"
+        },
+        "pais": {
+          "dentro": [
+            "México"
+          ],
+          "probar": [
+            "Estados Unidos"
+          ],
+          "fuera": [],
+          "resto": "f"
+        },
+        "nivel": {
+          "dentro": [
+            "C-Suite",
+            "VP",
+            "Director"
+          ],
+          "probar": [
+            "Head",
+            "Manager"
+          ],
+          "fuera": [
+            "Entry"
+          ],
+          "ignorar": [
+            "Otro",
+            "Senior"
+          ],
+          "resto": "f"
+        },
+        "area": {
+          "dentro": [
+            "Dirección general"
+          ],
+          "probar": [
+            "Marketing",
+            "TI"
+          ],
+          "fuera": [
+            "Ventas",
+            "Recursos humanos"
+          ],
+          "resto": "f"
+        }
+      },
+      "rubros": [
+        {
+          "rubro": "Industrias",
+          "dice": "Cámaras, consejos y asociaciones; transporte y logística",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Puesto",
+          "dice": "Dirección general; marketing y TI como apoyo",
+          "solo": "Sí, aproximado"
+        }
+      ],
+      "alertas": [
+        {
+          "color": "a",
+          "texto": "Dos casos y ninguno ganado: todo está sin probar."
+        }
+      ]
+    },
+    "propuesta": {
+      "documento": "Propuesta de Valor Web Development vA",
+      "problemas": [],
+      "recomendacion": "El sitio que convierte y se conecta con 360, AEO y el CRM; la entrada es el benchmark del sitio.",
+      "nota": "Sin recuento por problema."
+    },
+    "lista": {
+      "indicadores": [],
+      "nota": "Sin respuestas de campaña."
+    },
+    "pruebas": {
+      "regla": "Cada prueba con su hipótesis, versión A y B, volumen (400 por versión con señal, 1,500 en frío), 4 a 6 semanas en la misma ventana, una por producto, y el dato que la justifica.",
+      "candidatas": [
+        {
+          "prueba": "Cámaras y asociaciones contra transporte",
+          "dato": "Una oportunidad en cada uno"
+        }
+      ]
+    },
+    "documentos": [
+      {
+        "color": "a",
+        "documento": "ICP Web Development vA",
+        "estado": "Vigente (23-nov), dos casos",
+        "falta": "Probarlo"
+      },
+      {
+        "color": "v",
+        "documento": "Propuesta de Valor Web Development vA",
+        "estado": "Vigente (23-nov)",
+        "falta": "Caso con permiso"
+      },
+      {
+        "color": "a",
+        "documento": "GR_KB_WB_vA",
+        "estado": "Escrita el 23-nov",
+        "falta": "El motor usa la KB de productos de mayo"
+      },
+      {
+        "color": "a",
+        "documento": "GR_Cuestionario_Diagnostico_Web",
+        "estado": "Del 9-mar",
+        "falta": "Revisarlo con la propuesta vA"
+      },
+      {
+        "color": "r",
+        "documento": "Cotizador vD y presentación de STIL",
+        "estado": "Rangos de precio distintos",
+        "falta": "Un solo precio de referencia (Daniel)"
+      },
+      {
+        "color": "r",
+        "documento": "Template de propuesta",
+        "estado": "No existe",
+        "falta": "Daniel"
+      }
+    ],
+    "campanas": [
+      {
+        "contiene": [
+          "wb_open+3",
+          "ref_wb"
+        ],
+        "icp": "mixta",
+        "motivo": "Común del portafolio",
+        "recomendacion": "Se queda"
       }
     ]
   }
