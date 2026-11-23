@@ -1,6 +1,6 @@
 {
   "_nota": "Contenido fijo de la página de cada producto del tablero ICP (Diseño de la Página de Producto TW vA, 20-nov-2026). Una llave por código de producto. Lo medido (secuencias, señales, gráfica) sale de la foto gr-icp; aquí va lo que viene de documentos: ciclo de cambio, familias de campaña, ICP, propuesta de valor, lista, pruebas candidatas y estado de documentos. Colores: v verde, a amarillo, r rojo.",
-  "_decisiones": {"documento": "Decisiones del Portafolio vM", "url": "https://docs.google.com/document/d/1fvs_88sHAEgs9CuaDW2gEQCs0MZTwHllqfthbvT5EXw/edit", "fecha": "23-nov-2026", "revision": "4-dic-2026"},
+  "_decisiones": {"documento": "Decisiones del Portafolio vN", "url": "https://docs.google.com/document/d/16XCpFGJ_SDUGhRB7ZMj0BEANpq_kO2paRW0L-VifG3U/edit", "fecha": "23-nov-2026", "revision": "4-dic-2026"},
   "TW": {
     "decisiones": [
       {"que": "Regla de la lista en alarma (AM ya la tiene; AEO en el punto 17)", "recomendacion": "Sí: sin cargas nuevas en frío hasta rehacer la lista con el ICP; las señales siguen", "si_no": "Se sigue cargando en frío con 23.2% de persona equivocada"},
@@ -4518,7 +4518,7 @@
   },
   "HS": {
     "actualizado": "23-nov-2026",
-    "fuente": "Hoja de Cambios HS vA, ICP Hootsuite vB, Propuesta de Valor Hootsuite vD, Mensajes que Produjeron HS vA",
+    "fuente": "Hoja de Cambios HS vB (auditoría cíclica), ICP Hootsuite vC, Propuesta de Valor Hootsuite vD, Mensajes que Produjeron HS vB",
     "decisiones": [
       {
         "que": "Monto real de los clientes, si vuelve a prospectar en frío, permiso para citar un cliente y el texto de una señal (decisión 64)",
@@ -4529,14 +4529,19 @@
         "que": "Primera campaña en borrador (decisión 69)",
         "recomendacion": "Escribirla; activarla cuando haya caso con permiso",
         "si_no": "Sin campaña"
+      },
+      {
+        "que": "Dos datos mal registrados en HubSpot: el origen de una oportunidad de AEO y la fecha de cierre de una perdida (decisión 70)",
+        "recomendacion": "Corregirlos con la tabla de la decisión 70",
+        "si_no": "El tablero los sigue contando mal"
       }
     ],
     "ciclo": {
-      "linea_base": "GR_Linea_Base_HS_vA (23-nov-2026)",
+      "linea_base": "GR_Linea_Base_HS_vB (23-nov-2026)",
       "cambios_al": "23-nov-2026",
       "cerrados": 4,
-      "abiertos": 10,
-      "abiertos_detalle": "6 de dirección, 1 del equipo y 3 del motor",
+      "abiertos": 9,
+      "abiertos_detalle": "6 de dirección, 1 del equipo y 2 del motor; 1 de registro",
       "siguiente_revision": "4-dic-2026",
       "perdido": "Hootsuite nunca había tenido línea base, hoja ni página.",
       "alertas": [
@@ -4550,7 +4555,7 @@
         },
         {
           "color": "a",
-          "texto": "Los tres mensajes que el tablero le cuenta a Hootsuite venden otro producto; uno de señal menciona la duración de la reunión."
+          "texto": "De los tres mensajes que el tablero le cuenta, dos los manda el socio de Hootsuite y ofrecen Talkwalker (uno menciona la duración de la reunión); el tercero es una oportunidad de AEO con el origen mal registrado (decisión 70)."
         },
         {
           "color": "a",
@@ -4558,29 +4563,29 @@
         },
         {
           "color": "v",
-          "texto": "Corregido el 23-nov: ICP vB, propuesta vD, base vC y mensajes vA ligados; secuencias con guion bajo ya cuentan como Hootsuite."
+          "texto": "Corregido el 23-nov: ICP vC, propuesta vD, base vD y mensajes vB ligados; secuencias con guion bajo ya cuentan como Hootsuite. Auditoría cíclica en cero a la quinta ronda."
         }
       ],
       "ligas": [
         {
-          "nombre": "Hoja de cambios HS vA",
-          "url": "https://docs.google.com/document/d/1bFL7HcXh0ZlCIHSF7qaMagywoDO0EF9dAOf78Zl5C7g/edit"
+          "nombre": "Hoja de cambios HS vB",
+          "url": "https://docs.google.com/document/d/1hYyKlvEwILLe4lSQ2uPE5SK-ewBT_eAmd2XsHC2GAPk/edit"
         },
         {
-          "nombre": "Línea base HS vA",
-          "url": "https://docs.google.com/document/d/1cMEKnoZydTKwxKQlp0IWpWRNEzVwfDDVku45RfoUZtU/edit"
+          "nombre": "Línea base HS vB",
+          "url": "https://docs.google.com/document/d/1yFI-ZoXrq50g1QqqiupWvzEY8uFhElPdi38YzpxCtmI/edit"
         },
         {
-          "nombre": "ICP Hootsuite vB",
-          "url": "https://docs.google.com/document/d/14aC2O_DeaDu03K2Rdmt2TbtY1nZ_1cRV5wCcpdLHNlc/edit"
+          "nombre": "ICP Hootsuite vC",
+          "url": "https://docs.google.com/document/d/1_4LCLb4ka0I9fQNuMGj1qrUXc3qLb8h-i4NDNI-P4wg/edit"
         },
         {
           "nombre": "Propuesta de Valor Hootsuite vD",
           "url": "https://docs.google.com/document/d/1ez0CgWSPamt5ORoQLihtZYzxJFu40WNMwt4ebo3tEak/edit"
         },
         {
-          "nombre": "Mensajes que Produjeron HS vA",
-          "url": "https://docs.google.com/document/d/1gozPqGDQhlGcu9qQGodwnG_P_Iz17fHNz0icArT2eEw/edit"
+          "nombre": "Mensajes que Produjeron HS vB",
+          "url": "https://docs.google.com/document/d/1OqvJ13Pc07sKSZiOog0YyMbveOS-DyMbW50bNY5jsFM/edit"
         }
       ]
     },
@@ -4600,11 +4605,11 @@
           "hootsuite"
         ],
         "en": "senales",
-        "lectura": "Una respuesta que reenvió a la persona correcta. El mensaje vendía Talkwalker."
+        "lectura": "Una respuesta que reenvió a la persona correcta. El correo lo manda el socio de Hootsuite y ofrece Talkwalker."
       }
     ],
     "icp": {
-      "documento": "ICP Hootsuite vB (23-nov)",
+      "documento": "ICP Hootsuite vC (23-nov)",
       "reglas": {
         "_nota": "Reglas del ICP Hootsuite vB (23-nov). Nombres del catálogo de Amplemarket.",
         "industria": {
@@ -4763,7 +4768,7 @@
     "documentos": [
       {
         "color": "v",
-        "documento": "ICP Hootsuite vB",
+        "documento": "ICP Hootsuite vC",
         "estado": "Vigente (23-nov)",
         "falta": "Ninguna"
       },
@@ -4775,15 +4780,15 @@
       },
       {
         "color": "a",
-        "documento": "GR_KB_HS_vC",
+        "documento": "GR_KB_HS_vD",
         "estado": "Escrita el 23-nov; el motor sigue con la vB",
         "falta": "Copiarla al motor"
       },
       {
         "color": "v",
-        "documento": "Mensajes que Produjeron HS vA",
+        "documento": "Mensajes que Produjeron HS vB",
         "estado": "23-nov",
-        "falta": "Ninguno es de Hootsuite"
+        "falta": "Dos son del socio de Hootsuite; uno es de AEO"
       },
       {
         "color": "a",
@@ -4829,7 +4834,7 @@
   },
   "GENIACOB": {
     "actualizado": "23-nov-2026",
-    "fuente": "Hoja de Cambios GENIACOB vA, ICP GenIA Cobranza vA, Propuesta de Valor Agente GenIA Cobranza vB",
+    "fuente": "Hoja de Cambios GENIACOB vB (auditoría cíclica), ICP GenIA Cobranza vB, Propuesta de Valor Agente GenIA Cobranza vB",
     "decisiones": [
       {
         "que": "Pasar a IT Support la oportunidad que no es de Cobranza y confirmar si la de banca sigue viva (decisión 65)",
@@ -4840,14 +4845,19 @@
         "que": "Primera campaña en borrador (decisión 69)",
         "recomendacion": "Reescribir la de servicios financieros con el ICP vA",
         "si_no": "Sin campaña"
+      },
+      {
+        "que": "Dos datos mal registrados en HubSpot: el origen de una oportunidad de AEO y la fecha de cierre de una perdida (decisión 70)",
+        "recomendacion": "Corregirlos con la tabla de la decisión 70",
+        "si_no": "El tablero los sigue contando mal"
       }
     ],
     "ciclo": {
-      "linea_base": "GR_Linea_Base_GENIACOB_vA (23-nov-2026)",
+      "linea_base": "GR_Linea_Base_GENIACOB_vB (23-nov-2026)",
       "cambios_al": "23-nov-2026",
       "cerrados": 4,
-      "abiertos": 8,
-      "abiertos_detalle": "4 de dirección, 1 del equipo y 3 del motor",
+      "abiertos": 7,
+      "abiertos_detalle": "5 de dirección y 2 del motor; 1 de registro",
       "siguiente_revision": "4-dic-2026",
       "perdido": "Cobranza nunca había tenido línea base, hoja ni página.",
       "alertas": [
@@ -4861,25 +4871,25 @@
         },
         {
           "color": "a",
-          "texto": "La única conversación real de cobranza (banca hipotecaria, junio) está perdida en HubSpot aunque las notas dicen que es prioridad para este año."
+          "texto": "La única conversación real de cobranza (banca hipotecaria, junio) se marcó perdida el 13-nov por «no respondió», aunque en la reunión dijeron que es prioridad para este año."
         },
         {
           "color": "v",
-          "texto": "Corregido el 23-nov: ICP vA, propuesta vB y base vC ligados; la secuencia de aperturas ya cuenta como Cobranza."
+          "texto": "Corregido el 23-nov: ICP vB, propuesta vB y base vD ligados; la secuencia de aperturas ya cuenta como Cobranza. Auditoría cíclica en cero a la quinta ronda."
         }
       ],
       "ligas": [
         {
-          "nombre": "Hoja de cambios GENIACOB vA",
-          "url": "https://docs.google.com/document/d/1BU5czNzHavrMujMLlgkwNk1zGs5-rALrJn8KcwD9bV4/edit"
+          "nombre": "Hoja de cambios GENIACOB vB",
+          "url": "https://docs.google.com/document/d/1Xl7XwteSxHZcKkiI8fCOir5jzhXp3UmeW67l3niAGuM/edit"
         },
         {
-          "nombre": "Línea base GENIACOB vA",
-          "url": "https://docs.google.com/document/d/1ZOo9eErl2UY6OAqrehYASLYtqnzF4ZmiWfxrGBsL_2M/edit"
+          "nombre": "Línea base GENIACOB vB",
+          "url": "https://docs.google.com/document/d/17yOkwV1b4GbbClFG9A9Uet5u0jZrJTT_GkiH6RBlkKk/edit"
         },
         {
-          "nombre": "ICP GenIA Cobranza vA",
-          "url": "https://docs.google.com/document/d/1WLbEFp6IV14o2hhEy0EJPkwPXwYxgJzMNDoO95XTwW4/edit"
+          "nombre": "ICP GenIA Cobranza vB",
+          "url": "https://docs.google.com/document/d/18Vann7CeoTx8tdBIBOYDZG7qcTdoYXVCOzr6AMmy4Rw/edit"
         },
         {
           "nombre": "Propuesta de Valor Agente GenIA Cobranza vB",
@@ -4889,7 +4899,7 @@
     },
     "familias": [],
     "icp": {
-      "documento": "ICP GenIA Cobranza vA (23-nov)",
+      "documento": "ICP GenIA Cobranza vB (23-nov)",
       "reglas": {
         "_nota": "Reglas del ICP GenIA Cobranza vA (23-nov). Evidencia mínima.",
         "industria": {
@@ -5029,7 +5039,7 @@
     "documentos": [
       {
         "color": "a",
-        "documento": "ICP GenIA Cobranza vA",
+        "documento": "ICP GenIA Cobranza vB",
         "estado": "Vigente (23-nov), evidencia mínima",
         "falta": "Probarlo"
       },
@@ -5041,7 +5051,7 @@
       },
       {
         "color": "a",
-        "documento": "GR_KB_GENIACOB_vC",
+        "documento": "GR_KB_GENIACOB_vD",
         "estado": "Escrita el 23-nov",
         "falta": "El motor todavía no separa esta línea"
       },
@@ -5080,7 +5090,7 @@
   },
   "GENIAVTA": {
     "actualizado": "23-nov-2026",
-    "fuente": "Hoja de Cambios SYNVTA vB (une la del 22-nov), ICP Synapsis Ventas vA, Propuesta de Valor Synapsis Ventas vA. En el sistema todavía se llama GenIA Ventas",
+    "fuente": "Hoja de Cambios SYNVTA vC (une la del 22-nov; auditoría cíclica), ICP Synapsis Ventas vA, Propuesta de Valor Synapsis Ventas vA. En el sistema todavía se llama GenIA Ventas",
     "decisiones": [
       {
         "que": "Dar de alta Synapsis Ventas y pasarle su venta (decisión 52)",
@@ -5125,13 +5135,13 @@
         },
         {
           "color": "v",
-          "texto": "Corregido el 23-nov: ICP, propuesta y base ligados; la secuencia de aperturas ya cuenta en el producto."
+          "texto": "Corregido el 23-nov: ICP, propuesta y base ligados; la secuencia de aperturas ya cuenta en el producto. Auditoría cíclica en cero a la quinta ronda."
         }
       ],
       "ligas": [
         {
-          "nombre": "Hoja de cambios SYNVTA vB",
-          "url": "https://docs.google.com/document/d/1U2DeN-MP5y0SrJMTMa4N-4d7pd5-bPNeBX0VDicZK3k/edit"
+          "nombre": "Hoja de cambios SYNVTA vC",
+          "url": "https://docs.google.com/document/d/1vLfAMt0R7iHi0NgIXw4K7VyUu0RdvL6-q-yYAT_iXV4/edit"
         },
         {
           "nombre": "Hoja de cambios SYNVTA vA (22-nov)",
@@ -5328,7 +5338,7 @@
   },
   "WB": {
     "actualizado": "23-nov-2026",
-    "fuente": "Hoja de Cambios WB vA, ICP Web Development vA, Propuesta de Valor Web Development vA",
+    "fuente": "Hoja de Cambios WB vB (auditoría cíclica), ICP Web Development vA, Propuesta de Valor Web Development vA",
     "decisiones": [
       {
         "que": "Oportunidad vencida desde el 31-oct y piezas viejas con «diagnóstico gratuito» (decisión 67)",
@@ -5342,17 +5352,17 @@
       }
     ],
     "ciclo": {
-      "linea_base": "GR_Linea_Base_WB_vA (23-nov-2026)",
+      "linea_base": "GR_Linea_Base_WB_vB (23-nov-2026)",
       "cambios_al": "23-nov-2026",
-      "cerrados": 3,
-      "abiertos": 9,
-      "abiertos_detalle": "4 de dirección, 2 del equipo y 3 del motor",
+      "cerrados": 4,
+      "abiertos": 8,
+      "abiertos_detalle": "4 de dirección, 2 del equipo y 2 del motor",
       "siguiente_revision": "4-dic-2026",
       "perdido": "Web nunca había tenido línea base, hoja ni página; su material estaba en Drive sin ligar.",
       "alertas": [
         {
           "color": "r",
-          "texto": "La única oportunidad abierta tiene el cierre vencido desde el 31-oct: el cliente aplazó la página por presupuesto (decisión 67)."
+          "texto": "La única oportunidad abierta (en Aprobación verbal) tiene el cierre vencido desde el 31-oct: el cliente aplazó la página por presupuesto (decisión 67)."
         },
         {
           "color": "a",
@@ -5364,17 +5374,17 @@
         },
         {
           "color": "v",
-          "texto": "Corregido el 23-nov: ICP, propuesta y base ligados; la secuencia de aperturas ya cuenta en Web."
+          "texto": "Corregido el 23-nov: ICP, propuesta y base vB ligados; la secuencia de aperturas ya cuenta en Web. Auditoría cíclica en cero a la quinta ronda."
         }
       ],
       "ligas": [
         {
-          "nombre": "Hoja de cambios WB vA",
-          "url": "https://docs.google.com/document/d/1D22c9F9IgDvtGs6Sj2x69qtZV-RINOGHSLcy79Fn6lU/edit"
+          "nombre": "Hoja de cambios WB vB",
+          "url": "https://docs.google.com/document/d/1OrynBrpt6zW9PgRrmBgGc29utirkjFxzup4IO6dg4wU/edit"
         },
         {
-          "nombre": "Línea base WB vA",
-          "url": "https://docs.google.com/document/d/1fBzdxjnfOg2VV5LYGiCmisCQNQaRs0kLLGTUeIwB27E/edit"
+          "nombre": "Línea base WB vB",
+          "url": "https://docs.google.com/document/d/1mWGKKhNrjvNz_dsUeMIZK8o0nyaVVLP-H2FCeWvtcyc/edit"
         },
         {
           "nombre": "ICP Web Development vA",
@@ -5538,7 +5548,7 @@
       },
       {
         "color": "a",
-        "documento": "GR_KB_WB_vA",
+        "documento": "GR_KB_WB_vB",
         "estado": "Escrita el 23-nov",
         "falta": "El motor usa la KB de productos de mayo"
       },
