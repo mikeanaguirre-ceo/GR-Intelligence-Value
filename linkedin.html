@@ -103,7 +103,8 @@
     ['enviadas', 'Enviadas', CO ? 'Ya salieron desde el correo de su dueño.' : 'Amplemarket ya confirmó que salieron (Entregada), o se enviaron antes de que existiera la confirmación (Enviada).'],
     ['a_mano', 'Contestadas a mano', 'Alguien ya les contestó directo en ' + T.nombre + ' (lo detectó el sistema o lo marcaron con el botón Contestado a mano), así que no se envió nada para no duplicar.'],
     ['descartadas', 'Descartadas', 'Marcadas como No contestar, o reemplazadas porque la persona volvió a escribir.'],
-    ['error', 'Error', T.fallo]];
+    ['error', 'Error', T.fallo],
+    ['citas', 'Citas', 'Respuestas enviadas que confirmaron una reunión, con su etiqueta: Por agendar y Revisar arriba; luego por fecha de la reunión, las próximas primero.']];
   if (CO) ESTADOS = ESTADOS.filter(function(e){ return e[0] !== 'en_cola'; });   // en correo Gmail confirma al momento
   var datos = null, fPer = leer('gr_' + (CO ? 'co' : 'li') + '_per') || 'Todos', fEst = 'por_aprobar', fCat = 'todas';
   var $ = function(id){ return document.getElementById(id); };
@@ -155,6 +156,24 @@
     if (/enviad/.test(f.estado) && f.entrega === 'en_cola') return 'en_cola';
     if (f.estado === 'descartado' && f.revisado_por === 'Contestada a mano') return 'a_mano';
     return f.grupo || ({ pendiente: 'por_aprobar', enviando: 'enviadas', enviado: 'enviadas', enviado_auto: 'enviadas', descartado: 'descartadas', reemplazado: 'descartadas', error: 'error' })[f.estado] || 'otro'; }
+  // 23-nov (Mike): etiqueta de la cita (columna cita, JSON) y filtro «Citas».
+  function citaDe(f){ try { var c = JSON.parse(f.cita || 'null'); return c && c.estado ? c : null; } catch (e) { return null; } }
+  var CITA = { agendada: ['ok', '📅 Cita agendada'], ya_existia: ['pend', '⚠️ Revisar: ya existía'], por_agendar: ['mal', '⏳ Por agendar'], a_mano: ['', '✋ Agendada a mano'] };
+  function enFiltro(f){ return fEst === 'citas' ? !!citaDe(f) : GRUPO(f) === fEst; }
+  function ordenCitas(a, b){ var x = citaDe(a), y = citaDe(b), P = { por_agendar: 0, ya_existia: 1 }, px = P[x.estado] != null ? P[x.estado] : 2, py = P[y.estado] != null ? P[y.estado] : 2;
+    if (px !== py) return px - py; var hoy = new Date(Date.now() - 6 * 3600000).toISOString().slice(0, 16), fx = x.inicio_cdmx || '9999', fy = y.inicio_cdmx || '9999', vx = fx < hoy, vy = fy < hoy;
+    if (vx !== vy) return vx ? 1 : -1; return vx ? fy.localeCompare(fx) : fx.localeCompare(fy); }
+  function bloqueCita(f){
+    var c = citaDe(f); if (!c) return '';
+    var e = CITA[c.estado] || ['', c.estado], h = '<div class="bloque"><span class="t">Cita <span class="etq ' + e[0] + '">' + esc(e[1]) + '</span></span><div class="sub">';
+    if (c.cuando) h += esc(c.cuando) + (c.cdmx ? ' · ' + esc(c.cdmx) : '') + (c.correo ? ' · ' + esc(c.correo) : '');
+    if (c.liga) h += ' · <a href="' + esc(c.liga) + '" target="_blank" rel="noopener">Meet</a>';
+    if (c.existente && c.existente.resumen) h += '<br>Reunión que ya estaba: «' + esc(c.existente.resumen) + '» (' + esc(c.existente.cuando || '') + ' CDMX)';
+    if (c.motivo) h += '<br>' + esc(c.motivo);
+    h += '</div>';
+    if (c.estado === 'por_agendar' || c.estado === 'ya_existia') h += '<div class="acc"><button class="s" data-acc="cita_a_mano" title="' + (c.estado === 'por_agendar' ? 'Martha ya la agendó a mano: la etiqueta pasa a Agendada a mano' : 'Ya revisaste que la reunión que existía tiene la fecha correcta: la etiqueta pasa a Agendada a mano') + '">' + (c.estado === 'por_agendar' ? 'Ya la agendé' : 'Ya la revisé') + '</button></div>';
+    return h + '</div>';
+  }
   function filasPersona(){ return (datos.filas || []).filter(function(f){ return fPer === 'Todos' || f.dueno === fPer; }); }
   function pintarFiltros(){
     var base = filasPersona(), pend = (datos.filas || []).filter(function(f){ return f.estado === 'pendiente'; });
@@ -162,10 +181,10 @@
     personas().forEach(function(p){ var n = p === 'Todos' ? pend.length : pend.filter(function(f){ return f.dueno === p; }).length;
       h += '<button class="op' + (fPer === p ? ' on' : '') + '" data-per="' + esc(p) + '">' + esc(etiqueta(p)) + (n ? '<span class="n">' + n + '</span>' : '') + '</button>'; });
     h += '</div><div class="fila-f"><span class="lbl">Estado ' + ay('En qué va cada respuesta.') + '</span>';
-    ESTADOS.forEach(function(e){ var n = base.filter(function(f){ return GRUPO(f) === e[0]; }).length;
+    ESTADOS.forEach(function(e){ var n = base.filter(function(f){ return e[0] === 'citas' ? !!citaDe(f) : GRUPO(f) === e[0]; }).length;
       h += '<button class="op' + (fEst === e[0] ? ' on' : '') + '" data-est="' + e[0] + '" title="' + esc(e[2]) + '">' + e[1] + '<span class="n">' + n + '</span></button>'; });
     h += '</div><div class="fila-f"><span class="lbl">Categoría ' + ay('Cómo clasificó el bot lo que contestó la persona. Las de oportunidad (pide información, interesado, intercambio, referido) salen arriba y avisan por correo.') + '</span><select class="cat" id="fCat"><option value="todas">Todas</option>';
-    (datos.categorias || []).forEach(function(c){ var n = base.filter(function(f){ return GRUPO(f) === fEst && f.categoria === c.clave; }).length;
+    (datos.categorias || []).forEach(function(c){ var n = base.filter(function(f){ return enFiltro(f) && f.categoria === c.clave; }).length;
       h += '<option value="' + c.clave + '"' + (fCat === c.clave ? ' selected' : '') + '>' + esc(c.nombre) + ' (' + n + ')</option>'; });
     h += '</select><span class="sub">Aprueba: <b>' + esc(actor()) + '</b></span></div>';
     $('filtros').innerHTML = h;
@@ -216,8 +235,10 @@
       if (reu && reu.inicio_cliente) {
         var dd = reu.inicio_cliente.split('T'), pf = dd[0].split('-').map(Number);
         var cuando = new Date(Date.UTC(pf[0], pf[1] - 1, pf[2], 12)).toLocaleDateString('es-MX', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' }) + ', ' + dd[1] + ' h';
-        h += '<div class="bloque"><span class="t">Reunión propuesta ' + ay('La IA la dejó en un horario libre de las agendas de quienes van a la demo. Al aprobar se crea la invitación con Meet desde el calendario de Martha. Si es una reagenda, borra la invitación anterior.') + '</span>' +
-          '<label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="inv" checked> Crear la invitación al aprobar: ' + esc(cuando) + ' (hora de ' + esc(reu.zona_nombre || '') + ') · ' + esc(reu.correo) + ' · ' + esc(reu.producto || '') + ' ' + ay('Si la persona ya tiene otra reunión futura con nosotros, al aprobar se crea la nueva y se cancela la anterior (Google le avisa).') + '</label></div>';
+        // 23-nov (caso Banrural): la invitación se crea DESPUÉS de enviar el mensaje, con la fecha del texto que se envió (si lo
+        // editas, se lee del texto). Si ya hay una reunión con alguien de esa empresa en el calendario de Martha, no se crea otra.
+        h += '<div class="bloque"><span class="t">Reunión propuesta ' + ay('La IA la dejó en un horario libre de las agendas de quienes van a la demo. La invitación con Meet se crea desde el calendario de Martha DESPUÉS de enviar el mensaje, con la fecha que quede en el texto enviado: si cambias la fecha en el texto, se usa la nueva. Si ya hay una reunión con alguien de esa empresa, no se crea otra. Lo que pasó queda con su etiqueta en el filtro Citas. Nunca se cancela una reunión en automático.') + '</span>' +
+          '<label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="inv" checked> Crear la invitación después de enviar (propuesta: ' + esc(cuando) + ', hora de ' + esc(reu.zona_nombre || '') + ' · ' + esc(reu.correo) + ' · ' + esc(reu.producto || '') + ') ' + ay('Desmárcala si Martha ya la agendó o la va a agendar a mano.') + '</label></div>';
       }
       // 19-nov (Mike): la persona dejó su WhatsApp. Al aprobar, sale también este WhatsApp desde nuestro número (plantilla
       // gr_li_whatsapp_coordinar) y la conversación queda en el portal de WhatsApp.
@@ -232,6 +253,7 @@
     } else if (/enviad/.test(f.estado)) {
       h += '<div class="bloque"><span class="t">Lo que se envió' + (f.editado ? ' (editado)' : '') + '</span><div class="enviado">' + esc(f.texto_final || f.borrador) + '</div></div>';
       if (f.whatsapp_envio) h += '<p class="sub">WhatsApp: ' + esc(f.whatsapp_envio) + '</p>';
+      h += bloqueCita(f);
       h += '<div class="sub">' + (/"modo":"sugerencia"/.test(f.envio || '') ? 'Se le mandó como sugerencia a ' : (CO ? 'Desde el correo de ' : 'Desde el perfil de ')) + esc(f.dueno) + (f.revisado_por ? ' · aprobó ' + esc(f.revisado_por) : '') + (f.enviado_ts ? ' · aprobada ' + esc(fecha(f.enviado_ts)) : '') + (f.entregado_ts ? ' · entregada ' + esc(fecha(f.entregado_ts)) : '') + '</div>';
     } else {
       if (f.revisado_por === 'Contestada a mano' && f.error) h += '<p class="msg">' + esc(f.error) + '</p>';
@@ -243,7 +265,8 @@
   function pintar(){
     if (!datos) return;
     pintarFiltros(); pintarCats();
-    var fs = filasPersona().filter(function(f){ return GRUPO(f) === fEst && (fCat === 'todas' || f.categoria === fCat); });
+    var fs = filasPersona().filter(function(f){ return enFiltro(f) && (fCat === 'todas' || f.categoria === fCat); });
+    if (fEst === 'citas') fs.sort(ordenCitas);
     $('lista').innerHTML = fs.length ? fs.map(tarjeta).join('') : '<p class="vacio">No hay respuestas con estos filtros.</p>';
   }
   function fila(id){ return (datos.filas || []).filter(function(f){ return f.evento_id === id; })[0]; }
@@ -272,12 +295,13 @@
       post('gr-li-decidir', cuerpo).then(function(r){
         if (r.estado === 'descartado' && r.error) { toast(r.error); cargar(); return; }
         if (r.ok === false) throw new Error(r.error || 'No se pudo');
-        toast(accion === 'a_mano' ? 'Listo: quedó en Contestadas a mano.' : accion === 'descartar' ? 'Listo: no se le contesta.' : accion === 'reabrir' ? (r.regenera ? 'La IA está leyendo toda la conversación. En un minuto aparece el borrador nuevo en Por aprobar (usa Actualizar).' : 'Regresó a Por aprobar.') : CO || esSugerencia(f) ? 'Enviado ' + T.desde + ' ' + f.dueno + '.' :
+        toast(accion === 'cita_a_mano' ? 'Listo: la cita quedó como Agendada a mano.' : accion === 'a_mano' ? 'Listo: quedó en Contestadas a mano.' : accion === 'descartar' ? 'Listo: no se le contesta.' : accion === 'reabrir' ? (r.regenera ? 'La IA está leyendo toda la conversación. En un minuto aparece el borrador nuevo en Por aprobar (usa Actualizar).' : 'Regresó a Por aprobar.') : CO || esSugerencia(f) ? 'Enviado ' + T.desde + ' ' + f.dueno + '.' :
           'Quedó en cola en el LinkedIn de ' + f.dueno + '. Sale en unos 15 minutos; usa Actualizar para confirmar la entrega.');
         cargar();
       }).catch(function(e){ toast('No se pudo: ' + e.message); card.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); });
     };
     if (accion === 'aprobar' || accion === 'editar') confirmar(esSugerencia(f) ? 'Se le manda a ' + f.dueno + ' como sugerencia para ' + (f.prospecto || 'la persona') + ' (no sale al prospecto):' : 'Se envía ' + (CO ? 'desde el correo de ' : 'desde el LinkedIn de ') + f.dueno + ' a ' + (f.prospecto || 'la persona') + (cuerpo.adjuntar ? ', con el One Page adjunto' : '') + (inv && inv.checked ? ', y se crea la invitación de la reunión' : '') + (cuerpo.whatsapp ? ', y el WhatsApp al +' + waNum : '') + ':', texto, ir);
+    else if (accion === 'cita_a_mano') confirmar('¿La cita de ' + (f.prospecto || 'esta persona') + ' ya está en el calendario con la fecha correcta? La etiqueta pasa a Agendada a mano.', '', ir);
     else if (accion === 'descartar') confirmar('¿No contestarle a ' + (f.prospecto || 'esta persona') + '?', '', ir);
     else if (accion === 'a_mano') confirmar('¿Ya le contestaste a ' + (f.prospecto || 'esta persona') + ' fuera del portal? Pasa a Contestadas a mano y no se envía nada. Desde ahora la IA no genera respuestas para esta conversación; si quieren que la retome, usen Reabrir.', '', ir);
     else ir();
