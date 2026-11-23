@@ -1,6 +1,6 @@
 {
   "_nota": "Contenido fijo de la página de cada producto del tablero ICP (Diseño de la Página de Producto TW vA, 20-nov-2026). Una llave por código de producto. Lo medido (secuencias, señales, gráfica) sale de la foto gr-icp; aquí va lo que viene de documentos: ciclo de cambio, familias de campaña, ICP, propuesta de valor, lista, pruebas candidatas y estado de documentos. Colores: v verde, a amarillo, r rojo.",
-  "_decisiones": {"documento": "Decisiones del Portafolio vK", "url": "https://docs.google.com/document/d/1GYZ_JdLEAbfUa9teXrmSz3m0PE_CQhmr_CWBkIhCDyA/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
+  "_decisiones": {"documento": "Decisiones del Portafolio vL", "url": "https://docs.google.com/document/d/1HEmtXvV2UMtKppbXiYZPsMH9r3fV23wuMAslzwXU0Lg/edit", "fecha": "22-nov-2026", "revision": "4-dic-2026"},
   "TW": {
     "decisiones": [
       {"que": "Regla de la lista en alarma (AM ya la tiene; AEO en el punto 17)", "recomendacion": "Sí: sin cargas nuevas en frío hasta rehacer la lista con el ICP; las señales siguen", "si_no": "Se sigue cargando en frío con 23.2% de persona equivocada"},
@@ -4047,6 +4047,472 @@
         "senal": true,
         "motivo": "La 3, la 4, la 5 y la que no lleva número: mensaje de atención a clientes a marcas de consumo (la 3 no se leyó)",
         "recomendacion": "Apagarlas en Dúo (decisión 53)"
+      }
+    ]
+  },
+  "BD": {
+    "actualizado": "22-nov-2026",
+    "fuente": "Hoja de Cambios BD vB (une la hoja del 14-oct y la del 22-nov), ICP Blindaje Digital vC, Propuesta de Valor Blindaje Digital vC, Mensajes que Produjeron BD vA",
+    "decisiones": [
+      {
+        "que": "Urgente: las señales rompen las reglas de redacción y van fuera del ICP (decisión 57)",
+        "recomendacion": "Detener los envíos programados que las rompen, corregir el texto en Dúo y limitar los dos agentes al ICP vC",
+        "si_no": "Siguen saliendo"
+      },
+      {
+        "que": "Cinco conversaciones por atender (decisión 58)",
+        "recomendacion": "Esta semana",
+        "si_no": "Se enfrían"
+      },
+      {
+        "que": "Regla de la lista en alarma, lista nueva y caso que se pueda nombrar (decisión 59)",
+        "recomendacion": "Sin cargas en frío hasta tener la lista del ICP vC",
+        "si_no": "No se carga a nadie"
+      },
+      {
+        "que": "Pausar BD_VIP-IT; MERCA2.0 y sus copias (decisión 60)",
+        "recomendacion": "Pausar solo BD_VIP-IT",
+        "si_no": "Siguen activas sin enviar"
+      },
+      {
+        "que": "Propuesta, base y presentación con el ICP vC (decisión 61)",
+        "recomendacion": "Sí, después de leer las reuniones de salud",
+        "si_no": "Documentos anteriores al ICP"
+      },
+      {
+        "que": "Reuniones que el tablero no cuenta, en todo el portafolio (decisión 62)",
+        "recomendacion": "Contar las que tengan reunión grabada",
+        "si_no": "Se muestran menos reuniones de las que hubo"
+      },
+      {
+        "que": "Tres datos por corregir en HubSpot (decisión 63)",
+        "recomendacion": "Sí",
+        "si_no": "MERCA2.0 no muestra su oportunidad"
+      }
+    ],
+    "ciclo": {
+      "linea_base": "GR_Linea_Base_BD_vA (20-ago-2026)",
+      "cambios_al": "22-nov-2026",
+      "cerrados": 11,
+      "abiertos": 36,
+      "abiertos_detalle": "20 de dirección, 1 del equipo y 15 del motor",
+      "siguiente_revision": "4-dic-2026",
+      "perdido": "La hoja del 14-oct (34 cambios) no se había vuelto a revisar: 7 de sus cambios ya están cerrados y 27 siguen abiertos.",
+      "alertas": [
+        {
+          "color": "r",
+          "texto": "Las señales mandan mensajes que rompen las reglas de redacción y van a sectores fuera del ICP (decisión 57)."
+        },
+        {
+          "color": "r",
+          "texto": "Sin cliente y cero ganadas: 9 oportunidades perdidas y 2 abiertas en conversación. 4 reuniones en 3 cuentas en el año."
+        },
+        {
+          "color": "r",
+          "texto": "En frío no contacta a nadie desde agosto. Por señales, 707 desde junio: 110 en septiembre, 104 en octubre y 76 en noviembre."
+        },
+        {
+          "color": "a",
+          "texto": "Lista en alarma: 29% de persona equivocada (9 de 31 respuestas). Negativas por interesado en el umbral, 2 a 1."
+        },
+        {
+          "color": "a",
+          "texto": "Las reuniones de mayo con un grupo de salud no aparecen en el tablero: se perdieron antes de que empezara el registro diario (decisión 62)."
+        },
+        {
+          "color": "a",
+          "texto": "La propuesta vC y la base son anteriores al ICP vC, que abre con ciberseguridad (decisión 61)."
+        },
+        {
+          "color": "v",
+          "texto": "Corregido el 22-nov: los mensajes que produjeron ya están ligados. Las señales y los meses de agosto y septiembre cuadran."
+        }
+      ],
+      "ligas": [
+        {
+          "nombre": "Hoja de cambios BD vB",
+          "url": "https://docs.google.com/document/d/1pdLtvnyeMIdWcqMsVdNKi-PN2c7RJfan09hE416q8ss/edit"
+        },
+        {
+          "nombre": "Hoja de cambios BD vA (14-oct)",
+          "url": "https://docs.google.com/document/d/1fvJD8l7S0DSnZjwH0jhBewJ0kX3Tw-XnnHq0kSaXLBQ/edit"
+        },
+        {
+          "nombre": "Línea base BD vA",
+          "url": "https://docs.google.com/document/d/1RW9R951dFnt15RlovBhuinglBb7gT_vTr_OlG4EtlwY/edit"
+        },
+        {
+          "nombre": "ICP Blindaje Digital vC",
+          "url": "https://docs.google.com/document/d/19D33yfyBwAB9SmEqq8JQQlB4WeYIKfPfuLoOK6eB-Is/edit"
+        },
+        {
+          "nombre": "Propuesta de Valor Blindaje Digital vC",
+          "url": "https://docs.google.com/document/d/1IO8-kBmgMxJGs1OqDpGk_kIqN22Z8NQVkP2c_tkrOJ8/edit"
+        },
+        {
+          "nombre": "Mensajes que Produjeron BD vA",
+          "url": "https://docs.google.com/document/d/1tJyP5ppjLuN4sTcl77RBOptYLP6iBB1oMKuzNVFXOQw/edit"
+        }
+      ]
+    },
+    "familias": [
+      {
+        "nombre": "Marketing con reconocimiento",
+        "contiene": [
+          "merca2.0"
+        ],
+        "en": "secuencias",
+        "lectura": "La única que abre reconociendo a la persona: 3 interesados en 55 contactados. De aquí salió la venta con un grupo de salud, que el tablero no le cuenta."
+      },
+      {
+        "nombre": "Marketing sin reconocimiento",
+        "contiene": [
+          "vip-mk_mx"
+        ],
+        "en": "secuencias",
+        "lectura": "Pausada y archivada: sin reconocimiento a la persona y sin interesados que llegaran a reunión."
+      },
+      {
+        "nombre": "Palabras clave",
+        "contiene": [
+          "keywords"
+        ],
+        "en": "senales",
+        "lectura": "Dos agentes. El 3.0 trae casi todo el volumen. Los temas (gerente de marketing, director de TI, protección de datos, brecha de seguridad) se mezclan en los dos."
+      }
+    ],
+    "icp": {
+      "documento": "ICP Blindaje Digital vC (15-nov)",
+      "reglas": {
+        "_nota": "Reglas del ICP Blindaje Digital vC (15-nov) para calificar el perfil de quienes respondieron. Nombres exactos del catálogo de Amplemarket, como los trae el ICP vC. Lo que no está en ninguna lista cuenta como «resto». ignorar = no se califica.",
+        "industria": {
+          "dentro": [
+            "Medical and Diagnostic Laboratories",
+            "Hospitals and Health Care",
+            "Wellness and Fitness Services",
+            "Hospitals",
+            "Telecommunications",
+            "Telecommunications Carriers",
+            "Pharmaceutical Manufacturing"
+          ],
+          "probar": [
+            "Government Administration",
+            "Motor Vehicle Manufacturing",
+            "Manufacturing",
+            "Food and Beverage Manufacturing",
+            "Beverage Manufacturing",
+            "Retail",
+            "Retail Luxury Goods and Jewelry",
+            "Utilities",
+            "Electric Power Generation"
+          ],
+          "fuera": [
+            "Banking",
+            "Financial Services",
+            "Food and Beverage Services",
+            "Advertising Services",
+            "IT Services and IT Consulting",
+            "Software Development",
+            "Business Consulting and Services"
+          ],
+          "resto": "f"
+        },
+        "tamano": {
+          "dentro": [
+            "1001-5000",
+            "5001-10000"
+          ],
+          "probar": [
+            "10001+",
+            "501-1000"
+          ],
+          "fuera": [
+            "1-10",
+            "11-50",
+            "51-200",
+            "201-500"
+          ],
+          "resto": "f"
+        },
+        "pais": {
+          "dentro": [
+            "México",
+            "Colombia",
+            "Chile",
+            "Perú",
+            "Ecuador",
+            "Costa Rica"
+          ],
+          "probar": [],
+          "fuera": [
+            "Brasil",
+            "Estados Unidos",
+            "España",
+            "Argentina"
+          ],
+          "resto": "f"
+        },
+        "nivel": {
+          "dentro": [
+            "C-Suite",
+            "Director",
+            "Head",
+            "Manager"
+          ],
+          "probar": [
+            "VP"
+          ],
+          "fuera": [
+            "Entry"
+          ],
+          "ignorar": [
+            "Otro",
+            "Senior"
+          ],
+          "resto": "f"
+        },
+        "area": {
+          "dentro": [
+            "TI"
+          ],
+          "probar": [
+            "Marketing"
+          ],
+          "fuera": [
+            "Ventas",
+            "Finanzas",
+            "Recursos humanos"
+          ],
+          "resto": "f"
+        }
+      },
+      "rubros": [
+        {
+          "rubro": "Industrias",
+          "dice": "En orden: salud, telecom y farmacéutica; por probar: gobierno y organismos regulados, manufactura de consumo, retail solo con señal e infraestructura crítica; fuera: banca, servicios de alimentos, agencias, TI, software y consultoría",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Tamaño",
+          "dice": "De 1,001 a 10,000 empleados; 10,001+ y 501 a 1,000 solo con señal",
+          "solo": "Sí"
+        },
+        {
+          "rubro": "Países",
+          "dice": "México, Colombia, Chile, Perú, Ecuador y Costa Rica, por ubicación de la empresa. Solo español",
+          "solo": "Sí, por país de la persona"
+        },
+        {
+          "rubro": "Puesto",
+          "dice": "P1 ciberseguridad (C-Suite, Director, Head y Manager), P2 marketing (C-Suite, VP y Director), P3 privacidad, gobierno y continuidad, sin probar",
+          "solo": "Sí, aproximado por nivel y área"
+        },
+        {
+          "rubro": "Agencia externa",
+          "dice": "Que trabaje con al menos una agencia para redes, pauta o sitio",
+          "solo": "No: se revisa en la lista antes de cargar"
+        },
+        {
+          "rubro": "Exclusiones",
+          "dice": "Clientes, oportunidades abiertas y cuentas que ya hablaron con nosotros; dos personas por empresa",
+          "solo": "Sí, contra HubSpot"
+        }
+      ],
+      "alertas": [
+        {
+          "color": "a",
+          "texto": "El ICP vC está en inglés y dice que es una lectura de poca evidencia: abre con ciberseguridad por dos casos, y la campaña de seguridad en frío dio cero interesados en 429."
+        }
+      ]
+    },
+    "propuesta": {
+      "documento": "Propuesta de Valor Blindaje Digital vC",
+      "problemas": [
+        {
+          "color": "v",
+          "problema": "P1 · Las cuentas no están a nombre de la empresa",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "El argumento de los dos mensajes que produjeron (Mensajes vA, 14-oct)"
+        },
+        {
+          "color": "v",
+          "problema": "P2 · Al cambiar de agencia se pierden historial y audiencias",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Con P1, el tema que trajo las dos reuniones con mensaje identificable (hoja del 14-oct)"
+        },
+        {
+          "color": "a",
+          "problema": "P3 · Nadie es responsable de los activos",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Lo que hace que marketing lo reenvíe a seguridad; sin probar como apertura"
+        },
+        {
+          "color": "a",
+          "problema": "P4 · Nadie tiene el mapa completo",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "Sin medir"
+        },
+        {
+          "color": "a",
+          "problema": "P5 · Cualquiera puede hacer de todo",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "El único que produjo en la campaña de ISO"
+        },
+        {
+          "color": "a",
+          "problema": "P6 · La política de seguridad no alcanza a marketing",
+          "conversaciones": null,
+          "reuniones": null,
+          "oportunidades": null,
+          "lectura": "El que abre con ciberseguridad según el ICP vC; un interesado por señal"
+        }
+      ],
+      "recomendacion": "La vC abre con marketing y 501 empleados; el ICP vC, con ciberseguridad y 1,001. Se alinea en la vD (decisión 61).",
+      "nota": "Recuento del 14-oct (Mensajes que Produjeron BD vA). No hay recuento por problema: son pocas conversaciones."
+    },
+    "lista": {
+      "indicadores": [
+        {
+          "color": "r",
+          "indicador": "Not the right person",
+          "umbral": "Más de 10% = el filtro de puesto está mal",
+          "valor": "29% (9 de 31 respuestas)",
+          "fuente": "Tablero ICP, 22-nov"
+        },
+        {
+          "color": "a",
+          "indicador": "Negativas por interesado",
+          "umbral": "Más de 2 a 1 = se rehace la lista",
+          "valor": "2 a 1 (10 Not interested, 5 Interested)",
+          "fuente": "Tablero ICP, 22-nov"
+        }
+      ],
+      "nota": "Está en el umbral. La lista de las campañas es de empresas de más de 5,000 empleados en México."
+    },
+    "pruebas": {
+      "regla": "Cada prueba con su hipótesis, versión A y B, volumen (400 por versión con señal, 1,500 en frío), 4 a 6 semanas en la misma ventana, una por producto, y el dato que la justifica.",
+      "candidatas": [
+        {
+          "prueba": "Ciberseguridad en salud, telecom y farmacéutica contra marketing en las mismas cuentas",
+          "dato": "Dos casos a favor de ciberseguridad (ICP vC) contra 0 en 429 de la campaña en frío"
+        },
+        {
+          "prueba": "Abrir reconociendo algo verificable contra abrir con el problema",
+          "dato": "3 interesados en 55 contra 0 en 581 (hoja del 14-oct, cambio 24)"
+        },
+        {
+          "prueba": "Señal de brecha de seguridad y plan de respuesta, solo en sectores del ICP",
+          "dato": "El único interesado del periodo llegó por ahí (ICP vC)"
+        }
+      ]
+    },
+    "documentos": [
+      {
+        "color": "a",
+        "documento": "ICP Blindaje Digital vC",
+        "estado": "Vigente (15-nov), en inglés; dice abierta una oportunidad que se perdió el 5-nov",
+        "falta": "Actualizarlo con la siguiente letra"
+      },
+      {
+        "color": "r",
+        "documento": "Propuesta de Valor Blindaje Digital vC",
+        "estado": "Del 14-oct; anterior al ICP vC",
+        "falta": "Letra vD (decisión 61)"
+      },
+      {
+        "color": "a",
+        "documento": "GR_KB_BD_vB",
+        "estado": "Del 25-oct; tiene las reglas que las señales rompen",
+        "falta": "Letra vC con las reuniones (decisión 61)"
+      },
+      {
+        "color": "v",
+        "documento": "Hoja de cambios BD vB",
+        "estado": "Vigente (22-nov)",
+        "falta": "36 cambios abiertos; siguiente revisión 4-dic"
+      },
+      {
+        "color": "v",
+        "documento": "GR_Linea_Base_BD_vA",
+        "estado": "Congelada (20-ago)",
+        "falta": "Ninguna; no se toca"
+      },
+      {
+        "color": "r",
+        "documento": "Discovery Gobernanza Digital vB",
+        "estado": "Con afirmaciones que la base no permite",
+        "falta": "Letra nueva (decisión 61)"
+      },
+      {
+        "color": "a",
+        "documento": "Propuesta Gobernanza Digital Mayo 2026",
+        "estado": "Es el template",
+        "falta": "Revisarlo con la vD"
+      },
+      {
+        "color": "v",
+        "documento": "Mensajes que Produjeron BD vA",
+        "estado": "Del 14-oct; ligado el 22-nov",
+        "falta": "Sumar los de señal desde octubre"
+      },
+      {
+        "color": "v",
+        "documento": "Llamado a la acción",
+        "estado": "Diagnóstico",
+        "falta": "Ninguna"
+      }
+    ],
+    "campanas": [
+      {
+        "contiene": [
+          "merca2.0"
+        ],
+        "icp": "mixta",
+        "motivo": "ICP vC: marketing es P2; abre con reconocimiento",
+        "recomendacion": "Mantenerla; no se pausa (decisión 60)"
+      },
+      {
+        "contiene": [
+          "bd_vip-it"
+        ],
+        "icp": "fuera",
+        "motivo": "ICP vC: ciberseguridad sí, pero más de 10,000 empleados solo con señal",
+        "recomendacion": "Pausar: sin contactos nuevos desde junio (decisión 60)"
+      },
+      {
+        "contiene": [
+          "bd_vip-mk"
+        ],
+        "icp": "fuera",
+        "motivo": "Más de 5,000 empleados y marketing en frío",
+        "recomendacion": "Se queda como está: pausada o archivada"
+      },
+      {
+        "contiene": [
+          "general 3.0",
+          "general  3.0"
+        ],
+        "senal": true,
+        "motivo": "Mensajes que rompen las reglas y sectores fuera del ICP",
+        "recomendacion": "Corregir el texto y limitar al ICP vC en Dúo (decisión 57)"
+      },
+      {
+        "contiene": [
+          "bd general"
+        ],
+        "senal": true,
+        "motivo": "Mensajes que rompen las reglas y sectores fuera del ICP",
+        "recomendacion": "Corregir el texto y limitar al ICP vC en Dúo (decisión 57)"
       }
     ]
   }
