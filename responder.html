@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es" class="esperando-marca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Responder al prospecto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
+<link rel="stylesheet" href="/portal_comun.css?v=20261014c">
+<script src="/portal_comun.js?v=20261014c"></script>
+<style>
+/* Responder al prospecto (23-nov-2026, metodo GR "Editar y enviar respuesta"). Solo se abre con la liga del aviso (?k=).
+   El correo sale desde la cuenta que envio la secuencia y en la misma conversacion; nada sale sin el clic. */
+.prueba{background:var(--osc);color:#fff;border-radius:8px;padding:10px 14px;font-size:14px;margin-bottom:12px}
+.estado{display:inline-block;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;background:#fff4e5;color:#7a4a00}.estado.hecho{background:#e6f4ea;color:#1e6b34}
+.campo{display:grid;gap:4px;margin:10px 0}.campo textarea{min-height:260px;line-height:1.45;width:100%;box-sizing:border-box}.campo input{width:100%;box-sizing:border-box}
+.lo{white-space:pre-line;background:#fafafa;border:1px solid #eee;border-radius:8px;padding:10px 12px;font-size:14px}
+.hilo{background:#f4f8ff;border:1px solid #dbe6fb;border-radius:8px;padding:8px 10px;margin:8px 0;font-size:13px}
+.hilo.no{background:#fff7e6;border-color:#f3dfb5}
+body.ocupado .acciones button{opacity:.5;pointer-events:none}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:grid;place-items:center;padding:16px;z-index:20}.modal[hidden]{display:none}
+.modal .card{max-width:520px;width:100%}
+</style>
+</head>
+<body>
+<div class="top"><span class="marca" id="logo"><b>GR Intelligence</b></span><span class="quien" id="quien"></span></div>
+<div class="banda oscura" id="banda"><div class="in"><h1 id="titulo">Responder al prospecto</h1><p id="bajada"></p></div></div>
+<main><div class="panel" id="panel"><div class="card"><p class="vacio">Cargando la respuesta…</p></div></div></main>
+<div class="modal" id="modal" hidden><div class="card" id="modalC"></div></div>
+<footer>Operado por Great Revenue Intelligence · <a href="/privacidad.html">Aviso de privacidad</a></footer>
+<script>
+(function () {
+  var API = 'https://mikea.app.n8n.cloud/webhook/motor-respuesta';
+  var K = (/[?&]k=([A-Za-z0-9]+)/.exec(location.search) || [])[1] || '';
+  var $ = GRP.$, h = GRP.h, D = null, OCUPADO = false;
+  GRP.marcaPublica('Responder al prospecto', 'Revisa el correo, ajústalo y envíalo desde tu cuenta. Nada sale sin tu clic.');
+  function api(cuerpo) {
+    cuerpo.k = K;
+    var escribe = cuerpo.accion !== 'ver';
+    if (escribe && OCUPADO) return Promise.resolve({ ok: false, error: 'Espera a que termine la acción anterior.' });
+    if (escribe) { OCUPADO = true; document.body.classList.add('ocupado'); }
+    function fin(x) { if (escribe) { OCUPADO = false; document.body.classList.remove('ocupado'); } return x; }
+    return fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(cuerpo) })
+      .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'Respuesta no válida del servidor.' }; }); })
+      .catch(function () { return { ok: false, error: 'Sin conexión. Revisa tu internet y vuelve a intentar.' }; })
+      .then(fin);
+  }
+  function fecha(v) { var t = Date.parse(v || ''); if (!isFinite(t)) return v || ''; return new Date(t).toLocaleString('es-MX', { timeZone: 'America/Mexico_City', weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }); }
+  var ESTADOS = { enviado: 'Enviado', enviado_prueba: 'Enviado (prueba)', contestado_fuera: 'Contestado por fuera', incierto: 'Por confirmar en tus enviados', enviando: 'Enviándose' };
+  function error(t) { $('panel').innerHTML = '<div class="card"><p class="msg bad">' + h(t) + '</p></div>'; GRP.revelar(); }
+  function cargar() {
+    if (K.length < 40) return error('Falta la llave de la liga. Abre la liga completa del aviso.');
+    api({ accion: 'ver' }).then(function (d) { if (!d || !d.ok) return error((d && d.error) || 'No se pudo cargar.'); D = d; pintar(); });
+  }
+  function pintar() {
+    var d = D, p = d.prospecto || {}, hecho = d.estado !== 'pendiente', H = '';
+    $('titulo').textContent = 'Responder a ' + (p.nombre || p.correo);
+    $('quien').textContent = d.envia && d.envia.nombre ? 'Sale desde: ' + d.envia.nombre : '';
+    if (d.prueba) H += '<div class="prueba"><b>PRUEBA.</b> El correo va a ' + h(d.para) + ', no al prospecto, y no se toca Zoho.</div>';
+    H += '<div class="card"><div class="card-h"><h2>Lo que escribió</h2>' + (hecho ? '<span class="estado hecho">' + h(ESTADOS[d.estado] || d.estado) + '</span>' : '<span class="estado">Por responder</span>') + '</div>'
+      + '<dl class="dato"><dt>Quién</dt><dd>' + h(p.nombre) + (p.empresa ? ', ' + h(p.empresa) : '') + '<br>' + h(p.correo) + '</dd>'
+      + '<dt>Cuándo</dt><dd>' + h(fecha(d.recibido)) + '</dd><dt>Secuencia</dt><dd>' + h(d.secuencia || '') + (d.producto ? ' · ' + h(d.producto) : '') + '</dd></dl>'
+      + '<div class="lo">' + h(d.mensaje || '') + '</div></div>';
+    if (hecho) {
+      H += '<div class="card"><p>' + h(ESTADOS[d.estado] || d.estado) + (d.enviado_en ? ' el ' + h(fecha(d.enviado_en)) : '') + (d.enviado_por ? ' por ' + h(d.enviado_por) : '') + '.</p>'
+        + (d.estado === 'enviado' ? '<p class="nota">' + (d.en_hilo ? 'Salió en la misma conversación.' : 'Salió como correo nuevo.') + '</p>' : '') + '</div>';
+      $('panel').innerHTML = H; GRP.revelar(); return;
+    }
+    var hl = d.hilo, enHilo = d.modo === 'hilo' && hl && hl.encontrado;
+    H += '<div class="card"><div class="card-h"><h2>Tu respuesta</h2></div>'
+      + '<dl class="dato"><dt>Sale desde</dt><dd>' + h((d.envia && d.envia.nombre) || '') + ' (' + h((d.envia && d.envia.correo) || 'sin cuenta conectada') + ')</dd><dt>Para</dt><dd>' + h(d.para) + '</dd></dl>'
+      + (enHilo ? '<div class="hilo">Se responde en la misma conversación: <b>' + h(hl.asunto) + '</b><br>Último mensaje: ' + h(fecha(hl.fecha)) + '</div>'
+        : '<div class="hilo no">' + (d.modo === 'hilo' ? 'No encontré la conversación en tu correo' + (hl && hl.error ? ' (' + h(hl.error) + ')' : '') + ': sale como correo nuevo.' : 'Primer contacto: sale como correo nuevo, con asunto nuevo.') + '</div>'
+          + '<label class="campo">Asunto<input id="asunto" value="' + h(d.asunto || '') + '"></label>')
+      + '<label class="campo">Correo (ajústalo antes de enviar)<textarea id="texto">' + h(d.texto || '') + '</textarea></label>'
+      + '<label class="campo">Copia (opcional, separa con comas)<input id="copia" placeholder="correo@empresa.com"></label>'
+      + '<div class="acciones"><button class="p" id="bEnviar">Enviar</button><button class="s" id="bFuera">Ya lo contesté por otro lado</button><span class="msg" id="mEnv"></span></div>'
+      + '<p class="nota">Al enviar: el correo sale desde tu cuenta, queda la nota en Zoho, se cierra la tarea de responder y se crea el seguimiento a 3 días hábiles.</p></div>';
+    $('panel').innerHTML = H; GRP.revelar();
+    $('bEnviar').onclick = function () {
+      var t = $('texto').value.trim();
+      if (t.length < 20) return GRP.msg('mEnv', 'bad', 'Escribe el correo antes de enviarlo.');
+      confirmar('¿Enviar a ' + d.para + '?', 'Sale desde ' + ((d.envia && d.envia.correo) || '') + (enHilo ? ', en la misma conversación.' : ', como correo nuevo.'), function () {
+        GRP.msg('mEnv', 'ok', 'Enviando…');
+        api({ accion: 'enviar', texto: t, asunto: $('asunto') ? $('asunto').value : '', copia: $('copia').value }).then(resultado);
+      });
+    };
+    $('bFuera').onclick = function () {
+      confirmar('¿Ya le contestaste por otro lado?', 'No se envía nada. Queda la nota en Zoho, se cierra la tarea y se crea el seguimiento.', function () {
+        GRP.msg('mEnv', 'ok', 'Guardando…'); api({ accion: 'contestado' }).then(resultado);
+      });
+    };
+  }
+  function resultado(x) {
+    if (x && x.ok) { GRP.msg('mEnv', 'ok', 'Listo. ' + (x.zoho ? 'Zoho: ' + x.zoho + '.' : '')); setTimeout(cargar, 1500); }
+    else GRP.msg('mEnv', 'bad', (x && x.error) || 'No se pudo.');
+  }
+  function confirmar(t, s, si) {
+    $('modalC').innerHTML = '<h2>' + h(t) + '</h2><p>' + h(s) + '</p><div class="acciones"><button class="p" id="mSi">Sí</button><button class="s" id="mNo">Cancelar</button></div>';
+    $('modal').hidden = false;
+    $('mNo').onclick = function () { $('modal').hidden = true; };
+    $('mSi').onclick = function () { $('modal').hidden = true; si(); };
+  }
+  cargar();
+})();
+</script>
+</body>
+</html>
