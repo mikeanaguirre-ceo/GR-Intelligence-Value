@@ -216,8 +216,10 @@
       if (reu && reu.inicio_cliente) {
         var dd = reu.inicio_cliente.split('T'), pf = dd[0].split('-').map(Number);
         var cuando = new Date(Date.UTC(pf[0], pf[1] - 1, pf[2], 12)).toLocaleDateString('es-MX', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' }) + ', ' + dd[1] + ' h';
-        h += '<div class="bloque"><span class="t">Reunión propuesta ' + ay('La IA la dejó en un horario libre de las agendas de quienes van a la demo. Al aprobar se crea la invitación con Meet desde el calendario de Martha. Si es una reagenda, borra la invitación anterior.') + '</span>' +
-          '<label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="inv" checked> Crear la invitación al aprobar: ' + esc(cuando) + ' (hora de ' + esc(reu.zona_nombre || '') + ') · ' + esc(reu.correo) + ' · ' + esc(reu.producto || '') + ' ' + ay('Si la persona ya tiene otra reunión futura con nosotros, al aprobar se crea la nueva y se cancela la anterior (Google le avisa).') + '</label></div>';
+        // 23-nov (caso Banrural): la invitación se crea DESPUÉS de enviar el mensaje, con la fecha del texto que se envió (si lo
+        // editas, se lee del texto). Si ya hay una reunión con alguien de esa empresa en el calendario de Martha, no se crea otra.
+        h += '<div class="bloque"><span class="t">Reunión propuesta ' + ay('La IA la dejó en un horario libre de las agendas de quienes van a la demo. La invitación con Meet se crea desde el calendario de Martha DESPUÉS de enviar el mensaje, con la fecha que quede en el texto enviado: si cambias la fecha en el texto, se usa la nueva. Si ya hay una reunión con alguien de esa empresa, no se crea otra. A Martha le llega un correo con lo que pasó. Nunca se cancela una reunión en automático.') + '</span>' +
+          '<label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="inv" checked> Crear la invitación después de enviar (propuesta: ' + esc(cuando) + ', hora de ' + esc(reu.zona_nombre || '') + ' · ' + esc(reu.correo) + ' · ' + esc(reu.producto || '') + ') ' + ay('Desmárcala si Martha ya la agendó o la va a agendar a mano.') + '</label></div>';
       }
       // 19-nov (Mike): la persona dejó su WhatsApp. Al aprobar, sale también este WhatsApp desde nuestro número (plantilla
       // gr_li_whatsapp_coordinar) y la conversación queda en el portal de WhatsApp.
@@ -232,6 +234,7 @@
     } else if (/enviad/.test(f.estado)) {
       h += '<div class="bloque"><span class="t">Lo que se envió' + (f.editado ? ' (editado)' : '') + '</span><div class="enviado">' + esc(f.texto_final || f.borrador) + '</div></div>';
       if (f.whatsapp_envio) h += '<p class="sub">WhatsApp: ' + esc(f.whatsapp_envio) + '</p>';
+      if (f.cita) h += '<p class="sub"' + (/NO creada/.test(f.cita) ? ' style="color:#b45309"' : '') + '>Cita: ' + esc(f.cita) + '</p>';
       h += '<div class="sub">' + (/"modo":"sugerencia"/.test(f.envio || '') ? 'Se le mandó como sugerencia a ' : (CO ? 'Desde el correo de ' : 'Desde el perfil de ')) + esc(f.dueno) + (f.revisado_por ? ' · aprobó ' + esc(f.revisado_por) : '') + (f.enviado_ts ? ' · aprobada ' + esc(fecha(f.enviado_ts)) : '') + (f.entregado_ts ? ' · entregada ' + esc(fecha(f.entregado_ts)) : '') + '</div>';
     } else {
       if (f.revisado_por === 'Contestada a mano' && f.error) h += '<p class="msg">' + esc(f.error) + '</p>';
