@@ -76,7 +76,7 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
       + '<label class="campo">Correo (ajústalo antes de enviar)<textarea id="texto">' + h(d.texto || '') + '</textarea></label>'
       + '<label class="campo">Copia (opcional, separa con comas)<input id="copia" placeholder="correo@empresa.com"></label>'
       + '<div class="acciones"><button class="p" id="bEnviar">Enviar</button><button class="s" id="bFuera">Ya lo contesté por otro lado</button><span class="msg" id="mEnv"></span></div>'
-      + '<p class="nota">Al enviar: el correo sale desde tu cuenta, queda la nota en Zoho, se cierra la tarea de responder y se crea el seguimiento a 3 días hábiles.</p></div>';
+      + '<p class="nota">Al enviar: el correo sale desde tu cuenta y queda registrado en Zoho. Tu tarea de seguimiento sigue abierta; si no tenías una, se crea a 3 días hábiles.</p></div>';
     $('panel').innerHTML = H; GRP.revelar();
     $('bEnviar').onclick = function () {
       var t = $('texto').value.trim();
@@ -87,7 +87,7 @@ body.ocupado .acciones button{opacity:.5;pointer-events:none}
       });
     };
     $('bFuera').onclick = function () {
-      confirmar('¿Ya le contestaste por otro lado?', 'No se envía nada. Queda la nota en Zoho, se cierra la tarea y se crea el seguimiento.', function () {
+      confirmar('¿Ya le contestaste por otro lado?', 'No se envía nada. Queda la nota en Zoho y tu tarea de seguimiento sigue abierta.', function () {
         GRP.msg('mEnv', 'ok', 'Guardando…'); api({ accion: 'contestado' }).then(resultado);
       });
     };
