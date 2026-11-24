@@ -3460,6 +3460,26 @@ function renderClientes() {
   $('#p-clientes').innerHTML = html;
 }
 
+// 24nov2026 (Mike, alinear con IT Institute): cada tarea de Pendientes trae los iconos del contacto de su oportunidad
+// (telefono, LinkedIn de la persona y de la empresa, como la tarjeta del Pipeline) y botones Siguiente paso y Ficha.
+function grPendContacto(t){
+  var d=grDealDeItem(t), c=d&&d.contacto; if(!c||!(c.telefono||c.linkedin||c.linkedin_empresa)) return '';
+  var svg=function(col){ return '<svg width="13" height="13" viewBox="0 0 24 24" fill="'+col+'"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13zM7.12 20.45H3.55V9h3.57v11.45zM22.22 0H1.77C.8 0 0 .78 0 1.73v20.54C0 23.22.8 24 1.77 24h20.45c.98 0 1.78-.78 1.78-1.73V1.73C24 .78 23.2 0 22.22 0z"/></svg>'; };
+  var u=function(x){ x=String(x||'').trim(); return /^https?:\/\//i.test(x)?x:'https://'+x; };
+  return '<div style="margin-top:3px;font-size:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'
+    +(c.nombre?'<span style="color:var(--text-dim);">'+grEsc(c.nombre)+'</span>':'')
+    +(c.telefono?'<a href="tel:'+String(c.telefono).replace(/[^0-9+]/g,'')+'" style="color:#62D175;text-decoration:none;">'+grEsc(c.telefono)+'</a>':'')
+    +(c.linkedin?'<a href="'+grEsc(u(c.linkedin))+'" target="_blank" rel="noopener" title="LinkedIn persona" style="display:inline-flex;">'+svg('#0A66C2')+'</a>':'')
+    +(c.linkedin_empresa?'<a href="'+grEsc(u(c.linkedin_empresa))+'" target="_blank" rel="noopener" title="LinkedIn empresa" style="display:inline-flex;">'+svg('#02ADBA')+'</a>':'')
+    +'</div>';
+}
+function grPendBotones(t){
+  var d=grDealDeItem(t); if(!d) return '';
+  var ficha='<button class="chip" style="font-size:10px;padding:2px 8px;" onclick="abrirEditarDealGR(\''+grEsc(String(d.id))+'\')" title="Abrir la ficha de la oportunidad">Ficha</button>';
+  return '<div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:4px;">'
+    +(t.urgency==='cerrada'?'':'<button class="chip task-next-btn" style="font-size:10px;padding:2px 8px;" title="Crea la siguiente tarea de la misma oportunidad">Siguiente paso</button>')
+    +ficha+'</div>';
+}
 // --- PENDIENTES ---
 function renderPendientes() {
   if (!TASKS || !TASKS.tareas) {
@@ -3614,7 +3634,7 @@ function renderPendientes() {
     html += `<tr class="${rowClass}">
       <td>${urgColor}</td>
       <td>${t.title} ${prioTag} ${scopeTag}</td>
-      <td><small>${t.client || '—'}</small></td>
+      <td><small>${t.client || '—'}</small>${grPendContacto(t)}</td>
       <td>${stageBadges || '<span style="color:var(--text-mute);">—</span>'}</td>
       ${current === 'Todos' ? `<td><strong>${t.persona}</strong></td>` : ''}
       <td><small>${t.prod || '—'}</small></td>
@@ -3629,7 +3649,7 @@ function renderPendientes() {
         data-client="${(t.client || '').replace(/"/g, '&quot;')}"
         data-persona="${t.persona || ''}"
         data-internal="${t.isInternal ? '1' : ''}"
-        data-stages="${(t.dealStages || []).join('|')}">✏️</button></td>
+        data-stages="${(t.dealStages || []).join('|')}">✏️</button>${grPendBotones(t)}</td>
     </tr>`;
   });
 
@@ -3656,6 +3676,11 @@ function renderPendientes() {
 
   $$('.task-edit-btn').forEach(btn => {
     btn.addEventListener('click', () => openTaskEditor(btn.dataset));
+  });
+  // 24nov2026 (Mike, alinear con IT Institute): Siguiente paso abre el editor ya en "nueva tarea" de la misma oportunidad.
+  $$('.task-next-btn').forEach(btn => {
+    btn.addEventListener('click', () => { const r = btn.closest('tr'); const e = r && r.querySelector('.task-edit-btn'); if (!e) return;
+      openTaskEditor(e.dataset); if (_taskCtx && _taskCtx.did) { enterNewTaskMode(); const h = document.getElementById('tm-heading'); if (h) h.textContent = 'Siguiente paso'; } });
   });
 }
 
