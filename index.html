@@ -3030,7 +3030,8 @@ function renderPipeline() {
       <div class="kanban-col">
         <div class="kanban-col-header">
           <div class="kanban-col-title">${s.label}</div>
-          <div class="kanban-col-count">${col.length} · ${fmtK(colTotal)}</div>
+          <!-- 24nov2026 (Mike, alinear con IT Institute): el encabezado de cada fase dice su plazo, que sale del portal. -->
+          <div class="kanban-col-count"${s.plazo ? ` title="Plazo de la fase (Configuración del portal): ${s.plazo} ${s.plazo === 1 ? 'día' : 'días'}. Más tiempo en la fase pone la tarjeta en rojo."` : ''}>${col.length} · ${fmtK(colTotal)}${s.plazo ? ` · plazo ${s.plazo} ${s.plazo === 1 ? 'día' : 'días'}` : ''}</div>
         </div>
         <div class="kanban-col-body">
     `;
