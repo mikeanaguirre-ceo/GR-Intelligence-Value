@@ -894,16 +894,16 @@ var GR_AYUDA_FIJA={
     'comun.ventanas':'Hoy: el día de hoy en Ciudad de México. 7D, 30D y 90D: los últimos 7, 30 y 90 días, hoy incluido (los 30 días incluyen los 7 y hoy). Total: todo lo guardado.',
     // Calidad del CRM
     'calidad.titulo':'Qué tan completo y qué tan vivo está el CRM, y cómo va el desempeño comercial. El motor lo mide con los datos de HubSpot los días 1 y 15 de cada mes.',
-    'calidad.avance':'La calificación global y la de cada sección en cada medición, de 0 a 100. Global comparable: solo datos y vigencia, que se miden desde la medición inicial.',
+    'calidad.avance':'La calificación global y la de cada sección en cada medición, de 0 a 100. Global: promedio de Calidad de datos, Vigencia y seguimiento y Desempeño comercial (mismo modelo que IT Institute).',
     'calidad.franja':'Promedio de las calificaciones de los indicadores de la sección en cada medición.',
-    'calidad.datos':'Calidad de datos: qué tan completo está cada registro de HubSpot. Cada indicador trae su explicación debajo del nombre.',
-    'calidad.vigencia':'Vigencia de los registros: qué tan vivos o abandonados están en HubSpot. Cada indicador trae su explicación debajo del nombre.',
-    'calidad.comercial':'Desempeño comercial: resultados de los últimos 12 meses contra los 12 meses anteriores, que son la meta. Califica desde el 11 de noviembre de 2026.',
+    'calidad.datos':'Calidad de datos: qué tan completas están las oportunidades abiertas (sector, área, nivel, tamaño, país, secuencia), su persona y su empresa, y si las perdidas y cerradas traen su información. Cada indicador trae su explicación debajo del nombre.',
+    'calidad.vigencia':'Vigencia y seguimiento: qué tan al día está cada oportunidad de venta abierta (semáforo, siguiente paso, tareas vencidas, trabajo de una persona en 30 días, fecha de cierre). Cada indicador trae su explicación debajo del nombre.',
+    'calidad.comercial':'Desempeño comercial: resultados de los últimos 12 meses contra la meta fija (lo que logró GR de nov-2024 a nov-2025). Lo que no tiene meta es referencia.',
     'calidad.col.indicador':'Lo que se mide. Debajo del nombre va su explicación; el punto de color es su calificación de hoy.',
     'calidad.col.fecha':'Inicial: la primera medición. Quincena: las de los días 1 y 15 de cada mes. Hoy: la más reciente, mientras llega la primera de 15 días.',
     'calidad.col.cambio':'Diferencia entre la medición inicial y la última. La flecha verde es mejora.',
-    'calidad.col.anterior':'El valor de los 12 meses anteriores: es la meta contra la que se compara el desempeño comercial.',
-    'calidad.col.calificacion':'Calificación de 0 a 100. Datos y vigencia: el porcentaje completo (si menos es mejor, 100 menos el porcentaje; un conteo se compara contra las oportunidades abiertas). Desempeño comercial: avance contra el año anterior, con tope de 100. Referencia: se muestra pero no califica.',
+    'calidad.col.anterior':'La meta: para el equipo, la meta fija del año anterior (calidad_metas); para cada persona, su propio año anterior.',
+    'calidad.col.calificacion':'Calificación de 0 a 100. Con meta: avance contra la meta, tope 100 (si menos es mejor, meta entre valor). Porcentaje: el porcentaje (o 100 menos el porcentaje si menos es mejor). Conteo donde menos es mejor: 100 × (1 − conteo / oportunidades de venta abiertas). No suma: se ve pero pesa cero. Referencia: se ve pero no califica.',
     'calidad.col.quien':'Quién o qué proceso corrige este indicador, según la medición del motor.',
     'calidad.responsable':'Los mismos indicadores para cada persona, con las oportunidades donde es Responsable de la cuenta. Desempeño comercial se compara contra su propio año anterior.',
     // Recap
@@ -7229,6 +7229,7 @@ function calEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){re
 function calFmt(r){ if(!r||r.valor===null||r.valor===undefined||r.valor==='') return '—'; var v=Number(r.valor);
   if(r.tipo==='pct'||r.tipo==='pct_asociacion') return v.toLocaleString('es-MX',{maximumFractionDigits:1})+'%';
   if(r.tipo==='suma'||r.tipo==='ponderado') return '$'+Math.round(v).toLocaleString('es-MX');
+  if(r.tipo==='ciclo') return Math.round(v).toLocaleString('es-MX')+' días';
   return Math.round(v).toLocaleString('es-MX'); }
 function calSem(r,g){ if(!r||g==='comercial'||r.valor===null||r.valor===undefined) return ''; var v=Number(r.valor), pct=(r.tipo==='pct'||r.tipo==='pct_asociacion');
   if(pct) return r.mejor==='bajo' ? (v<=10?'#62D175':v<=25?'#FFCD00':'#DB0540') : (v>=80?'#62D175':v>=50?'#FFCD00':'#DB0540');
@@ -7236,25 +7237,31 @@ function calSem(r,g){ if(!r||g==='comercial'||r.valor===null||r.valor===undefine
 function calCambio(a,b,una){ if(una||!a||!b||a.valor===null||b.valor===null) return '—'; var d=Math.round((Number(b.valor)-Number(a.valor))*10)/10; if(!d) return '=';
   var bueno=(d>0)===(b.mejor!=='bajo'); var pct=(b.tipo==='pct'||b.tipo==='pct_asociacion');
   return '<span style="color:'+(bueno?'#62D175':'#DB0540')+';font-weight:600">'+(d>0?'▲ ':'▼ ')+Math.abs(d).toLocaleString('es-MX',{maximumFractionDigits:1})+(pct?' pts':'')+'</span>'; }
-/* 11nov2026 (Mike): Calidad del CRM como el tablero de Itera. Calificacion de 0 a 100 (global hasta arriba y una por
-   seccion), avance por fecha (la medicion inicial y las de cada 15 dias; mientras no haya una de 15 dias se ve la de hoy) y,
-   hasta abajo, Por responsable: una flecha por persona que abre todos sus indicadores juntos.
-   Calificacion de un indicador: en datos y vigencia, el % completo (si mejor es bajo, 100 menos el %; un conteo se
-   compara contra las oportunidades abiertas). En desempeno comercial, el avance contra el ano anterior (tope 100); lo que
-   no tiene ano anterior es referencia y no califica. Seccion = promedio de sus indicadores; global = promedio de secciones. */
-var CAL_SECC=[['datos','Calidad de datos','Qué tan completo está cada registro.'],['vigencia','Vigencia de los registros','Qué tan vivos o abandonados están.'],['comercial','Desempeño comercial','Resultados de los últimos 12 meses contra los 12 meses anteriores (la meta).']];
-function calPts(r,v,ab,ant){ if(!r||v===null||v===undefined||v==='') return null; v=Number(v); var pct=(r.tipo==='pct'||r.tipo==='pct_asociacion');
-  if(r.grupo==='comercial'){ if(ant===null||ant===undefined||!Number(ant)||(r.tipo!=='pct'&&r.tipo!=='conteo')) return null; var av=r.mejor==='bajo'?Number(ant)/Math.max(v,0.0001)*100:v/Number(ant)*100; return Math.max(0,Math.min(100,av)); }
-  if(pct) return Math.max(0,Math.min(100,r.mejor==='bajo'?100-v:v));
+/* 24nov2026 (Mike, «calidad sí»): modelo común de calidad con IT Institute. La forma de calificar llega del motor
+   («GR — Calidad del CRM para el tablero» → tablero y metas, de calidad_tablero y calidad_metas de GR):
+   - Secciones que califican: Calidad de datos, Vigencia y seguimiento y Desempeño comercial, cada una con sus indicadores y
+     pesos (peso 0 = se ve y no suma). Prospección y Controles se ven y no califican.
+   - Puntos de un indicador: con meta = avance contra la meta (tope 100; si menos es mejor, meta / valor); porcentaje = el
+     porcentaje (o 100 menos el porcentaje si menos es mejor); conteo donde menos es mejor = 100 × (1 − conteo / abiertas de
+     venta). Lo demás es referencia. Sección = promedio ponderado; global = promedio de las tres secciones.
+   - Equipo: metas fijas (calidad_metas, línea base de nov-2024 a nov-2025). Cada persona: su propio año anterior.
+   - Columnas: las mediciones del modelo común (desde el 24-nov-2026); las anteriores medían otra cosa y no se comparan. */
+var CAL_SECC=[], CAL_EXTRA=[], CAL_METAS={}, CAL_BASE_AB='d_ab_abiertas_venta', CAL_DESDE='';
+function calPeso(s,k){ return s&&s.pesos&&s.pesos[k]!==undefined?Number(s.pesos[k]):1; }
+function calTieneMeta(k){ var m=CAL_METAS[k]; return m!==undefined&&m!==null&&m!==''; }
+// r = definición (tipo, mejor); v = valor; ab = abiertas de venta; meta = meta a usar (equipo: fija; persona: su año anterior).
+function calPts(r,v,ab,meta){ if(!r||v===null||v===undefined||v==='') return null; v=Number(v);
+  if(calTieneMeta(r.clave)){ if(meta===null||meta===undefined||meta===''||!Number(meta)) return null; var m=Number(meta); return Math.max(0,Math.min(100,r.mejor==='bajo'?(v?m/v*100:100):v/m*100)); }
+  if(r.tipo==='pct'||r.tipo==='pct_asociacion') return Math.max(0,Math.min(100,r.mejor==='bajo'?100-v:v));
   if(r.tipo==='conteo'&&r.mejor==='bajo'&&ab) return Math.max(0,Math.min(100,100*(1-v/ab)));
   return null; }
 function calSemP(p){ return p===null||p===undefined?'':(p>=80?'#62D175':p>=60?'#FFCD00':'#DB0540'); }
 function calNum(p){ return p===null||p===undefined?'—':'<b style="color:'+calSemP(p)+'">'+Math.round(p)+'</b>'; }
 function calProm(l){ l=l.filter(function(x){ return x!==null&&x!==undefined; }); return l.length?l.reduce(function(a,b){return a+b;},0)/l.length:null; }
-// Una medicion (del equipo o de una persona) en forma {fecha, val:{clave:valor}, ant:{clave:ant}, ab}.
-function calNotas(m,defs){ var sec={}; CAL_SECC.forEach(function(s){ sec[s[0]]=calProm(defs.filter(function(r){return r.grupo===s[0];}).map(function(r){ return calPts(r,m.val[r.clave],m.ab,(m.ant||{})[r.clave]); })); });
-  sec.global=calProm(CAL_SECC.map(function(s){return sec[s[0]];})); sec.global_c=calProm([sec.datos,sec.vigencia]); return sec; }
-// Columnas: la medicion inicial y las de los dias 1 y 15; mientras no haya ninguna de 15 dias, la mas reciente como Hoy.
+// Una medición (del equipo o de una persona) en forma {fecha, val:{clave:valor}, metas:{clave:meta}, ab}.
+function calNotaSec(s,m,D){ var sum=0,w=0; (s.indicadores||[]).forEach(function(k){ var p=calPeso(s,k); if(!p||!D[k]) return; var pt=calPts(D[k],m.val[k],m.ab,(m.metas||{})[k]); if(pt===null) return; sum+=pt*p; w+=p; }); return w?sum/w:null; }
+function calNotas(m,D){ var sec={}; CAL_SECC.forEach(function(s){ sec[s.clave]=calNotaSec(s,m,D); }); sec.global=calProm(CAL_SECC.map(function(s){return sec[s.clave];})); return sec; }
+// Columnas: la primera medición del modelo común y las de los días 1 y 15; mientras no haya ninguna de 15 días, la más reciente como Hoy.
 function calColumnas(meds){ var porDia={}; meds.forEach(function(m){ porDia[m.fecha]=m; }); var l=Object.keys(porDia).sort().map(function(f){return porDia[f];}); if(!l.length) return [];
   var q=l.slice(1).filter(function(m){ return /-(01|15)$/.test(m.fecha); }).slice(-6), cols=[{m:l[0],t:'Inicial'}];
   q.forEach(function(m){ cols.push({m:m,t:'Quincena'}); }); if(!q.length&&l.length>1) cols.push({m:l[l.length-1],t:'Hoy'}); return cols; }
@@ -7262,55 +7269,61 @@ function calFechaCorta(f){ var M=['ene','feb','mar','abr','may','jun','jul','ago
 function calCabeza(cols,extra,primera){ return '<thead><tr><th style="text-align:left;padding:6px">'+(primera||('Indicador '+grI('calidad.col.indicador')))+'</th>'+cols.map(function(c,i){ return '<th style="text-align:right;padding:6px;white-space:nowrap">'+calEsc(c.t)+(i===0?' '+grI('calidad.col.fecha'):'')+'<div style="font-weight:400;font-size:11px;color:var(--text-dim)">'+calEsc(calFechaCorta(c.m.fecha))+'</div></th>'; }).join('')+'<th style="text-align:right;padding:6px">Cambio '+grI('calidad.col.cambio')+'</th>'+(extra||'')+'</tr></thead>'; }
 function calDif(a,b){ if(a===null||a===undefined||b===null||b===undefined) return '—'; var d=Math.round(b-a); if(!d) return '='; return '<span style="color:'+(d>0?'#62D175':'#DB0540')+';font-weight:600">'+(d>0?'▲ ':'▼ ')+Math.abs(d)+'</span>'; }
 // Tabla de avance: global (franja) y secciones, una columna por fecha.
-function calTablaAvance(cols,defs,titulo){ var n=cols.map(function(c){ return calNotas(c.m,defs); });
+function calTablaAvance(cols,D,titulo){ var n=cols.map(function(c){ return calNotas(c.m,D); });
   var fila=function(k,nombre,cls){ return '<tr style="border-top:1px solid var(--border)'+(cls?';'+cls:'')+'"><td style="padding:6px">'+nombre+'</td>'+n.map(function(x){ return '<td style="text-align:right;padding:6px">'+calNum(x[k])+'</td>'; }).join('')+'<td style="text-align:right;padding:6px">'+(n.length>1?calDif(n[0][k],n[n.length-1][k]):'—')+'</td></tr>'; };
   return '<div style="overflow-x:auto"><table class="data-table" style="width:100%;border-collapse:collapse;font-size:13px">'+calCabeza(cols,'',calEsc(titulo||'Sección'))+'<tbody>'+
-    fila('global','<b>GLOBAL</b><div style="font-size:11px;color:var(--text-dim)">todas las secciones</div>','background:#1E2433')+
-    (n.some(function(x){ return x.comercial===null||x.comercial===undefined; })&&n.length>1?fila('global_c','<b>Global comparable</b><div style="font-size:11px;color:var(--text-dim)">datos y vigencia, que se miden desde la inicial</div>','background:#171c2a'):'')+
-    CAL_SECC.map(function(s){ return fila(s[0],calEsc(s[1])); }).join('')+'</tbody></table></div>'; }
-// Franja de una seccion: su calificacion en cada fecha.
-function calFranja(cols,defs,g){ var n=cols.map(function(c){ return calNotas(c.m,defs)[g]; });
+    fila('global','<b>GLOBAL</b><div style="font-size:11px;color:var(--text-dim)">promedio de las tres secciones</div>','background:#1E2433')+
+    CAL_SECC.map(function(s){ return fila(s.clave,calEsc(s.titulo)); }).join('')+'</tbody></table></div>'; }
+// Franja de una sección: su calificación en cada fecha.
+function calFranja(cols,D,s){ var n=cols.map(function(c){ return calNotaSec(s,c.m,D); });
   return '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 8px;font-size:12px"><span style="color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;font-size:11px">Calificación de la sección '+grI('calidad.franja')+'</span>'+
     cols.map(function(c,i){ return '<span style="background:var(--bg-3);border-radius:10px;padding:2px 8px">'+calEsc(c.t)+' '+calEsc(calFechaCorta(c.m.fecha))+': '+calNum(n[i])+'</span>'; }).join('<span style="color:var(--text-dim)">→</span>')+'</div>'; }
-// Tabla de indicadores de una seccion.
-function calTablaSeccion(cols,defs,g,EX){ var l=defs.filter(function(r){return r.grupo===g;}); if(!l.length) return ''; var ult=cols[cols.length-1].m, ini=cols[0].m, com=(g==='comercial');
-  var h='<div style="overflow-x:auto"><table class="data-table" style="width:100%;border-collapse:collapse;font-size:13px">'+calCabeza(cols,(com?'<th style="text-align:right;padding:6px">Año anterior (meta) '+grI('calidad.col.anterior')+'</th>':'')+'<th style="text-align:right;padding:6px">Calificación '+grI('calidad.col.calificacion')+'</th><th style="text-align:left;padding:6px">Quién lo mejora '+grI('calidad.col.quien')+'</th>')+'<tbody>';
-  l.forEach(function(r){ var vh=ult.val[r.clave], pt=calPts(r,vh,ult.ab,(ult.ant||{})[r.clave]), a=ini.val[r.clave];
-    h+='<tr style="border-top:1px solid var(--border)"><td style="padding:6px"><b>'+(pt!==null?'<span style="color:'+calSemP(pt)+'">●</span> ':'')+calEsc(r.etiqueta)+'</b>'+(EX[r.clave]?'<div style="font-size:11px;color:var(--text-dim)">'+calEsc(EX[r.clave])+'</div>':'')+'</td>'+
-      cols.map(function(c,i){ var v=c.m.val[r.clave]; return '<td style="text-align:right;padding:6px">'+(i===cols.length-1?'<b>':'')+calFmt({valor:v,tipo:r.tipo})+(i===cols.length-1?'</b>':'')+'</td>'; }).join('')+
+// Tabla de indicadores de una sección (s.califica = false para Prospección y Controles).
+function calTablaSeccion(cols,D,s,EX){ var l=(s.indicadores||[]).filter(function(k){ return D[k]; }); if(!l.length) return ''; var ult=cols[cols.length-1].m, ini=cols[0].m, conMeta=l.some(calTieneMeta);
+  var h='<div style="overflow-x:auto"><table class="data-table" style="width:100%;border-collapse:collapse;font-size:13px">'+calCabeza(cols,(conMeta?'<th style="text-align:right;padding:6px">Meta '+grI('calidad.col.anterior')+'</th>':'')+'<th style="text-align:right;padding:6px">Calificación '+grI('calidad.col.calificacion')+'</th><th style="text-align:left;padding:6px">Quién lo mejora '+grI('calidad.col.quien')+'</th>')+'<tbody>';
+  l.forEach(function(k){ var r=D[k], vh=ult.val[k], pt=s.califica===false?null:calPts(r,vh,ult.ab,(ult.metas||{})[k]), a=ini.val[k], peso=calPeso(s,k);
+    var ptx=s.califica===false?'<span style="color:var(--text-dim);font-size:11px">no califica</span>':(pt===null?'<span style="color:var(--text-dim);font-size:11px">referencia</span>':(peso?calNum(pt):Math.round(pt)+' <span style="color:var(--text-dim);font-size:11px">no suma</span>'));
+    h+='<tr style="border-top:1px solid var(--border)"><td style="padding:6px"><b>'+(pt!==null&&peso?'<span style="color:'+calSemP(pt)+'">●</span> ':'')+calEsc(r.etiqueta)+'</b>'+(EX[k]?'<div style="font-size:11px;color:var(--text-dim)">'+calEsc(EX[k])+'</div>':'')+'</td>'+
+      cols.map(function(c,i){ var v=c.m.val[k]; return '<td style="text-align:right;padding:6px">'+(i===cols.length-1?'<b>':'')+calFmt({valor:v,tipo:r.tipo})+(i===cols.length-1?'</b>':'')+'</td>'; }).join('')+
       '<td style="text-align:right;padding:6px">'+(cols.length>1?calCambio({valor:a},{valor:vh,tipo:r.tipo,mejor:r.mejor},false):'—')+'</td>'+
-      (com?'<td style="text-align:right;padding:6px">'+calFmt({valor:(ult.ant||{})[r.clave],tipo:r.tipo})+'</td>':'')+
-      '<td style="text-align:right;padding:6px">'+(pt===null?'<span style="color:var(--text-dim);font-size:11px">referencia</span>':calNum(pt))+'</td><td style="padding:6px">'+calEsc(r.fuente||'')+'</td></tr>'; });
+      (conMeta?'<td style="text-align:right;padding:6px">'+(calTieneMeta(k)?calFmt({valor:(ult.metas||{})[k],tipo:r.tipo}):'—')+'</td>':'')+
+      '<td style="text-align:right;padding:6px">'+ptx+'</td><td style="padding:6px">'+calEsc(r.fuente||'')+'</td></tr>'; });
   return h+'</tbody></table></div>'; }
+function calBloques(cols,D,EX,nivel){ var h='';
+  CAL_SECC.concat(CAL_EXTRA).forEach(function(s){ if(!(s.indicadores||[]).some(function(k){ return D[k]; })) return;
+    h+='<div style="margin:'+(nivel?'16px':'22px')+' 0 2px;font-weight:700">'+calEsc(s.titulo)+(s.califica===false?' <span style="font-weight:400;font-size:12px;color:var(--text-dim)">(no califica)</span>':'')+'</div>'+(s.ayuda&&!nivel?'<div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">'+calEsc(s.ayuda)+'</div>':'')+
+      (s.califica===false?'':calFranja(cols,D,s))+calTablaSeccion(cols,D,s,EX); });
+  return h; }
 function renderCalidad(){
   var el=document.getElementById('p-calidad'); if(!el) return;
   if(!CAL_RAW){ if(CAL_CARGANDO) return; CAL_CARGANDO=true; el.innerHTML='<div class="loading">Cargando calidad del CRM…</div>';
     fetch(CALIDAD_URL,{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){ CAL_RAW=j; CAL_CARGANDO=false; if(currentTab==='calidad') renderCalidad(); })
       .catch(function(e){ CAL_CARGANDO=false; el.innerHTML='<div style="color:#ef4444;padding:16px;">No se pudo leer la calidad del CRM: '+calEsc(e.message)+'</div>'; });
     return; }
-  var lista=CAL_RAW.lista||[];
-  if(!lista.length){ el.innerHTML='<div class="section"><div class="section-title">Calidad del CRM</div><div style="color:var(--text-dim);padding:12px 0">Todavía no hay mediciones.</div></div>'; return; }
+  var TB=CAL_RAW.tablero||null;
+  if(!TB||!Array.isArray(TB.secciones)){ el.innerHTML='<div class="section"><div class="section-title">Calidad del CRM</div><div style="color:var(--text-dim);padding:12px 0">Falta la forma de calificar (calidad_tablero de GR).</div></div>'; return; }
+  CAL_SECC=TB.secciones; CAL_EXTRA=[TB.prospeccion,TB.controles].filter(Boolean).map(function(x){ return Object.assign({califica:false},x); });
+  CAL_METAS=CAL_RAW.metas||{}; CAL_BASE_AB=TB.base_abiertas||'d_ab_abiertas_venta';
+  // Solo las mediciones del modelo común (traen la base de abiertas de venta).
+  var lista=(CAL_RAW.lista||[]).filter(function(m){ return m.filas.some(function(r){ return r.clave===CAL_BASE_AB; }); });
+  if(!lista.length){ el.innerHTML='<div class="section"><div class="section-title">Calidad del CRM</div><div style="color:var(--text-dim);padding:12px 0">Todavía no hay mediciones del modelo común.</div></div>'; return; }
   var EX=CAL_RAW.explicacion||{}, ultimo=lista[lista.length-1];
-  var defs=ultimo.filas.slice().sort(function(x,y){return Number(x.orden)-Number(y.orden);});
-  var abDe=function(val){ return Number(val.d_abiertas)||0; };
-  // Equipo: cada medicion con sus valores y el ano anterior (existe desde que se mide por responsable).
-  var meds=lista.map(function(m){ var val={}; m.filas.forEach(function(r){ val[r.clave]=r.valor; }); return {fecha:m.fecha,val:val,ant:m.meta||{},ab:abDe(val)}; });
+  var D={}; ultimo.filas.forEach(function(r){ D[r.clave]=r; });
+  var meds=lista.map(function(m){ var val={}; m.filas.forEach(function(r){ val[r.clave]=r.valor; }); return {fecha:m.fecha,val:val,metas:CAL_METAS,ab:Number(val[CAL_BASE_AB])||0}; });
   var cols=calColumnas(meds);
   var html='<div class="section"><div class="section-title">Calidad del CRM '+grI('calidad.titulo')+' <span style="margin-left:auto;color:var(--text-dim);font-size:12px">Se mide los días 1 y 15 de cada mes · última medición '+calEsc(calFechaCorta(ultimo.fecha))+'</span></div>';
-  html+='<div style="font-size:12px;color:var(--text-dim);margin:4px 0 10px">Calificación de 0 a 100: <span style="color:#62D175">●</span> 80 o más &nbsp; <span style="color:#FFCD00">●</span> 60 a 79 &nbsp; <span style="color:#DB0540">●</span> menos de 60. Columnas: la medición inicial y las de cada 15 días'+(cols.length&&cols[cols.length-1].t==='Hoy'?' (mientras llega la primera de 15 días se ve la de hoy)':'')+'. Desempeño comercial califica desde el 11 de noviembre, cuando empezó a medirse contra el año anterior.</div>';
-  html+='<div style="margin:12px 0 6px;font-weight:700">Avance de la calificación '+grI('calidad.avance')+'</div>'+calTablaAvance(cols,defs);
-  CAL_SECC.forEach(function(s){ if(!defs.some(function(r){return r.grupo===s[0];})) return;
-    html+='<div style="margin:22px 0 2px;font-weight:700">'+calEsc(s[1])+' '+grI('calidad.'+s[0])+'</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">'+calEsc(s[2])+'</div>'+calFranja(cols,defs,s[0])+calTablaSeccion(cols,defs,s[0],EX); });
-  // Por responsable: una flecha por persona; adentro, todos sus indicadores con las mismas columnas.
+  html+='<div style="font-size:12px;color:var(--text-dim);margin:4px 0 10px">Calificación de 0 a 100: <span style="color:#62D175">●</span> 80 o más &nbsp; <span style="color:#FFCD00">●</span> 60 a 79 &nbsp; <span style="color:#DB0540">●</span> menos de 60. Mismo modelo que IT Institute: califican Calidad de datos, Vigencia y seguimiento y Desempeño comercial (contra la meta fija del año anterior); Prospección y Controles se ven y no califican. Columnas: la primera medición del modelo común (24 de noviembre de 2026) y las de cada 15 días'+(cols.length&&cols[cols.length-1].t==='Hoy'?' (mientras llega la primera de 15 días se ve la de hoy)':'')+'.</div>';
+  html+='<div style="margin:12px 0 6px;font-weight:700">Avance de la calificación '+grI('calidad.avance')+'</div>'+calTablaAvance(cols,D)+calBloques(cols,D,EX,false);
+  // Por responsable: una flecha por persona; adentro, todos sus indicadores; la meta es su propio año anterior.
   var conR=lista.filter(function(m){ return m.por_responsable; });
   if(conR.length){ var ultR=conR[conR.length-1].por_responsable;
-    var ids=Object.keys(ultR).sort(function(a,b){ return (ultR[b].oportunidades||0)-(ultR[a].oportunidades||0); });
-    html+='<div style="margin:28px 0 4px;font-weight:700">Por responsable '+grI('calidad.responsable')+'</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Cada persona con sus oportunidades (campo Responsable de la cuenta). Los indicadores de contactos miden a los contactos de sus oportunidades de los últimos 12 meses. Desempeño comercial se compara contra su propio año anterior. Toca un nombre para ver todos sus indicadores.</div>';
-    ids.forEach(function(id){ var mp=conR.filter(function(m){ return m.por_responsable[id]; }).map(function(m){ var p=m.por_responsable[id]; return {fecha:m.fecha,val:p.v||{},ant:p.ant||{},ab:Number((p.v||{}).d_abiertas)||0}; });
-      var cp=calColumnas(mp); if(!cp.length) return; var nh=calNotas(cp[cp.length-1].m,defs), p=ultR[id], nom=id?(grEquipoNombre(id)||id):'Sin responsable';
-      html+='<details style="border:1px solid var(--border);border-radius:10px;margin:6px 0;background:var(--bg-2)"><summary style="cursor:pointer;padding:10px 12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center"><b style="min-width:120px">'+calEsc(nom)+'</b><span style="font-size:12px;color:var(--text-dim)">'+(p.oportunidades||0)+' oportunidades · '+(Number((p.v||{}).d_abiertas)||0)+' abiertas</span><span style="margin-left:auto;font-size:12px">Global '+calNum(nh.global)+' · Datos '+calNum(nh.datos)+' · Vigencia '+calNum(nh.vigencia)+' · Comercial '+calNum(nh.comercial)+'</span></summary><div style="padding:4px 12px 12px">'+
-        (cp.length===1?'<div style="font-size:12px;color:var(--text-dim);margin:4px 0 8px">Primera medición por responsable: '+calEsc(calFechaCorta(cp[0].m.fecha))+'. Desde la siguiente de 15 días ya se ve cómo cambia.</div>':'')+
-        calTablaAvance(cp,defs)+CAL_SECC.map(function(s){ return defs.some(function(r){return r.grupo===s[0];})?'<div style="margin:16px 0 2px;font-weight:700">'+calEsc(s[1])+'</div>'+calFranja(cp,defs,s[0])+calTablaSeccion(cp,defs,s[0],EX):''; }).join('')+'</div></details>'; });
+    var ids=Object.keys(ultR).sort(function(a,b){ return (ultR[b].abiertas||0)-(ultR[a].abiertas||0); });
+    html+='<div style="margin:28px 0 4px;font-weight:700">Por responsable '+grI('calidad.responsable')+'</div><div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Cada persona con sus oportunidades (campo Responsable de la cuenta). Desempeño comercial se compara contra su propio año anterior. Toca un nombre para ver todos sus indicadores.</div>';
+    ids.forEach(function(id){ var mp=conR.filter(function(m){ return m.por_responsable[id]; }).map(function(m){ var p=m.por_responsable[id], mt={}; Object.keys(CAL_METAS).forEach(function(k){ mt[k]=(p.ant||{})[k]; }); return {fecha:m.fecha,val:p.v||{},metas:mt,ab:Number((p.v||{})[CAL_BASE_AB])||0}; });
+      var cp=calColumnas(mp); if(!cp.length) return; var nh=calNotas(cp[cp.length-1].m,D), p=ultR[id], nom=id?(grEquipoNombre(id)||id):'Sin responsable';
+      html+='<details style="border:1px solid var(--border);border-radius:10px;margin:6px 0;background:var(--bg-2)"><summary style="cursor:pointer;padding:10px 12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center"><b style="min-width:120px">'+calEsc(nom)+'</b><span style="font-size:12px;color:var(--text-dim)">'+(Number((p.v||{})[CAL_BASE_AB])||0)+' de venta abiertas</span><span style="margin-left:auto;font-size:12px">Global '+calNum(nh.global)+CAL_SECC.map(function(s){ return ' · '+calEsc(s.titulo.split(' ')[0])+' '+calNum(nh[s.clave]); }).join('')+'</span></summary><div style="padding:4px 12px 12px">'+
+        (cp.length===1?'<div style="font-size:12px;color:var(--text-dim);margin:4px 0 8px">Primera medición por responsable del modelo común: '+calEsc(calFechaCorta(cp[0].m.fecha))+'. Desde la siguiente de 15 días ya se ve cómo cambia.</div>':'')+
+        calTablaAvance(cp,D)+calBloques(cp,D,EX,true)+'</div></details>'; });
   }
   html+='</div>'; el.innerHTML=html;
 }
