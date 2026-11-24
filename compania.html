@@ -223,16 +223,20 @@
     return html;
   }
   // Fases del pipeline: dias maximos por fase (plazos_etapa) y como se comporta el semaforo del tablero.
-  // Regla del semaforo (la misma del tablero): rojo si pasa el plazo o ya vencio la fecha de cierre; amarillo desde el 75%
-  // del plazo o si cierra en 7 dias o menos; verde el resto. Guardar cambia los colores del tablero en su siguiente carga.
+  // Regla del semaforo de oportunidades (semaforo comun vA, 24nov2026, la misma del tablero y de la medicion de calidad): rojo si
+  // pasa el plazo; amarillo desde semaforo_regla.amarillo_pct del plazo (75 si no hay); verde el resto; gris sin plazo. La fecha de
+  // cierre solo pinta si semaforo_regla.cierre = true. Guardar cambia los colores del tablero en su siguiente carga.
   function probDe(c) { try { return JSON.parse((c.datos || {}).etapas_probabilidad || '{}') || {}; } catch (e) { return {}; } }
   function plazosDe(c) { try { return JSON.parse((c.datos || {}).plazos_etapa || '{}') || {}; } catch (e) { return {}; } }
-  function franjas(p) { p = Number(p) || 0; if (!p) return null; var a = Math.ceil(p * 0.75); return { verde: a - 1, amarillo: [a, p], rojo: p + 1 }; }
+  function franjas(p, pct) { p = Number(p) || 0; if (!p) return null; var a = Math.ceil(p * (Number(pct) > 0 ? Number(pct) : 75) / 100); return { verde: a - 1, amarillo: [a, p], rojo: p + 1 }; }
+  // semaforo_regla de la compania (solo lectura en el portal): umbral de amarillo y si la fecha de cierre pinta el semaforo.
+  var SEM_R = { pct: 75, cierre: false, dc: 7 };
+  function reglaSem(d) { var r = {}; try { r = JSON.parse((d || {}).semaforo_regla || '{}') || {}; } catch (e) { r = {}; } return { pct: Number(r.amarillo_pct) > 0 ? Number(r.amarillo_pct) : 75, cierre: r.cierre === true, dc: Number(r.cierre_amarillo_dias) >= 0 ? Number(r.cierre_amarillo_dias) : 7 }; }
   // Cantidad con su unidad: horas (h) o dias (habiles si la compania cuenta en habiles).
   function enUnidad(n, u, hab) { return u === 'horas' ? n + ' h' : n + ' ' + (n === 1 ? 'día' : 'días') + (hab ? (n === 1 ? ' hábil' : ' hábiles') : ''); }
   // Barra del semaforo de una fase (la misma para prospeccion y oportunidades): verde hasta ceil(75%)-1, amarillo hasta el plazo, rojo despues.
-  function barra(p, u, hab, sinPlazo) {
-    p = Math.round(Number(p) || 0); var f = franjas(p); if (!f) return '<span class="vacio">' + (sinPlazo || 'Sin plazo: el semáforo solo usa la fecha de cierre.') + '</span>';
+  function barra(p, u, hab, sinPlazo, pct) {
+    p = Math.round(Number(p) || 0); var f = franjas(p, pct); if (!f) return '<span class="vacio">' + (sinPlazo || (SEM_R.cierre ? 'Sin plazo: el semáforo solo usa la fecha de cierre.' : 'Sin plazo: sin semáforo (gris).')) + '</span>';
     var tot = f.rojo + Math.max(3, Math.round(p * 0.25)), w = function (n) { return Math.max(4, Math.round(n / tot * 100)) + '%'; };
     var e = function (n) { return enUnidad(n, u, hab); };
     return '<div class="sem-barra"><i class="v" style="width:' + w(f.verde + 1) + '"></i><i class="a" style="width:' + w(f.amarillo[1] - f.amarillo[0] + 1) + '"></i><i class="r" style="flex:1"></i></div>'
@@ -274,6 +278,7 @@
   function fases(c) {
     var d = c.datos || {}, adm = !!(c.info || {}).administra, pl = plazosDe(c), pr = probDe(c), crit = jsonDe(c, 'criterios_etapa'), pp = jsonDe(c, 'plazos_prospeccion');
     var hab = d.plazos_unidad === 'habiles', dias = hab ? 'días hábiles' : 'días';
+    SEM_R = reglaSem(d);
     var et = String(d.pipeline_etapas || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
     var pe = listaFases(d.prospeccion_etapas), pc = listaFases(d.prospeccion_cerradas), pca = listaFases(d.prospeccion_cerradas_activas);
     var cat = listaFases(d.cierres_catalogo), editables = listaFases(d.pipeline_etapas_editables);
@@ -288,8 +293,9 @@
       + '@media (min-width:760px){.cierres{grid-template-columns:1fr 1fr}.motivos{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}}'
       + '@media (max-width:759px){.fases-t thead{display:none}.fases-t,.fases-t tbody,.fases-t tr,.fases-t td{display:block;width:auto}.fases-t .fase-r{border:1px solid #e3e3e0;border-bottom:0;border-radius:8px 8px 0 0;padding:12px 12px 4px;margin-top:12px;background:#fafaf8}'
       + '.fases-t .fase-r td{border:0;padding:4px 0}.fases-t td[data-l]::before{content:attr(data-l);display:block;font-size:12px;color:#5c5c5c;margin-bottom:2px}.fases-t .crit-r{border:1px solid #e3e3e0;border-top:0;border-radius:0 0 8px 8px;padding:0 12px 12px;background:#fafaf8}.fases-t .crit-r td{border:0;padding:4px 0 0}.fases-t .sem-barra{min-width:0}}</style>';
-    var reglas = function (cierre) {
-      return '<div class="nota" style="margin-top:12px"><b>Cómo decide el color:</b><br><span class="sem-dot r"></span> <b>Rojo, atender:</b> lleva más tiempo en la fase que su máximo' + (cierre ? ', o su fecha de cierre ya pasó' : '') + '.<br><span class="sem-dot a"></span> <b>Amarillo, vigilar:</b> ya usó el 75% de su tiempo' + (cierre ? ', o cierra en 7 días o menos' : '') + '.<br><span class="sem-dot v"></span> <b>Verde, al día:</b> todo lo demás.' + (cierre ? '<br><span class="sem-dot g"></span> <b>Gris:</b> sin fecha de cierre ni plazo.' : '') + '</div>';
+    var reglas = function (op) {
+      var cierre = op && SEM_R.cierre, pct = op ? SEM_R.pct : 75;
+      return '<div class="nota" style="margin-top:12px"><b>Cómo decide el color:</b><br><span class="sem-dot r"></span> <b>Rojo, atender:</b> lleva más tiempo en la fase que su máximo' + (cierre ? ', o su fecha de cierre ya pasó' : '') + '.<br><span class="sem-dot a"></span> <b>Amarillo, vigilar:</b> ya usó el ' + pct + '% de su tiempo' + (cierre ? ', o cierra en ' + SEM_R.dc + ' días o menos' : '') + '.<br><span class="sem-dot v"></span> <b>Verde, al día:</b> todo lo demás.' + (cierre ? '<br><span class="sem-dot g"></span> <b>Gris:</b> sin fecha de cierre ni plazo.' : (op ? '<br><span class="sem-dot g"></span> <b>Gris:</b> la fase no tiene plazo.<br>La fecha de cierre no cambia el color: se revisa aparte (filtro Cierre vencido del Pipeline y la calificación de Calidad del CRM).' : '')) + '</div>';
     };
     // Prospeccion
     var prosp;
@@ -315,7 +321,7 @@
         var ref = 'o' + i;
         var prob = adm ? '<input type="number" min="0" max="100" class="prob" data-fase="' + h(e) + '" value="' + h(pr[e] != null ? pr[e] : '') + '" style="width:64px"> %' : h(pr[e] != null ? pr[e] + ' %' : 'Por definir');
         var tiempo = adm ? '<input type="number" min="1" max="365" class="plazo" data-fase="' + h(e) + '" data-ref="' + ref + '" value="' + h(pl[e] || '') + '" style="width:70px"> ' + dias : h(pl[e] ? pl[e] + ' ' + dias : 'Sin plazo');
-        return filaFase(e, i, prob, tiempo, ref, barra(pl[e], 'dias', hab), adm, crit);
+        return filaFase(e, i, prob, tiempo, ref, barra(pl[e], 'dias', hab, '', SEM_R.pct), adm, crit);
       }).join('');
       cuerpo = '<p style="margin:0 0 10px">Las fases de una oportunidad: qué probabilidad de cierre tiene cada una, cuántos ' + dias + ' puede estar en ella antes de que el tablero la marque, cómo se ve el semáforo y qué significa cada fase. El pronóstico del tablero suma el monto de cada oportunidad por la probabilidad de su fase. Al guardar, el tablero lo usa la siguiente vez que se abra.</p>'
         + '<div class="tw"><table class="tabla fases-t">' + CABEZA_FASES + '<tbody>' + filas + '</tbody></table></div>' + reglas(true)
@@ -332,7 +338,7 @@
   function activarFases(c) {
     var hab = (c.datos || {}).plazos_unidad === 'habiles';
     var poner = function (ref, html) { var td = document.querySelector('[data-sem="' + ref + '"]'); if (td) td.innerHTML = html; };
-    Array.prototype.forEach.call(document.querySelectorAll('input.plazo'), function (inp) { inp.oninput = function () { poner(inp.getAttribute('data-ref'), barra(inp.value, 'dias', hab)); }; });
+    Array.prototype.forEach.call(document.querySelectorAll('input.plazo'), function (inp) { inp.oninput = function () { poner(inp.getAttribute('data-ref'), barra(inp.value, 'dias', hab, '', SEM_R.pct)); }; });
     var repintarP = function (ref) {
       var inp = document.querySelector('input.pplazo[data-ref="' + ref + '"]'), sel = document.querySelector('select.punidad[data-ref="' + ref + '"]');
       if (inp) poner(ref, barra(inp.value, sel ? sel.value : 'dias', hab, 'Sin plazo: sin semáforo.'));
