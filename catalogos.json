@@ -748,7 +748,7 @@
       "nombre": "Señal Detectada",
       "ayuda": "Detectamos la señal (abrió el correo 3 veces o más, contestó, DUO) y todavía no le llega el primer WhatsApp",
       "orden": 1,
-      "plazoDias": 2
+      "plazoDias": 1
     },
     {
       "id": "1332596062",
