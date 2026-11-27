@@ -7,11 +7,11 @@
 <title>Portal de la compañía | Great Revenue Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="/portal_comun.css?v=20261127o">
+<link rel="stylesheet" href="/portal_comun.css?v=20261127p">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
-<script src="/portal_comun.js?v=20261127o"></script>
-<script src="/motor_funciones.js?v=20261127o"></script>
+<script src="/portal_comun.js?v=20261127p"></script>
+<script src="/motor_funciones.js?v=20261127p"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Portal de tu compañía</b></span><span class="quien" id="quien">Entra con tu cuenta de Google</span></div>
@@ -322,15 +322,15 @@
     var cat = listaFases(d.cierres_catalogo), editables = listaFases(d.pipeline_etapas_editables);
     var cierres = cat.length ? cat : unicas(listaFases(d.etapas_cerradas).concat(listaFases(d.etapas_perdidas))).filter(function (x) { return et.indexOf(x) < 0; });
     var mcat = motivosCat(c), mact = listaFases(d.pipeline_motivos_perdida);
-    var estilo = '<style>.sem-barra{display:flex;height:12px;border-radius:6px;overflow:hidden;min-width:160px;background:#eee}.sem-barra i{display:block;height:100%}.sem-barra .v{background:#2e7d32}.sem-barra .a{background:#e0a100}.sem-barra .r{background:#b3261e}.sem-txt{font-size:12px;color:#5c5c5c;margin-top:4px}.sem-dot{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle}.sem-dot.r{background:#b3261e}.sem-dot.a{background:#e0a100}.sem-dot.v{background:#2e7d32}.sem-dot.g{background:#9aa0a6}'
-      + '.tw{overflow-x:auto;min-width:0;max-width:100%}.crit-r td{border-top:0;padding-top:0}.crit-l{display:block;font-size:12px;color:#5c5c5c;margin-bottom:3px}.crit-t{font-size:13px;white-space:pre-wrap}textarea.crit{width:100%;box-sizing:border-box;font:inherit;font-size:13px}.crit-r textarea.crit{resize:vertical;min-height:44px}'
+    var estilo = '<style>.sem-barra{display:flex;height:12px;border-radius:6px;overflow:hidden;min-width:160px;background:#eee}.sem-barra i{display:block;height:100%}.sem-barra .v{background:#2e7d32}.sem-barra .a{background:#e0a100}.sem-barra .r{background:#b3261e}.sem-txt{font-size:14px;color:#5c5c5c;margin-top:4px}.sem-dot{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle}.sem-dot.r{background:#b3261e}.sem-dot.a{background:#e0a100}.sem-dot.v{background:#2e7d32}.sem-dot.g{background:#9aa0a6}'
+      + '.tw{overflow-x:auto;min-width:0;max-width:100%}.crit-r td{border-top:0;padding-top:0}.crit-l{display:block;font-size:14px;color:#5c5c5c;margin-bottom:3px}.crit-t{font-size:14px;white-space:pre-wrap}textarea.crit{width:100%;box-sizing:border-box;font:inherit;font-size:14px}.crit-r textarea.crit{resize:vertical;min-height:44px}'
       + '.sub-f{margin:18px 0 6px;font-size:15px}.cierres{display:grid;grid-template-columns:1fr;gap:12px}.cierre-c{border:1px solid #e3e3e0;border-radius:8px;padding:12px;background:#fafaf8;min-width:0}'
       + '.cierre-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px}.cierre-h b{min-width:0;overflow-wrap:anywhere}.cierre-c textarea.crit{resize:vertical;min-height:56px;display:block}'
-      + '.se-usa{display:inline-flex;gap:6px;align-items:center;white-space:nowrap;flex:none;font-size:13px}.se-usa-t{flex:none;font-size:12px;color:#5c5c5c;white-space:nowrap}.se-usa-t.si{color:#2e7d32;font-weight:600}'
+      + '.se-usa{display:inline-flex;gap:6px;align-items:center;white-space:nowrap;flex:none;font-size:14px}.se-usa-t{flex:none;font-size:14px;color:#5c5c5c;white-space:nowrap}.se-usa-t.si{color:#2e7d32;font-weight:600}'
       + '.motivos{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr;gap:6px 16px}.motivos li{padding:8px 10px;border:1px solid #eee;border-radius:6px;min-width:0}.motivos label{display:flex;gap:8px;align-items:flex-start}.motivos input{margin-top:3px;flex:none}.motivos .no{color:#9aa0a6}'
       + '@media (min-width:760px){.cierres{grid-template-columns:1fr 1fr}.motivos{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}}'
       + '@media (max-width:759px){.fases-t thead{display:none}.fases-t,.fases-t tbody,.fases-t tr,.fases-t td{display:block;width:auto}.fases-t .fase-r{border:1px solid #e3e3e0;border-bottom:0;border-radius:8px 8px 0 0;padding:12px 12px 4px;margin-top:12px;background:#fafaf8}'
-      + '.fases-t .fase-r td{border:0;padding:4px 0}.fases-t td[data-l]::before{content:attr(data-l);display:block;font-size:12px;color:#5c5c5c;margin-bottom:2px}.fases-t .crit-r{border:1px solid #e3e3e0;border-top:0;border-radius:0 0 8px 8px;padding:0 12px 12px;background:#fafaf8}.fases-t .crit-r td{border:0;padding:4px 0 0}.fases-t .sem-barra{min-width:0}}</style>';
+      + '.fases-t .fase-r td{border:0;padding:4px 0}.fases-t td[data-l]::before{content:attr(data-l);display:block;font-size:14px;color:#5c5c5c;margin-bottom:2px}.fases-t .crit-r{border:1px solid #e3e3e0;border-top:0;border-radius:0 0 8px 8px;padding:0 12px 12px;background:#fafaf8}.fases-t .crit-r td{border:0;padding:4px 0 0}.fases-t .sem-barra{min-width:0}}</style>';
     var reglas = function (op) {
       var cierre = op && SEM_R.cierre, pct = op ? SEM_R.pct : 75;
       return '<div class="nota" style="margin-top:12px"><b>Cómo decide el color:</b><br><span class="sem-dot r"></span> <b>Rojo, atender:</b> lleva más tiempo en la fase que su máximo' + (cierre ? ', o su fecha de cierre ya pasó' : '') + '.<br><span class="sem-dot a"></span> <b>Amarillo, vigilar:</b> ya usó el ' + pct + '% de su tiempo' + (cierre ? ', o cierra en ' + SEM_R.dc + ' días o menos' : '') + '.<br><span class="sem-dot v"></span> <b>Verde, al día:</b> todo lo demás.' + (cierre ? '<br><span class="sem-dot g"></span> <b>Gris:</b> sin fecha de cierre ni plazo.' : (op ? '<br><span class="sem-dot g"></span> <b>Gris:</b> la fase no tiene plazo.<br>La fecha de cierre no cambia el color: se revisa aparte (filtro Cierre vencido del Pipeline y la calificación de Calidad del CRM).' : '')) + '</div>';
@@ -589,7 +589,7 @@
         if (!adm) return vista;
         // Quien administra lo lee igual y lo cambia con «Editar»; el texto que se guarda es el del cuadro.
         return vista + '<button type="button" class="rv-ed" data-rev="' + id + '">Editar</button>'
-          + '<textarea id="' + id + '" hidden rows="3" style="width:100%;box-sizing:border-box;font:inherit;font-size:13px;line-height:1.5;resize:vertical" placeholder="Nada por revisar">' + h(v) + '</textarea>';
+          + '<textarea id="' + id + '" hidden rows="3" style="width:100%;box-sizing:border-box;font:inherit;font-size:14px;line-height:1.5;resize:vertical" placeholder="Nada por revisar">' + h(v) + '</textarea>';
       }
       if (f[2] === 'ro') return f[0] === 'motor_usa' ? motorUsa(p) : h(v || PD);
       if (!adm) {
@@ -619,14 +619,14 @@
       return '<details class="prod"' + (i === 0 ? ' open' : '') + '><summary><span class="prod-t"><b>' + h(p.codigo) + '</b> · ' + h(p.nombre || '') + '</span> <span class="prod-m" id="pf-' + i + '-resumen">' + h(montoResumen(p)) + '</span>' + (p.pendiente ? ' <span class="prod-p">Pendiente</span>' : '') + (p.por_revisar ? ' <span class="prod-p" style="background:#ffe1d6;color:#8a2c0d">Por revisar</span>' : '') + (p.activo === false ? ' <span class="prod-p">Inactivo</span>' : '') + '</summary>' + grupos.join('') + '</details>';
     }).join('');
     // Mismo estilo que la pestana Fases: fichas a todo el ancho, dos columnas desde 760 px y una en el celular.
-    var estilo = '<style>.prod{border:1px solid #e3e3e0;border-radius:10px;margin:0 0 12px;padding:0 14px 6px;background:#fff}.prod summary{cursor:pointer;padding:12px 0;font-size:15px;line-height:1.5}.prod-t{overflow-wrap:anywhere}.prod-m{color:#5c5c5c;font-size:13px;margin-left:4px}.prod-p{font-size:11px;background:#fff4d6;color:#7a5600;border-radius:8px;padding:2px 8px;margin-left:6px;white-space:nowrap}'
-      + '.pf-g{border-top:1px solid #eee;padding:10px 0 12px}.pf-g h4{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#5c5c5c}'
-      + '.pfs{display:grid;grid-template-columns:1fr;gap:10px 20px}.pf{min-width:0}.pf[hidden]{display:none}.pf-w{grid-column:1/-1}.pf-rev{background:#fff8e6;border:1px solid #f3d27a;border-radius:8px;padding:8px 10px}.pf>label{display:block;font-size:12px;color:#5c5c5c;margin-bottom:3px}'
-      + '.rv{font-size:13px;line-height:1.5;overflow-wrap:anywhere}.rv-s{font-weight:700;font-size:12px;letter-spacing:.04em;color:#7a5600;margin-top:2px}.rv-t{font-weight:600}.rv-b{padding-left:14px;text-indent:-10px}.rv-sp{height:6px}.rv a{white-space:nowrap}.rv-ed{margin-top:6px;font-size:12px}.rv-ed+textarea{margin-top:6px}.prod-g{border-top:1px solid #eee;padding:10px 0 8px}'
-      + '.pf input[type=text],.pf input[type=number],.pf select{width:100%;box-sizing:border-box}.url-c{display:flex;gap:8px;align-items:center}.url-c input{flex:1}.url-c a{font-size:12px;flex:none}'
-      + '.pers{display:grid;grid-template-columns:1fr;gap:4px 16px}.pers label{display:flex;gap:6px;align-items:flex-start;font-size:13px;min-width:0}.pers input{margin-top:3px;flex:none}.pers span{overflow-wrap:anywhere}'
-      + '.monto-ayuda{margin:10px 0 0;padding:8px 12px;border-radius:8px;background:#f3f7f3;border:1px solid #d7e7d7;font-size:13px;color:#24502a}'
-      + '.se-usa{display:inline-flex;gap:6px;align-items:center;white-space:nowrap;font-size:13px}.sub-f{margin:18px 0 6px;font-size:15px}'
+    var estilo = '<style>.prod{border:1px solid #e3e3e0;border-radius:10px;margin:0 0 12px;padding:0 14px 6px;background:#fff}.prod summary{cursor:pointer;padding:12px 0;font-size:15px;line-height:1.5}.prod-t{overflow-wrap:anywhere}.prod-m{color:#5c5c5c;font-size:14px;margin-left:4px}.prod-p{font-size:14px;background:#fff4d6;color:#7a5600;border-radius:8px;padding:2px 8px;margin-left:6px;white-space:nowrap}'
+      + '.pf-g{border-top:1px solid #eee;padding:10px 0 12px}.pf-g h4{margin:0 0 8px;font-size:14px;text-transform:uppercase;letter-spacing:.04em;color:#5c5c5c}'
+      + '.pfs{display:grid;grid-template-columns:1fr;gap:10px 20px}.pf{min-width:0}.pf[hidden]{display:none}.pf-w{grid-column:1/-1}.pf-rev{background:#fff8e6;border:1px solid #f3d27a;border-radius:8px;padding:8px 10px}.pf>label{display:block;font-size:14px;color:#5c5c5c;margin-bottom:3px}'
+      + '.rv{font-size:14px;line-height:1.5;overflow-wrap:anywhere}.rv-s{font-weight:700;font-size:14px;letter-spacing:.04em;color:#7a5600;margin-top:2px}.rv-t{font-weight:600}.rv-b{padding-left:14px;text-indent:-10px}.rv-sp{height:6px}.rv a{white-space:nowrap}.rv-ed{margin-top:6px;font-size:14px}.rv-ed+textarea{margin-top:6px}.prod-g{border-top:1px solid #eee;padding:10px 0 8px}'
+      + '.pf input[type=text],.pf input[type=number],.pf select{width:100%;box-sizing:border-box}.url-c{display:flex;gap:8px;align-items:center}.url-c input{flex:1}.url-c a{font-size:14px;flex:none}'
+      + '.pers{display:grid;grid-template-columns:1fr;gap:4px 16px}.pers label{display:flex;gap:6px;align-items:flex-start;font-size:14px;min-width:0}.pers input{margin-top:3px;flex:none}.pers span{overflow-wrap:anywhere}'
+      + '.monto-ayuda{margin:10px 0 0;padding:8px 12px;border-radius:8px;background:#f3f7f3;border:1px solid #d7e7d7;font-size:14px;color:#24502a}'
+      + '.se-usa{display:inline-flex;gap:6px;align-items:center;white-space:nowrap;font-size:14px}.sub-f{margin:18px 0 6px;font-size:15px}'
       + '@media (min-width:760px){.pfs{grid-template-columns:1fr 1fr}.pers{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}}</style>';
     var intro = '<p style="margin:0 0 10px">Una ficha por producto. De aquí salen el precio y el monto con que nace cada oportunidad, a quién se avisa, quién hace la tarea, quién manda la minuta, qué se le ofrece al prospecto y la propuesta de valor e ICP vigentes con los que se escriben los mensajes. Los precios se pueden cambiar cuando quieras: las oportunidades nuevas usan el precio vigente.</p>';
     var leyenda = ['A', 'B', 'C', 'D', 'E'].some(function (k) { return fam[k]; }) ? '<div class="nota" style="margin-top:12px"><b>Formas del llamado a la acción:</b><br>' + ['A', 'B', 'C', 'D', 'E'].filter(function (k) { return fam[k]; }).map(function (k) { return '<b>' + k + '</b> · ' + h(fam[k]); }).join('<br>') + '</div>' : '';
@@ -655,15 +655,15 @@
     catEstado.lista = cursosDe(c).map(function (x) { var o = { c: String(x.c), n: String(x.n || ''), f: String(x.f || ''), p: Number(x.p) || 0 }; if (x.a === false) o.a = false; return o; });
     var mon = (deCursos[0] && deCursos[0].moneda) || 'USD';
     var fams = familiasCursos();
-    var estilo = '<style>.cat-bar{display:grid;grid-template-columns:1fr;gap:10px}.cat-bar label{font-size:12px;color:#5c5c5c;display:block}.cat-bar input,.cat-bar select{width:100%;box-sizing:border-box;margin-top:3px}'
-      + '.cat-cuenta{font-size:13px;color:#5c5c5c;margin:4px 0 0}.cat-t{width:100%;border-collapse:collapse;table-layout:fixed}.cat-t th{text-align:left;font-size:12px;color:#5c5c5c;font-weight:600;padding:8px 6px;border-bottom:1px solid #e3e3e0}'
+    var estilo = '<style>.cat-bar{display:grid;grid-template-columns:1fr;gap:10px}.cat-bar label{font-size:14px;color:#5c5c5c;display:block}.cat-bar input,.cat-bar select{width:100%;box-sizing:border-box;margin-top:3px}'
+      + '.cat-cuenta{font-size:14px;color:#5c5c5c;margin:4px 0 0}.cat-t{width:100%;border-collapse:collapse;table-layout:fixed}.cat-t th{text-align:left;font-size:14px;color:#5c5c5c;font-weight:600;padding:8px 6px;border-bottom:1px solid #e3e3e0}'
       + '.cat-t td{padding:5px 6px;border-bottom:1px solid #f0f0ee;vertical-align:middle;min-width:0;overflow-wrap:anywhere;font-size:14px}.cat-t input[type=text],.cat-t input[type=number]{width:100%;box-sizing:border-box;padding:6px 8px}.cat-t tr.no td{color:#9aa0a6}.cat-t tr.no input[type=text],.cat-t tr.no input[type=number]{color:#9aa0a6;background:#fafaf8}'
-      + '.cat-t .cc{font-size:13px}.se-usa-t{font-size:12px;color:#5c5c5c;white-space:nowrap}.se-usa-t.si{color:#2e7d32;font-weight:600}.cat-t .cp input{text-align:right}.cat-nuevo{display:grid;grid-template-columns:1fr;gap:10px;align-items:end;border:1px dashed #d8d8d4;border-radius:8px;padding:12px;background:#fafaf8}.cat-nuevo label{font-size:12px;color:#5c5c5c;display:block}.cat-nuevo input{width:100%;box-sizing:border-box;margin-top:3px}'
+      + '.cat-t .cc{font-size:14px}.se-usa-t{font-size:14px;color:#5c5c5c;white-space:nowrap}.se-usa-t.si{color:#2e7d32;font-weight:600}.cat-t .cp input{text-align:right}.cat-nuevo{display:grid;grid-template-columns:1fr;gap:10px;align-items:end;border:1px dashed #d8d8d4;border-radius:8px;padding:12px;background:#fafaf8}.cat-nuevo label{font-size:14px;color:#5c5c5c;display:block}.cat-nuevo input{width:100%;box-sizing:border-box;margin-top:3px}'
       + '@media (min-width:760px){.cat-bar{grid-template-columns:2fr 1fr}.cat-nuevo{grid-template-columns:140px 2fr 1fr 140px auto}.cat-t col.c1{width:150px}.cat-t col.c3{width:22%}.cat-t col.c4{width:150px}.cat-t col.c5{width:100px}}'
       + '@media (max-width:759px){.cat-t thead{display:none}.cat-t,.cat-t tbody,.cat-t tr,.cat-t td{display:block;width:auto}.cat-t colgroup{display:none}'
       + '.cat-t tr{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;border:1px solid #e3e3e0;border-radius:8px;padding:10px 12px;margin-top:10px;background:#fafaf8}.cat-t td{border:0;padding:0}'
       + '.cat-t .cc{grid-column:1;grid-row:1;align-self:center}.cat-t .cu{grid-column:2;grid-row:1;justify-self:end;align-self:center}.cat-t .cn{grid-column:1/-1}.cat-t .cf{grid-column:1}.cat-t .cp{grid-column:2}'
-      + '.cat-t .cn::before,.cat-t .cf::before,.cat-t .cp::before{content:attr(data-l);display:block;font-size:11px;color:#5c5c5c;margin-bottom:2px}.cat-t .cp::before{content:"Precio ' + mon + '"}}</style>';
+      + '.cat-t .cn::before,.cat-t .cf::before,.cat-t .cp::before{content:attr(data-l);display:block;font-size:14px;color:#5c5c5c;margin-bottom:2px}.cat-t .cp::before{content:"Precio ' + mon + '"}}</style>';
     var usados = deCursos.length ? '<p style="margin:0">Precio por participante, sin IVA, de cada curso de ' + deCursos.map(function (p) { return '<b>' + h(p.nombre || p.codigo) + '</b>'; }).join(', ') + '. El monto de la oportunidad es la suma de cada curso por sus participantes (un alumno = precio del curso). Los cursos que no se usan no se cotizan; las oportunidades que ya los traen conservan su monto.</p>' : '<p style="margin:0">Precio por participante, sin IVA, de cada curso.</p>';
     var barra = '<div class="cat-bar"><label>Buscar por nombre o código<input type="search" id="cat-buscar" placeholder="Ej.: ITIL, Scrum, CISSP"></label><label>Familia<select id="cat-fam"><option value="">Todas las familias</option>' + fams.map(function (f) { return '<option>' + h(f) + '</option>'; }).join('') + '</select></label></div><p class="cat-cuenta" id="cat-cuenta"></p>';
     var tabla = '<div><table class="cat-t"><colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"></colgroup><thead><tr><th>Código</th><th>Curso</th><th>Familia</th><th>Precio ' + h(mon) + ' por participante</th><th>Se usa</th></tr></thead><tbody id="cat-filas">' + catEstado.lista.map(function (x, i) { return filaCurso(x, i, adm); }).join('') + '</tbody></table></div>';
@@ -804,7 +804,7 @@
   var corrEstado = { lista: [], administra: false, ver: 'pendiente', filtros: {} };
   function mejoras(c) {
     var m = mensajeLiga || {}, adm = !!(c.info || {}).administra;
-    var estilo = '<style>.corr{border:1px solid #e5e5e5;border-radius:10px;padding:12px;margin:0 0 10px;background:#fff}.corr h4{margin:0 0 6px;font-size:14px}.corr .meta{font-size:12px;color:#5c5c5c;margin-bottom:6px}.corr blockquote{margin:6px 0;padding:8px 10px;background:#f6f6f4;border-radius:8px;white-space:pre-wrap;font-size:13px}.corr textarea,.mj textarea{width:100%;box-sizing:border-box}.mj label{display:block;font-size:12px;color:#5c5c5c;margin:8px 0 3px}.mj input,.mj select{width:100%;box-sizing:border-box}.chips button{margin:0 6px 6px 0}</style>';
+    var estilo = '<style>.corr{border:1px solid #e5e5e5;border-radius:10px;padding:12px;margin:0 0 10px;background:#fff}.corr h4{margin:0 0 6px;font-size:14px}.corr .meta{font-size:14px;color:#5c5c5c;margin-bottom:6px}.corr blockquote{margin:6px 0;padding:8px 10px;background:#f6f6f4;border-radius:8px;white-space:pre-wrap;font-size:14px}.corr textarea,.mj textarea{width:100%;box-sizing:border-box}.mj label{display:block;font-size:14px;color:#5c5c5c;margin:8px 0 3px}.mj input,.mj select{width:100%;box-sizing:border-box}.chips button{margin:0 6px 6px 0}</style>';
     var form = '<div class="mj"><p style="margin:0 0 8px">' + (mensajeLiga ? 'Llegaste desde un mensaje del motor: ya está cargado. Di qué estuvo mal y cómo lo dirías.' : 'Reporta un mensaje del motor que haya que corregir. Lo más fácil es usar la liga "Corregir este mensaje" que viene en cada correo; también puedes pegarlo aquí.') + '</p>'
       + '<div class="pfs" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0 16px">'
       + '<div><label>Proceso</label><input id="mj-proceso" value="' + h(m.p || '') + '" placeholder="Ej.: Respuesta a un prospecto"></div>'
@@ -827,15 +827,15 @@
     var campos = [['proceso', 'Proceso'], ['medio', 'Medio'], ['producto', 'Producto'], ['quien', 'Quién']];
     var filtros = '<div class="pfs" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0 12px">' + campos.map(function (k) {
       var vals = l.map(function (x) { return x[k[0]] || ''; }).filter(function (v, i, a) { return v && a.indexOf(v) === i; }).sort();
-      return '<div><label style="font-size:12px;color:#5c5c5c">' + k[1] + '</label><select data-filtro="' + k[0] + '" style="width:100%"><option value="">Todos</option>' + vals.map(function (v) { return '<option' + (f[k[0]] === v ? ' selected' : '') + '>' + h(v) + '</option>'; }).join('') + '</select></div>';
+      return '<div><label style="font-size:14px;color:#5c5c5c">' + k[1] + '</label><select data-filtro="' + k[0] + '" style="width:100%"><option value="">Todos</option>' + vals.map(function (v) { return '<option' + (f[k[0]] === v ? ' selected' : '') + '>' + h(v) + '</option>'; }).join('') + '</select></div>';
     }).join('') + '</div>';
     var vis = l.filter(function (x) { if (x.estado !== corrEstado.ver) return false; for (var k in f) if (f[k] && x[k] !== f[k]) return false; return true; });
     var tipoTxt = {}; TIPOS_CORR.forEach(function (x) { tipoTxt[x[0]] = x[1]; });
     var items = vis.length ? vis.map(function (x) {
       var fecha = x.ts ? new Date(Number(x.ts)).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) : '';
-      var dec = corrEstado.administra ? '<label style="font-size:12px;color:#5c5c5c">Versión final</label><textarea rows="3" data-c="' + h(x.corr_id) + '" data-k="version_final">' + h(x.version_final || '') + '</textarea>'
-        + '<label style="font-size:12px;color:#5c5c5c">Indicaciones o nota</label><textarea rows="2" data-c="' + h(x.corr_id) + '" data-k="nota">' + h(x.nota || '') + '</textarea>'
-        + '<label style="font-size:12px;color:#5c5c5c">Qué se cambió (al resolver)</label><textarea rows="2" data-c="' + h(x.corr_id) + '" data-k="resolucion">' + h(x.resolucion || '') + '</textarea>'
+      var dec = corrEstado.administra ? '<label style="font-size:14px;color:#5c5c5c">Versión final</label><textarea rows="3" data-c="' + h(x.corr_id) + '" data-k="version_final">' + h(x.version_final || '') + '</textarea>'
+        + '<label style="font-size:14px;color:#5c5c5c">Indicaciones o nota</label><textarea rows="2" data-c="' + h(x.corr_id) + '" data-k="nota">' + h(x.nota || '') + '</textarea>'
+        + '<label style="font-size:14px;color:#5c5c5c">Qué se cambió (al resolver)</label><textarea rows="2" data-c="' + h(x.corr_id) + '" data-k="resolucion">' + h(x.resolucion || '') + '</textarea>'
         + '<div class="acciones" style="margin-top:8px">' + [['enviada', 'Enviar a corrección'], ['resuelta', 'Marcar resuelta'], ['rechazada', 'Rechazar'], ['pendiente', 'Regresar a pendiente']].filter(function (b) { return b[0] !== x.estado; }).map(function (b) { return '<button data-decidir="' + h(x.corr_id) + '" data-estado="' + b[0] + '">' + b[1] + '</button>'; }).join(' ') + '<span class="msg" data-m="' + h(x.corr_id) + '"></span></div>'
         : ((x.version_final ? '<p><b>Versión final:</b> ' + h(x.version_final) + '</p>' : '') + (x.resolucion ? '<p><b>Qué se cambió:</b> ' + h(x.resolucion) + '</p>' : ''));
       return '<div class="corr"><h4>' + h(x.proceso || 'Mensaje') + (x.empresa ? ' · ' + h(x.empresa) : '') + '</h4><div class="meta">' + h(fecha) + ' · ' + h(x.quien || '') + (x.medio ? ' · ' + h(x.medio) : '') + (x.producto ? ' · ' + h(x.producto) : '') + ' · ' + h(tipoTxt[x.tipo] || x.tipo || '') + '</div>'
@@ -897,7 +897,7 @@
   function nombres(c) {
     var d = c.datos || {}, adm = !!(c.info || {}).administra, f = d.formato_nombre_oportunidad || '';
     var piezas = '<div class="nota" style="margin-top:10px"><b>Piezas que puedes usar:</b><br>' + PIEZAS_NOMBRE.map(function (p) { return '<code>' + h(p[0]) + '</code>: ' + h(p[1]); }).join('<br>') + '<br>Lo demás (guiones, barras, letras fijas como ITIN) se copia tal cual.</div>';
-    var ejemplo = '<div class="nota" style="margin-top:10px"><b>Así se vería una oportunidad nueva:</b><br><span id="nom-ejemplo" style="word-break:break-word;font-weight:700">' + h(f ? ejemploNombre(c, f) : PD) + '</span><br><span style="font-size:12px;color:#5c5c5c">Ejemplo con la empresa Comercializadora Ejemplo, el contacto Ana Pérez y el folio 19400.</span></div>';
+    var ejemplo = '<div class="nota" style="margin-top:10px"><b>Así se vería una oportunidad nueva:</b><br><span id="nom-ejemplo" style="word-break:break-word;font-weight:700">' + h(f ? ejemploNombre(c, f) : PD) + '</span><br><span style="font-size:14px;color:#5c5c5c">Ejemplo con la empresa Comercializadora Ejemplo, el contacto Ana Pérez y el folio 19400.</span></div>';
     var cuerpo = '<p style="margin:0 0 10px">Cada oportunidad que el motor crea en Zoho lleva un nombre con este formato. Las oportunidades que ya existen no cambian de nombre; el cambio aplica a las siguientes.</p>';
     if (adm) {
       cuerpo += '<label for="nom-formato">Nombre de la oportunidad<input id="nom-formato" type="text" maxlength="200" value="' + h(f) + '" placeholder="{empresa_texto}_{folio}_{anio} | {producto}" style="width:100%;box-sizing:border-box"></label>'

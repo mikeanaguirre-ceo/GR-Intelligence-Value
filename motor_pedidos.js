@@ -1,4 +1,4 @@
-// GR Intelligence: pedidos del motor de alta (vG, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
+// GR Intelligence: pedidos del motor de alta (vH, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
 // construir, las contestamos dentro del portal y despues empezamos a construir».
 // - MP.formulario: al pedir una funcion, las preguntas del catalogo (las comunes del tipo de pedido y las de la funcion), los datos que
 //   le faltan a la compania y las conexiones que hace en su portal, con lo obligatorio marcado y validado junto a cada campo.
@@ -7,6 +7,8 @@
 // vB (ronda 1 de auditoria): preguntas de seguimiento (requerida_si), conexiones aparte, letra de 14 px, avance con texto y no solo
 // color, campos con aria-required y su error ligado, una sola accion principal, fechas en palabras, colores propios por etapa,
 // textos segun el tipo de pedido y aviso cuando hay mas de 50.
+// vH (ronda 7): "Lo hace Great Revenue" en MP.plan para los seis tipos de pedido (pasos propios, compartidos, ajenos y quien mas
+// los usa); tras enviar no se recarga si hay otras respuestas escritas.
 // vG (ronda 6): aviso cuando no hay pasos propios (se construye a la medida) o cuando son compartidos con otra compania.
 // vF (ronda 5): sin "Activar" en pasos ajenos; Apagar y Quitar dicen que pasos toca Great Revenue (los propios, no los compartidos).
 // vE (ronda 4): "Lo hace Great Revenue" tambien al agregar una que no aplica y al encender o reanudar.
@@ -57,6 +59,41 @@
     encender: 'Antes de encenderla, dinos desde cuándo y si algo cambió. Great Revenue revisa que siga lista.',
     reanudar: 'Antes de reanudarla, dinos desde cuándo y si algo cambió desde que se pausó. Great Revenue revisa que siga lista.'
   };
+  // Lo que hace Great Revenue segun el tipo de pedido. Cada paso es propio, compartido (lo da otra compania o el motor comun:
+  // prestada) o ajeno (de otra compania o fuera del servicio); los propios pueden usarlos otras companias (comparten).
+  MP.plan = function (f, t, cia) {
+    var pz = (f.piezas || []).filter(function (z) { return !z.ajena; }), pasos = [], avisos = [];
+    var de = function (z) { return z.prestada ? ' (es de ' + (z.prestada_nombre || 'otra compañía') + ')' : ''; };
+    var nom = function (zs) { return zs.map(function (z) { return z.nombre; }).join(', '); };
+    var ACT = ['lista', 'apagada', 'suspendida'];
+    if (t === 'agregar') {
+      (f.faltan || []).forEach(function (x) { if (x.quien === 'GR') pasos.push(x.texto); });
+      pz.forEach(function (z) {
+        if (f.estado === 'no_aplica') pasos.push('Activar: ' + z.nombre + de(z));
+        else if (z.estado === 'falta') pasos.push('Construir: ' + z.nombre);
+        else if (z.estado === 'apagada') pasos.push('Encender: ' + z.nombre + de(z));
+        else if (z.estado === 'suspendida') pasos.push('Reanudar: ' + z.nombre + de(z));
+      });
+      if (pz.some(function (z) { return z.prestada && (z.estado === 'apagada' || z.estado === 'suspendida'); })) avisos.push('Los pasos de otra compañía se encienden también para ella: Great Revenue lo revisa antes.');
+      if (!pasos.length) avisos.push(!pz.length ? 'Esta función todavía no tiene pasos para ' + cia + ': Great Revenue la construye a su medida con tus respuestas.'
+        : ((f.faltan || []).some(function (x) { return x.quien !== 'GR'; }) ? 'Los pasos ya están listos; lo que falta lo da la compañía (arriba).' : 'Los pasos ya están listos; Great Revenue revisa qué falta para dejarla completa.'));
+    } else if (t === 'encender' || t === 'reanudar') {
+      var ap = pz.filter(function (z) { return z.estado === 'apagada' || z.estado === 'suspendida'; });
+      ap.forEach(function (z) { pasos.push((t === 'reanudar' ? 'Reanudar: ' : 'Encender: ') + z.nombre + de(z)); });
+      if (ap.some(function (z) { return z.prestada; })) avisos.push('Los pasos de otra compañía se encienden también para ella: Great Revenue lo revisa antes.');
+      if (!ap.length) avisos.push('No hay pasos apagados: Great Revenue revisa el estado al recibir el pedido.');
+    } else {
+      var verbo = t === 'apagar' ? 'Apagar: ' : 'Quitar: ';
+      var propios = pz.filter(function (z) { return !z.prestada && ACT.indexOf(z.estado) >= 0; }), prest = pz.filter(function (z) { return z.prestada && ACT.indexOf(z.estado) >= 0; });
+      propios.forEach(function (z) { pasos.push(verbo + z.nombre); });
+      // Un aviso por grupo de companias que comparten pasos (no uno por paso).
+      var grupos = {}; propios.forEach(function (z) { if ((z.comparten || []).length) { var k = z.comparten.join(', '); (grupos[k] = grupos[k] || []).push(z); } });
+      Object.keys(grupos).forEach(function (k) { var zs = grupos[k], uno = zs.length === 1; avisos.push((uno ? 'Este paso también lo usa ' : 'Estos ' + zs.length + ' pasos también los usa ') + k + ': ' + (t === 'apagar' ? 'apagar' : 'quitar') + (uno ? 'lo' : 'los') + (zs[0].comparten.length > 1 ? ' les afecta' : ' le afecta') + '. Great Revenue ' + (uno ? 'lo' : 'los') + ' separa antes de tocar' + (uno ? 'lo' : 'los') + (uno ? ' (' + zs[0].nombre + ').' : '.')); });
+      if (prest.length) avisos.push('Siguen funcionando porque son compartidos con ' + (prest[0].prestada_nombre || 'otra compañía') + ': ' + nom(prest) + '. Great Revenue te propone cómo ' + (t === 'apagar' ? 'apagarlos' : 'quitarlos') + ' solo para ' + cia + '.');
+      if (!propios.length && !prest.length) avisos.push(t === 'quitar' ? 'No hay pasos activos: el pedido solo la quita del plan de ' + cia + '.' : 'No hay pasos encendidos que apagar: Great Revenue revisa el estado.');
+    }
+    return { pasos: pasos, avisos: avisos };
+  };
   var campo = function (q, pref, forzarLargo) {
     var id = pref + q.id, ob = q.obligatoria ? '<span class="mp-ob" aria-hidden="true">*</span>' : '';
     var dep = q.requerida_si ? ' data-mp-si="' + h(q.requerida_si.id) + '" data-mp-si-valor="' + h(q.requerida_si.valor) + '" hidden' : '';
@@ -102,21 +139,7 @@
     MP.css();
     var f = o.f, qs = MP.preguntas(o.pa, f, o.que), t = TIPO[o.que] || o.que;
     var pedir = t === 'agregar' ? (f.pedir || []) : [], conectar = t === 'agregar' ? (f.conectar || []) : [];
-    // Lo que hace Great Revenue: lo pendiente de la funcion y sus pasos. Agregar una que no aplica: activar todos sus pasos;
-    // completar: construir lo que falta y encender lo apagado; encender o reanudar: los pasos apagados o pausados.
-    var pz = f.piezas || [], gr = [];
-    if (t === 'agregar') {
-      gr = (f.faltan || []).filter(function (x) { return x.quien === 'GR'; }).map(function (x) { return x.texto; });
-      if (f.estado === 'no_aplica') gr = gr.concat(pz.filter(function (z) { return !z.ajena; }).map(function (z) { return 'Activar: ' + z.nombre; }));
-      else gr = gr.concat(pz.filter(function (z) { return z.estado === 'falta'; }).map(function (z) { return 'Construir: ' + z.nombre; }), pz.filter(function (z) { return z.estado === 'apagada'; }).map(function (z) { return 'Encender: ' + z.nombre; }));
-    } else if (t === 'encender' || t === 'reanudar') gr = pz.filter(function (z) { return z.estado === 'apagada' || z.estado === 'suspendida'; }).map(function (z) { return (t === 'reanudar' ? 'Reanudar: ' : 'Encender: ') + z.nombre; });
-    else if (t === 'apagar') gr = pz.filter(function (z) { return z.estado === 'lista' && !z.prestada; }).map(function (z) { return 'Apagar: ' + z.nombre; });
-    else if (t === 'quitar') gr = pz.filter(function (z) { return ['lista', 'apagada', 'suspendida'].indexOf(z.estado) >= 0 && !z.prestada; }).map(function (z) { return 'Quitar: ' + z.nombre; });
-    // Sin pasos que mover: decir por que, en vez de dejar el recuadro vacio.
-    var compartidos = pz.filter(function (z) { return z.prestada && ['lista', 'apagada', 'suspendida'].indexOf(z.estado) >= 0; });
-    var avisoGR = '';
-    if (!gr.length && t === 'agregar') avisoGR = 'Esta función todavía no tiene pasos para ' + o.cia + ': Great Revenue la construye a su medida con tus respuestas.';
-    else if (!gr.length && (t === 'apagar' || t === 'quitar') && compartidos.length) avisoGR = 'Esta función usa pasos compartidos con ' + (compartidos[0].prestada_nombre || 'otra compañía') + ': no se puede ' + (t === 'apagar' ? 'apagar' : 'quitar') + ' solo para ' + o.cia + '. Great Revenue revisa el pedido y te propone cómo hacerlo.';
+    var pl = MP.plan(f, t, o.cia);
     var obl = qs.some(function (q) { return q.obligatoria; });
     o.caja.className = 'mp-form'; o.caja.hidden = false; o.caja.setAttribute('role', 'form'); o.caja.setAttribute('aria-label', o.etiqueta + ' ' + f.nombre);
     o.caja.innerHTML = '<h4>' + h(o.etiqueta) + ' «' + h(f.nombre) + '» para ' + h(o.cia) + '</h4>'
@@ -125,8 +148,7 @@
       + (qs.length ? '<p class="mp-sec">Preguntas</p>' + qs.map(function (q) { return campo(q, 'mpq-' + f.id + '-'); }).join('') : '')
       + (pedir.length ? '<p class="mp-sec">Datos que da la compañía</p>' + pedir.map(function (x) { return campo({ id: x.k, texto: x.texto, tipo: 'texto', obligatoria: false, ayuda: x.comprobado ? 'Todavía no está en su configuración. Escríbelo si ya lo tienes; si no, déjalo vacío y se lo pedimos a la compañía.' : 'Si la compañía ya lo dio, déjalo vacío.' }, 'mpr-' + f.id + '-').replace('data-mp-q=', 'data-mp-r="1" data-mp-q='); }).join('') : '')
       + (conectar.length ? '<div class="mp-gr"><b>La compañía lo conecta en su portal</b><ul>' + conectar.map(function (x) { return '<li>' + h(x.texto) + '</li>'; }).join('') + '</ul></div>' : '')
-      + (avisoGR ? '<div class="mp-gr"><b>Lo hace Great Revenue</b><p style="margin:4px 0 0">' + h(avisoGR) + '</p></div>' : '')
-      + (gr.length ? '<div class="mp-gr"><b>Lo hace Great Revenue</b><ul>' + gr.map(function (x) { return '<li>' + h(x) + '</li>'; }).join('') + '</ul></div>' : '')
+      + ((pl.pasos.length || pl.avisos.length) ? '<div class="mp-gr"><b>Lo hace Great Revenue</b>' + (pl.pasos.length ? '<ul>' + pl.pasos.map(function (x) { return '<li>' + h(x) + '</li>'; }).join('') + '</ul>' : '') + pl.avisos.map(function (x) { return '<p style="margin:6px 0 0">' + h(x) + '</p>'; }).join('') + '</div>' : '')
       + '<div class="mp-pie"><button class="mf-btn p" data-mp-enviar>Enviar pedido</button><button class="mf-btn" data-mp-cancelar>Cancelar</button><span class="mp-msg" role="status" aria-live="polite"></span></div>';
     activarOps(o.caja);
     var bE = o.caja.querySelector('[data-mp-enviar]'), bC = o.caja.querySelector('[data-mp-cancelar]'), msg = o.caja.querySelector('.mp-msg');
@@ -212,7 +234,9 @@
         b.disabled = true; msg.className = 'mp-msg'; msg.textContent = 'Enviando...';
         o.responder(id, resp).then(function (r) {
           if (!r || !r.ok) { b.disabled = false; msg.className = 'mp-msg bad'; msg.textContent = (r && r.error) || 'No se pudo guardar. Intenta otra vez.'; return; }
-          msg.className = 'mp-msg ok'; msg.textContent = r.mensaje || 'Guardado.'; setTimeout(function () { if (o.alTerminar) o.alTerminar(); }, 1400);
+          msg.className = 'mp-msg ok'; msg.textContent = r.mensaje || 'Guardado.';
+          Array.prototype.forEach.call(caja.querySelectorAll('[data-mp-q]'), function (q) { q.remove(); }); // lo enviado ya no cuenta como pendiente
+          setTimeout(function () { if (o.alTerminar) o.alTerminar(); }, 1400);
         }, function () { b.disabled = false; msg.className = 'mp-msg bad'; msg.textContent = 'Sin conexión. Revisa tu internet e intenta otra vez.'; });
       };
     });
