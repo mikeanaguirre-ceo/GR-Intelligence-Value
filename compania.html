@@ -11,6 +11,7 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
 <script src="/portal_comun.js?v=20261014c"></script>
+<script src="/motor_funciones.js?v=20261127a"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Portal de tu compañía</b></span><span class="quien" id="quien">Entra con tu cuenta de Google</span></div>
@@ -178,34 +179,19 @@
   function conectar(c, servicio, otra) { var cx = c.conexiones || {}; return cx.pagina + '?s=' + servicio + (otra ? '&otra=1' : '') + '&p=' + encodeURIComponent(ses() || ''); }
   // Funciones (motor de alta vA, 27-nov-2026): que funciones del motor tiene esta compania o area, cuales estan listas, que falta
   // y quien lo da. Se lee solo al abrir la pestana (sin refresco automatico).
-  var fnEstado = { bloque: 'todas', estado: 'todas', datos: null, tenant: '' };
-  var FN_BLOQUES = [['todas', 'Todas'], ['prospeccion', 'Prospección'], ['venta', 'Ciclo de venta'], ['reportes', 'Tablero y reportes'], ['portal', 'Portal']];
-  var FN_EST = { lista: ['Lista', 'aplicado'], falta: ['Falta', 'pendiente'], no_aplica: ['No aplica', 'descartado'] };
+  var fnEstado = { estado: 'todas', datos: null, tenant: '' };
+  // vB (27-nov-2026): arbol por modulo > funcion > pieza, con lo que pide cada modulo para darse de alta (motor_funciones.js).
   function funciones(c) {
-    var cuerpo = '<style>.fn-f{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.fn-f button{border:1px solid #ddd;background:#fff;border-radius:999px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}.fn-f button.on{background:var(--osc,#0c0c0c);color:#fff;border-color:var(--osc,#0c0c0c)}'
-      + '.fn-k{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}.fn-k div{flex:1;min-width:110px;background:#fff;border:1px solid #e5e5e5;border-radius:10px;padding:10px 12px}.fn-k b{display:block;font-size:24px}.fn-k span{font-size:12px;color:#5c5c5c}'
-      + '.fn{border:1px solid #e5e5e5;border-radius:10px;padding:12px;margin:0 0 10px;background:#fff}.fn h4{margin:0 0 4px;font-size:15px}.fn p{margin:4px 0;font-size:13px}.fn ul{margin:6px 0 0 18px;padding:0;font-size:13px}.fn li{margin:2px 0}.fn .quien{font-size:11px;font-weight:700;color:#5c5c5c;text-transform:uppercase;margin-left:6px}.fn .nota{font-size:12px;color:#5c5c5c}</style>'
-      + '<p style="margin:0">Aquí ves qué hace el motor para ' + h(c.datos.portal_nombre || c.datos.marca_nombre || c.tenant) + ': qué funciones ya están listas, a cuáles les falta algo y quién lo tiene que dar (tú o Great Revenue).</p>'
+    var cuerpo = '<p style="margin:0">Aquí ves qué hace el motor para ' + h(c.datos.portal_nombre || c.datos.marca_nombre || c.tenant) + ', por módulo: qué funciones ya están listas, a cuáles les falta algo y quién lo tiene que dar (tú o Great Revenue). Abre cada función para ver sus piezas.</p>'
       + '<div id="fn-box"><p class="vacio">Cargando las funciones...</p></div>';
     return tarjeta(3, 'Funciones', cuerpo + P.pedir('funciones', 'Funciones', 'Ej.: queremos activar los toques por WhatsApp') + P.solicitudes(c.solicitudes, 'Funciones'));
   }
   function pintarFunciones() {
-    var d = fnEstado.datos, box = $('fn-box'); if (!box || !d) return;
-    var cu = d.cuenta || {};
-    var filtroB = '<div class="fn-f">' + FN_BLOQUES.map(function (b) { return '<button data-fnb="' + b[0] + '" class="' + (fnEstado.bloque === b[0] ? 'on' : '') + '">' + b[1] + '</button>'; }).join('') + '</div>';
-    var filtroE = '<div class="fn-f">' + [['todas', 'Todos los estados'], ['lista', 'Listas'], ['falta', 'Les falta algo'], ['no_aplica', 'No aplican']].map(function (b) { return '<button data-fne="' + b[0] + '" class="' + (fnEstado.estado === b[0] ? 'on' : '') + '">' + b[1] + '</button>'; }).join('') + '</div>';
-    var lista = (d.funciones || []).filter(function (f) { return (fnEstado.bloque === 'todas' || f.bloque === fnEstado.bloque) && (fnEstado.estado === 'todas' || f.estado === fnEstado.estado); });
-    var orden = { falta: 0, lista: 1, no_aplica: 2 }; lista.sort(function (a, b) { return orden[a.estado] - orden[b.estado]; });
-    var items = lista.map(function (f) {
-      var e = FN_EST[f.estado] || ['', ''];
-      var falta = f.estado === 'falta' ? '<ul>' + (f.faltan || []).map(function (x) { return '<li>' + h(x.texto) + '<span class="quien">' + (x.quien === 'GR' ? 'Lo da Great Revenue' : 'Lo das tú') + '</span></li>'; }).join('') + '</ul>' : '';
-      var motivo = f.estado === 'no_aplica' && f.motivo ? '<p class="nota">' + h(f.motivo) + '</p>' : '';
-      return '<div class="fn"><h4>' + h(f.nombre) + ' <span class="chip ' + e[1] + '">' + e[0] + '</span></h4><p>' + h(f.resuelve) + '</p>' + falta + motivo + (f.nota ? '<p class="nota">' + h(f.nota) + '</p>' : '') + '</div>';
-    }).join('') || '<p class="vacio">No hay funciones con este filtro.</p>';
-    box.innerHTML = '<div class="fn-k"><div><b>' + (cu.lista || 0) + '</b><span>Listas</span></div><div><b>' + (cu.falta || 0) + '</b><span>Les falta algo</span></div><div><b>' + (cu.no_aplica || 0) + '</b><span>No aplican</span></div></div>'
+    var d = fnEstado.datos, box = $('fn-box'); if (!box || !d || !window.MF) return;
+    MF.css();
+    box.innerHTML = MF.resumen(d.cuenta)
       + '<p class="nota" style="margin:0">Modelo: ' + (d.modelo === 'solo_prospeccion' ? 'solo prospección (hasta la primera oportunidad)' : 'completo (prospección y todo el ciclo de venta)') + '. El estado de los procesos se revisa una vez al día.</p>'
-      + filtroB + filtroE + items;
-    Array.prototype.forEach.call(box.querySelectorAll('[data-fnb]'), function (b) { b.onclick = function () { fnEstado.bloque = b.getAttribute('data-fnb'); pintarFunciones(); }; });
+      + MF.filtros(fnEstado.estado, 'data-fne') + MF.arbol(d, { filtro: fnEstado.estado });
     Array.prototype.forEach.call(box.querySelectorAll('[data-fne]'), function (b) { b.onclick = function () { fnEstado.estado = b.getAttribute('data-fne'); pintarFunciones(); }; });
   }
   function activarFunciones(c) {
@@ -235,6 +221,12 @@
     var cx = c.conexiones || {}, adm = !!(c.info || {}).administra;
     var tarjetaServicio = function (s, titulo, texto, lista) {
       var hay = (lista || []).length, disp = cx.disponible && cx.disponible[s];
+      // 27-nov-2026: una unidad (p. ej. AWS de Itera) usa el CRM y el Amplemarket de su compania: se ven conectados, con su licencia, sin botones.
+      if (cx.compartidas && s !== 'google') {
+        var lic = ((cx.licencias || {})[s === 'hubspot' ? 'zoho' : s] || []);
+        return '<div class="servicio"><div class="servicio-h"><b>' + titulo + '</b>' + (hay ? '<span class="chip aplicado">Conectado · compartido con ' + h(cx.compartidas) + '</span>' : '<span class="chip pendiente">' + h(cx.compartidas) + ' aún no lo conecta</span>') + '</div><p class="vacio" style="margin:0">' + texto + ' Es la misma cuenta de ' + h(cx.compartidas) + ': lo administra ' + h(cx.compartidas) + ' y aquí no se cambia.</p>'
+          + lic.map(function (x) { return '<div class="liga">Licencia: <b>' + h(x.correo) + '</b> <span class="vacio">' + h(x.estado || '') + (x.buzon ? ' · buzón ' + h(x.buzon) : '') + (x.linkedin ? ' · LinkedIn conectado' : '') + (x.verificado ? ' · revisada ' + h(String(x.verificado).slice(0, 10)) : '') + '</span></div>'; }).join('') + '</div>';
+      }
       return '<div class="servicio"><div class="servicio-h"><b>' + titulo + '</b>' + (hay ? '<span class="chip aplicado">Conectado</span>' : '<span class="chip pendiente">Sin conectar</span>') + '</div><p class="vacio" style="margin:0">' + texto + '</p>'
         + (lista || []).map(function (x) {
           // Cuenta con la que esta conectado. Las conexiones viejas sin cuenta identificada piden volver a conectar para verla.
