@@ -42,7 +42,7 @@
     P.revelar();
   };
   // Nombre de negocio de cada estado de una solicitud (el mismo que usa el motor de alta).
-  var ESTADO_SOL = { pendiente: 'Pendiente', aplicado: 'Hecho', hecho: 'Hecho', descartado: 'Descartado', rechazado: 'Descartado' };
+  var ESTADO_SOL = { pendiente: 'Por revisar', aplicado: 'Hecho', hecho: 'Hecho', descartado: 'Descartado', rechazado: 'Descartado' };
   P.solicitudes = function (sol, filtro) {
     var xs = (sol || []).filter(function (s) { return !filtro || String(s.seccion).indexOf(filtro) === 0; });
     if (!xs.length) return '';

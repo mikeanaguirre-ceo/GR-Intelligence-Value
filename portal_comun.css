@@ -54,8 +54,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .muestra button{border:0;background:transparent;padding:8px 10px;text-align:left;font:inherit;font-size:13px;color:var(--osc);cursor:pointer;text-decoration:underline}
 .vacio{color:var(--g);font-size:13px;margin:0}
 .pedir{display:grid;gap:6px}.pedir textarea{min-height:56px}
-.sol{display:grid;gap:6px;margin:0;padding:0;list-style:none}.sol li{font-size:13px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:grid;gap:2px}
-.chip{display:inline-block;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;margin-right:6px}.chip.pendiente{background:#fff4e5;color:#7a4a00}.chip.aplicado{background:#e6f4ea;color:#1e6b34}.chip.descartado{background:#eee;color:#555}
+.sol{display:grid;gap:6px;margin:0;padding:0;list-style:none}.sol li{font-size:14px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:grid;gap:2px}
+.chip{display:inline-block;border-radius:999px;padding:2px 8px;font-size:14px;font-weight:700;margin-right:6px}.chip.pendiente{background:#fff4e5;color:#7a4a00}.chip.aplicado{background:#e6f4ea;color:#1e6b34}.chip.descartado{background:#eee;color:#555}
 /* Aviso en vivo con la marca */
 .prev{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;max-width:560px}
 .prev .ptop{padding:12px 16px}.prev .ptop img{height:34px;max-width:160px;object-fit:contain;display:block}

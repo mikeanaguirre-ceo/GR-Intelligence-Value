@@ -1,4 +1,4 @@
-// GR Intelligence: pedidos del motor de alta (vE, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
+// GR Intelligence: pedidos del motor de alta (vF, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
 // construir, las contestamos dentro del portal y despues empezamos a construir».
 // - MP.formulario: al pedir una funcion, las preguntas del catalogo (las comunes del tipo de pedido y las de la funcion), los datos que
 //   le faltan a la compania y las conexiones que hace en su portal, con lo obligatorio marcado y validado junto a cada campo.
@@ -7,6 +7,7 @@
 // vB (ronda 1 de auditoria): preguntas de seguimiento (requerida_si), conexiones aparte, letra de 14 px, avance con texto y no solo
 // color, campos con aria-required y su error ligado, una sola accion principal, fechas en palabras, colores propios por etapa,
 // textos segun el tipo de pedido y aviso cuando hay mas de 50.
+// vF (ronda 5): sin "Activar" en pasos ajenos; Apagar y Quitar dicen que pasos toca Great Revenue (los propios, no los compartidos).
 // vE (ronda 4): "Lo hace Great Revenue" tambien al agregar una que no aplica y al encender o reanudar.
 // vD (ronda 3): "Lo hace Great Revenue" con los pasos por construir o encender; pedidos repetidos marcados.
 // vC (ronda 2): Reanudar con sus preguntas y textos, "te toca contestar" solo con dudas sin respuesta, estado de hoy en el formulario.
@@ -105,9 +106,11 @@
     var pz = f.piezas || [], gr = [];
     if (t === 'agregar') {
       gr = (f.faltan || []).filter(function (x) { return x.quien === 'GR'; }).map(function (x) { return x.texto; });
-      if (f.estado === 'no_aplica') gr = gr.concat(pz.map(function (z) { return 'Activar: ' + z.nombre; }));
+      if (f.estado === 'no_aplica') gr = gr.concat(pz.filter(function (z) { return !z.ajena; }).map(function (z) { return 'Activar: ' + z.nombre; }));
       else gr = gr.concat(pz.filter(function (z) { return z.estado === 'falta'; }).map(function (z) { return 'Construir: ' + z.nombre; }), pz.filter(function (z) { return z.estado === 'apagada'; }).map(function (z) { return 'Encender: ' + z.nombre; }));
     } else if (t === 'encender' || t === 'reanudar') gr = pz.filter(function (z) { return z.estado === 'apagada' || z.estado === 'suspendida'; }).map(function (z) { return (t === 'reanudar' ? 'Reanudar: ' : 'Encender: ') + z.nombre; });
+    else if (t === 'apagar') gr = pz.filter(function (z) { return z.estado === 'lista' && !z.prestada; }).map(function (z) { return 'Apagar: ' + z.nombre; });
+    else if (t === 'quitar') gr = pz.filter(function (z) { return ['lista', 'apagada', 'suspendida'].indexOf(z.estado) >= 0 && !z.prestada; }).map(function (z) { return 'Quitar: ' + z.nombre; });
     var obl = qs.some(function (q) { return q.obligatoria; });
     o.caja.className = 'mp-form'; o.caja.hidden = false; o.caja.setAttribute('role', 'form'); o.caja.setAttribute('aria-label', o.etiqueta + ' ' + f.nombre);
     o.caja.innerHTML = '<h4>' + h(o.etiqueta) + ' «' + h(f.nombre) + '» para ' + h(o.cia) + '</h4>'
