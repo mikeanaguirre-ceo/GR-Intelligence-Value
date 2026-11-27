@@ -7,11 +7,11 @@
 <title>Portal de la compañía | Great Revenue Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="/portal_comun.css?v=20261127r">
+<link rel="stylesheet" href="/portal_comun.css?v=20261127s">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
-<script src="/portal_comun.js?v=20261127r"></script>
-<script src="/motor_funciones.js?v=20261127r"></script>
+<script src="/portal_comun.js?v=20261127s"></script>
+<script src="/motor_funciones.js?v=20261127s"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Portal de tu compañía</b></span><span class="quien" id="quien">Entra con tu cuenta de Google</span></div>
@@ -184,7 +184,7 @@
   function funciones(c) {
     var cuerpo = '<p style="margin:0">Aquí ves qué hace el motor para ' + h(c.datos.portal_nombre || c.datos.marca_nombre || c.tenant) + ', por módulo: qué funciones ya están listas, a cuáles les falta algo y quién lo tiene que dar (tú o Great Revenue). Toca «Ver cómo funciona» en cada función para ver el detalle.</p>'
       + '<div id="fn-box"><p class="vacio">Cargando las funciones...</p></div>';
-    return tarjeta(12, 'Funciones', cuerpo + P.pedir('funciones', 'Funciones', 'Ej.: queremos activar los toques por WhatsApp') + P.solicitudes(c.solicitudes, 'Funciones'));
+    return tarjeta(3, 'Funciones', cuerpo + P.pedir('funciones', 'Funciones', 'Ej.: queremos activar los toques por WhatsApp') + P.solicitudes(c.solicitudes, 'Funciones'));
   }
   function pintarFunciones() {
     var d = fnEstado.datos, box = $('fn-box'); if (!box || !d || !window.MF) return;

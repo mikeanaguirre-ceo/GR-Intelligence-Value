@@ -1,4 +1,4 @@
-// GR Intelligence: pedidos del motor de alta (vJ, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
+// GR Intelligence: pedidos del motor de alta (vK, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
 // construir, las contestamos dentro del portal y despues empezamos a construir».
 // - MP.formulario: al pedir una funcion, las preguntas del catalogo (las comunes del tipo de pedido y las de la funcion), los datos que
 //   le faltan a la compania y las conexiones que hace en su portal, con lo obligatorio marcado y validado junto a cada campo.
@@ -7,6 +7,8 @@
 // vB (ronda 1 de auditoria): preguntas de seguimiento (requerida_si), conexiones aparte, letra de 14 px, avance con texto y no solo
 // color, campos con aria-required y su error ligado, una sola accion principal, fechas en palabras, colores propios por etapa,
 // textos segun el tipo de pedido y aviso cuando hay mas de 50.
+// vK (ronda 10): respuestas a dudas guardadas como borrador (no se pierden al Actualizar ni si el pedido cambio); tras enviar
+// siempre se vuelve a leer; formulario enviado ya no cuenta como pendiente; "— es de" sin doble parentesis.
 // vJ (ronda 9): avisos de quien mas usa los pasos tambien al completar, encender o reanudar; pasos a mano fuera de Apagar;
 // tarjeta al dia al contestar todo sin recargar; total real de cerrados.
 // vI (ronda 8): avisos por fuente, singular y plural, «del motor común», apagar solo lo que corre, dudas sin contestar se quedan.
@@ -28,6 +30,9 @@
   MP.chip = function (e) { var x = MP.EST[e] || [e || 'Sin estado', 'mp-c-des']; return '<span class="mf-chip ' + x[1] + '">' + h(x[0]) + '</span>'; };
   var MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
   MP.fecha = function (s) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s || '')); return m ? Number(m[3]) + ' ' + MES[Number(m[2]) - 1] + ' ' + m[1] : String(s || ''); };
+  // Respuestas a dudas escritas y aun no enviadas (por pedido y duda): sobreviven a Actualizar y a repintar la pagina.
+  MP.borradores = {};
+  MP.hayBorradores = function () { return Object.keys(MP.borradores).some(function (k) { return String(MP.borradores[k] || '').trim(); }); };
   MP.css = function () {
     if (document.getElementById('mp-css')) return;
     var s = document.createElement('style'); s.id = 'mp-css';
@@ -68,7 +73,7 @@
     var pz = (f.piezas || []).filter(function (z) { return !z.ajena; }), pasos = [], avisos = [];
     // «de el motor común» -> «del motor común».
     var fuente = function (z) { var n = z.prestada_nombre || 'otra compañía'; return /^el /.test(n) ? 'del ' + n.slice(3) : 'de ' + n; };
-    var de = function (z) { return z.prestada ? ' (es ' + fuente(z) + ')' : ''; };
+    var de = function (z) { return z.prestada ? ' — es ' + fuente(z) : ''; };
     var lista = function (xs) { return xs.length < 2 ? xs.join('') : xs.slice(0, -1).join(', ') + ' y ' + xs[xs.length - 1]; };
     // Agrupa pasos compartidos por quien los da (un aviso por fuente, en singular o plural).
     var porFuente = function (zs, texto) {
@@ -197,7 +202,7 @@
           if (r && r.pregunta) { var q = o.caja.querySelector('[data-mp-q="' + r.pregunta + '"]:not([data-mp-r])'); if (q) { q.hidden = false; marcar(q, 'Contesta esta pregunta.'); q.scrollIntoView({ block: 'center' }); } }
           return;
         }
-        msg.className = 'mp-msg ok'; msg.textContent = r.mensaje || 'Pedido registrado.';
+        msg.className = 'mp-msg ok'; msg.textContent = r.mensaje || 'Pedido registrado.'; o.caja.setAttribute('data-enviado', '1'); // ya no cuenta como pendiente
         setTimeout(function () { if (o.alTerminar) o.alTerminar(); }, 1600);
       }, function () { bE.disabled = false; bC.disabled = false; msg.className = 'mp-msg bad'; msg.textContent = 'Sin conexión. Revisa tu internet e intenta otra vez.'; });
     };
@@ -226,7 +231,7 @@
   var tarjeta = function (p, nombre, principal, repetido) {
     var d = p.detalle || {}, abiertas = (d.dudas || []).filter(function (q) { return !q.respuesta; }), toca = MP.tocaContestar(p);
     var dudas = toca ? '<div data-mp-dudas="' + h(p.id) + '"><p class="mp-sec" style="margin:0 0 6px">' + (abiertas.length === 1 ? 'Great Revenue tiene 1 duda' : 'Great Revenue tiene ' + abiertas.length + ' dudas') + '</p>'
-      + abiertas.map(function (q) { return campo({ id: q.id, texto: q.pregunta, tipo: 'texto', obligatoria: false, ayuda: q.ayuda || '' }, 'mpd-' + p.id + '-', true); }).join('')
+      + abiertas.map(function (q) { return campo({ id: q.id, texto: q.pregunta, tipo: 'texto', obligatoria: false, ayuda: q.ayuda || '' }, 'mpd-' + p.id + '-', true).replace('></textarea>', '>' + h(MP.borradores[p.id + '|' + q.id] || '') + '</textarea>'); }).join('')
       + '<div class="mp-pie" style="margin-top:8px"><button class="mf-btn' + (principal ? ' p' : '') + '" data-mp-responder="' + h(p.id) + '">Enviar respuestas</button><span class="mp-msg" role="status" aria-live="polite"></span></div></div>' : '';
     return '<div class="mp-ped' + (toca ? ' toca' : '') + '"><div class="mp-cab"><span>' + MP.chip(p.estado) + ' <b>' + h(nombre) + '</b></span><span class="mf-sub">' + h(MP.fecha(p.fecha)) + '</span></div>'
       + '<div>' + h(p.origen === 'cliente' ? 'Lo pidió la compañía: ' + (p.instruccion || '') : titulo(p)) + '</div>'
@@ -253,6 +258,7 @@
   };
   MP.activarLista = function (raiz, o) {
     activarOps(raiz);
+    Array.prototype.forEach.call(raiz.querySelectorAll('[data-mp-dudas] textarea'), function (x) { x.addEventListener('input', function () { var caja = x.closest('[data-mp-dudas]'), q = x.closest('[data-mp-q]'); MP.borradores[caja.getAttribute('data-mp-dudas') + '|' + q.getAttribute('data-mp-q')] = x.value; }); });
     Array.prototype.forEach.call(raiz.querySelectorAll('[data-mp-responder]'), function (b) {
       b.onclick = function () {
         var id = b.getAttribute('data-mp-responder'), caja = raiz.querySelector('[data-mp-dudas="' + id + '"]'), msg = caja.querySelector('.mp-msg'), resp = {}, n = 0;
@@ -262,10 +268,8 @@
         o.responder(id, resp).then(function (r) {
           if (!r || !r.ok) { b.disabled = false; msg.className = 'mp-msg bad'; msg.textContent = (r && r.error) || 'No se pudo guardar. Intenta otra vez.'; return; }
           msg.className = 'mp-msg ok'; msg.textContent = r.mensaje || 'Guardado.';
-          // Lo contestado ya no cuenta como pendiente; lo que falta se queda para contestarlo despues (el boton se vuelve a activar).
-          Array.prototype.forEach.call(caja.querySelectorAll('[data-mp-q]'), function (q) { if (valor(q)) q.remove(); });
-          if (caja.querySelector('[data-mp-q]')) b.disabled = false;
-          if (r.estado === 'listo') { var tj = caja.closest('.mp-ped'), ch = tj && tj.querySelector('.mf-chip'); if (ch) ch.outerHTML = MP.chip('listo'); if (tj) tj.classList.remove('toca'); caja.innerHTML = '<p class="mp-msg ok" style="margin:0">' + h(r.mensaje || 'Listo para construir.') + ' Toca Actualizar para moverlo a En curso.</p>'; }
+          // Lo enviado sale de los borradores; lo escrito en otras dudas se queda guardado y la pagina se vuelve a leer (al dia).
+          Object.keys(resp).forEach(function (k) { delete MP.borradores[id + '|' + k]; });
           setTimeout(function () { if (o.alTerminar) o.alTerminar(); }, 1400);
         }, function () { b.disabled = false; msg.className = 'mp-msg bad'; msg.textContent = 'Sin conexión. Revisa tu internet e intenta otra vez.'; });
       };

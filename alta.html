@@ -7,12 +7,12 @@
 <title>Portal de alta | Great Revenue Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="/portal_comun.css?v=20261127r">
+<link rel="stylesheet" href="/portal_comun.css?v=20261127s">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
-<script src="/portal_comun.js?v=20261127r"></script>
-<script src="/motor_funciones.js?v=20261127r"></script>
-<script src="/motor_pedidos.js?v=20261127r"></script>
+<script src="/portal_comun.js?v=20261127s"></script>
+<script src="/motor_funciones.js?v=20261127s"></script>
+<script src="/motor_pedidos.js?v=20261127s"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Great Revenue Intelligence</b></span><span class="quien" id="quien">Portal de alta</span></div>
@@ -84,11 +84,12 @@
   var MA = { datos: null, cia: '', vista: 'tarjetas', abiertos: {} };
   // Si hay algo escrito sin enviar (formulario de pedido o respuestas a dudas), se pregunta antes de salir: no se pierde sin aviso.
   function maSinEnviar() {
-    var cajas = document.querySelectorAll('.mp-form:not([hidden]), [data-mp-dudas]');
+    // El formulario de pedido abierto y no enviado; las respuestas a dudas se guardan solas como borrador (MP.borradores).
+    var cajas = document.querySelectorAll('.mp-form:not([hidden]):not([data-enviado])');
     return Array.prototype.some.call(cajas, function (f) { return Array.prototype.some.call(f.querySelectorAll('input[type=text],textarea,input:checked'), function (x) { return x.type === 'radio' || x.value.trim(); }); });
   }
   // Recargar, cerrar la pestana o ir a otra liga tambien avisa (el navegador muestra su propio mensaje).
-  window.addEventListener('beforeunload', function (e) { if (estado.sel === '__motor' && maSinEnviar()) { e.preventDefault(); e.returnValue = ''; } });
+  window.addEventListener('beforeunload', function (e) { if (estado.sel === '__motor' && (maSinEnviar() || (window.MP && MP.hayBorradores()))) { e.preventDefault(); e.returnValue = ''; } });
   function maSeguro() { return estado.sel !== '__motor' || !maSinEnviar() || window.confirm('Tienes respuestas sin enviar. ¿Salir sin enviarlas?'); }
   function motorAlta(recargar) {
     estado.sel = '__motor'; if (!MOTOR_SOLO) pintarLista(); MF.css(); MP.css();
@@ -108,7 +109,7 @@
     var nombreDe = function (t) { return (cs.filter(function (x) { return x.tenant === t; })[0] || {}).nombre || t; };
     // Si hay dudas por contestar, es lo primero que se ve (una sola accion principal).
     var dudasAqui = MA.cia ? conDudas.filter(function (p) { return p.tenant === MA.cia; }) : conDudas;
-    var aviso = dudasAqui.length && (MA.cia || MA.vista !== 'pedidos') ? '<div class="mp-aviso"><span><b>' + (dudasAqui.length === 1 ? 'Tienes 1 pedido con dudas por contestar' : 'Tienes ' + dudasAqui.length + ' pedidos con dudas por contestar') + (MA.cia ? ' de esta compañía.' : '.') + '</b> Se construye cuando las contestes.</span><button class="mf-btn p" data-ma-ir-pedidos>Contestar</button></div>' : '';
+    var aviso = dudasAqui.length && (MA.cia || MA.vista !== 'pedidos') ? '<div class="mp-aviso"><span><b>' + (dudasAqui.length === 1 ? 'Tienes 1 pedido con dudas por contestar' : 'Tienes ' + dudasAqui.length + ' pedidos con dudas por contestar') + (MA.cia ? ' de esta compañía.' : '.') + '</b> Se construye cuando las contestes.</span><button class="mf-btn' + (MA.cia ? '' : ' p') + '" data-ma-ir-pedidos>Contestar</button></div>' : '';
     var fuera = (au.fuera_del_catalogo || []).length + (au.procesos_que_no_existen || []).length;
     var html;
     var barraSup = '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">'
@@ -158,7 +159,7 @@
     if (MA.vista === 'pedidos' && !MA.cia) MP.activarLista($('panel'), {
       responder: function (id, resp) { return P.api({ accion: 'alta_responder', sesion: ses(), id: id, respuestas: resp }).then(function (r) { if (r._codigo === 401) { salir(r.error); return { ok: false, error: r.error }; } return r; }); },
       // Si quedan respuestas escritas en otro pedido no se recarga (se perderian); el aviso de arriba dice que se guardo.
-      alTerminar: function () { if (!maSinEnviar()) motorAlta(true); } });
+      alTerminar: function () { motorAlta(true); } });
     Array.prototype.forEach.call(document.querySelectorAll('[data-ma-ir-pedidos]'), function (b) { b.onclick = function () { if (!maSeguro()) return; MA.cia = ''; MA.vista = 'pedidos'; pintarMotor(); irAlPanel(); }; });
   }
   function nueva() {
