@@ -7,11 +7,11 @@
 <title>Portal de la compañía | Great Revenue Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="/portal_comun.css?v=20261127p">
+<link rel="stylesheet" href="/portal_comun.css?v=20261127q">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
-<script src="/portal_comun.js?v=20261127p"></script>
-<script src="/motor_funciones.js?v=20261127p"></script>
+<script src="/portal_comun.js?v=20261127q"></script>
+<script src="/motor_funciones.js?v=20261127q"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Portal de tu compañía</b></span><span class="quien" id="quien">Entra con tu cuenta de Google</span></div>
@@ -189,8 +189,10 @@
   function pintarFunciones() {
     var d = fnEstado.datos, box = $('fn-box'); if (!box || !d || !window.MF) return;
     MF.css();
-    box.innerHTML = '<p class="nota" style="margin:0">Modelo: ' + (d.modelo === 'solo_prospeccion' ? 'solo prospección (hasta la primera oportunidad)' : 'prospección y todo el ciclo de venta') + '. El estado se revisa una vez al día.</p>' + MF.detalle(d, {});
+    box.innerHTML = '<p class="nota" style="margin:0">Modelo: ' + (d.modelo === 'solo_prospeccion' ? 'solo prospección (hasta la primera oportunidad)' : 'prospección y todo el ciclo de venta') + '. El estado se revisa una vez al día. <button class="s" id="fn-actualizar" style="margin-left:6px;min-height:40px">Actualizar</button></p>' + MF.detalle(d, {});
     MF.activarVer(box);
+    // Leer otra vez a peticion (sin refresco automatico).
+    if ($('fn-actualizar')) $('fn-actualizar').onclick = function () { var t = fnEstado.tenant, c = (estado.companias || []).filter(function (x) { return x.tenant === t; })[0]; if (!c) return; this.disabled = true; this.textContent = 'Actualizando...'; fnEstado.datos = null; activarFunciones(c); };
   }
   function activarFunciones(c) {
     fnEstado.pidiendo = c.tenant;

@@ -1,4 +1,4 @@
-// GR Intelligence: pedidos del motor de alta (vH, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
+// GR Intelligence: pedidos del motor de alta (vI, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
 // construir, las contestamos dentro del portal y despues empezamos a construir».
 // - MP.formulario: al pedir una funcion, las preguntas del catalogo (las comunes del tipo de pedido y las de la funcion), los datos que
 //   le faltan a la compania y las conexiones que hace en su portal, con lo obligatorio marcado y validado junto a cada campo.
@@ -7,6 +7,7 @@
 // vB (ronda 1 de auditoria): preguntas de seguimiento (requerida_si), conexiones aparte, letra de 14 px, avance con texto y no solo
 // color, campos con aria-required y su error ligado, una sola accion principal, fechas en palabras, colores propios por etapa,
 // textos segun el tipo de pedido y aviso cuando hay mas de 50.
+// vI (ronda 8): avisos por fuente, singular y plural, «del motor común», apagar solo lo que corre, dudas sin contestar se quedan.
 // vH (ronda 7): "Lo hace Great Revenue" en MP.plan para los seis tipos de pedido (pasos propios, compartidos, ajenos y quien mas
 // los usa); tras enviar no se recarga si hay otras respuestas escritas.
 // vG (ronda 6): aviso cuando no hay pasos propios (se construye a la medida) o cuando son compartidos con otra compania.
@@ -63,34 +64,44 @@
   // prestada) o ajeno (de otra compania o fuera del servicio); los propios pueden usarlos otras companias (comparten).
   MP.plan = function (f, t, cia) {
     var pz = (f.piezas || []).filter(function (z) { return !z.ajena; }), pasos = [], avisos = [];
-    var de = function (z) { return z.prestada ? ' (es de ' + (z.prestada_nombre || 'otra compañía') + ')' : ''; };
-    var nom = function (zs) { return zs.map(function (z) { return z.nombre; }).join(', '); };
-    var ACT = ['lista', 'apagada', 'suspendida'];
+    // «de el motor común» -> «del motor común».
+    var fuente = function (z) { var n = z.prestada_nombre || 'otra compañía'; return /^el /.test(n) ? 'del ' + n.slice(3) : 'de ' + n; };
+    var de = function (z) { return z.prestada ? ' (es ' + fuente(z) + ')' : ''; };
+    var lista = function (xs) { return xs.length < 2 ? xs.join('') : xs.slice(0, -1).join(', ') + ' y ' + xs[xs.length - 1]; };
+    // Agrupa pasos compartidos por quien los da (un aviso por fuente, en singular o plural).
+    var porFuente = function (zs, texto) {
+      var g = {}; zs.forEach(function (z) { var k = fuente(z); (g[k] = g[k] || []).push(z.nombre); });
+      Object.keys(g).forEach(function (k) { avisos.push(texto(g[k].length === 1, k, lista(g[k]))); });
+    };
+    var vb = { apagar: ['apagarlo', 'apagarlos'], quitar: ['quitarlo', 'quitarlos'] };
     if (t === 'agregar') {
       (f.faltan || []).forEach(function (x) { if (x.quien === 'GR') pasos.push(x.texto); });
       pz.forEach(function (z) {
         if (f.estado === 'no_aplica') pasos.push('Activar: ' + z.nombre + de(z));
-        else if (z.estado === 'falta') pasos.push('Construir: ' + z.nombre);
+        else if (z.estado === 'falta') pasos.push('Construir: ' + z.nombre + de(z));
         else if (z.estado === 'apagada') pasos.push('Encender: ' + z.nombre + de(z));
         else if (z.estado === 'suspendida') pasos.push('Reanudar: ' + z.nombre + de(z));
       });
-      if (pz.some(function (z) { return z.prestada && (z.estado === 'apagada' || z.estado === 'suspendida'); })) avisos.push('Los pasos de otra compañía se encienden también para ella: Great Revenue lo revisa antes.');
+      if (pz.some(function (z) { return z.prestada && z.prestada !== '*' && ['falta', 'apagada', 'suspendida'].indexOf(z.estado) >= 0; })) avisos.push('Los pasos de otra compañía cambian también para ella: Great Revenue lo revisa antes.');
       if (!pasos.length) avisos.push(!pz.length ? 'Esta función todavía no tiene pasos para ' + cia + ': Great Revenue la construye a su medida con tus respuestas.'
         : ((f.faltan || []).some(function (x) { return x.quien !== 'GR'; }) ? 'Los pasos ya están listos; lo que falta lo da la compañía (arriba).' : 'Los pasos ya están listos; Great Revenue revisa qué falta para dejarla completa.'));
     } else if (t === 'encender' || t === 'reanudar') {
       var ap = pz.filter(function (z) { return z.estado === 'apagada' || z.estado === 'suspendida'; });
       ap.forEach(function (z) { pasos.push((t === 'reanudar' ? 'Reanudar: ' : 'Encender: ') + z.nombre + de(z)); });
-      if (ap.some(function (z) { return z.prestada; })) avisos.push('Los pasos de otra compañía se encienden también para ella: Great Revenue lo revisa antes.');
+      if (ap.some(function (z) { return z.prestada && z.prestada !== '*'; })) avisos.push('Los pasos de otra compañía se encienden también para ella: Great Revenue lo revisa antes.');
       if (!ap.length) avisos.push('No hay pasos apagados: Great Revenue revisa el estado al recibir el pedido.');
     } else {
+      // Apagar: solo lo que esta corriendo. Quitar: todo lo construido (corriendo, apagado o pausado).
+      var vale = t === 'apagar' ? ['lista'] : ['lista', 'apagada', 'suspendida'];
       var verbo = t === 'apagar' ? 'Apagar: ' : 'Quitar: ';
-      var propios = pz.filter(function (z) { return !z.prestada && ACT.indexOf(z.estado) >= 0; }), prest = pz.filter(function (z) { return z.prestada && ACT.indexOf(z.estado) >= 0; });
+      var propios = pz.filter(function (z) { return !z.prestada && vale.indexOf(z.estado) >= 0; }), prest = pz.filter(function (z) { return z.prestada && vale.indexOf(z.estado) >= 0; });
       propios.forEach(function (z) { pasos.push(verbo + z.nombre); });
-      // Un aviso por grupo de companias que comparten pasos (no uno por paso).
-      var grupos = {}; propios.forEach(function (z) { if ((z.comparten || []).length) { var k = z.comparten.join(', '); (grupos[k] = grupos[k] || []).push(z); } });
-      Object.keys(grupos).forEach(function (k) { var zs = grupos[k], uno = zs.length === 1; avisos.push((uno ? 'Este paso también lo usa ' : 'Estos ' + zs.length + ' pasos también los usa ') + k + ': ' + (t === 'apagar' ? 'apagar' : 'quitar') + (uno ? 'lo' : 'los') + (zs[0].comparten.length > 1 ? ' les afecta' : ' le afecta') + '. Great Revenue ' + (uno ? 'lo' : 'los') + ' separa antes de tocar' + (uno ? 'lo' : 'los') + (uno ? ' (' + zs[0].nombre + ').' : '.')); });
-      if (prest.length) avisos.push('Siguen funcionando porque son compartidos con ' + (prest[0].prestada_nombre || 'otra compañía') + ': ' + nom(prest) + '. Great Revenue te propone cómo ' + (t === 'apagar' ? 'apagarlos' : 'quitarlos') + ' solo para ' + cia + '.');
-      if (!propios.length && !prest.length) avisos.push(t === 'quitar' ? 'No hay pasos activos: el pedido solo la quita del plan de ' + cia + '.' : 'No hay pasos encendidos que apagar: Great Revenue revisa el estado.');
+      // Un aviso por grupo de companias que usan los mismos pasos propios.
+      var grupos = {}; propios.forEach(function (z) { if ((z.comparten || []).length) { var k = lista(z.comparten); (grupos[k] = grupos[k] || { n: z.comparten.length, zs: [] }).zs.push(z.nombre); } });
+      Object.keys(grupos).forEach(function (k) { var g = grupos[k], uno = g.zs.length === 1, varias = g.n > 1;
+        avisos.push((uno ? '«' + g.zs[0] + '» también lo ' : 'Estos ' + g.zs.length + ' pasos también los ') + (varias ? 'usan ' : 'usa ') + k + ': ' + vb[t][uno ? 0 : 1] + (varias ? ' les afecta.' : ' le afecta.') + ' Great Revenue ' + (uno ? 'lo' : 'los') + ' separa antes de tocar' + (uno ? 'lo.' : 'los.')); });
+      porFuente(prest, function (uno, k, nombres) { return (uno ? 'No se ' + (t === 'apagar' ? 'apaga' : 'quita') + ' solo para ' + cia + ' porque es ' : 'No se ' + (t === 'apagar' ? 'apagan' : 'quitan') + ' solo para ' + cia + ' porque son ') + k + ': ' + nombres + '. Great Revenue te propone cómo hacerlo.'; });
+      if (!propios.length && !prest.length) avisos.push(t === 'quitar' ? 'No hay pasos construidos: el pedido solo la quita del plan de ' + cia + '.' : 'No hay pasos encendidos que apagar: Great Revenue revisa el estado.');
     }
     return { pasos: pasos, avisos: avisos };
   };
@@ -235,7 +246,9 @@
         o.responder(id, resp).then(function (r) {
           if (!r || !r.ok) { b.disabled = false; msg.className = 'mp-msg bad'; msg.textContent = (r && r.error) || 'No se pudo guardar. Intenta otra vez.'; return; }
           msg.className = 'mp-msg ok'; msg.textContent = r.mensaje || 'Guardado.';
-          Array.prototype.forEach.call(caja.querySelectorAll('[data-mp-q]'), function (q) { q.remove(); }); // lo enviado ya no cuenta como pendiente
+          // Lo contestado ya no cuenta como pendiente; lo que falta se queda para contestarlo despues (el boton se vuelve a activar).
+          Array.prototype.forEach.call(caja.querySelectorAll('[data-mp-q]'), function (q) { if (valor(q)) q.remove(); });
+          if (caja.querySelector('[data-mp-q]')) b.disabled = false;
           setTimeout(function () { if (o.alTerminar) o.alTerminar(); }, 1400);
         }, function () { b.disabled = false; msg.className = 'mp-msg bad'; msg.textContent = 'Sin conexión. Revisa tu internet e intenta otra vez.'; });
       };
