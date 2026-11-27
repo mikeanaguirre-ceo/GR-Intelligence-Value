@@ -63,7 +63,7 @@
           b.disabled = false;
           if (!d.ok) { P.msg('pm-' + id, 'bad', d.error || 'No se pudo enviar.'); return; }
           t.value = ''; P.msg('pm-' + id, 'ok', d.mensaje || 'Recibido.'); if (alTerminar) setTimeout(alTerminar, 900);
-        });
+        }, function () { b.disabled = false; P.msg('pm-' + id, 'bad', 'Sin conexión. Revisa tu internet e intenta otra vez.'); });
       };
     });
   };

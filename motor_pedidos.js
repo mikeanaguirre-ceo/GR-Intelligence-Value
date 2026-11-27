@@ -1,4 +1,4 @@
-// GR Intelligence: pedidos del motor de alta (vK, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
+// GR Intelligence: pedidos del motor de alta (vL, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
 // construir, las contestamos dentro del portal y despues empezamos a construir».
 // - MP.formulario: al pedir una funcion, las preguntas del catalogo (las comunes del tipo de pedido y las de la funcion), los datos que
 //   le faltan a la compania y las conexiones que hace en su portal, con lo obligatorio marcado y validado junto a cada campo.
@@ -7,6 +7,7 @@
 // vB (ronda 1 de auditoria): preguntas de seguimiento (requerida_si), conexiones aparte, letra de 14 px, avance con texto y no solo
 // color, campos con aria-required y su error ligado, una sola accion principal, fechas en palabras, colores propios por etapa,
 // textos segun el tipo de pedido y aviso cuando hay mas de 50.
+// vL (ronda 11): pasos que aun no existen en futuro (se construye en / lo usara); borradores viejos se descartan.
 // vK (ronda 10): respuestas a dudas guardadas como borrador (no se pierden al Actualizar ni si el pedido cambio); tras enviar
 // siempre se vuelve a leer; formulario enviado ya no cuenta como pendiente; "— es de" sin doble parentesis.
 // vJ (ronda 9): avisos de quien mas usa los pasos tambien al completar, encender o reanudar; pasos a mano fuera de Apagar;
@@ -92,12 +93,14 @@
       (f.faltan || []).forEach(function (x) { if (x.quien === 'GR') pasos.push(x.texto); });
       pz.forEach(function (z) {
         if (f.estado === 'no_aplica') pasos.push('Activar: ' + z.nombre + de(z));
-        else if (z.estado === 'falta') pasos.push('Construir: ' + z.nombre + de(z));
+        else if (z.estado === 'falta') pasos.push('Construir: ' + z.nombre + (z.se_construye_en ? ' — se construye en ' + z.se_construye_en + ' y la usarán las dos' : de(z)));
         else if (z.estado === 'apagada') pasos.push('Encender: ' + z.nombre + de(z));
         else if (z.estado === 'suspendida') pasos.push('Reanudar: ' + z.nombre + de(z));
       });
       // Activar una funcion que no aplica solo la enciende para esta compania; lo que cambia de estado si afecta a otros.
       if (f.estado !== 'no_aplica') otros(pz.filter(function (z) { return ['falta', 'apagada', 'suspendida'].indexOf(z.estado) >= 0; }));
+      // Pasos por construir que una unidad usara (aun no existen).
+      pz.filter(function (z) { return z.estado === 'falta' && (z.usaran || []).length; }).forEach(function (z) { avisos.push('«' + z.nombre + '» también lo usará ' + lista(z.usaran) + ' cuando esté construido.'); });
       if (!pasos.length) avisos.push(!pz.length ? 'Esta función todavía no tiene pasos para ' + cia + ': Great Revenue la construye a su medida con tus respuestas.'
         : ((f.faltan || []).some(function (x) { return x.quien !== 'GR'; }) ? 'Los pasos ya están listos; lo que falta lo da la compañía (arriba).' : 'Los pasos ya están listos; Great Revenue revisa qué falta para dejarla completa.'));
     } else if (t === 'encender' || t === 'reanudar') {
@@ -119,7 +122,9 @@
       Object.keys(grupos).forEach(function (k) { var g = grupos[k], uno = g.zs.length === 1, varias = g.n > 1;
         avisos.push((uno ? '«' + g.zs[0] + '» también lo ' : 'Estos ' + g.zs.length + ' pasos también los ') + (varias ? 'usan ' : 'usa ') + k + ': ' + vb[t][uno ? 0 : 1] + (varias ? ' les afecta.' : ' le afecta.') + ' Great Revenue ' + (uno ? 'lo' : 'los') + ' separa antes de tocar' + (uno ? 'lo.' : 'los.')); });
       porFuente(prest, function (uno, k, nombres) { return (uno ? 'No se ' + (t === 'apagar' ? 'apaga' : 'quita') + ' solo para ' + cia + ' porque es ' : 'No se ' + (t === 'apagar' ? 'apagan' : 'quitan') + ' solo para ' + cia + ' porque son ') + k + ': ' + nombres + '. Great Revenue te propone cómo hacerlo.'; });
-      if (!propios.length && !prest.length && !aMano.length) avisos.push(t === 'quitar' ? 'No hay pasos construidos: el pedido solo la quita del plan de ' + cia + '.' : 'No hay pasos encendidos que apagar: Great Revenue revisa el estado.');
+      // Al quitar: pasos que aun no existen pero que una unidad espera usar desde aqui.
+      if (t === 'quitar') pz.filter(function (z) { return z.estado === 'falta' && (z.usaran || []).length; }).forEach(function (z) { avisos.push(lista(z.usaran) + ' cuenta con que «' + z.nombre + '» se construya aquí: quitarla también se la quita.'); });
+      if (!propios.length && !prest.length && !aMano.length && !avisos.length) avisos.push(t === 'quitar' ? 'No hay pasos construidos: el pedido solo la quita del plan de ' + cia + '.' : 'No hay pasos encendidos que apagar: Great Revenue revisa el estado.');
     }
     return { pasos: pasos, avisos: avisos };
   };
@@ -243,6 +248,9 @@
     MP.css();
     var ps = o.pedidos || [];
     if (!ps.length) return '<p class="mf-vacio" style="margin:0">Aún no hay pedidos. Abre una compañía y usa el botón de cada función: antes de construir te pregunta lo necesario.</p>';
+    // Borradores de dudas que ya no esperan respuesta (contestadas o pedido cerrado en otra pestana): se descartan.
+    var vivos = {}; ps.forEach(function (p) { if (MP.tocaContestar(p)) ((p.detalle || {}).dudas || []).forEach(function (q) { if (!q.respuesta) vivos[p.id + '|' + q.id] = 1; }); });
+    Object.keys(MP.borradores).forEach(function (k) { if (!vivos[k]) delete MP.borradores[k]; });
     var g = { toca: [], curso: [], cerrados: [] }, LIM = 50, vistos = {}, rep = {};
     // Dos pedidos abiertos de la misma funcion (p. ej. enviados desde dos pestanas): el mas viejo se marca como repetido.
     ps.slice().reverse().forEach(function (p) { var m = /\[funcion=([a-z0-9_]+)\]/.exec(p.instruccion || ''); if (!m || !MP.abierto(p) || p.origen === 'cliente') return; var k = p.tenant + '|' + m[1]; if (vistos[k]) rep[vistos[k]] = 1; vistos[k] = p.id; });
