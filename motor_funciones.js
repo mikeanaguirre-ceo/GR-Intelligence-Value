@@ -45,7 +45,7 @@
   // Avance: funciones listas sobre las que le aplican (sin contar las que no aplican).
   MF.avance = function (cu) { cu = cu || {}; var ap = (cu.lista || 0) + (cu.falta || 0) + (cu.apagada || 0); // las pausadas por decision no cuentan
     return { listas: cu.lista || 0, aplican: ap, pct: ap ? Math.round(100 * (cu.lista || 0) / ap) : 0 }; };
-  MF.barra = function (cu) { var a = MF.avance(cu); return '<div class="mf-pct"><span><b>' + a.pct + '%</b> listo</span><span class="mf-sub">' + a.listas + ' de ' + a.aplican + ' funciones' + ((cu || {}).suspendida ? ' · ' + cu.suspendida + ' pausada' + (cu.suspendida > 1 ? 's' : '') + ' por decisión' : '') + '</span></div><div class="mf-bar"><i style="width:' + a.pct + '%"></i></div>'; };
+  MF.barra = function (cu) { var a = MF.avance(cu); return '<div class="mf-pct"><span><b>' + a.pct + '%</b> listo</span><span class="mf-sub">' + a.listas + ' de ' + a.aplican + (a.aplican === 1 ? ' función' : ' funciones') + ((cu || {}).suspendida ? ' · ' + cu.suspendida + ' pausada' + (cu.suspendida > 1 ? 's' : '') + ' por decisión' : '') + '</span></div><div class="mf-bar"><i style="width:' + a.pct + '%"></i></div>'; };
   var tipo = function (c) { return c.fuente === 'servicio_sdr' ? 'Servicio de prospección de GR' : (MF.MODELO[c.modelo] || c.modelo); };
   // Lo que falta, en corto: lo que da la compania (datos y conexiones) y lo que construye o enciende GR.
   MF.pendientes = function (c) {
@@ -96,7 +96,7 @@
         if (op.pedir) accion = pd ? '<span class="mf-chip mf-sus">Pedido</span>' : (ACCIONES[f.estado] || []).map(function (a, i) { return '<button class="mf-btn' + (i ? '' : ' p') + '" style="margin:0 0 4px 4px" data-mf-pedir="' + h(f.id) + '" data-mf-que="' + a[0] + '">' + a[1] + '</button>'; }).join('');
         var piezas = '<ul class="mf-pz" data-mf-pz="' + h(f.id) + '" hidden>' + (f.piezas || []).map(function (z) { return '<li>' + MF.chip(z.estado) + ' ' + h(z.nombre) + (z.prestada ? ' <span class="mf-sub">· usa ' + (z.prestada === '*' ? 'la del motor común' : 'la de ' + h(z.prestada_nombre || z.prestada)) + '</span>' : '') + (z.motivo ? ' <span class="mf-sub">· ' + h(z.motivo) + '</span>' : '') + '</li>'; }).join('') + '</ul>';
         return '<div class="mf-fn"><span class="mf-dot ' + e[1] + '" title="' + h(e[0]) + '"></span><div><div class="t">' + h(f.nombre) + ' <span class="mf-sub">· ' + h(e[0]) + '</span></div><div class="d">' + h(f.resuelve) + '</div>'
-          + (f.motivo ? '<div class="d">' + h(f.motivo) + '</div>' : '') + (q.length && f.estado !== 'no_aplica' ? '<div class="q">Falta: ' + h(q.join(' · ')) + '</div>' : '')
+          + (f.motivo ? '<div class="d">' + h(f.motivo) + '</div>' : '') + (f.nota ? '<div class="d">' + h(f.nota) + '</div>' : '') + (q.length && f.estado !== 'no_aplica' ? '<div class="q">Falta: ' + h(q.join(' · ')) + '</div>' : '')
           + (pd ? '<div class="d">Pedido el ' + h(pd.fecha) + ': ' + h(String(pd.instruccion || '').replace(/\s*\[funcion=[^\]]+\]/, '')) + '</div>' : '')
           + '<button class="mf-link" data-mf-ver="' + h(f.id) + '">Ver cómo funciona</button></div><div class="mf-acc">' + accion + '</div>' + piezas
           + (op.pedir ? '<div class="mf-conf" data-mf-conf="' + h(f.id) + '" hidden></div>' : '') + '</div>';
