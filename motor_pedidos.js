@@ -1,4 +1,4 @@
-// GR Intelligence: pedidos del motor de alta (vI, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
+// GR Intelligence: pedidos del motor de alta (vJ, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
 // construir, las contestamos dentro del portal y despues empezamos a construir».
 // - MP.formulario: al pedir una funcion, las preguntas del catalogo (las comunes del tipo de pedido y las de la funcion), los datos que
 //   le faltan a la compania y las conexiones que hace en su portal, con lo obligatorio marcado y validado junto a cada campo.
@@ -7,6 +7,8 @@
 // vB (ronda 1 de auditoria): preguntas de seguimiento (requerida_si), conexiones aparte, letra de 14 px, avance con texto y no solo
 // color, campos con aria-required y su error ligado, una sola accion principal, fechas en palabras, colores propios por etapa,
 // textos segun el tipo de pedido y aviso cuando hay mas de 50.
+// vJ (ronda 9): avisos de quien mas usa los pasos tambien al completar, encender o reanudar; pasos a mano fuera de Apagar;
+// tarjeta al dia al contestar todo sin recargar; total real de cerrados.
 // vI (ronda 8): avisos por fuente, singular y plural, «del motor común», apagar solo lo que corre, dudas sin contestar se quedan.
 // vH (ronda 7): "Lo hace Great Revenue" en MP.plan para los seis tipos de pedido (pasos propios, compartidos, ajenos y quien mas
 // los usa); tras enviar no se recarga si hay otras respuestas escritas.
@@ -73,7 +75,14 @@
       var g = {}; zs.forEach(function (z) { var k = fuente(z); (g[k] = g[k] || []).push(z.nombre); });
       Object.keys(g).forEach(function (k) { avisos.push(texto(g[k].length === 1, k, lista(g[k]))); });
     };
-    var vb = { apagar: ['apagarlo', 'apagarlos'], quitar: ['quitarlo', 'quitarlos'] };
+    var vb = { apagar: ['apagarlo', 'apagarlos'], quitar: ['quitarlo', 'quitarlos'], agregar: ['cambiarlo', 'cambiarlos'], encender: ['encenderlo', 'encenderlos'], reanudar: ['reanudarlo', 'reanudarlos'] };
+    // Quien mas usa los pasos que se tocan: los propios (comparten) y los que vienen de otra compania o del motor comun.
+    var otros = function (zs) {
+      var grupos = {}; zs.forEach(function (z) { if (!z.prestada && (z.comparten || []).length) { var k = lista(z.comparten); (grupos[k] = grupos[k] || { n: z.comparten.length, zs: [] }).zs.push(z.nombre); } });
+      Object.keys(grupos).forEach(function (k) { var g = grupos[k], uno = g.zs.length === 1, varias = g.n > 1;
+        avisos.push((uno ? '«' + g.zs[0] + '» también lo ' : 'Estos ' + g.zs.length + ' pasos también los ') + (varias ? 'usan ' : 'usa ') + k + ': ' + vb[t][uno ? 0 : 1] + (varias ? ' les afecta.' : ' le afecta.') + ' Great Revenue lo revisa antes de tocar' + (uno ? 'lo.' : 'los.')); });
+      porFuente(zs.filter(function (z) { return z.prestada; }), function (uno, k, nombres) { return (uno ? 'Este paso es ' : 'Estos pasos son ') + k + ': ' + nombres + '. ' + (uno ? 'Cambiarlo' : 'Cambiarlos') + ' también afecta a quien ' + (uno ? 'lo' : 'los') + ' usa; Great Revenue lo revisa antes.'; });
+    };
     if (t === 'agregar') {
       (f.faltan || []).forEach(function (x) { if (x.quien === 'GR') pasos.push(x.texto); });
       pz.forEach(function (z) {
@@ -82,26 +91,30 @@
         else if (z.estado === 'apagada') pasos.push('Encender: ' + z.nombre + de(z));
         else if (z.estado === 'suspendida') pasos.push('Reanudar: ' + z.nombre + de(z));
       });
-      if (pz.some(function (z) { return z.prestada && z.prestada !== '*' && ['falta', 'apagada', 'suspendida'].indexOf(z.estado) >= 0; })) avisos.push('Los pasos de otra compañía cambian también para ella: Great Revenue lo revisa antes.');
+      // Activar una funcion que no aplica solo la enciende para esta compania; lo que cambia de estado si afecta a otros.
+      if (f.estado !== 'no_aplica') otros(pz.filter(function (z) { return ['falta', 'apagada', 'suspendida'].indexOf(z.estado) >= 0; }));
       if (!pasos.length) avisos.push(!pz.length ? 'Esta función todavía no tiene pasos para ' + cia + ': Great Revenue la construye a su medida con tus respuestas.'
         : ((f.faltan || []).some(function (x) { return x.quien !== 'GR'; }) ? 'Los pasos ya están listos; lo que falta lo da la compañía (arriba).' : 'Los pasos ya están listos; Great Revenue revisa qué falta para dejarla completa.'));
     } else if (t === 'encender' || t === 'reanudar') {
       var ap = pz.filter(function (z) { return z.estado === 'apagada' || z.estado === 'suspendida'; });
       ap.forEach(function (z) { pasos.push((t === 'reanudar' ? 'Reanudar: ' : 'Encender: ') + z.nombre + de(z)); });
-      if (ap.some(function (z) { return z.prestada && z.prestada !== '*'; })) avisos.push('Los pasos de otra compañía se encienden también para ella: Great Revenue lo revisa antes.');
+      otros(ap);
       if (!ap.length) avisos.push('No hay pasos apagados: Great Revenue revisa el estado al recibir el pedido.');
     } else {
       // Apagar: solo lo que esta corriendo. Quitar: todo lo construido (corriendo, apagado o pausado).
       var vale = t === 'apagar' ? ['lista'] : ['lista', 'apagada', 'suspendida'];
       var verbo = t === 'apagar' ? 'Apagar: ' : 'Quitar: ';
-      var propios = pz.filter(function (z) { return !z.prestada && vale.indexOf(z.estado) >= 0; }), prest = pz.filter(function (z) { return z.prestada && vale.indexOf(z.estado) >= 0; });
+      // Un paso que se corre a mano no esta encendido: al apagar no se lista (se dice aparte).
+      var aMano = t === 'apagar' ? pz.filter(function (z) { return z.a_mano && z.estado === 'lista'; }) : [];
+      var propios = pz.filter(function (z) { return !z.prestada && vale.indexOf(z.estado) >= 0 && aMano.indexOf(z) < 0; }), prest = pz.filter(function (z) { return z.prestada && vale.indexOf(z.estado) >= 0 && aMano.indexOf(z) < 0; });
+      if (aMano.length) avisos.push((aMano.length === 1 ? 'Este paso se corre a mano, no está encendido: ' : 'Estos pasos se corren a mano, no están encendidos: ') + lista(aMano.map(function (z) { return z.nombre; })) + '.');
       propios.forEach(function (z) { pasos.push(verbo + z.nombre); });
       // Un aviso por grupo de companias que usan los mismos pasos propios.
       var grupos = {}; propios.forEach(function (z) { if ((z.comparten || []).length) { var k = lista(z.comparten); (grupos[k] = grupos[k] || { n: z.comparten.length, zs: [] }).zs.push(z.nombre); } });
       Object.keys(grupos).forEach(function (k) { var g = grupos[k], uno = g.zs.length === 1, varias = g.n > 1;
         avisos.push((uno ? '«' + g.zs[0] + '» también lo ' : 'Estos ' + g.zs.length + ' pasos también los ') + (varias ? 'usan ' : 'usa ') + k + ': ' + vb[t][uno ? 0 : 1] + (varias ? ' les afecta.' : ' le afecta.') + ' Great Revenue ' + (uno ? 'lo' : 'los') + ' separa antes de tocar' + (uno ? 'lo.' : 'los.')); });
       porFuente(prest, function (uno, k, nombres) { return (uno ? 'No se ' + (t === 'apagar' ? 'apaga' : 'quita') + ' solo para ' + cia + ' porque es ' : 'No se ' + (t === 'apagar' ? 'apagan' : 'quitan') + ' solo para ' + cia + ' porque son ') + k + ': ' + nombres + '. Great Revenue te propone cómo hacerlo.'; });
-      if (!propios.length && !prest.length) avisos.push(t === 'quitar' ? 'No hay pasos construidos: el pedido solo la quita del plan de ' + cia + '.' : 'No hay pasos encendidos que apagar: Great Revenue revisa el estado.');
+      if (!propios.length && !prest.length && !aMano.length) avisos.push(t === 'quitar' ? 'No hay pasos construidos: el pedido solo la quita del plan de ' + cia + '.' : 'No hay pasos encendidos que apagar: Great Revenue revisa el estado.');
     }
     return { pasos: pasos, avisos: avisos };
   };
@@ -233,7 +246,10 @@
       return '<div class="mp-grupo"><h3>' + t + ' (' + xs.length + ')</h3>' + (xs.length ? xs.slice(0, LIM).map(function (p, i) { return tarjeta(p, o.nombreDe(p.tenant), conPrincipal && i === 0, !!rep[p.id]); }).join('') : '<p class="mf-vacio" style="margin:0">' + vacio + '</p>')
         + (xs.length > LIM ? '<p class="mp-mas">Se muestran los ' + LIM + ' más recientes de ' + xs.length + '.</p>' : '') + '</div>';
     };
-    return (g.toca.length ? bloque('Te toca contestar', g.toca, '', true) : '') + bloque('En curso', g.curso, 'Nada en curso.') + (g.cerrados.length ? bloque('Cerrados', g.cerrados, '') : '');
+    var cerr = g.cerrados.length ? bloque('Cerrados', g.cerrados, '') : '';
+    // El motor manda los 200 cerrados mas recientes: el total real viene aparte.
+    if (o.cerradosTotal && o.cerradosTotal > g.cerrados.length) cerr = cerr.replace('Cerrados (' + g.cerrados.length + ')', 'Cerrados (' + o.cerradosTotal + ')').replace(/de \d+\.<\/p>/, 'de ' + o.cerradosTotal + '.</p>');
+    return (g.toca.length ? bloque('Te toca contestar', g.toca, '', true) : '') + bloque('En curso', g.curso, 'Nada en curso.') + cerr;
   };
   MP.activarLista = function (raiz, o) {
     activarOps(raiz);
@@ -249,6 +265,7 @@
           // Lo contestado ya no cuenta como pendiente; lo que falta se queda para contestarlo despues (el boton se vuelve a activar).
           Array.prototype.forEach.call(caja.querySelectorAll('[data-mp-q]'), function (q) { if (valor(q)) q.remove(); });
           if (caja.querySelector('[data-mp-q]')) b.disabled = false;
+          if (r.estado === 'listo') { var tj = caja.closest('.mp-ped'), ch = tj && tj.querySelector('.mf-chip'); if (ch) ch.outerHTML = MP.chip('listo'); if (tj) tj.classList.remove('toca'); caja.innerHTML = '<p class="mp-msg ok" style="margin:0">' + h(r.mensaje || 'Listo para construir.') + ' Toca Actualizar para moverlo a En curso.</p>'; }
           setTimeout(function () { if (o.alTerminar) o.alTerminar(); }, 1400);
         }, function () { b.disabled = false; msg.className = 'mp-msg bad'; msg.textContent = 'Sin conexión. Revisa tu internet e intenta otra vez.'; });
       };

@@ -7,12 +7,12 @@
 <title>Portal de alta | Great Revenue Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="/portal_comun.css?v=20261127q">
+<link rel="stylesheet" href="/portal_comun.css?v=20261127r">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
-<script src="/portal_comun.js?v=20261127q"></script>
-<script src="/motor_funciones.js?v=20261127q"></script>
-<script src="/motor_pedidos.js?v=20261127q"></script>
+<script src="/portal_comun.js?v=20261127r"></script>
+<script src="/motor_funciones.js?v=20261127r"></script>
+<script src="/motor_pedidos.js?v=20261127r"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Great Revenue Intelligence</b></span><span class="quien" id="quien">Portal de alta</span></div>
@@ -107,7 +107,8 @@
     var pendientes = ped.filter(MP.abierto), conDudas = ped.filter(MP.tocaContestar);
     var nombreDe = function (t) { return (cs.filter(function (x) { return x.tenant === t; })[0] || {}).nombre || t; };
     // Si hay dudas por contestar, es lo primero que se ve (una sola accion principal).
-    var aviso = conDudas.length && MA.vista !== 'pedidos' && !MA.cia ? '<div class="mp-aviso"><span><b>' + (conDudas.length === 1 ? 'Tienes 1 pedido con dudas por contestar.' : 'Tienes ' + conDudas.length + ' pedidos con dudas por contestar.') + '</b> Se construye cuando las contestes.</span><button class="mf-btn p" data-ma-ir-pedidos>Contestar</button></div>' : '';
+    var dudasAqui = MA.cia ? conDudas.filter(function (p) { return p.tenant === MA.cia; }) : conDudas;
+    var aviso = dudasAqui.length && (MA.cia || MA.vista !== 'pedidos') ? '<div class="mp-aviso"><span><b>' + (dudasAqui.length === 1 ? 'Tienes 1 pedido con dudas por contestar' : 'Tienes ' + dudasAqui.length + ' pedidos con dudas por contestar') + (MA.cia ? ' de esta compañía.' : '.') + '</b> Se construye cuando las contestes.</span><button class="mf-btn p" data-ma-ir-pedidos>Contestar</button></div>' : '';
     var fuera = (au.fuera_del_catalogo || []).length + (au.procesos_que_no_existen || []).length;
     var html;
     var barraSup = '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">'
@@ -121,7 +122,7 @@
     } else if (MA.vista === 'tabla') {
       html = barraSup + '<div class="mf-box"><h2>Comparar todas</h2><p class="mf-sub" style="margin:0">Cada punto es el estado de una función en una compañía. Toca el nombre de una compañía para abrirla.</p>' + MF.matriz(cs) + '</div>';
     } else if (MA.vista === 'pedidos') {
-      html = barraSup + '<div class="mf-box"><h2>Pedidos</h2><p class="mf-sub" style="margin:0">Cada pedido pasa por: lo pides con sus respuestas, Great Revenue lo revisa, contestas sus dudas si las hay, se construye y queda hecho.</p>' + MP.lista({ pedidos: ped, nombreDe: nombreDe }) + '</div>';
+      html = barraSup + '<div class="mf-box"><h2>Pedidos</h2><p class="mf-sub" style="margin:0">Cada pedido pasa por: lo pides con sus respuestas, Great Revenue lo revisa, contestas sus dudas si las hay, se construye y queda hecho.</p>' + MP.lista({ pedidos: ped, nombreDe: nombreDe, cerradosTotal: d.pedidos_cerrados_total }) + '</div>';
     } else {
       var tot = cs.reduce(function (a, c) { var x = MF.avance(c.cuenta); a.l += x.listas; a.t += x.aplican; return a; }, { l: 0, t: 0 });
       html = barraSup
