@@ -11,7 +11,7 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
 <script src="/portal_comun.js?v=20261014c"></script>
-<script src="/motor_funciones.js?v=20261127c"></script>
+<script src="/motor_funciones.js?v=20261127d"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Portal de tu compañía</b></span><span class="quien" id="quien">Entra con tu cuenta de Google</span></div>
@@ -193,8 +193,8 @@
     MF.activarVer(box);
   }
   function activarFunciones(c) {
-    if (fnEstado.datos && fnEstado.tenant === c.tenant) { pintarFunciones(); return; }
     fnEstado.pidiendo = c.tenant;
+    if (fnEstado.datos && fnEstado.tenant === c.tenant) { pintarFunciones(); return; }
     var box = function () { return $('fn-box'); };
     P.api({ accion: 'funciones', sesion: ses(), tenant: c.tenant }).then(function (d) {
       if (fnEstado.pidiendo !== c.tenant) return; // ya se eligio otra compania

@@ -78,7 +78,7 @@
   // Detalle de una compania. op: { pedir: bool, pedidos: [...], abiertos: {modulo: true} }
   MF.detalle = function (c, op) {
     op = op || {};
-    var pend = {}; (op.pedidos || []).forEach(function (p) { if (p.tenant === c.tenant && p.estado === 'pendiente') { var m = /\[funcion=([a-z0-9_]+)\]/.exec(p.instruccion || ''); if (m) pend[m[1]] = p; } });
+    var pend = {}; (op.pedidos || []).forEach(function (p) { if (p.tenant === c.tenant && p.estado === 'pendiente') { var m = /\[funcion=([a-z0-9_]+)\]\s*$/.exec(p.instruccion || ''); if (m) pend[m[1]] = p; } });
     var p = MF.pendientes(c);
     var lst = function (xs, vacio) { return xs.length ? '<ul>' + xs.map(function (x) { return '<li>' + h(x) + '</li>'; }).join('') + '</ul>' : '<p class="mf-vacio" style="margin:0">' + vacio + '</p>'; };
     var resumen = '<div class="mf-box"><div>' + MF.barra(c.cuenta) + '</div>'
@@ -94,7 +94,7 @@
         var q = (f.faltan || []).map(function (x) { return x.texto; });
         var accion = '';
         if (op.pedir) accion = pd ? '<span class="mf-chip mf-sus">Pedido</span>' : (ACCIONES[f.estado] || []).map(function (a, i) { return '<button class="mf-btn' + (i ? '' : ' p') + '" style="margin:0 0 4px 4px" data-mf-pedir="' + h(f.id) + '" data-mf-que="' + a[0] + '">' + a[1] + '</button>'; }).join('');
-        var piezas = '<ul class="mf-pz" data-mf-pz="' + h(f.id) + '" hidden>' + (f.piezas || []).map(function (z) { return '<li>' + MF.chip(z.estado) + ' ' + h(z.nombre) + (z.prestada ? ' <span class="mf-sub">(usa ' + (z.prestada === '*' ? 'la del motor común' : 'la de ' + h(z.prestada_nombre || z.prestada)) + ')</span>' : '') + (z.motivo ? ' <span class="mf-sub">· ' + h(z.motivo) + '</span>' : '') + '</li>'; }).join('') + '</ul>';
+        var piezas = '<ul class="mf-pz" data-mf-pz="' + h(f.id) + '" hidden>' + (f.piezas || []).map(function (z) { return '<li>' + MF.chip(z.estado) + ' ' + h(z.nombre) + (z.prestada ? ' <span class="mf-sub">· usa ' + (z.prestada === '*' ? 'la del motor común' : 'la de ' + h(z.prestada_nombre || z.prestada)) + '</span>' : '') + (z.motivo ? ' <span class="mf-sub">· ' + h(z.motivo) + '</span>' : '') + '</li>'; }).join('') + '</ul>';
         return '<div class="mf-fn"><span class="mf-dot ' + e[1] + '" title="' + h(e[0]) + '"></span><div><div class="t">' + h(f.nombre) + ' <span class="mf-sub">· ' + h(e[0]) + '</span></div><div class="d">' + h(f.resuelve) + '</div>'
           + (f.motivo ? '<div class="d">' + h(f.motivo) + '</div>' : '') + (q.length && f.estado !== 'no_aplica' ? '<div class="q">Falta: ' + h(q.join(' · ')) + '</div>' : '')
           + (pd ? '<div class="d">Pedido el ' + h(pd.fecha) + ': ' + h(String(pd.instruccion || '').replace(/\s*\[funcion=[^\]]+\]/, '')) + '</div>' : '')
