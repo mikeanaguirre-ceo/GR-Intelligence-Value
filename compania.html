@@ -66,8 +66,8 @@
   function abrir(u) { return /^https:\/\//.test(u || '') ? '<a href="' + h(u.split(/\s+/)[0]) + '" target="_blank" rel="noopener">Abrir</a>' : '—'; }
   function tarjeta(n, titulo, cuerpo, extra) { return '<div class="card"><div class="card-h"><h2><span class="num">' + n + '</span>' + h(titulo) + '</h2>' + (extra || '') + '</div>' + cuerpo + '</div>'; }
   function seccion(n, id, titulo, cuerpo, c, ejemplo) { return tarjeta(n, titulo, cuerpo + P.pedir(id, titulo, ejemplo) + P.solicitudes(c.solicitudes, titulo)); }
-  var PESTANAS = [['equipo', 'Equipo'], ['conexiones', 'Conexiones'], ['marca', 'Tu marca y tus correos'], ['fases', 'Fases del pipeline'], ['productos', 'Productos'], ['mejoras', 'Mejoras de mensajes'], ['proceso', 'Objetivos, reuniones y proceso']];
-  var pestana = (/^#(equipo|conexiones|marca|fases|productos|mejoras|proceso)(\?.*)?$/.exec(location.hash) || [])[1] || 'equipo';
+  var PESTANAS = [['equipo', 'Equipo'], ['conexiones', 'Conexiones'], ['funciones', 'Funciones'], ['marca', 'Tu marca y tus correos'], ['fases', 'Fases del pipeline'], ['productos', 'Productos'], ['mejoras', 'Mejoras de mensajes'], ['proceso', 'Objetivos, reuniones y proceso']];
+  var pestana = (/^#(equipo|conexiones|funciones|marca|fases|productos|mejoras|proceso)(\?.*)?$/.exec(location.hash) || [])[1] || 'equipo';
   // Liga "Corregir este mensaje" de los correos: #mejoras?c=<datos del mensaje en base64url>. Se lee una vez y se limpia de la barra.
   var mensajeLiga = (function () {
     var m = /[?&]c=([A-Za-z0-9_-]+)/.exec(location.hash || ''); if (!m) return null;
@@ -81,12 +81,13 @@
     P.aplicarMarca(d, 'Portal de ' + (d.portal_nombre || d.marca_nombre || t), 'Tu equipo, tus conexiones y cómo salen tus correos.');
     document.title = 'Portal de ' + (d.marca_nombre || t);
     var html = '<nav class="tabs" role="tablist">' + PESTANAS.map(function (p) { return '<button role="tab" class="tab' + (p[0] === pestana ? ' on' : '') + '" data-tab="' + p[0] + '" aria-selected="' + (p[0] === pestana) + '">' + p[1] + '</button>'; }).join('') + '</nav>';
-    html += '<div id="contenido">' + ({ equipo: equipo, conexiones: conexiones, marca: marca, fases: fases, productos: productos, mejoras: mejoras, proceso: proceso }[pestana])(c) + '</div>';
+    html += '<div id="contenido">' + ({ equipo: equipo, conexiones: conexiones, funciones: funciones, marca: marca, fases: fases, productos: productos, mejoras: mejoras, proceso: proceso }[pestana])(c) + '</div>';
     $('panel').innerHTML = html;
     Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function (b) { b.onclick = function () { pestana = b.getAttribute('data-tab'); try { history.replaceState(null, '', '#' + pestana); } catch (e) {} elegir(t); }; });
     P.activarPedir(ses, t, cargar);
     if (pestana === 'equipo') activarEquipo(c);
     if (pestana === 'conexiones') activarConexiones(c);
+    if (pestana === 'funciones') activarFunciones(c);
     if (pestana === 'fases') activarFases(c);
     if (pestana === 'productos') activarProductos(c);
     if (pestana === 'mejoras') activarMejoras(c);
@@ -175,6 +176,46 @@
   // Liga para conectar un servicio: va a la pagina oficial del servicio y regresa a esta pestana.
   // Liga para dar de alta un servicio: pagina del sitio con la ruta de la compania (nunca la direccion del motor).
   function conectar(c, servicio, otra) { var cx = c.conexiones || {}; return cx.pagina + '?s=' + servicio + (otra ? '&otra=1' : '') + '&p=' + encodeURIComponent(ses() || ''); }
+  // Funciones (motor de alta vA, 27-nov-2026): que funciones del motor tiene esta compania o area, cuales estan listas, que falta
+  // y quien lo da. Se lee solo al abrir la pestana (sin refresco automatico).
+  var fnEstado = { bloque: 'todas', estado: 'todas', datos: null, tenant: '' };
+  var FN_BLOQUES = [['todas', 'Todas'], ['prospeccion', 'Prospección'], ['venta', 'Ciclo de venta'], ['reportes', 'Tablero y reportes'], ['portal', 'Portal']];
+  var FN_EST = { lista: ['Lista', 'aplicado'], falta: ['Falta', 'pendiente'], no_aplica: ['No aplica', 'descartado'] };
+  function funciones(c) {
+    var cuerpo = '<style>.fn-f{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.fn-f button{border:1px solid #ddd;background:#fff;border-radius:999px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}.fn-f button.on{background:var(--osc,#0c0c0c);color:#fff;border-color:var(--osc,#0c0c0c)}'
+      + '.fn-k{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}.fn-k div{flex:1;min-width:110px;background:#fff;border:1px solid #e5e5e5;border-radius:10px;padding:10px 12px}.fn-k b{display:block;font-size:24px}.fn-k span{font-size:12px;color:#5c5c5c}'
+      + '.fn{border:1px solid #e5e5e5;border-radius:10px;padding:12px;margin:0 0 10px;background:#fff}.fn h4{margin:0 0 4px;font-size:15px}.fn p{margin:4px 0;font-size:13px}.fn ul{margin:6px 0 0 18px;padding:0;font-size:13px}.fn li{margin:2px 0}.fn .quien{font-size:11px;font-weight:700;color:#5c5c5c;text-transform:uppercase;margin-left:6px}.fn .nota{font-size:12px;color:#5c5c5c}</style>'
+      + '<p style="margin:0">Aquí ves qué hace el motor para ' + h(c.datos.portal_nombre || c.datos.marca_nombre || c.tenant) + ': qué funciones ya están listas, a cuáles les falta algo y quién lo tiene que dar (tú o Great Revenue).</p>'
+      + '<div id="fn-box"><p class="vacio">Cargando las funciones...</p></div>';
+    return tarjeta(3, 'Funciones', cuerpo + P.pedir('funciones', 'Funciones', 'Ej.: queremos activar los toques por WhatsApp') + P.solicitudes(c.solicitudes, 'Funciones'));
+  }
+  function pintarFunciones() {
+    var d = fnEstado.datos, box = $('fn-box'); if (!box || !d) return;
+    var cu = d.cuenta || {};
+    var filtroB = '<div class="fn-f">' + FN_BLOQUES.map(function (b) { return '<button data-fnb="' + b[0] + '" class="' + (fnEstado.bloque === b[0] ? 'on' : '') + '">' + b[1] + '</button>'; }).join('') + '</div>';
+    var filtroE = '<div class="fn-f">' + [['todas', 'Todos los estados'], ['lista', 'Listas'], ['falta', 'Les falta algo'], ['no_aplica', 'No aplican']].map(function (b) { return '<button data-fne="' + b[0] + '" class="' + (fnEstado.estado === b[0] ? 'on' : '') + '">' + b[1] + '</button>'; }).join('') + '</div>';
+    var lista = (d.funciones || []).filter(function (f) { return (fnEstado.bloque === 'todas' || f.bloque === fnEstado.bloque) && (fnEstado.estado === 'todas' || f.estado === fnEstado.estado); });
+    var orden = { falta: 0, lista: 1, no_aplica: 2 }; lista.sort(function (a, b) { return orden[a.estado] - orden[b.estado]; });
+    var items = lista.map(function (f) {
+      var e = FN_EST[f.estado] || ['', ''];
+      var falta = f.estado === 'falta' ? '<ul>' + (f.faltan || []).map(function (x) { return '<li>' + h(x.texto) + '<span class="quien">' + (x.quien === 'GR' ? 'Lo da Great Revenue' : 'Lo das tú') + '</span></li>'; }).join('') + '</ul>' : '';
+      var motivo = f.estado === 'no_aplica' && f.motivo ? '<p class="nota">' + h(f.motivo) + '</p>' : '';
+      return '<div class="fn"><h4>' + h(f.nombre) + ' <span class="chip ' + e[1] + '">' + e[0] + '</span></h4><p>' + h(f.resuelve) + '</p>' + falta + motivo + (f.nota ? '<p class="nota">' + h(f.nota) + '</p>' : '') + '</div>';
+    }).join('') || '<p class="vacio">No hay funciones con este filtro.</p>';
+    box.innerHTML = '<div class="fn-k"><div><b>' + (cu.lista || 0) + '</b><span>Listas</span></div><div><b>' + (cu.falta || 0) + '</b><span>Les falta algo</span></div><div><b>' + (cu.no_aplica || 0) + '</b><span>No aplican</span></div></div>'
+      + '<p class="nota" style="margin:0">Modelo: ' + (d.modelo === 'solo_prospeccion' ? 'solo prospección (hasta la primera oportunidad)' : 'completo (prospección y todo el ciclo de venta)') + '. El estado de los procesos se revisa una vez al día.</p>'
+      + filtroB + filtroE + items;
+    Array.prototype.forEach.call(box.querySelectorAll('[data-fnb]'), function (b) { b.onclick = function () { fnEstado.bloque = b.getAttribute('data-fnb'); pintarFunciones(); }; });
+    Array.prototype.forEach.call(box.querySelectorAll('[data-fne]'), function (b) { b.onclick = function () { fnEstado.estado = b.getAttribute('data-fne'); pintarFunciones(); }; });
+  }
+  function activarFunciones(c) {
+    if (fnEstado.datos && fnEstado.tenant === c.tenant) { pintarFunciones(); return; }
+    P.api({ accion: 'funciones', sesion: ses(), tenant: c.tenant }).then(function (d) {
+      if (d._codigo === 401) { salir(d.error); return; }
+      if (!d.ok) { if ($('fn-box')) $('fn-box').innerHTML = '<p class="msg bad">' + h(d.error || 'No se pudieron leer las funciones.') + '</p>'; return; }
+      fnEstado.datos = d; fnEstado.tenant = c.tenant; pintarFunciones();
+    });
+  }
   function activarConexiones(c) {
     Array.prototype.forEach.call(document.querySelectorAll('[data-quitar-servicio]'), function (b) {
       b.onclick = function () {
