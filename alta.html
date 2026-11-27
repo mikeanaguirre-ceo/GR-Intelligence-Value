@@ -11,7 +11,7 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
 <script src="/portal_comun.js?v=20261014c"></script>
-<script src="/motor_funciones.js?v=20261127a"></script>
+<script src="/motor_funciones.js?v=20261127c"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Great Revenue Intelligence</b></span><span class="quien" id="quien">Portal de alta</span></div>
@@ -35,6 +35,7 @@
   var LLAVE = 'gr_sesion';
   var estado = { companias: [], sel: null, muestras: {} };
   var EDITABLE = true;
+  var MOTOR_SOLO = /^\/gr\/motor/.test(location.pathname);
   var ses = function () { return P.sesion(LLAVE); };
   function salir(motivo) { P.sesion(LLAVE, null); $('v-portal').hidden = true; $('v-entrar').hidden = false; $('quien').textContent = 'Portal de alta'; $('m-entrar').textContent = motivo || ''; }
 
@@ -54,6 +55,13 @@
       estado.companias = d.companias; $('v-entrar').hidden = true; $('v-portal').hidden = false;
       $('quien').textContent = d.usuario.nombre + ' · ' + d.usuario.email;
       var gr = d.companias.filter(function (c) { return c.tenant === 'GR'; })[0];
+      if (MOTOR_SOLO) {
+        // Liga directa /gr/motor: el motor de alta a todo lo ancho, sin la lista de companias del portal de alta.
+        if (gr) P.aplicarMarca(gr.datos, 'Motor de alta', 'Qué tiene cada compañía, qué le falta y quién lo da. Pide cambios con un botón.');
+        document.title = 'Motor de alta | Great Revenue Intelligence';
+        $('lista').hidden = true; document.querySelector('.grid').style.gridTemplateColumns = '1fr';
+        motorAlta(); return;
+      }
       if (gr) P.aplicarMarca(gr.datos, 'Portal de alta', 'Configuración inicial de cada compañía. Cada sección se guarda por separado.');
       pintarLista(); elegir(estado.sel || (d.companias[0] && d.companias[0].tenant));
     });
@@ -65,69 +73,77 @@
     }).join('') + '<button class="nueva" id="nueva">+ Nueva compañía</button>';
     Array.prototype.forEach.call(document.querySelectorAll('.cia'), function (b) { b.onclick = function () { elegir(b.getAttribute('data-t')); }; });
     $('nueva').onclick = nueva;
-    $('motor-alta').onclick = function () { motorAlta(); };
+    $('motor-alta').onclick = function () { motorAlta(); irAlPanel(); };
   }
 
-  // Motor de alta (27-nov-2026, Mike): estado de cada funcion para todas las companias, por modulo > funcion > pieza, con los
-  // requisitos de alta de cada modulo, pedidos para agregar, quitar, encender o apagar y la auditoria del catalogo.
-  // Solo lee al abrir o con el boton Actualizar (sin refresco automatico). Cada pedido queda en la cola de solicitudes de GR.
-  var MA = { datos: null, cia: '__matriz', filtro: 'todas' };
+  // Motor de alta (27-nov-2026, Mike: "muy facil de usar, muy ejecutivo"). Liga directa: /gr/motor.
+  // Inicio: avance de cada compania en tarjetas. Detalle: lo que falta en corto (lo da la compania / lo hace GR) y cada funcion con
+  // un boton para pedir el cambio (completar, agregar, encender o quitar). Solo lee al abrir o con Actualizar. 0 IA.
+  var MA = { datos: null, cia: '', vista: 'tarjetas', abiertos: {} };
   function motorAlta(recargar) {
-    estado.sel = '__motor'; pintarLista(); MF.css();
+    estado.sel = '__motor'; if (!MOTOR_SOLO) pintarLista(); MF.css();
     if (MA.datos && !recargar) { pintarMotor(); return; }
-    $('panel').innerHTML = '<div class="card"><div class="card-h"><h2>Motor de alta</h2></div><p class="vacio">Leyendo el estado de todas las compañías...</p></div>';
+    if (!MA.datos) $('panel').innerHTML = '<div class="mf-box"><p class="mf-vacio" style="margin:0">Leyendo el estado de todas las compañías...</p></div>';
     P.api({ accion: 'alta_funciones', sesion: ses() }).then(function (d) {
       if (d._codigo === 401) { salir(d.error); return; }
-      if (!d.ok) { $('panel').innerHTML = '<div class="card"><p class="msg bad">' + h(d.error || 'No se pudo leer el motor de alta.') + '</p></div>'; return; }
+      if (!d.ok) { $('panel').innerHTML = '<div class="mf-box"><p class="msg bad">' + h(d.error || 'No se pudo leer el motor de alta.') + '</p><button class="mf-btn" id="ma-actualizar">Intentar otra vez</button></div>'; $('ma-actualizar').onclick = function () { motorAlta(true); }; return; }
       MA.datos = d; pintarMotor();
-    });
+    }, function () { $('panel').innerHTML = '<div class="mf-box"><p class="msg bad">No hay conexión con el motor. Revisa tu internet y toca Actualizar.</p><button class="mf-btn" id="ma-actualizar">Actualizar</button></div>'; $('ma-actualizar').onclick = function () { motorAlta(true); }; });
   }
+  var EST_PED = { pendiente: ['suspendida', 'Pendiente'], aplicado: ['lista', 'Hecho'], hecho: ['lista', 'Hecho'], descartado: ['no_aplica', 'Descartado'], rechazado: ['no_aplica', 'Descartado'] };
+  // En celular la lista de companias queda arriba: llevar la vista al inicio del panel, no al de la pagina.
+  function irAlPanel() { var p = $('panel'); if (!p) return; var y = p.getBoundingClientRect().top + window.pageYOffset - 10; window.scrollTo(0, MOTOR_SOLO ? 0 : Math.max(0, y)); }
   function pintarMotor() {
-    var d = MA.datos, cs = d.companias || [];
-    var chips = '<div class="mf-f"><button data-ma-cia="__matriz" class="' + (MA.cia === '__matriz' ? 'on' : '') + '">Todas (vista general)</button>' + cs.map(function (c) { return '<button data-ma-cia="' + h(c.tenant) + '" class="' + (MA.cia === c.tenant ? 'on' : '') + '">' + h(c.nombre) + '</button>'; }).join('') + '</div>';
-    var cuerpo;
-    if (MA.cia === '__matriz') {
-      cuerpo = '<p class="nota" style="margin:0">Cada fila es una función y cada columna una compañía. Toca el nombre de una compañía para ver su detalle y pedir cambios.</p>' + MF.matriz(cs);
+    var d = MA.datos, cs = d.companias || [], ped = d.pedidos || [], au = d.auditoria || {};
+    var pendientes = ped.filter(function (p) { return p.estado === 'pendiente'; });
+    var fuera = (au.fuera_del_catalogo || []).length + (au.procesos_que_no_existen || []).length;
+    var html;
+    var barraSup = '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">'
+      + (MA.cia ? '<button class="mf-volver" id="ma-volver">← Todas las compañías</button>' : '<div class="mf-tabs"><button data-ma-vista="tarjetas" class="' + (MA.vista === 'tarjetas' ? 'on' : '') + '">Por compañía</button><button data-ma-vista="tabla" class="' + (MA.vista === 'tabla' ? 'on' : '') + '">Comparar todas</button><button data-ma-vista="pedidos" class="' + (MA.vista === 'pedidos' ? 'on' : '') + '">Pedidos' + (pendientes.length ? ' (' + pendientes.length + ')' : '') + '</button></div>')
+      + '<button class="mf-btn" id="ma-actualizar">Actualizar</button></div>';
+    if (MA.cia) {
+      var c = cs.filter(function (x) { return x.tenant === MA.cia; })[0];
+      if (!c) { MA.cia = ''; pintarMotor(); return; }
+      html = barraSup + '<div><h2 style="font-size:20px;text-transform:none;letter-spacing:0">' + h(c.nombre) + '</h2><p class="mf-sub" style="margin:4px 0 0">' + h(c.fuente === 'servicio_sdr' ? 'Servicio de prospección de GR' : (MF.MODELO[c.modelo] || '')) + (c.crm ? ' · CRM: ' + h(c.crm) : '') + '</p></div>'
+        + MF.detalle(c, { pedir: true, pedidos: ped, abiertos: MA.abiertos });
+    } else if (MA.vista === 'tabla') {
+      html = barraSup + '<div class="mf-box"><h2>Comparar todas</h2><p class="mf-sub" style="margin:0">Cada punto es el estado de una función en una compañía. Toca el nombre de una compañía para abrirla.</p>' + MF.matriz(cs) + '</div>';
+    } else if (MA.vista === 'pedidos') {
+      html = barraSup + '<div class="mf-box"><h2>Pedidos</h2>' + (ped.length ? '<ul class="mf-ped">' + ped.slice(0, 50).map(function (p) { var e = EST_PED[p.estado] || ['na', p.estado]; return '<li>' + MF.chip(e[0], e[1]) + '<b>' + h((cs.filter(function (x) { return x.tenant === p.tenant; })[0] || {}).nombre || p.tenant) + '</b> ' + h(String(p.instruccion || '').replace(/\s*\[funcion=[^\]]+\]/, '').replace(/ para [^.]+?(\. Nota|$)/, '$1')) + ' <span class="mf-sub">' + h(p.fecha) + (p.respuesta ? ' · ' + h(p.respuesta) : '') + '</span></li>'; }).join('') + '</ul>' + (ped.length > 50 ? '<p class="mf-sub" style="margin:0">Se muestran los 50 más recientes de ' + ped.length + '.</p>' : '') : '<p class="mf-vacio" style="margin:0">Aún no hay pedidos. Abre una compañía y usa el botón de cada función.</p>') + '</div>';
     } else {
-      var c = cs.filter(function (x) { return x.tenant === MA.cia; })[0] || cs[0];
-      cuerpo = '<p style="margin:0"><b>' + h(c.nombre) + '</b> · ' + (c.modelo === 'solo_prospeccion' ? 'solo prospección (hasta la primera oportunidad)' : 'completo (prospección y ciclo de venta)') + ' · CRM: ' + h(c.crm || '—') + '</p>'
-        + (c.nota ? '<p class="nota" style="margin:4px 0 0">' + h(c.nota) + '</p>' : '')
-        + MF.resumen(c.cuenta) + MF.filtros(MA.filtro, 'data-ma-filtro')
-        + '<p class="nota" style="margin:0">Abre cada función para ver sus piezas y pedir que se agregue, se quite, se encienda o se apague. El pedido queda en la cola de Great Revenue y se construye con el procedimiento de alta.</p>'
-        + MF.arbol(c, { filtro: MA.filtro, pedir: true, pedidos: d.pedidos });
+      var tot = cs.reduce(function (a, c) { var x = MF.avance(c.cuenta); a.l += x.listas; a.t += x.aplican; return a; }, { l: 0, t: 0 });
+      html = barraSup
+        + '<div class="mf-kpis"><div class="mf-kpi"><b>' + cs.length + '</b><span>compañías</span></div><div class="mf-kpi"><b>' + (tot.t ? Math.round(100 * tot.l / tot.t) : 0) + '%</b><span>de las funciones que aplican ya están listas</span></div><div class="mf-kpi"><b>' + pendientes.length + '</b><span>pedidos pendientes</span></div><div class="mf-kpi"><b>' + (fuera ? fuera : '✓') + '</b><span>' + (fuera ? 'procesos sin registrar en el catálogo' : 'catálogo al día') + '</span></div></div>'
+        + MF.tarjetas(cs, ped);
+      if (fuera) html += '<div class="mf-box"><h2>Procesos sin registrar</h2><ul style="margin:0;padding-left:18px;font-size:14px">' + (au.fuera_del_catalogo || []).map(function (x) { return '<li>' + h(x.nombre) + '</li>'; }).join('') + ((au.procesos_que_no_existen || []).length ? '<li>' + au.procesos_que_no_existen.length + ' proceso' + (au.procesos_que_no_existen.length > 1 ? 's' : '') + ' del catálogo ya no existe' + (au.procesos_que_no_existen.length > 1 ? 'n' : '') + ': hay que actualizar el catálogo.</li>' : '') + '</ul></div>';
     }
-    var ped = (d.pedidos || []);
-    var pedidos = ped.length ? '<ul class="sol">' + ped.slice(0, 30).map(function (p) { return '<li><span><span class="chip ' + h(p.estado) + '">' + h(p.estado) + '</span><b>' + h(p.tenant) + '</b> · ' + h(String(p.instruccion || '').replace(/\s*\[funcion=[^\]]+\]/, '')) + ' · ' + h(p.fecha) + (p.respuesta ? ' · ' + h(p.respuesta) : '') + '</span></li>'; }).join('') + '</ul>' : '<p class="vacio">Sin pedidos todavía.</p>';
-    var au = d.auditoria || {}, fuera = au.fuera_del_catalogo || [], rotos = au.procesos_que_no_existen || [];
-    var audit = '<p style="margin:0">' + (fuera.length || rotos.length ? 'La auditoría encontró cosas que revisar.' : 'Todo proceso encendido de GR, Itera, Konnen, STIL y el motor común está en el catálogo, y ningún proceso del catálogo desapareció.') + '</p>'
-      + (fuera.length ? '<p><b>Procesos encendidos fuera del catálogo (' + fuera.length + ')</b></p><ul>' + fuera.map(function (x) { return '<li>' + h(x.nombre) + ' <span class="vacio">' + h(x.cliente) + '</span></li>'; }).join('') + '</ul>' : '')
-      + (rotos.length ? '<p><b>Procesos del catálogo que ya no existen (' + rotos.length + ')</b></p><p>' + h(rotos.join(', ')) + '</p>' : '')
-      + '<p class="nota">La prueba diaria (7:10) repite esta auditoría y las pruebas de permisos; si algo falla o cambia te llega un correo.</p>';
-    $('panel').innerHTML = '<div class="card"><div class="card-h"><h2>Motor de alta</h2><button class="s" id="ma-actualizar">Actualizar</button></div>'
-      + '<p class="nota" style="margin:0">Catálogo ' + h(d.catalogo) + ' (' + h(d.fecha_catalogo) + ') · el estado de los procesos se revisa una vez al día. Para una compañía nueva usa «+ Nueva compañía» y después elige aquí sus funciones.</p>' + chips + cuerpo + '</div>'
-      + '<div class="card"><div class="card-h"><h2>Pedidos</h2></div>' + pedidos + '</div>'
-      + '<div class="card"><div class="card-h"><h2>Auditoría del catálogo</h2></div>' + audit + '</div>';
+    $('panel').innerHTML = '<div class="mf-wrap">' + html + '<p class="mf-sub" style="margin:0">El estado de los procesos se revisa una vez al día. Para dar de alta una compañía nueva entra al ' + (MOTOR_SOLO ? '<a href="/gr/alta">portal de alta</a>' : 'botón «+ Nueva compañía»') + '; aparece aquí sola.</p></div>';
     $('ma-actualizar').onclick = function () { motorAlta(true); };
-    Array.prototype.forEach.call(document.querySelectorAll('[data-ma-cia]'), function (b) { b.onclick = function () { MA.cia = b.getAttribute('data-ma-cia'); MA.filtro = 'todas'; pintarMotor(); }; });
-    Array.prototype.forEach.call(document.querySelectorAll('[data-mf-cia]'), function (a) { a.onclick = function (e) { e.preventDefault(); MA.cia = a.getAttribute('data-mf-cia'); MA.filtro = 'todas'; pintarMotor(); window.scrollTo(0, 0); }; });
-    Array.prototype.forEach.call(document.querySelectorAll('[data-ma-filtro]'), function (b) { b.onclick = function () { MA.filtro = b.getAttribute('data-ma-filtro'); pintarMotor(); }; });
+    if ($('ma-volver')) $('ma-volver').onclick = function () { MA.cia = ''; pintarMotor(); irAlPanel(); };
+    Array.prototype.forEach.call(document.querySelectorAll('[data-ma-vista]'), function (b) { b.onclick = function () { MA.vista = b.getAttribute('data-ma-vista'); pintarMotor(); }; });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-mf-cia]'), function (b) { b.onclick = function () { MA.cia = b.getAttribute('data-mf-cia'); MA.abiertos = {}; pintarMotor(); irAlPanel(); }; });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-mf-mod]'), function (m) { m.addEventListener('toggle', function () { MA.abiertos[m.getAttribute('data-mf-mod')] = m.open; }); });
+    MF.activarVer($('panel'));
     Array.prototype.forEach.call(document.querySelectorAll('[data-mf-pedir]'), function (b) {
       b.onclick = function () {
-        var f = b.getAttribute('data-mf-pedir'), que = b.getAttribute('data-mf-que'), nota = (document.querySelector('[data-mf-nota="' + f + '"]') || {}).value || '';
-        var msg = document.querySelector('[data-mf-msg="' + f + '"]');
-        if (!b.getAttribute('data-confirmar')) { b.setAttribute('data-confirmar', '1'); b.textContent = 'Confirmar'; if (msg) msg.textContent = 'Toca Confirmar para dejar el pedido.'; return; }
-        b.disabled = true; if (msg) msg.textContent = 'Enviando...';
-        P.api({ accion: 'alta_pedir', sesion: ses(), cliente: MA.cia, funcion: f, que: que, nota: nota }).then(function (r) {
-          b.disabled = false;
-          if (r._codigo === 401) { salir(r.error); return; }
-          if (!r.ok) { if (msg) msg.textContent = r.error || 'No se pudo.'; return; }
-          motorAlta(true);
-        });
+        var f = b.getAttribute('data-mf-pedir'), que = b.getAttribute('data-mf-que'), box = document.querySelector('[data-mf-conf="' + f + '"]');
+        if (!box) return;
+        box.hidden = false; b.disabled = true;
+        box.innerHTML = '<input placeholder="Nota para Great Revenue (opcional)" maxlength="300"><button class="mf-btn p">Confirmar: ' + h(b.textContent) + '</button><button class="mf-btn">Cancelar</button><span class="mf-msg"></span>';
+        var bs = box.querySelectorAll('button'), msg = box.querySelector('.mf-msg');
+        box.querySelector('input').focus();
+        bs[1].onclick = function () { box.hidden = true; box.innerHTML = ''; b.disabled = false; };
+        bs[0].onclick = function () {
+          bs[0].disabled = true; bs[1].disabled = true; msg.textContent = 'Enviando...';
+          P.api({ accion: 'alta_pedir', sesion: ses(), cliente: MA.cia, funcion: f, que: que === 'completar' ? 'agregar' : que, nota: box.querySelector('input').value.trim() }).then(function (r) {
+            if (r._codigo === 401) { salir(r.error); return; }
+            if (!r.ok) { msg.textContent = r.error || 'No se pudo registrar.'; bs[0].disabled = false; bs[1].disabled = false; return; }
+            msg.textContent = 'Listo: pedido registrado.'; setTimeout(function () { motorAlta(true); }, 700);
+          }, function () { msg.textContent = 'Sin conexión. Intenta otra vez.'; bs[0].disabled = false; bs[1].disabled = false; });
+        };
       };
     });
   }
-
-  // Alta de compania nueva: nombre y sitio, manual de identidad, carpeta de logos y administradora.
   function nueva() {
     estado.sel = null; pintarLista();
     $('panel').innerHTML = '<div class="card"><div class="card-h"><h2>Nueva compañía</h2></div><p class="nota" style="margin:0">La marca se propone después a partir del manual y los logos, y tú la apruebas.</p><div class="dos">'

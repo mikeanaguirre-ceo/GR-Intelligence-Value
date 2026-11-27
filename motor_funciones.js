@@ -1,77 +1,126 @@
-// GR Intelligence: motor de alta (vB, 27-nov-2026). Pinta el arbol modulo > funcion > pieza con su estado, para:
-// - la pestana Funciones del portal de cada compania (solo lectura) y
-// - el portal de alta de GR (todas las companias, con botones para pedir agregar, quitar, encender o apagar).
-// Sin datos propios: todo lo calcula el motor (accion funciones o alta_funciones). Sin recarga automatica.
+// GR Intelligence: motor de alta (vD, 27-nov-2026; ronda 1 de auditoria corregida). Vista ejecutiva de las funciones de cada compania:
+// - tarjetas por compania con su avance, lo que falta en corto y un boton por funcion para pedir cambios (portal de alta, solo GR);
+// - el mismo detalle sin botones en la pestana Funciones del portal de cada compania.
+// Todo lo calcula el motor (accion funciones o alta_funciones). Sin recarga automatica.
 (function () {
   var MF = {};
   var h = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  MF.EST = { lista: ['Lista', 'mf-ok'], apagada: ['Apagada', 'mf-off'], suspendida: ['Suspendida por decisión', 'mf-sus'], falta: ['Le falta algo', 'mf-falta'], no_aplica: ['No aplica', 'mf-na'] };
+  MF.EST = { lista: ['Lista', 'mf-ok'], apagada: ['Apagada', 'mf-off'], suspendida: ['Pausada por decisión', 'mf-sus'], falta: ['Por completar', 'mf-falta'], no_aplica: ['No aplica', 'mf-na'] };
+  MF.MODELO = { completo: 'Prospección y venta', solo_prospeccion: 'Solo prospección' };
   MF.css = function () {
     if (document.getElementById('mf-css')) return;
     var s = document.createElement('style'); s.id = 'mf-css';
-    s.textContent = '.mf-k{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.mf-k div{flex:1;min-width:92px;background:#fff;border:1px solid #e5e5e5;border-radius:10px;padding:8px 10px}.mf-k b{display:block;font-size:22px}.mf-k span{font-size:12px;color:#555}'
-      + '.mf-chip{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:middle;white-space:nowrap}'
-      + '.mf-ok{background:#e6f6ec;color:#17723a}.mf-off{background:#eef0f3;color:#4b5563}.mf-sus{background:#f3e8ff;color:#6b21a8}.mf-falta{background:#fff4e0;color:#9a5b00}.mf-na{background:#f5f5f5;color:#8a8a8a}'
-      + '.mf-mod{border:1px solid #e5e5e5;border-radius:12px;background:#fff;margin:0 0 12px;overflow:hidden}.mf-mod>summary{cursor:pointer;padding:12px 14px;font-weight:700;list-style:none}.mf-mod>summary::-webkit-details-marker{display:none}'
-      + '.mf-mod .mf-in{padding:0 14px 12px}.mf-para{font-size:13px;color:#555;margin:0 0 8px}.mf-req{font-size:13px;margin:6px 0 10px;padding:8px 10px;background:#fafafa;border-radius:8px}.mf-req li{margin:2px 0}'
-      + '.mf-fn{border-top:1px solid #eee;padding:8px 0}.mf-fn>summary{cursor:pointer;list-style:none;font-size:14px}.mf-fn>summary::-webkit-details-marker{display:none}.mf-fn p{margin:4px 0;font-size:13px}'
-      + '.mf-pz{margin:6px 0 0 0;padding:0;list-style:none;font-size:13px}.mf-pz li{padding:3px 0}.mf-falta-l{margin:4px 0 0 18px;font-size:13px}.mf-quien{color:#777;font-size:12px;margin-left:6px}'
-      + '.mf-nota{font-size:12px;color:#777}.mf-acc{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}.mf-acc button{border:1px solid #ccc;background:#fff;border-radius:8px;padding:5px 10px;font:inherit;font-size:13px;cursor:pointer}.mf-acc input{flex:1;min-width:160px;border:1px solid #ddd;border-radius:8px;padding:5px 8px;font:inherit;font-size:13px}'
-      + '.mf-f{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.mf-f button{border:1px solid #ddd;background:#fff;border-radius:999px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}.mf-f button.on{background:#111;color:#fff;border-color:#111}'
-      + '.mf-tabla{width:100%;border-collapse:collapse;font-size:13px;background:#fff}.mf-tabla th,.mf-tabla td{border-bottom:1px solid #eee;padding:6px 6px;text-align:left;vertical-align:top}.mf-tabla th{font-size:12px;position:sticky;top:0;background:#fff}.mf-tabla td.c{text-align:center}'
-      + '.mf-dot{display:inline-block;width:12px;height:12px;border-radius:50%}.mf-dot.mf-ok{background:#22a55a}.mf-dot.mf-off{background:#9ca3af}.mf-dot.mf-sus{background:#a855f7}.mf-dot.mf-falta{background:#f59e0b}.mf-dot.mf-na{background:#e5e5e5}'
-      + '.mf-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #eee;border-radius:10px}.mf-modrow td{background:#f7f7f7;font-weight:700}';
+    s.textContent = ''
+      + '.mf-wrap{display:grid;gap:16px;min-width:0}'
+      + '.mf-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}.mf-kpi{background:#fff;border:1px solid var(--line,#e4e4df);border-radius:12px;padding:12px 14px}.mf-kpi b{display:block;font:800 26px/1.1 var(--disp,Arial)}.mf-kpi span{font-size:12px;color:var(--g,#5f5f5a)}'
+      + '.mf-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}'
+      + '.mf-card{background:#fff;border:1px solid var(--line,#e4e4df);border-radius:14px;padding:16px;display:grid;gap:10px;text-align:left;font:inherit;color:inherit;cursor:pointer;transition:box-shadow .15s,border-color .15s}.mf-card:hover{border-color:var(--osc,#111);box-shadow:0 4px 14px rgba(0,0,0,.06)}'
+      + '.mf-card h3{font:800 17px/1.2 var(--disp,Arial);margin:0}.mf-sub{font-size:12px;color:var(--g,#5f5f5a)}'
+      + '.mf-bar{height:8px;background:#eee;border-radius:99px;overflow:hidden}.mf-bar i{display:block;height:100%;background:#22a55a;border-radius:99px}'
+      + '.mf-pct{display:flex;justify-content:space-between;align-items:baseline;font-size:13px}.mf-pct b{font:800 22px var(--disp,Arial)}'
+      + '.mf-mini{display:flex;flex-wrap:wrap;gap:6px}.mf-chip{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap}'
+      + '.mf-ok{background:#e6f6ec;color:#17723a}.mf-off{background:#eef0f3;color:#4b5563}.mf-sus{background:#f3e8ff;color:#6b21a8}.mf-falta{background:#fff4e0;color:#9a5b00}.mf-na{background:#f3f3f3;color:#8a8a8a}.mf-azul{background:#e8f1ff;color:#1d4ed8}'
+      + '.mf-box{background:#fff;border:1px solid var(--line,#e4e4df);border-radius:14px;padding:16px;display:grid;gap:10px;min-width:0}'
+      + '.mf-box h2{margin:0}.mf-dos{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:760px){.mf-dos{grid-template-columns:1fr}}'
+      + '.mf-col{background:#fafaf8;border-radius:10px;padding:12px}.mf-col h4{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.04em}.mf-col ul{margin:0;padding-left:18px;font-size:14px;display:grid;gap:3px}'
+      + '.mf-volver{background:none;border:0;padding:0;font:inherit;font-size:14px;cursor:pointer;color:var(--g,#5f5f5a)}.mf-volver:hover{color:var(--osc,#111)}'
+      + '.mf-mod{border:1px solid var(--line,#e4e4df);border-radius:12px;background:#fff;overflow:hidden}.mf-mod>summary{cursor:pointer;padding:12px 14px;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px}.mf-mod>summary::-webkit-details-marker{display:none}'
+      + '.mf-mod>summary b{font-size:15px}.mf-mod[open]>summary{border-bottom:1px solid #eee}.mf-mod .mf-in{padding:4px 14px 12px}.mf-para{font-size:13px;color:var(--g,#5f5f5a);margin:8px 0}'
+      + '.mf-req{font-size:13px;margin:4px 0 8px;padding:8px 10px;background:#fafaf8;border-radius:8px}.mf-req ul{margin:4px 0 0 18px;padding:0}'
+      + '.mf-fn{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:start;padding:10px 0;border-top:1px solid #f0f0f0}.mf-fn:first-of-type{border-top:0}'
+      + '.mf-dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-top:5px}.mf-dot.mf-ok{background:#22a55a}.mf-dot.mf-off{background:#9ca3af}.mf-dot.mf-sus{background:#a855f7}.mf-dot.mf-falta{background:#f59e0b}.mf-dot.mf-na{background:#d4d4d4}'
+      + '.mf-fn .t{font-weight:600;font-size:14px}.mf-fn .d{font-size:13px;color:var(--g,#5f5f5a)}.mf-fn .q{font-size:12px;color:#9a5b00;margin-top:2px}'
+      + '.mf-btn{border:1px solid var(--osc,#111);background:#fff;color:var(--osc,#111);border-radius:8px;padding:6px 12px;font:600 13px var(--body,Arial);cursor:pointer;white-space:nowrap}.mf-btn.p{background:var(--osc,#111);color:#fff}.mf-btn:disabled{opacity:.5;cursor:default}'
+      + '.mf-acc{display:flex;flex-direction:column;align-items:flex-end}@media(max-width:560px){.mf-fn{grid-template-columns:auto 1fr}.mf-acc{grid-column:2;flex-direction:row;flex-wrap:wrap;align-items:center}.mf-acc .mf-btn{margin:4px 6px 0 0!important}}'
+      + '.mf-link{background:none;border:0;padding:0;color:#1d4ed8;font:inherit;font-size:12px;cursor:pointer;text-decoration:underline}'
+      + '.mf-pz{grid-column:2/4;margin:4px 0 0;padding:8px 10px;background:#fafaf8;border-radius:8px;list-style:none;font-size:13px;display:grid;gap:4px}'
+      + '.mf-conf{grid-column:2/4;display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px}.mf-conf input{flex:1;min-width:180px;border:1px solid #ddd;border-radius:8px;padding:6px 8px;font:inherit;font-size:13px}.mf-msg{font-size:12px;color:var(--g,#5f5f5a)}'
+      + '.mf-tabs{display:flex;gap:6px;flex-wrap:wrap}.mf-tabs button{border:1px solid #ddd;background:#fff;border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}.mf-tabs button.on{background:var(--osc,#111);color:#fff;border-color:var(--osc,#111)}'
+      + '.mf-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #eee;border-radius:10px}.mf-tabla{width:100%;border-collapse:collapse;font-size:13px;background:#fff}.mf-tabla th,.mf-tabla td{border-bottom:1px solid #f0f0f0;padding:6px 8px;text-align:left}.mf-tabla th{font-size:12px;background:#fafaf8}.mf-tabla td.c,.mf-tabla th.c{text-align:center}.mf-modrow td{background:#f6f6f4;font-weight:700}'
+      + '.mf-ped{display:grid;gap:6px;margin:0;padding:0;list-style:none;font-size:13px}.mf-ped li{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}'
+      + '.mf-okline{display:flex;gap:8px;align-items:center;font-size:14px}.mf-vacio{font-size:13px;color:var(--g,#5f5f5a)}';
     document.head.appendChild(s);
   };
-  MF.chip = function (e) { var x = MF.EST[e] || [e, 'mf-na']; return '<span class="mf-chip ' + x[1] + '">' + h(x[0]) + '</span>'; };
-  MF.resumen = function (cu) {
-    cu = cu || {};
-    return '<div class="mf-k">' + [['lista', 'Listas'], ['falta', 'Les falta algo'], ['apagada', 'Apagadas'], ['suspendida', 'Suspendidas'], ['no_aplica', 'No aplican']].map(function (x) { return '<div><b>' + (cu[x[0]] || 0) + '</b><span>' + x[1] + '</span></div>'; }).join('') + '</div>';
+  MF.chip = function (e, txt) { var x = MF.EST[e] || [e, 'mf-na']; return '<span class="mf-chip ' + x[1] + '">' + h(txt || x[0]) + '</span>'; };
+  // Avance: funciones listas sobre las que le aplican (sin contar las que no aplican).
+  MF.avance = function (cu) { cu = cu || {}; var ap = (cu.lista || 0) + (cu.falta || 0) + (cu.apagada || 0); // las pausadas por decision no cuentan
+    return { listas: cu.lista || 0, aplican: ap, pct: ap ? Math.round(100 * (cu.lista || 0) / ap) : 0 }; };
+  MF.barra = function (cu) { var a = MF.avance(cu); return '<div class="mf-pct"><span><b>' + a.pct + '%</b> listo</span><span class="mf-sub">' + a.listas + ' de ' + a.aplican + ' funciones' + ((cu || {}).suspendida ? ' · ' + cu.suspendida + ' pausada' + (cu.suspendida > 1 ? 's' : '') + ' por decisión' : '') + '</span></div><div class="mf-bar"><i style="width:' + a.pct + '%"></i></div>'; };
+  var tipo = function (c) { return c.fuente === 'servicio_sdr' ? 'Servicio de prospección de GR' : (MF.MODELO[c.modelo] || c.modelo); };
+  // Lo que falta, en corto: lo que da la compania (datos y conexiones) y lo que construye o enciende GR.
+  MF.pendientes = function (c) {
+    var cli = [], gr = [], enc = [], otros = [], vistos = {};
+    var llave = function (x) { return x.k || x.texto; };
+    (c.modulos || []).forEach(function (m) {
+      (m.requisitos || []).forEach(function (q) { if (q.ok === false && !vistos[llave(q)]) { vistos[llave(q)] = 1; (q.quien === 'GR' ? otros : cli).push(q.texto); } });
+      (m.funciones || []).forEach(function (f) {
+        (f.faltan || []).forEach(function (x) { if (x.quien !== 'GR' && !vistos[llave(x)]) { vistos[llave(x)] = 1; cli.push(x.texto); } });
+        if (f.estado === 'suspendida' || f.estado === 'no_aplica') return;
+        if ((f.faltan || []).some(function (x) { return x.quien === 'GR'; }) || (f.piezas || []).some(function (p) { return p.estado === 'falta'; })) gr.push(f.nombre);
+        else if ((f.piezas || []).some(function (p) { return p.estado === 'apagada'; })) enc.push(f.nombre);
+      });
+    });
+    return { cliente: cli, construir: gr.concat(otros), encender: enc };
   };
-  var NOMBRE = { ITERA: 'IT Institute', '*': 'el motor común', GR: 'GR' };
-  // Arbol de una compania. op: { filtro, pedir: function(funcion, que, nota, boton), pedidos: [...] }
-  MF.arbol = function (c, op) {
-    op = op || {}; var filtro = op.filtro || 'todas';
+  MF.tarjetas = function (cs, pedidos) {
+    return '<div class="mf-cards">' + cs.map(function (c) {
+      var p = MF.pendientes(c), np = (pedidos || []).filter(function (x) { return x.tenant === c.tenant && x.estado === 'pendiente'; }).length;
+      var mini = [];
+      if (p.construir.length) mini.push('<span class="mf-chip mf-falta">' + p.construir.length + ' por construir</span>');
+      if (p.encender.length) mini.push('<span class="mf-chip mf-off">' + p.encender.length + ' por encender</span>');
+      if (p.cliente.length) mini.push('<span class="mf-chip mf-azul">' + p.cliente.length + ' datos de la compañía</span>');
+      if (np) mini.push('<span class="mf-chip mf-sus">' + np + ' pedido' + (np > 1 ? 's' : '') + '</span>');
+      if (!mini.length) mini.push('<span class="mf-chip mf-ok">Completa</span>');
+      return '<button class="mf-card" data-mf-cia="' + h(c.tenant) + '"><div><h3>' + h(c.nombre) + '</h3><div class="mf-sub">' + h(tipo(c)) + (c.crm ? ' · ' + h(c.crm) : '') + '</div></div>' + MF.barra(c.cuenta) + '<div class="mf-mini">' + mini.join('') + '</div></button>';
+    }).join('') + '</div>';
+  };
+  var ACCIONES = { lista: [['apagar', 'Apagar'], ['quitar', 'Quitar']], apagada: [['encender', 'Encender'], ['quitar', 'Quitar']], suspendida: [['encender', 'Reanudar']], falta: [['completar', 'Completar'], ['quitar', 'Quitar']], no_aplica: [['agregar', 'Agregar']] };
+  // Detalle de una compania. op: { pedir: bool, pedidos: [...], abiertos: {modulo: true} }
+  MF.detalle = function (c, op) {
+    op = op || {};
     var pend = {}; (op.pedidos || []).forEach(function (p) { if (p.tenant === c.tenant && p.estado === 'pendiente') { var m = /\[funcion=([a-z0-9_]+)\]/.exec(p.instruccion || ''); if (m) pend[m[1]] = p; } });
-    return (c.modulos || []).map(function (m) {
-      var fns = (m.funciones || []).filter(function (f) { return filtro === 'todas' || f.estado === filtro; });
-      if (!fns.length && filtro !== 'todas') return '';
-      var req = (m.requisitos || []).length ? '<div class="mf-req"><b>Para dar de alta este módulo</b><ul style="margin:4px 0 0 18px;padding:0">' + m.requisitos.map(function (q) { return '<li>' + (q.ok === true ? '✓ ' : q.ok === false ? '✗ ' : '· ') + h(q.texto) + '<span class="mf-quien">' + (q.quien === 'GR' ? 'lo da Great Revenue' : 'lo da la compañía') + (q.ok === null || q.ok === undefined ? ' · se revisa a mano' : '') + '</span></li>'; }).join('') + '</ul></div>' : '';
-      var cuerpo = fns.map(function (f) {
-        var piezas = '<ul class="mf-pz">' + (f.piezas || []).map(function (p) {
-          var de = p.prestada ? '<span class="mf-quien">usa la de ' + h(NOMBRE[p.prestada] || p.prestada) + '</span>' : '';
-          return '<li>' + h(p.nombre) + MF.chip(p.estado) + (p.a_mano ? '<span class="mf-quien">se corre con botón o a mano</span>' : '') + de + ((p.faltan || []).length ? '<div class="mf-falta-l">' + p.faltan.map(function (x) { return h(x.texto); }).join('<br>') + '</div>' : '') + (p.motivo ? '<div class="mf-nota">' + h(p.motivo) + '</div>' : '') + '</li>';
-        }).join('') + '</ul>';
-        var falta = (f.faltan || []).length ? '<ul class="mf-falta-l" style="padding:0">' + f.faltan.map(function (x) { return '<li>' + h(x.texto) + '<span class="mf-quien">' + (x.quien === 'GR' ? 'lo da Great Revenue' : 'lo da la compañía') + '</span></li>'; }).join('') + '</ul>' : '';
-        var acc = '';
-        if (op.pedir) {
-          var p = pend[f.id];
-          if (p) acc = '<div class="mf-acc"><span class="mf-chip mf-falta">Pedido pendiente</span><span class="mf-nota">' + h(p.instruccion.replace(/\s*\[funcion=[^\]]+\]/, '')) + ' · ' + h(p.fecha) + '</span></div>';
-          else {
-            var bs = f.estado === 'lista' ? [['quitar', 'Pedir que se quite'], ['apagar', 'Pedir que se apague']] : f.estado === 'apagada' || f.estado === 'suspendida' ? [['encender', 'Pedir que se encienda'], ['quitar', 'Pedir que se quite']] : [['agregar', 'Pedir que se agregue']];
-            acc = '<div class="mf-acc"><input placeholder="Nota (opcional)" data-mf-nota="' + h(f.id) + '">' + bs.map(function (b) { return '<button data-mf-pedir="' + h(f.id) + '" data-mf-que="' + b[0] + '">' + b[1] + '</button>'; }).join('') + '<span class="mf-nota" data-mf-msg="' + h(f.id) + '"></span></div>';
-          }
-        }
-        return '<details class="mf-fn"' + (op.abierto ? ' open' : '') + '><summary>' + h(f.nombre) + MF.chip(f.estado) + (pend[f.id] ? '<span class="mf-chip mf-falta">pedido</span>' : '') + '</summary><p>' + h(f.resuelve) + '</p>' + (f.motivo ? '<p class="mf-nota">' + h(f.motivo) + '</p>' : '') + falta + piezas + (f.nota ? '<p class="mf-nota">' + h(f.nota) + '</p>' : '') + acc + '</details>';
-      }).join('') || '<p class="mf-nota">Nada con este filtro.</p>';
-      return '<details class="mf-mod"' + (m.estado !== 'no_aplica' ? ' open' : '') + '><summary>' + h(m.nombre) + MF.chip(m.estado) + '</summary><div class="mf-in"><p class="mf-para">' + h(m.para_que) + '</p>' + req + cuerpo + '</div></details>';
+    var p = MF.pendientes(c);
+    var lst = function (xs, vacio) { return xs.length ? '<ul>' + xs.map(function (x) { return '<li>' + h(x) + '</li>'; }).join('') + '</ul>' : '<p class="mf-vacio" style="margin:0">' + vacio + '</p>'; };
+    var resumen = '<div class="mf-box"><div>' + MF.barra(c.cuenta) + '</div>'
+      + (c.nota ? '<p class="mf-vacio" style="margin:0">' + h(c.nota) + '</p>' : '')
+      + '<div class="mf-dos"><div class="mf-col"><h4>Lo da la compañía</h4>' + lst(p.cliente, 'Nada pendiente.') + '</div>'
+      + '<div class="mf-col"><h4>Lo hace Great Revenue</h4>' + (p.construir.length ? '<p class="mf-sub" style="margin:0 0 4px">Construir</p>' + lst(p.construir, '') : '') + (p.encender.length ? '<p class="mf-sub" style="margin:6px 0 4px">Encender</p>' + lst(p.encender, '') : '') + (!p.construir.length && !p.encender.length ? lst([], 'Nada pendiente.') : '') + '</div></div></div>';
+    var mods = (c.modulos || []).map(function (m) {
+      var fs = m.funciones || [], ap = fs.filter(function (f) { return f.estado !== 'no_aplica'; }), ok = ap.filter(function (f) { return f.estado === 'lista'; });
+      var cab = m.estado === 'no_aplica' ? MF.chip('no_aplica') : '<span class="mf-sub">' + ok.length + ' de ' + ap.length + '</span>' + (ok.length === ap.length ? MF.chip('lista') : '');
+      var req = (m.requisitos || []).length ? '<div class="mf-req"><b>Para activar este módulo</b><ul>' + m.requisitos.map(function (q) { return '<li>' + (q.ok === true ? '✓ ' : q.ok === false ? '✗ ' : '') + h(q.texto) + '</li>'; }).join('') + '</ul></div>' : '';
+      var filas = fs.map(function (f) {
+        var e = MF.EST[f.estado] || ['', 'mf-na'], pd = pend[f.id];
+        var q = (f.faltan || []).map(function (x) { return x.texto; });
+        var accion = '';
+        if (op.pedir) accion = pd ? '<span class="mf-chip mf-sus">Pedido</span>' : (ACCIONES[f.estado] || []).map(function (a, i) { return '<button class="mf-btn' + (i ? '' : ' p') + '" style="margin:0 0 4px 4px" data-mf-pedir="' + h(f.id) + '" data-mf-que="' + a[0] + '">' + a[1] + '</button>'; }).join('');
+        var piezas = '<ul class="mf-pz" data-mf-pz="' + h(f.id) + '" hidden>' + (f.piezas || []).map(function (z) { return '<li>' + MF.chip(z.estado) + ' ' + h(z.nombre) + (z.prestada ? ' <span class="mf-sub">(usa ' + (z.prestada === '*' ? 'la del motor común' : 'la de ' + h(z.prestada_nombre || z.prestada)) + ')</span>' : '') + (z.motivo ? ' <span class="mf-sub">· ' + h(z.motivo) + '</span>' : '') + '</li>'; }).join('') + '</ul>';
+        return '<div class="mf-fn"><span class="mf-dot ' + e[1] + '" title="' + h(e[0]) + '"></span><div><div class="t">' + h(f.nombre) + ' <span class="mf-sub">· ' + h(e[0]) + '</span></div><div class="d">' + h(f.resuelve) + '</div>'
+          + (f.motivo ? '<div class="d">' + h(f.motivo) + '</div>' : '') + (q.length && f.estado !== 'no_aplica' ? '<div class="q">Falta: ' + h(q.join(' · ')) + '</div>' : '')
+          + (pd ? '<div class="d">Pedido el ' + h(pd.fecha) + ': ' + h(String(pd.instruccion || '').replace(/\s*\[funcion=[^\]]+\]/, '')) + '</div>' : '')
+          + '<button class="mf-link" data-mf-ver="' + h(f.id) + '">Ver cómo funciona</button></div><div class="mf-acc">' + accion + '</div>' + piezas
+          + (op.pedir ? '<div class="mf-conf" data-mf-conf="' + h(f.id) + '" hidden></div>' : '') + '</div>';
+      }).join('');
+      var abierto = op.abiertos ? !!op.abiertos[m.id] : false;
+      return '<details class="mf-mod" data-mf-mod="' + h(m.id) + '"' + (abierto ? ' open' : '') + '><summary><b>' + h(m.nombre) + '</b><span>' + cab + '</span></summary><div class="mf-in"><p class="mf-para">' + h(m.para_que) + '</p>' + req + filas + '</div></details>';
     }).join('');
+    return '<div class="mf-wrap">' + resumen + '<div class="mf-box"><h2>Funciones por módulo</h2>' + mods + '</div></div>';
   };
-  MF.filtros = function (actual, attr) {
-    return '<div class="mf-f">' + [['todas', 'Todas'], ['lista', 'Listas'], ['falta', 'Les falta algo'], ['apagada', 'Apagadas'], ['suspendida', 'Suspendidas'], ['no_aplica', 'No aplican']].map(function (b) { return '<button ' + attr + '="' + b[0] + '" class="' + (actual === b[0] ? 'on' : '') + '">' + b[1] + '</button>'; }).join('') + '</div>';
-  };
-  // Matriz de todas las companias: una fila por funcion, una columna por compania (punto de color con su estado).
   MF.matriz = function (cs) {
     if (!cs.length) return '';
-    var head = '<tr><th>Función</th>' + cs.map(function (c) { return '<th class="c"><a href="#" data-mf-cia="' + h(c.tenant) + '">' + h(c.nombre) + '</a></th>'; }).join('') + '</tr>';
+    var head = '<tr><th>Función</th>' + cs.map(function (c) { return '<th class="c"><button class="mf-link" data-mf-cia="' + h(c.tenant) + '">' + h(c.nombre) + '</button></th>'; }).join('') + '</tr>';
     var filas = (cs[0].modulos || []).map(function (m, i) {
-      var r = '<tr class="mf-modrow"><td colspan="' + (cs.length + 1) + '">' + h(m.nombre) + '</td></tr>';
-      return r + (m.funciones || []).map(function (f, j) {
-        return '<tr><td>' + h(f.nombre) + '</td>' + cs.map(function (c) { var g = ((c.modulos[i] || {}).funciones || [])[j] || {}; var e = MF.EST[g.estado] || ['', 'mf-na']; return '<td class="c" title="' + h(c.nombre + ': ' + e[0]) + '"><span class="mf-dot ' + e[1] + '"></span></td>'; }).join('') + '</tr>';
+      return '<tr class="mf-modrow"><td colspan="' + (cs.length + 1) + '">' + h(m.nombre) + '</td></tr>' + (m.funciones || []).map(function (f, j) {
+        return '<tr><td>' + h(f.nombre) + '</td>' + cs.map(function (c) { var g = (((c.modulos || [])[i] || {}).funciones || [])[j] || {}; var e = MF.EST[g.estado] || ['', 'mf-na']; return '<td class="c" title="' + h(c.nombre + ': ' + e[0]) + '"><span class="mf-dot ' + e[1] + '" style="margin:0"></span></td>'; }).join('') + '</tr>';
       }).join('');
     }).join('');
-    return '<div class="mf-scroll"><table class="mf-tabla"><thead>' + head + '</thead><tbody>' + filas + '</tbody></table></div>'
-      + '<p class="mf-nota">' + ['lista', 'falta', 'apagada', 'suspendida', 'no_aplica'].map(function (e) { return '<span class="mf-dot ' + MF.EST[e][1] + '"></span> ' + MF.EST[e][0]; }).join(' &nbsp; ') + '</p>';
+    return '<div class="mf-scroll"><table class="mf-tabla"><thead>' + head + '</thead><tbody>' + filas + '</tbody></table></div><p class="mf-sub">' + ['lista', 'falta', 'apagada', 'suspendida', 'no_aplica'].map(function (e) { return '<span class="mf-dot ' + MF.EST[e][1] + '" style="margin:0 4px 0 0;vertical-align:middle"></span>' + MF.EST[e][0]; }).join(' &nbsp; ') + '</p>';
+  };
+  // Mostrar u ocultar los pasos de una funcion (sin pedir nada al motor).
+  MF.activarVer = function (raiz) {
+    Array.prototype.forEach.call(raiz.querySelectorAll('[data-mf-ver]'), function (b) {
+      b.onclick = function () { var z = raiz.querySelector('[data-mf-pz="' + b.getAttribute('data-mf-ver') + '"]'); if (z) { z.hidden = !z.hidden; b.textContent = z.hidden ? 'Ver cómo funciona' : 'Ocultar'; } };
+    });
   };
   window.MF = MF;
 })();
