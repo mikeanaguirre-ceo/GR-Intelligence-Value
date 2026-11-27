@@ -68,7 +68,7 @@
       var mini = [];
       if (p.construir.length) mini.push('<span class="mf-chip mf-falta">' + p.construir.length + ' por construir</span>');
       if (p.encender.length) mini.push('<span class="mf-chip mf-off">' + p.encender.length + ' por encender</span>');
-      if (p.cliente.length) mini.push('<span class="mf-chip mf-azul">' + p.cliente.length + ' datos de la compañía</span>');
+      if (p.cliente.length) mini.push('<span class="mf-chip mf-azul">' + p.cliente.length + (p.cliente.length > 1 ? ' datos' : ' dato') + ' de la compañía</span>');
       if (np) mini.push('<span class="mf-chip mf-sus">' + np + ' pedido' + (np > 1 ? 's' : '') + '</span>');
       if (!mini.length) mini.push('<span class="mf-chip mf-ok">Completa</span>');
       return '<button class="mf-card" data-mf-cia="' + h(c.tenant) + '"><div><h3>' + h(c.nombre) + '</h3><div class="mf-sub">' + h(tipo(c)) + (c.crm ? ' · ' + h(c.crm) : '') + '</div></div>' + MF.barra(c.cuenta) + '<div class="mf-mini">' + mini.join('') + '</div></button>';

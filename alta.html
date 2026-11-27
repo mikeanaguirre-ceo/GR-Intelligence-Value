@@ -11,7 +11,7 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
 <script src="/portal_comun.js?v=20261014c"></script>
-<script src="/motor_funciones.js?v=20261127d"></script>
+<script src="/motor_funciones.js?v=20261127e"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Great Revenue Intelligence</b></span><span class="quien" id="quien">Portal de alta</span></div>
@@ -113,7 +113,7 @@
     } else {
       var tot = cs.reduce(function (a, c) { var x = MF.avance(c.cuenta); a.l += x.listas; a.t += x.aplican; return a; }, { l: 0, t: 0 });
       html = barraSup
-        + '<div class="mf-kpis"><div class="mf-kpi"><b>' + cs.length + '</b><span>compañías</span></div><div class="mf-kpi"><b>' + (tot.t ? Math.round(100 * tot.l / tot.t) : 0) + '%</b><span>de las funciones que aplican ya están listas</span></div><div class="mf-kpi"><b>' + pendientes.length + '</b><span>pedidos pendientes</span></div><div class="mf-kpi"><b>' + (fuera ? fuera : '✓') + '</b><span>' + (fuera ? 'procesos sin registrar en el catálogo' : 'catálogo al día') + '</span></div></div>'
+        + '<div class="mf-kpis"><div class="mf-kpi"><b>' + cs.length + '</b><span>compañías</span></div><div class="mf-kpi"><b>' + (tot.t ? Math.round(100 * tot.l / tot.t) : 0) + '%</b><span>de las funciones que aplican ya están listas</span></div><div class="mf-kpi"><b>' + pendientes.length + '</b><span>' + (pendientes.length === 1 ? 'pedido pendiente' : 'pedidos pendientes') + '</span></div><div class="mf-kpi"><b>' + (fuera ? fuera : '✓') + '</b><span>' + (fuera ? 'procesos sin registrar en el catálogo' : 'catálogo al día') + '</span></div></div>'
         + MF.tarjetas(cs, ped);
       if (fuera) html += '<div class="mf-box"><h2>Procesos sin registrar</h2><ul style="margin:0;padding-left:18px;font-size:14px">' + (au.fuera_del_catalogo || []).map(function (x) { return '<li>' + h(x.nombre) + '</li>'; }).join('') + ((au.procesos_que_no_existen || []).length ? '<li>' + au.procesos_que_no_existen.length + ' proceso' + (au.procesos_que_no_existen.length > 1 ? 's' : '') + ' del catálogo ya no existe' + (au.procesos_que_no_existen.length > 1 ? 'n' : '') + ': hay que actualizar el catálogo.</li>' : '') + '</ul></div>';
     }
