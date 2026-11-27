@@ -1,4 +1,4 @@
-// GR Intelligence: pedidos del motor de alta (vF, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
+// GR Intelligence: pedidos del motor de alta (vG, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
 // construir, las contestamos dentro del portal y despues empezamos a construir».
 // - MP.formulario: al pedir una funcion, las preguntas del catalogo (las comunes del tipo de pedido y las de la funcion), los datos que
 //   le faltan a la compania y las conexiones que hace en su portal, con lo obligatorio marcado y validado junto a cada campo.
@@ -7,6 +7,7 @@
 // vB (ronda 1 de auditoria): preguntas de seguimiento (requerida_si), conexiones aparte, letra de 14 px, avance con texto y no solo
 // color, campos con aria-required y su error ligado, una sola accion principal, fechas en palabras, colores propios por etapa,
 // textos segun el tipo de pedido y aviso cuando hay mas de 50.
+// vG (ronda 6): aviso cuando no hay pasos propios (se construye a la medida) o cuando son compartidos con otra compania.
 // vF (ronda 5): sin "Activar" en pasos ajenos; Apagar y Quitar dicen que pasos toca Great Revenue (los propios, no los compartidos).
 // vE (ronda 4): "Lo hace Great Revenue" tambien al agregar una que no aplica y al encender o reanudar.
 // vD (ronda 3): "Lo hace Great Revenue" con los pasos por construir o encender; pedidos repetidos marcados.
@@ -111,6 +112,11 @@
     } else if (t === 'encender' || t === 'reanudar') gr = pz.filter(function (z) { return z.estado === 'apagada' || z.estado === 'suspendida'; }).map(function (z) { return (t === 'reanudar' ? 'Reanudar: ' : 'Encender: ') + z.nombre; });
     else if (t === 'apagar') gr = pz.filter(function (z) { return z.estado === 'lista' && !z.prestada; }).map(function (z) { return 'Apagar: ' + z.nombre; });
     else if (t === 'quitar') gr = pz.filter(function (z) { return ['lista', 'apagada', 'suspendida'].indexOf(z.estado) >= 0 && !z.prestada; }).map(function (z) { return 'Quitar: ' + z.nombre; });
+    // Sin pasos que mover: decir por que, en vez de dejar el recuadro vacio.
+    var compartidos = pz.filter(function (z) { return z.prestada && ['lista', 'apagada', 'suspendida'].indexOf(z.estado) >= 0; });
+    var avisoGR = '';
+    if (!gr.length && t === 'agregar') avisoGR = 'Esta función todavía no tiene pasos para ' + o.cia + ': Great Revenue la construye a su medida con tus respuestas.';
+    else if (!gr.length && (t === 'apagar' || t === 'quitar') && compartidos.length) avisoGR = 'Esta función usa pasos compartidos con ' + (compartidos[0].prestada_nombre || 'otra compañía') + ': no se puede ' + (t === 'apagar' ? 'apagar' : 'quitar') + ' solo para ' + o.cia + '. Great Revenue revisa el pedido y te propone cómo hacerlo.';
     var obl = qs.some(function (q) { return q.obligatoria; });
     o.caja.className = 'mp-form'; o.caja.hidden = false; o.caja.setAttribute('role', 'form'); o.caja.setAttribute('aria-label', o.etiqueta + ' ' + f.nombre);
     o.caja.innerHTML = '<h4>' + h(o.etiqueta) + ' «' + h(f.nombre) + '» para ' + h(o.cia) + '</h4>'
@@ -119,6 +125,7 @@
       + (qs.length ? '<p class="mp-sec">Preguntas</p>' + qs.map(function (q) { return campo(q, 'mpq-' + f.id + '-'); }).join('') : '')
       + (pedir.length ? '<p class="mp-sec">Datos que da la compañía</p>' + pedir.map(function (x) { return campo({ id: x.k, texto: x.texto, tipo: 'texto', obligatoria: false, ayuda: x.comprobado ? 'Todavía no está en su configuración. Escríbelo si ya lo tienes; si no, déjalo vacío y se lo pedimos a la compañía.' : 'Si la compañía ya lo dio, déjalo vacío.' }, 'mpr-' + f.id + '-').replace('data-mp-q=', 'data-mp-r="1" data-mp-q='); }).join('') : '')
       + (conectar.length ? '<div class="mp-gr"><b>La compañía lo conecta en su portal</b><ul>' + conectar.map(function (x) { return '<li>' + h(x.texto) + '</li>'; }).join('') + '</ul></div>' : '')
+      + (avisoGR ? '<div class="mp-gr"><b>Lo hace Great Revenue</b><p style="margin:4px 0 0">' + h(avisoGR) + '</p></div>' : '')
       + (gr.length ? '<div class="mp-gr"><b>Lo hace Great Revenue</b><ul>' + gr.map(function (x) { return '<li>' + h(x) + '</li>'; }).join('') + '</ul></div>' : '')
       + '<div class="mp-pie"><button class="mf-btn p" data-mp-enviar>Enviar pedido</button><button class="mf-btn" data-mp-cancelar>Cancelar</button><span class="mp-msg" role="status" aria-live="polite"></span></div>';
     activarOps(o.caja);

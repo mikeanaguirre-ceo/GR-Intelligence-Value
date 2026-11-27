@@ -24,7 +24,7 @@ h3{font-family:var(--disp);font-size:14px;margin:0}
 .card-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:3px solid var(--prim);padding-bottom:8px}
 .num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--osc);color:#fff;font:700 12px var(--disp);margin-right:8px}
 .dos{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
-label{display:grid;gap:4px;font-size:13px;color:var(--g)}
+label{display:grid;gap:4px;font-size:14px;color:var(--g)}
 input,select,textarea{font:inherit;color:var(--osc);border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;min-width:0}
 textarea{resize:vertical}
 .color{display:flex;gap:8px}.color input[type=color]{width:44px;padding:2px;height:38px}
@@ -36,7 +36,7 @@ button:disabled{opacity:.6;cursor:wait}
 button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--prim);outline-offset:2px}
 .msg{font-size:14px}.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
 .aviso{background:#fff4e5;border:1px solid #f3c47a;color:#7a4a00;border-radius:8px;padding:8px 12px;font-size:13px}
-.nota{background:var(--bg);border:1px solid var(--line);color:var(--g);border-radius:8px;padding:8px 12px;font-size:13px}
+.nota{background:var(--bg);border:1px solid var(--line);color:var(--g);border-radius:8px;padding:8px 12px;font-size:14px}
 .liga{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;word-break:break-all}.liga code{background:var(--bg);padding:4px 8px;border-radius:6px}
 .dato{display:grid;grid-template-columns:minmax(140px,220px) minmax(0,1fr);gap:4px 14px;font-size:14px;margin:0}.dato dt{color:var(--g)}.dato dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:620px){.dato{grid-template-columns:1fr}.dato dd{margin-bottom:6px}}
@@ -52,10 +52,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .marco{overflow:hidden;position:relative;background:#f9f9f9;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .marco iframe{width:250%;height:250%;transform:scale(.4);transform-origin:0 0;border:0;pointer-events:none;background:#fff}
 .muestra button{border:0;background:transparent;padding:8px 10px;text-align:left;font:inherit;font-size:13px;color:var(--osc);cursor:pointer;text-decoration:underline}
-.vacio{color:var(--g);font-size:13px;margin:0}
+.vacio{color:var(--g);font-size:14px;margin:0}
 .pedir{display:grid;gap:6px}.pedir textarea{min-height:56px}
 .sol{display:grid;gap:6px;margin:0;padding:0;list-style:none}.sol li{font-size:14px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:grid;gap:2px}
-.chip{display:inline-block;border-radius:999px;padding:2px 8px;font-size:14px;font-weight:700;margin-right:6px}.chip.pendiente{background:#fff4e5;color:#7a4a00}.chip.aplicado{background:#e6f4ea;color:#1e6b34}.chip.descartado{background:#eee;color:#555}
+.chip{display:inline-block;border-radius:999px;padding:2px 8px;font-size:14px;font-weight:700;margin-right:6px}.chip.pendiente{background:#eef2ff;color:#3730a3}.chip.aplicado{background:#e6f4ea;color:#1e6b34}.chip.descartado{background:#eee;color:#555}
 /* Aviso en vivo con la marca */
 .prev{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;max-width:560px}
 .prev .ptop{padding:12px 16px}.prev .ptop img{height:34px;max-width:160px;object-fit:contain;display:block}
