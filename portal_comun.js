@@ -18,7 +18,7 @@
   };
   P.api = function (cuerpo) {
     return fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(cuerpo) })
-      .then(function (r) { return r.json().catch(function () { return { error: 'Respuesta no valida' }; }).then(function (d) { d._codigo = r.status; return d; }); });
+      .then(function (r) { return r.json().catch(function () { return { error: 'El servidor no respondió bien. Intenta otra vez en un momento.' }; }).then(function (d) { d._codigo = r.status; return d; }); });
   };
   P.google = function (contenedor, alEntrar, tema) {
     var intentar = function () {
@@ -41,10 +41,12 @@
     if (bajada) P.$('bajada').textContent = bajada;
     P.revelar();
   };
+  // Nombre de negocio de cada estado de una solicitud (el mismo que usa el motor de alta).
+  var ESTADO_SOL = { pendiente: 'Pendiente', aplicado: 'Hecho', hecho: 'Hecho', descartado: 'Descartado', rechazado: 'Descartado' };
   P.solicitudes = function (sol, filtro) {
     var xs = (sol || []).filter(function (s) { return !filtro || String(s.seccion).indexOf(filtro) === 0; });
     if (!xs.length) return '';
-    return '<ul class="sol">' + xs.map(function (s) { return '<li><span><span class="chip ' + P.h(s.estado) + '">' + P.h(s.estado) + '</span><b>' + P.h(s.seccion) + '</b> · ' + P.h(s.fecha) + (s.por ? ' · ' + P.h(s.por) : '') + '</span><span>' + P.h(s.instruccion) + '</span>' + (s.respuesta ? '<span style="color:var(--g)">Respuesta: ' + P.h(s.respuesta) + '</span>' : '') + '</li>'; }).join('') + '</ul>';
+    return '<ul class="sol">' + xs.map(function (s) { return '<li><span><span class="chip ' + P.h(s.estado) + '">' + P.h(ESTADO_SOL[s.estado] || s.estado) + '</span><b>' + P.h(s.seccion) + '</b> · ' + P.h(s.fecha) + (s.por ? ' · ' + P.h(s.por) : '') + '</span><span>' + P.h(s.instruccion) + '</span>' + (s.respuesta ? '<span style="color:var(--g)">Respuesta: ' + P.h(s.respuesta) + '</span>' : '') + '</li>'; }).join('') + '</ul>';
   };
   // Recuadro de cambios de una seccion: escribe la instruccion y se registra con su seccion.
   P.pedir = function (id, seccion, ejemplo) {
