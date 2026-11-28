@@ -18,11 +18,15 @@
   };
   P.api = function (cuerpo) {
     return fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(cuerpo) })
-      .then(function (r) { return r.json().catch(function () { return { error: 'El servidor no respondió bien. Intenta otra vez en un momento.' }; }).then(function (d) { d._codigo = r.status; return d; }); });
+      .then(function (r) { return r.json().catch(function () { return { error: 'El servidor no respondió bien. Intenta otra vez en un momento.' }; }).then(function (d) { d._codigo = r.status; return d; }); })
+      // Sin conexion tambien contesta (no se queda nadie en «Enviando...»): cada pantalla muestra este error y deja reintentar.
+      .catch(function () { return { error: 'No hay conexión. Revisa tu internet e intenta otra vez.', _codigo: 0 }; });
   };
   P.google = function (contenedor, alEntrar, tema) {
+    var n = 0;
     var intentar = function () {
-      if (!window.google || !google.accounts) { setTimeout(intentar, 300); return; }
+      // Si el boton de Google no carga en ~15 s (sin red o bloqueado), se dice y se deja de intentar.
+      if (!window.google || !google.accounts) { if (++n > 50) { var c = P.$(contenedor); if (c) c.innerHTML = '<p class="msg bad" style="margin:0">No se pudo cargar el botón de Google. Revisa tu conexión o que no esté bloqueado y recarga la página.</p>'; return; } setTimeout(intentar, 300); return; }
       google.accounts.id.initialize({ client_id: CLIENT_ID, callback: alEntrar, ux_mode: 'popup' });
       google.accounts.id.renderButton(P.$(contenedor), { theme: tema || 'outline', size: 'large', text: 'signin_with', locale: 'es' });
     };
@@ -46,7 +50,7 @@
   P.solicitudes = function (sol, filtro) {
     var xs = (sol || []).filter(function (s) { return !filtro || String(s.seccion).indexOf(filtro) === 0; });
     if (!xs.length) return '';
-    return '<ul class="sol">' + xs.map(function (s) { return '<li><span><span class="chip ' + P.h(s.estado) + '">' + P.h(ESTADO_SOL[s.estado] || s.estado) + '</span><b>' + P.h(s.seccion) + '</b> · ' + P.h(s.fecha) + (s.por ? ' · ' + P.h(s.por) : '') + '</span><span>' + P.h(s.instruccion) + '</span>' + (s.respuesta ? '<span style="color:var(--g)">Respuesta: ' + P.h(s.respuesta) + '</span>' : '') + '</li>'; }).join('') + '</ul>';
+    return '<ul class="sol">' + xs.map(function (s) { return '<li><span><span class="chip ' + P.h(s.estado) + '">' + P.h(ESTADO_SOL[s.estado] || s.estado) + '</span><b>' + P.h(s.seccion) + '</b> · ' + (s.id ? 'n.º ' + P.h(s.id) + ' · ' : '') + P.h(s.fecha) + (s.por ? ' · ' + P.h(s.por) : '') + '</span><span>' + P.h(s.instruccion) + '</span>' + (s.respuesta ? '<span style="color:var(--g)">Respuesta: ' + P.h(s.respuesta) + '</span>' : '') + '</li>'; }).join('') + '</ul>';
   };
   // Recuadro de cambios de una seccion: escribe la instruccion y se registra con su seccion.
   P.pedir = function (id, seccion, ejemplo) {
