@@ -1,4 +1,4 @@
-// GR Intelligence: pedidos del motor de alta (vZ, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
+// GR Intelligence: pedidos del motor de alta (vAA, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
 // construir, las contestamos dentro del portal y despues empezamos a construir».
 // - MP.formulario: al pedir una funcion, las preguntas del catalogo (las comunes del tipo de pedido y las de la funcion), los datos que
 //   le faltan a la compania y las conexiones que hace en su portal, con lo obligatorio marcado y validado junto a cada campo.
@@ -60,6 +60,7 @@
   MP.textosDe = function (caja) {
     var r = [];
     Array.prototype.forEach.call((caja || document).querySelectorAll('[data-mp-q]'), function (q) {
+      if (q.hidden) return; /* vAA (ronda 27): la pregunta de seguimiento oculta no va en el pedido */
       var on = q.querySelector('input:checked'), x = q.querySelector('input:not([type=radio]),textarea'), v = on ? on.value : (x ? String(x.value || '').trim() : '');
       var l = q.querySelector('.mp-lbl,label'); if (v) r.push({ p: l ? l.textContent.replace(/\*\s*$/, '').trim() : '', v: v });
     });
