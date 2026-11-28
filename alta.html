@@ -7,12 +7,12 @@
 <title>Portal de alta | Great Revenue Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="/portal_comun.css?v=20261127x">
+<link rel="stylesheet" href="/portal_comun.css?v=20261127y">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
-<script src="/portal_comun.js?v=20261127x"></script>
-<script src="/motor_funciones.js?v=20261127x"></script>
-<script src="/motor_pedidos.js?v=20261127x"></script>
+<script src="/portal_comun.js?v=20261127y"></script>
+<script src="/motor_funciones.js?v=20261127y"></script>
+<script src="/motor_pedidos.js?v=20261127y"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Great Revenue Intelligence</b></span><span class="quien" id="quien">Portal de alta</span></div>
@@ -188,7 +188,7 @@
       var cuerpo = { accion: 'alta', sesion: ses(), nombre: $('n-nombre').value.trim(), sitio_web: $('n-sitio').value.trim(), manual_url: $('n-manual').value.trim(), logos_url: $('n-logos').value.trim(), admin: $('n-admin').value.trim() };
       if (f && f.size > 10 * 1024 * 1024) { P.msg('m-alta', 'bad', 'El PDF pesa más de 10 MB. Súbelo a Drive y pega la liga.'); return; }
       P.msg('m-alta', '', f ? 'Subiendo el manual...' : 'Dando de alta...'); $('n-alta').disabled = true;
-      leerPdf(f).then(function (pdf) { if (pdf) cuerpo.manual_pdf = pdf; return P.api(cuerpo); }).then(function (d) {
+      leerPdf(f).then(function (pdf) { if (pdf && pdf.error) return pdf; if (pdf) cuerpo.manual_pdf = pdf; return P.api(cuerpo); }).then(function (d) {
         $('n-alta').disabled = false;
         if (d._codigo === 401) { salir(d.error); return; }
         if (!d.ok) { P.msg('m-alta', 'bad', d.error || 'No se pudo dar de alta.'); return; }
@@ -198,7 +198,7 @@
   }
   function leerPdf(f) {
     if (!f) return Promise.resolve(null);
-    return new Promise(function (ok, mal) { var r = new FileReader(); r.onload = function () { ok({ nombre: f.name, base64: String(r.result).split(',')[1] || '' }); }; r.onerror = mal; r.readAsDataURL(f); });
+    return new Promise(function (ok, mal) { var r = new FileReader(); r.onload = function () { ok({ nombre: f.name, base64: String(r.result).split(',')[1] || '' }); }; r.onerror = function () { ok({ error: 'No se pudo leer el PDF. Revisa el archivo e intenta otra vez.' }); }; // nunca se queda en «Subiendo...» r.readAsDataURL(f); });
   }
 
   // Secciones con campos. Cada una se guarda y se deshace por separado.
@@ -327,7 +327,7 @@
     if (!f) { P.msg('m-manual', 'bad', 'Elige el PDF.'); return; }
     if (f.size > 10 * 1024 * 1024) { P.msg('m-manual', 'bad', 'El PDF pesa más de 10 MB. Súbelo a Drive y pega la liga.'); return; }
     P.msg('m-manual', '', 'Subiendo...'); $('subir-manual').disabled = true;
-    leerPdf(f).then(function (pdf) { return P.api({ accion: 'subir_manual', sesion: ses(), tenant: t, manual_pdf: pdf }); }).then(function (d) {
+    leerPdf(f).then(function (pdf) { if (pdf && pdf.error) return pdf; return P.api({ accion: 'subir_manual', sesion: ses(), tenant: t, manual_pdf: pdf }); }).then(function (d) {
       $('subir-manual').disabled = false;
       if (!d.ok) { P.msg('m-manual', 'bad', d.error || 'No se pudo subir.'); return; }
       P.msg('m-manual', 'ok', 'Manual guardado en Drive.'); setTimeout(cargar, 800);

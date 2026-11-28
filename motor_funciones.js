@@ -1,6 +1,8 @@
-// GR Intelligence: motor de alta (vG, 27-nov-2026: pedidos con preguntas antes de construir, ver motor_pedidos.js).
+// GR Intelligence: motor de alta (vH, 27-nov-2026: pedidos con preguntas antes de construir, ver motor_pedidos.js).
 // vG (rondas 13 a 15): «usa la de» oculto en pasos que no aplican; «Agregar pasos» cuando una funcion tiene pasos de otra
 // compania que se pueden asignar (servicio de prospeccion).
+// vH (ronda 16): «Agregar pasos» solo en funciones listas y como Completar; Apagar tambien en funciones por completar con pasos
+// corriendo; Quitar tambien en pausadas.
 // vF (rondas 5 a 12): sin botones en funciones fijas, sin Apagar si nada corre, Reanudar si hay un paso pausado en una funcion
 // lista, "se construirá en", letra de 14 px, botones de 40 px y Comparar todas con simbolos.
 // vE: pedidos con preguntas.
@@ -87,7 +89,7 @@
       return '<button class="mf-card" data-mf-cia="' + h(c.tenant) + '"><div><h3>' + h(c.nombre) + '</h3><div class="mf-sub">' + h(tipo(c)) + (c.crm ? ' · ' + h(c.crm) : '') + '</div></div>' + MF.barra(c.cuenta) + '<div class="mf-mini">' + mini.join('') + '</div></button>';
     }).join('') + '</div>';
   };
-  var ACCIONES = { lista: [['apagar', 'Apagar'], ['quitar', 'Quitar']], apagada: [['encender', 'Encender'], ['quitar', 'Quitar']], suspendida: [['reanudar', 'Reanudar']], falta: [['completar', 'Completar'], ['quitar', 'Quitar']], no_aplica: [['agregar', 'Agregar']] };
+  var ACCIONES = { lista: [['apagar', 'Apagar'], ['quitar', 'Quitar']], apagada: [['encender', 'Encender'], ['quitar', 'Quitar']], suspendida: [['reanudar', 'Reanudar'], ['quitar', 'Quitar']], falta: [['completar', 'Completar'], ['apagar', 'Apagar'], ['quitar', 'Quitar']], no_aplica: [['agregar', 'Agregar']] };
   // Detalle de una compania. op: { pedir: bool, pedidos: [...], abiertos: {modulo: true} }
   MF.detalle = function (c, op) {
     op = op || {};
@@ -108,7 +110,8 @@
         var accion = '';
         if (op.pedir) accion = pd ? (window.MP ? window.MP.chip(pd.estado) : '<span class="mf-chip mf-sus">Pedido</span>') : (f.fija ? [] : (ACCIONES[f.estado] || []).filter(function (x) { return x[0] !== 'apagar' || (f.piezas || []).some(function (z) { return z.estado === 'lista' && !z.a_mano && !z.ajena; }); })
           .concat(f.estado === 'lista' && (f.piezas || []).some(function (z) { return z.estado === 'suspendida' && !z.ajena; }) ? [['reanudar', 'Reanudar']] : [])
-          .concat(f.estado !== 'no_aplica' && (f.piezas || []).some(function (z) { return z.estado === 'no_aplica' && z.prestada && !z.ajena; }) ? [['agregar', 'Agregar pasos']] : [])).map(function (a, i) { return '<button class="mf-btn" style="margin:0 0 4px 4px;min-height:40px" data-mf-pedir="' + h(f.id) + '" data-mf-que="' + a[0] + '">' + a[1] + '</button>'; }).join('');
+          // Funcion lista con pasos de otra compania que se pueden asignar: es un Completar (sus preguntas propias son opcionales).
+          .concat(f.estado === 'lista' && (f.piezas || []).some(function (z) { return z.estado === 'no_aplica' && z.prestada && !z.ajena; }) ? [['completar', 'Agregar pasos']] : [])).map(function (a, i) { return '<button class="mf-btn" style="margin:0 0 4px 4px;min-height:40px" data-mf-pedir="' + h(f.id) + '" data-mf-que="' + a[0] + '">' + a[1] + '</button>'; }).join('');
         var piezas = '<ul class="mf-pz" data-mf-pz="' + h(f.id) + '" hidden>' + (f.piezas || []).map(function (z) { return '<li>' + MF.chip(z.estado) + ' ' + h(z.nombre) + (z.prestada && z.estado !== 'no_aplica' ? ' <span class="mf-sub">· usa ' + (z.prestada === '*' ? 'la del motor común' : 'la de ' + h(z.prestada_nombre || z.prestada)) + '</span>' : '') + (z.se_construye_en ? ' <span class="mf-sub">· se construirá en ' + h(z.se_construye_en) + '</span>' : '') + (z.motivo ? ' <span class="mf-sub">· ' + h(z.motivo) + '</span>' : '') + '</li>'; }).join('') + '</ul>';
         return '<div class="mf-fn"><span class="mf-dot ' + e[1] + '" title="' + h(e[0]) + '"></span><div><div class="t">' + h(f.nombre) + ' <span class="mf-sub">· ' + h(e[0]) + '</span></div><div class="d">' + h(f.resuelve) + '</div>'
           + (f.motivo ? '<div class="d">' + h(f.motivo) + '</div>' : '') + (f.nota ? '<div class="d">' + h(f.nota) + '</div>' : '') + (q.length && f.estado !== 'no_aplica' ? '<div class="q">Falta: ' + h(q.join(' · ')) + '</div>' : '')

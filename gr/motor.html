@@ -9,7 +9,7 @@
 <body>
 <script>
 // Motor de alta de Great Revenue: intelligence.greatrevenue.com/gr/motor (abre el portal de alta en la vista del motor).
-fetch('/alta.html', { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (h) { document.open(); document.write(h); document.close(); }).catch(function () { document.body.innerHTML = '<p style="font-family:Arial;padding:24px">No se pudo abrir el motor de alta. Revisa tu internet y recarga la página.</p>'; });
+fetch('/alta.html', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('pagina'); return r.text(); }).then(function (h) { document.open(); document.write(h); document.close(); }).catch(function () { document.body.innerHTML = '<p style="font-family:Arial;padding:24px">No se pudo abrir el motor de alta. Revisa tu internet y recarga la página.</p>'; });
 </script>
 </body>
 </html>

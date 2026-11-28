@@ -7,11 +7,11 @@
 <title>Portal de la compañía | Great Revenue Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="/portal_comun.css?v=20261127x">
+<link rel="stylesheet" href="/portal_comun.css?v=20261127y">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
-<script src="/portal_comun.js?v=20261127x"></script>
-<script src="/motor_funciones.js?v=20261127x"></script>
+<script src="/portal_comun.js?v=20261127y"></script>
+<script src="/motor_funciones.js?v=20261127y"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Portal de tu compañía</b></span><span class="quien" id="quien">Entra con tu cuenta de Google</span></div>
@@ -471,7 +471,7 @@
     if (!b) return;
     var cod = b.getAttribute('data-ficha-bot'), m = $('m-ficha-' + cod);
     m.textContent = 'Abriendo…';
-    fetch('https://mikea.app.n8n.cloud/webhook/gr-bot-kb-leer', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sesion: ses() }) }).then(function (r) { return r.json(); }).then(function (d) {
+    (function () { var ctl = window.AbortController ? new AbortController() : null; if (ctl) setTimeout(function () { ctl.abort(); }, 60000); return fetch('https://mikea.app.n8n.cloud/webhook/gr-bot-kb-leer', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sesion: ses() }), signal: ctl ? ctl.signal : undefined }); })().then(function (r) { return r.json(); }).then(function (d) {
       var txt = (d.por_codigo || {})[cod];
       if (!txt) { m.textContent = d.error || 'Este producto no tiene ficha.'; return; }
       var e = (d.estado || {})[cod] || {};

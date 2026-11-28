@@ -1,4 +1,4 @@
-// GR Intelligence: pedidos del motor de alta (vP, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
+// GR Intelligence: pedidos del motor de alta (vQ, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
 // construir, las contestamos dentro del portal y despues empezamos a construir».
 // - MP.formulario: al pedir una funcion, las preguntas del catalogo (las comunes del tipo de pedido y las de la funcion), los datos que
 //   le faltan a la compania y las conexiones que hace en su portal, con lo obligatorio marcado y validado junto a cada campo.
@@ -7,6 +7,7 @@
 // vB (ronda 1 de auditoria): preguntas de seguimiento (requerida_si), conexiones aparte, letra de 14 px, avance con texto y no solo
 // color, campos con aria-required y su error ligado, una sola accion principal, fechas en palabras, colores propios por etapa,
 // textos segun el tipo de pedido y aviso cuando hay mas de 50.
+// vQ (ronda 16): pedidos relacionados tambien entre GR y su servicio de prospeccion.
 // vP (ronda 15): pasos de GR dentro de una funcion que ya aplica tambien se activan; «ya existen» solo si estan corriendo;
 // «y también lo usará <compañía>».
 // vO (ronda 14): al agregar con pasos que ya existen (p. ej. los de GR al servicio de prospeccion) se dice que se asignan.
@@ -47,7 +48,9 @@
   };
   // Pedidos abiertos de la misma funcion en companias relacionadas (la principal y sus unidades): se revisan juntos.
   MP.relacionados = function (ps, cs, c, fid) {
-    var rel = cs.filter(function (x) { return x.tenant !== c.tenant && (x.padre === c.tenant || x.tenant === c.padre); }).map(function (x) { return x.tenant; });
+    // Relacionadas: la principal y sus unidades, y GR con su servicio de prospeccion (STIL, IMMMU, Hootsuite usan pasos de GR).
+    var sdr = function (x) { return x.fuente === 'servicio_sdr'; };
+    var rel = cs.filter(function (x) { return x.tenant !== c.tenant && (x.padre === c.tenant || x.tenant === c.padre || (c.tenant === 'GR' && sdr(x)) || (sdr(c) && x.tenant === 'GR')); }).map(function (x) { return x.tenant; });
     return (ps || []).filter(function (p) { return rel.indexOf(p.tenant) >= 0 && MP.abierto(p) && (p.instruccion || '').indexOf('[funcion=' + fid + ']') >= 0; })
       .map(function (p) { return ((cs.filter(function (x) { return x.tenant === p.tenant; })[0] || {}).nombre || 'otra compañía'); })
       .filter(function (n, i, xs) { return xs.indexOf(n) === i; }); // una vez por compania
