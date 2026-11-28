@@ -1,4 +1,4 @@
-// GR Intelligence: pedidos del motor de alta (vS, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
+// GR Intelligence: pedidos del motor de alta (vT, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
 // construir, las contestamos dentro del portal y despues empezamos a construir».
 // - MP.formulario: al pedir una funcion, las preguntas del catalogo (las comunes del tipo de pedido y las de la funcion), los datos que
 //   le faltan a la compania y las conexiones que hace en su portal, con lo obligatorio marcado y validado junto a cada campo.
@@ -7,6 +7,7 @@
 // vB (ronda 1 de auditoria): preguntas de seguimiento (requerida_si), conexiones aparte, letra de 14 px, avance con texto y no solo
 // color, campos con aria-required y su error ligado, una sola accion principal, fechas en palabras, colores propios por etapa,
 // textos segun el tipo de pedido y aviso cuando hay mas de 50.
+// vT (ronda 19): un aviso por grupo de companias que usaran pasos por construir.
 // vS (ronda 18): el aviso de pasos pausados solo manda a Reanudar donde ese boton existe.
 // vR (ronda 17): Completar no reanuda pasos pausados; borrador repintado sin interpretar «$».
 // vQ (ronda 16): pedidos relacionados tambien entre GR y su servicio de prospeccion.
@@ -128,7 +129,9 @@
       if (asig.length) avisos.push(asig.every(function (z) { return z.prestada_lista !== false; }) ? 'Se le asignan pasos que ya existen' + (pz.some(function (z) { return z.estado === 'falta' || (f.estado === 'no_aplica' && !z.prestada); }) ? ' y se construye lo que falta' : '') + ': no cambia nada para quien ya los usa.' : 'Algunos pasos de ' + (asig[0].prestada_nombre || 'otra compañía') + ' no están corriendo hoy: Great Revenue los revisa antes de asignarlos.');
       if (f.estado !== 'no_aplica') otros(pz.filter(function (z) { return ['falta', 'apagada', 'suspendida'].indexOf(z.estado) >= 0; }));
       // Pasos por construir que una unidad usara (aun no existen).
-      pz.filter(function (z) { return z.estado === 'falta' && (z.usaran || []).length; }).forEach(function (z) { avisos.push('«' + z.nombre + '» también lo ' + (z.usaran.length > 1 ? 'usarán ' : 'usará ') + lista(z.usaran) + ' cuando esté construido.'); });
+      // Pasos por construir que otras companias usaran: un aviso por grupo de companias (no uno por paso).
+      var futuros = {}; pz.filter(function (z) { return z.estado === 'falta' && (z.usaran || []).length; }).forEach(function (z) { var k = lista(z.usaran); (futuros[k] = futuros[k] || { n: z.usaran.length, zs: [] }).zs.push(z.nombre); });
+      Object.keys(futuros).forEach(function (k) { var g = futuros[k], uno = g.zs.length === 1; avisos.push((uno ? '«' + g.zs[0] + '» también lo ' : 'Estos ' + g.zs.length + ' pasos también los ') + (g.n > 1 ? 'usarán ' : 'usará ') + k + ' cuando ' + (uno ? 'esté construido.' : 'estén construidos.')); });
       if (!pasos.length) avisos.push(!pz.length ? 'Esta función todavía no tiene pasos para ' + cia + ': Great Revenue la construye a su medida con tus respuestas.'
         : ((f.faltan || []).some(function (x) { return x.quien !== 'GR'; }) ? 'Los pasos ya están listos; lo que falta lo da la compañía (arriba).' : 'Los pasos ya están listos; Great Revenue revisa qué falta para dejarla completa.'));
     } else if (t === 'encender' || t === 'reanudar') {

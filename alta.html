@@ -7,12 +7,12 @@
 <title>Portal de alta | Great Revenue Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="/portal_comun.css?v=20261127za">
+<link rel="stylesheet" href="/portal_comun.css?v=20261127zb">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
-<script src="/portal_comun.js?v=20261127za"></script>
-<script src="/motor_funciones.js?v=20261127za"></script>
-<script src="/motor_pedidos.js?v=20261127za"></script>
+<script src="/portal_comun.js?v=20261127zb"></script>
+<script src="/motor_funciones.js?v=20261127zb"></script>
+<script src="/motor_pedidos.js?v=20261127zb"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Great Revenue Intelligence</b></span><span class="quien" id="quien">Portal de alta</span></div>
@@ -38,6 +38,8 @@
   var EDITABLE = true;
   var MOTOR_SOLO = /^\/gr\/motor/.test(location.pathname);
   var ses = function () { return P.sesion(LLAVE); };
+  // Usuarios en uso: quien administra y su equipo, sin repetir (igual que el portal de la compania y el servidor).
+  function usuariosDe(d) { var xs = P.correos(d.portal_admins || '').concat(P.correos(d.portal_usuarios || '')).map(function (x) { return x.toLowerCase(); }); return xs.filter(function (x, i) { return xs.indexOf(x) === i; }).length; }
   function salir(motivo) { if (typeof MA !== 'undefined') MA.datos = null; if (estado.sel === '__motor') estado.sel = null; if ($('panel')) $('panel').innerHTML = ''; P.sesion(LLAVE, null); $('v-portal').hidden = true; $('v-entrar').hidden = false; $('quien').textContent = 'Portal de alta'; $('m-entrar').textContent = motivo || ''; }
 
   P.google('gbtn', function (resp) {
@@ -82,7 +84,7 @@
   function pintarLista() {
     $('lista').innerHTML = '<button class="cia' + (estado.sel === '__motor' ? ' on' : '') + '" id="motor-alta"><b>Motor de alta</b><small>Funciones de todas las compañías: ver, agregar o quitar</small></button>' + estado.companias.map(function (c) {
       return '<button class="cia' + (c.tenant === estado.sel ? ' on' : '') + '" data-t="' + h(c.tenant) + '">' + (c.datos.marca_logo_url ? '<img src="' + h(c.datos.marca_logo_url) + '" alt="">' : '')
-        + '<b>' + h(c.datos.marca_nombre || c.tenant) + '</b><small>' + h(c.datos.modo === 'real' ? 'Real' : 'Prueba') + ' · ' + P.correos(c.datos.portal_usuarios).length + ' de ' + h(c.datos.usuarios_max) + ' usuarios</small></button>';
+        + '<b>' + h(c.datos.marca_nombre || c.tenant) + '</b><small>' + h(c.datos.modo === 'real' ? 'Real' : 'Prueba') + ' · ' + usuariosDe(c.datos) + ' de ' + h(c.datos.usuarios_max) + ' usuarios</small></button>';
     }).join('') + '<button class="nueva" id="nueva">+ Nueva compañía</button>';
     Array.prototype.forEach.call(document.querySelectorAll('.cia'), function (b) { b.onclick = function () { elegir(b.getAttribute('data-t')); }; });
     $('nueva').onclick = nueva;
@@ -141,7 +143,7 @@
       html = barraSup
         + '<div class="mf-kpis"><div class="mf-kpi"><b>' + cs.length + '</b><span>compañías</span></div><div class="mf-kpi"><b>' + (tot.t ? Math.round(100 * tot.l / tot.t) : 0) + '%</b><span>de las funciones que aplican ya están listas</span></div><div class="mf-kpi"><b>' + pendientes.length + '</b><span>' + (pendientes.length === 1 ? 'pedido abierto' : 'pedidos abiertos') + (conDudas.length ? ' · ' + conDudas.length + ' con dudas' : '') + '</span></div><div class="mf-kpi"><b>' + (fuera ? fuera : '✓') + '</b><span>' + (fuera ? (fuera === 1 ? 'cambio pendiente en el catálogo' : 'cambios pendientes en el catálogo') : 'catálogo al día') + '</span></div></div>'
         + MF.tarjetas(cs, ped);
-      if (fuera) html += '<div class="mf-box"><h2>Catálogo por actualizar</h2><p style="margin:0;font-size:14px">Hay procesos encendidos que todavía no están en el catálogo de funciones: Great Revenue los agrega con su función para que cada compañía vea su estado completo.</p>' + ((au.fuera_del_catalogo || []).length ? '<details><summary style="cursor:pointer;font-size:14px;min-height:40px;display:flex;align-items:center">Ver cuáles (' + au.fuera_del_catalogo.length + ')</summary><ul style="margin:0;padding-left:18px;font-size:14px">' + au.fuera_del_catalogo.map(function (x) { return '<li>' + h(x.nombre) + '</li>'; }).join('') + '</ul></details>' : '') + '<ul style="margin:0;padding-left:18px;font-size:14px">' + ((au.procesos_que_no_existen || []).length ? '<li>' + au.procesos_que_no_existen.length + ' proceso' + (au.procesos_que_no_existen.length > 1 ? 's' : '') + ' del catálogo ya no existe' + (au.procesos_que_no_existen.length > 1 ? 'n' : '') + ': hay que actualizar el catálogo.</li>' : '') + '</ul></div>';
+      if (fuera) html += '<div class="mf-box"><h2>Catálogo por actualizar</h2><p style="margin:0;font-size:14px">' + ((au.fuera_del_catalogo || []).length ? 'Hay procesos encendidos que todavía no están en el catálogo de funciones: Great Revenue los agrega con su función para que cada compañía vea su estado completo.' : 'El catálogo apunta a procesos que ya no existen: Great Revenue lo actualiza.') + '</p>' + ((au.fuera_del_catalogo || []).length ? '<details><summary style="cursor:pointer;font-size:14px;min-height:40px;display:flex;align-items:center">Ver cuáles (' + au.fuera_del_catalogo.length + ')</summary><ul style="margin:0;padding-left:18px;font-size:14px">' + au.fuera_del_catalogo.map(function (x) { return '<li>' + h(x.nombre) + '</li>'; }).join('') + '</ul></details>' : '') + '<ul style="margin:0;padding-left:18px;font-size:14px">' + ((au.procesos_que_no_existen || []).length ? '<li>' + au.procesos_que_no_existen.length + ' proceso' + (au.procesos_que_no_existen.length > 1 ? 's' : '') + ' del catálogo ya no existe' + (au.procesos_que_no_existen.length > 1 ? 'n' : '') + ': hay que actualizar el catálogo.</li>' : '') + '</ul></div>';
     }
     $('panel').innerHTML = '<div class="mf-wrap">' + html + '<p class="mf-sub" style="margin:0">El estado de los procesos se revisa una vez al día. Para dar de alta una compañía nueva ' + (MOTOR_SOLO ? 'entra al <a href="/gr/alta">portal de alta</a>' : 'usa el botón «+ Nueva compañía»') + '; aparece aquí sola.</p></div>';
     $('ma-actualizar').onclick = function () { if (!maSeguro()) return; this.disabled = true; this.textContent = 'Actualizando...'; motorAlta(true); };
@@ -263,7 +265,7 @@
   function vivo() {
     var d = datosVivos();
     if ($('prev')) $('prev').innerHTML = P.aviso(d);
-    if ($('uso')) { var n = P.correos(d.portal_usuarios).length, m = Number(d.usuarios_max || 0); $('uso').textContent = n + ' de ' + m; $('uso').className = 'uso' + (n > m ? ' lleno' : ''); }
+    if ($('uso')) { var n = usuariosDe(d), m = Number(d.usuarios_max || 0); $('uso').textContent = n + ' de ' + m; $('uso').className = 'uso' + (n > m ? ' lleno' : ''); }
     botonInvitar();
   }
   // El boton de invitacion siempre dice a quien va: a la administradora GUARDADA. Si el campo tiene otro correo sin guardar, no deja enviar.

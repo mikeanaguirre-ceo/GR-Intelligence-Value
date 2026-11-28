@@ -7,11 +7,11 @@
 <title>Portal de la compañía | Great Revenue Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="/portal_comun.css?v=20261127za">
+<link rel="stylesheet" href="/portal_comun.css?v=20261127zb">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
-<script src="/portal_comun.js?v=20261127za"></script>
-<script src="/motor_funciones.js?v=20261127za"></script>
+<script src="/portal_comun.js?v=20261127zb"></script>
+<script src="/motor_funciones.js?v=20261127zb"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Portal de tu compañía</b></span><span class="quien" id="quien">Entra con tu cuenta de Google</span></div>
@@ -33,7 +33,6 @@
   var LLAVE = 'gr_sesion_cia';
   var estado = { companias: [], sel: null, rol: '', muestras: {} };
   var EDITABLE = false;
-  // La compania viene en la ruta (/itera/portal); la forma vieja ?c=ITERA sigue sirviendo.
   // La compania pedida en la liga (?c=, tambien unidades como itera_aws) manda sobre la de la ruta (/itera/portal).
   var pedida = (/[?&]c=([A-Za-z0-9_]+)/.exec(location.search) || [])[1] || (/^\/([a-z0-9]+)\/portal/.exec(location.pathname) || [])[1];
   var ses = function () { return P.sesion(LLAVE); };
@@ -139,7 +138,7 @@
       + (adm ? '<div class="acciones"><label style="flex:1;min-width:220px">Agregar a una persona (correo de Google)<input id="nuevo-usuario" type="email" placeholder="nombre@compania.com"' + (lleno ? ' disabled' : '') + '></label><button class="p" id="agregar"' + (lleno ? ' disabled' : '') + '>Agregar</button></div>'
         + (lleno ? '<p class="vacio">Ya usan todas las licencias. Quita a alguien o pide más licencias.</p>' : '')
         + '<div class="acciones"><label style="min-width:160px">Licencias adicionales<input id="lic-cuantas" type="number" min="1" max="50" value="1"></label><button class="s" id="lic-pedir">Pedir más licencias</button></div>'
-        + (sol.fecha ? '<p class="vacio">Pediste ' + h(sol.cuantas) + ' licencia(s) más el ' + h(P.fecha(sol.fecha)) + '. Great Revenue ya recibió el aviso.</p>' : '') : '')
+        + (sol.fecha ? '<p class="vacio">Pediste ' + h(sol.cuantas) + (Number(sol.cuantas) === 1 ? ' licencia' : ' licencias') + ' más el ' + h(P.fecha(sol.fecha)) + '. Great Revenue ya recibió el aviso.</p>' : '') : '')
       + '<span class="msg" id="m-equipo"></span>';
     return tarjeta(1, 'Equipo', cuerpo + P.pedir('equipo', 'Equipo', 'Ej.: explicar a mi equipo cómo dar de alta su Google') + P.solicitudes(c.solicitudes, 'Equipo'));
   }
@@ -162,8 +161,8 @@
     if ($('lic-pedir')) $('lic-pedir').onclick = function () {
       var b = $('lic-pedir'), n = Math.round(Number($('lic-cuantas').value || 0));
       if (!(n >= 1 && n <= 50)) { P.msg('m-equipo', 'bad', 'Indica cuántas licencias más necesitas (1 a 50).'); return; }
-      if (!b.getAttribute('data-confirmar')) { b.setAttribute('data-confirmar', '1'); b.className = 'p'; b.textContent = 'Confirmar solicitud'; P.msg('m-equipo', '', 'Se avisa a Great Revenue que necesitan ' + n + ' licencia(s) más.'); return; }
-      llamar({ accion: 'licencias_pedir', cuantas: n }, 'Listo: Great Revenue recibió tu solicitud de ' + n + ' licencia(s) más.', b);
+      if (!b.getAttribute('data-confirmar')) { b.setAttribute('data-confirmar', '1'); b.className = 'p'; b.textContent = 'Confirmar solicitud'; P.msg('m-equipo', '', 'Se avisa a Great Revenue que necesitan ' + n + (n === 1 ? ' licencia' : ' licencias') + ' más.'); return; }
+      llamar({ accion: 'licencias_pedir', cuantas: n }, 'Listo: Great Revenue recibió tu solicitud de ' + n + (n === 1 ? ' licencia' : ' licencias') + ' más.', b);
     };
     Array.prototype.forEach.call(document.querySelectorAll('[data-invitar]'), function (b) {
       b.onclick = function () {

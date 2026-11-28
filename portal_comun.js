@@ -56,7 +56,7 @@
   P.solicitudes = function (sol, filtro) {
     var xs = (sol || []).filter(function (s) { return !filtro || String(s.seccion).indexOf(filtro) === 0; });
     if (!xs.length) return '';
-    return '<ul class="sol">' + xs.map(function (s) { return '<li><span><span class="chip ' + P.h(s.estado) + '">' + P.h(ESTADO_SOL[s.estado] || s.estado) + '</span><b>' + P.h(s.seccion) + '</b> · ' + (s.id ? 'n.º ' + P.h(s.id) + ' · ' : '') + P.h(P.fecha(s.fecha)) + (s.por ? ' · ' + P.h(s.por) : '') + '</span><span>' + P.h(s.instruccion) + '</span>' + (s.respuesta ? '<span style="color:var(--g)">Respuesta: ' + P.h(s.respuesta) + '</span>' : '') + '</li>'; }).join('') + '</ul>';
+    return '<ul class="sol">' + xs.map(function (s) { return '<li><span><span class="chip ' + P.h(s.estado === 'pendiente' ? 'revisar' : s.estado) + '">' + P.h(ESTADO_SOL[s.estado] || s.estado) + '</span><b>' + P.h(s.seccion) + '</b> · ' + (s.id ? 'n.º ' + P.h(s.id) + ' · ' : '') + P.h(P.fecha(s.fecha)) + (s.por ? ' · ' + P.h(s.por) : '') + '</span><span>' + P.h(s.instruccion) + '</span>' + (s.respuesta ? '<span style="color:var(--g)">Respuesta: ' + P.h(s.respuesta) + '</span>' : '') + '</li>'; }).join('') + '</ul>';
   };
   // Recuadro de cambios de una seccion: escribe la instruccion y se registra con su seccion.
   P.pedir = function (id, seccion, ejemplo) {
@@ -206,7 +206,8 @@
     }).join('') + '</div>';
   };
   // Marca de la compania de la ruta (/<clave>/...) antes de iniciar sesion: nombre, logo y colores publicos.
-  P.claveDeRuta = function () { return ((/^\/([a-z0-9]+)\//.exec(location.pathname) || [])[1] || (/[?&]c=([A-Za-z0-9]+)/.exec(location.search) || [])[1] || '').toUpperCase(); };
+  // ?c= (tambien unidades como itera_aws) manda sobre la ruta, igual que el portal de la compania.
+  P.claveDeRuta = function () { return ((/[?&]c=([A-Za-z0-9_]+)/.exec(location.search) || [])[1] || (/^\/([a-z0-9]+)\//.exec(location.pathname) || [])[1] || '').toUpperCase(); };
   P.marcaPublica = function (titulo, bajada) {
     var t = P.claveDeRuta(); if (!t) return Promise.resolve(null);
     return P.api({ accion: 'marca', tenant: t }).then(function (d) {
