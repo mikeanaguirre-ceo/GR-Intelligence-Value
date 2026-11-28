@@ -7,11 +7,11 @@
 <title>Portal de la compañía | Great Revenue Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="/portal_comun.css?v=20261127y">
+<link rel="stylesheet" href="/portal_comun.css?v=20261127z">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
-<script src="/portal_comun.js?v=20261127y"></script>
-<script src="/motor_funciones.js?v=20261127y"></script>
+<script src="/portal_comun.js?v=20261127z"></script>
+<script src="/motor_funciones.js?v=20261127z"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Portal de tu compañía</b></span><span class="quien" id="quien">Entra con tu cuenta de Google</span></div>
@@ -475,7 +475,7 @@
       var txt = (d.por_codigo || {})[cod];
       if (!txt) { m.textContent = d.error || 'Este producto no tiene ficha.'; return; }
       var e = (d.estado || {})[cod] || {};
-      var est = e.estado === 'al_dia' ? 'Al día con ' + e.base + ' (' + e.fecha + ')' : e.estado === 'fallo' ? 'La última actualización de ' + e.base + ' no se publicó (' + e.fecha + '). El bot sigue con este texto. Motivos: ' + (e.problemas || []).join(' · ') : 'Sin actualización automática todavía' + (e.base ? ' (' + e.base + ')' : '');
+      var est = e.estado === 'al_dia' ? 'Al día con ' + e.base + ' (' + P.fecha(e.fecha) + ')' : e.estado === 'fallo' ? 'La última actualización de ' + e.base + ' no se publicó (' + P.fecha(e.fecha) + '). El bot sigue con este texto. Motivos: ' + (e.problemas || []).join(' · ') : 'Sin actualización automática todavía' + (e.base ? ' (' + e.base + ')' : '');
       P.abrirHtml('<title>Ficha del bot · ' + h(cod) + '</title><body style="font:15px/1.55 system-ui,sans-serif;max-width:860px;margin:24px auto;padding:0 16px"><h2>Ficha del bot · ' + h(cod) + '</h2><p style="background:#f4f4f1;padding:10px 12px;border-radius:8px">' + h(est) + '</p><p>' + txt.length.toLocaleString('es-MX') + ' caracteres</p><pre style="white-space:pre-wrap;font:inherit">' + h(txt) + '</pre></body>');
       m.textContent = '';
     }).catch(function () { m.textContent = 'No se pudo abrir la ficha.'; });
@@ -996,7 +996,7 @@
     };
     var actuales = estado.muestras[c.tenant];
     var pedirActuales = actuales ? Promise.resolve(actuales) : (c.info.tiene_muestras ? P.api({ accion: 'muestras', sesion: ses(), tenant: c.tenant }).then(function (d) { if (d._codigo === 401) { salir(d.error); return {}; } return (d.muestras && d.muestras.actuales) || {}; }) : Promise.resolve({}));
-    Promise.all([P.cargarCatalogo(), pedirActuales]).then(function (r) { estado.muestras[c.tenant] = r[1]; poner(r[1]); }, function () { if ($('grupos')) $('grupos').innerHTML = '<p class="vacio">No se pudieron cargar los tipos de correo.</p>'; });
+    Promise.all([P.cargarCatalogo(), pedirActuales]).then(function (r) { estado.muestras[c.tenant] = r[1]; poner(r[1]); }, function () { if ($('grupos')) $('grupos').innerHTML = '<p class="vacio">No se pudieron cargar los tipos de correo. Revisa tu conexión y toca <button class="s" onclick="location.reload()">Volver a cargar</button></p>'; });
   }
 
   // Antes de entrar ya se ve con la marca de la compania de la liga.

@@ -82,7 +82,9 @@
   P.catalogo = null;
   P.cargarCatalogo = function () {
     if (P.catalogo) return Promise.resolve(P.catalogo);
-    return fetch('/tipos_correo.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (c) { P.catalogo = c; return c; });
+    // Con limite de espera: si no llega, la pantalla dice que no se pudo y deja reintentar.
+    var ctl = window.AbortController ? new AbortController() : null; if (ctl) setTimeout(function () { ctl.abort(); }, 30000);
+    return fetch('/tipos_correo.json', { cache: 'no-store', signal: ctl ? ctl.signal : undefined }).then(function (r) { if (!r.ok) throw new Error('catalogo'); return r.json(); }).then(function (c) { P.catalogo = c; return c; });
   };
   var ESTADO = { opera: ['Opera hoy', 'aplicado'], construir: ['Por construir', 'pendiente'], distinto: ['Opera distinto', 'descartado'] };
   // Como esta hoy cada tipo en esta compania: nativo = sale con el formato propio de su motor (motor=propio);

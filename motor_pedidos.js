@@ -1,4 +1,4 @@
-// GR Intelligence: pedidos del motor de alta (vQ, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
+// GR Intelligence: pedidos del motor de alta (vR, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
 // construir, las contestamos dentro del portal y despues empezamos a construir».
 // - MP.formulario: al pedir una funcion, las preguntas del catalogo (las comunes del tipo de pedido y las de la funcion), los datos que
 //   le faltan a la compania y las conexiones que hace en su portal, con lo obligatorio marcado y validado junto a cada campo.
@@ -7,6 +7,7 @@
 // vB (ronda 1 de auditoria): preguntas de seguimiento (requerida_si), conexiones aparte, letra de 14 px, avance con texto y no solo
 // color, campos con aria-required y su error ligado, una sola accion principal, fechas en palabras, colores propios por etapa,
 // textos segun el tipo de pedido y aviso cuando hay mas de 50.
+// vR (ronda 17): Completar no reanuda pasos pausados; borrador repintado sin interpretar «$».
 // vQ (ronda 16): pedidos relacionados tambien entre GR y su servicio de prospeccion.
 // vP (ronda 15): pasos de GR dentro de una funcion que ya aplica tambien se activan; «ya existen» solo si estan corriendo;
 // «y también lo usará <compañía>».
@@ -117,9 +118,10 @@
         if (f.estado === 'no_aplica' || z.estado === 'no_aplica') pasos.push('Activar: ' + z.nombre + de(z));
         else if (z.estado === 'falta') pasos.push('Construir: ' + z.nombre + (z.se_construye_en ? ' — se construye en ' + z.se_construye_en + ' y también lo usará ' + cia : de(z)));
         else if (z.estado === 'apagada') pasos.push('Encender: ' + z.nombre + de(z));
-        else if (z.estado === 'suspendida') pasos.push('Reanudar: ' + z.nombre + de(z));
+        // Pausado por decision: no se reanuda dentro de Completar (se pide aparte con Reanudar).
       });
       // Activar una funcion que no aplica solo la enciende para esta compania; lo que cambia de estado si afecta a otros.
+      if (t === 'agregar' && f.estado !== 'no_aplica' && pz.some(function (z) { return z.estado === 'suspendida'; })) avisos.push('Los pasos pausados por decisión siguen pausados; se reanudan aparte con Reanudar.');
       // Pasos que ya existen en otra compania (p. ej. los de GR al servicio de prospeccion): se asignan; solo si estan corriendo se dice que no cambia nada.
       var asig = pz.filter(function (z) { return z.estado === 'no_aplica' && z.prestada; });
       if (asig.length) avisos.push(asig.every(function (z) { return z.prestada_lista !== false; }) ? 'Se le asignan pasos que ya existen' + (pz.some(function (z) { return z.estado === 'falta' || (f.estado === 'no_aplica' && !z.prestada); }) ? ' y se construye lo que falta' : '') + ': no cambia nada para quien ya los usa.' : 'Algunos pasos de ' + (asig[0].prestada_nombre || 'otra compañía') + ' no están corriendo hoy: Great Revenue los revisa antes de asignarlos.');
@@ -270,7 +272,7 @@
   var tarjeta = function (p, nombre, principal, repetido) {
     var d = p.detalle || {}, abiertas = (d.dudas || []).filter(function (q) { return !q.respuesta; }), toca = MP.tocaContestar(p);
     var dudas = toca ? '<div data-mp-dudas="' + h(p.id) + '"><p class="mp-sec" style="margin:0 0 6px">' + (abiertas.length === 1 ? 'Great Revenue tiene 1 duda' : 'Great Revenue tiene ' + abiertas.length + ' dudas') + '</p>'
-      + abiertas.map(function (q) { return campo({ id: q.id, texto: q.pregunta, tipo: 'texto', obligatoria: false, ayuda: q.ayuda || '' }, 'mpd-' + p.id + '-', true).replace('></textarea>', '>' + h(MP.borradores[p.id + '|' + q.id] || '') + '</textarea>'); }).join('')
+      + abiertas.map(function (q) { return campo({ id: q.id, texto: q.pregunta, tipo: 'texto', obligatoria: false, ayuda: q.ayuda || '' }, 'mpd-' + p.id + '-', true).replace('></textarea>', function () { return '>' + h(MP.borradores[p.id + '|' + q.id] || '') + '</textarea>'; }); }).join('')
       + '<div class="mp-pie" style="margin-top:8px"><button class="mf-btn' + (principal ? ' p' : '') + '" data-mp-responder="' + h(p.id) + '">Enviar respuestas</button><span class="mp-msg" role="status" aria-live="polite"></span></div></div>' : '';
     return '<div class="mp-ped' + (toca ? ' toca' : '') + '"><div class="mp-cab"><span>' + MP.chip(p.estado) + ' <b>' + h(nombre) + '</b></span><span class="mf-sub">Pedido n.º ' + h(p.id) + ' · ' + h(MP.fecha(p.fecha)) + '</span></div>'
       + '<div>' + h(p.origen === 'cliente' ? 'Lo pidió la compañía: ' + (p.instruccion || '') : titulo(p)) + '</div>'
