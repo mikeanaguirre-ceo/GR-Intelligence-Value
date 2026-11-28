@@ -1,4 +1,4 @@
-// GR Intelligence: pedidos del motor de alta (vT, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
+// GR Intelligence: pedidos del motor de alta (vU, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
 // construir, las contestamos dentro del portal y despues empezamos a construir».
 // - MP.formulario: al pedir una funcion, las preguntas del catalogo (las comunes del tipo de pedido y las de la funcion), los datos que
 //   le faltan a la compania y las conexiones que hace en su portal, con lo obligatorio marcado y validado junto a cada campo.
@@ -7,6 +7,7 @@
 // vB (ronda 1 de auditoria): preguntas de seguimiento (requerida_si), conexiones aparte, letra de 14 px, avance con texto y no solo
 // color, campos con aria-required y su error ligado, una sola accion principal, fechas en palabras, colores propios por etapa,
 // textos segun el tipo de pedido y aviso cuando hay mas de 50.
+// vU (ronda 20): el formulario en camino no cuenta como pendiente; singular de pasos no corriendo.
 // vT (ronda 19): un aviso por grupo de companias que usaran pasos por construir.
 // vS (ronda 18): el aviso de pasos pausados solo manda a Reanudar donde ese boton existe.
 // vR (ronda 17): Completar no reanuda pasos pausados; borrador repintado sin interpretar «$».
@@ -126,7 +127,7 @@
       if (t === 'agregar' && f.estado !== 'no_aplica' && pz.some(function (z) { return z.estado === 'suspendida'; })) avisos.push('Los pasos pausados por decisión siguen pausados' + (f.estado === 'lista' ? '; se reanudan aparte con Reanudar.' : '; Great Revenue los revisa contigo al terminar.'));
       // Pasos que ya existen en otra compania (p. ej. los de GR al servicio de prospeccion): se asignan; solo si estan corriendo se dice que no cambia nada.
       var asig = pz.filter(function (z) { return z.estado === 'no_aplica' && z.prestada; });
-      if (asig.length) avisos.push(asig.every(function (z) { return z.prestada_lista !== false; }) ? 'Se le asignan pasos que ya existen' + (pz.some(function (z) { return z.estado === 'falta' || (f.estado === 'no_aplica' && !z.prestada); }) ? ' y se construye lo que falta' : '') + ': no cambia nada para quien ya los usa.' : 'Algunos pasos de ' + (asig[0].prestada_nombre || 'otra compañía') + ' no están corriendo hoy: Great Revenue los revisa antes de asignarlos.');
+      if (asig.length) avisos.push(asig.every(function (z) { return z.prestada_lista !== false; }) ? 'Se le asignan pasos que ya existen' + (pz.some(function (z) { return z.estado === 'falta' || (f.estado === 'no_aplica' && !z.prestada); }) ? ' y se construye lo que falta' : '') + ': no cambia nada para quien ya los usa.' : (asig.filter(function (z) { return z.prestada_lista === false; }).length === 1 ? 'Un paso de ' + (asig[0].prestada_nombre || 'otra compañía') + ' no está corriendo hoy: Great Revenue lo revisa antes de asignarlo.' : 'Algunos pasos de ' + (asig[0].prestada_nombre || 'otra compañía') + ' no están corriendo hoy: Great Revenue los revisa antes de asignarlos.'));
       if (f.estado !== 'no_aplica') otros(pz.filter(function (z) { return ['falta', 'apagada', 'suspendida'].indexOf(z.estado) >= 0; }));
       // Pasos por construir que una unidad usara (aun no existen).
       // Pasos por construir que otras companias usaran: un aviso por grupo de companias (no uno por paso).
@@ -238,16 +239,17 @@
         marcar(q, ''); if (v) resp[id] = v;
       });
       if (malo) { msg.className = 'mp-msg bad'; msg.textContent = 'Falta contestar lo marcado en rojo.'; malo.scrollIntoView({ block: 'center', behavior: 'smooth' }); var x = malo.querySelector('input,textarea'); if (x) x.focus({ preventScroll: true }); return; }
-      bE.disabled = true; bC.disabled = true; msg.className = 'mp-msg'; msg.textContent = 'Enviando...';
+      bE.disabled = true; bC.disabled = true; msg.className = 'mp-msg'; msg.textContent = 'Enviando...'; o.caja.setAttribute('data-enviando', '1'); // en camino: no cuenta como pendiente
       o.enviar({ respuestas: resp, requisitos: req }).then(function (r) {
         if (!r || !r.ok) {
+          o.caja.removeAttribute('data-enviando');
           bE.disabled = false; bC.disabled = false; msg.className = 'mp-msg bad'; msg.textContent = (r && r.error) || 'No se pudo registrar. Intenta otra vez.';
           if (r && r.pregunta) { var q = o.caja.querySelector('[data-mp-q="' + r.pregunta + '"]:not([data-mp-r])'); if (q) { q.hidden = false; marcar(q, 'Contesta esta pregunta.'); q.scrollIntoView({ block: 'center' }); } }
           return;
         }
         msg.className = 'mp-msg ok'; msg.textContent = r.mensaje || 'Pedido registrado.'; o.caja.setAttribute('data-enviado', '1'); // ya no cuenta como pendiente
         setTimeout(function () { if (o.alTerminar) o.alTerminar(); }, 1600);
-      }, function () { bE.disabled = false; bC.disabled = false; msg.className = 'mp-msg bad'; msg.textContent = 'Sin conexión. Revisa tu internet e intenta otra vez.'; });
+      }, function () { o.caja.removeAttribute('data-enviando'); bE.disabled = false; bC.disabled = false; msg.className = 'mp-msg bad'; msg.textContent = 'Sin conexión. Revisa tu internet e intenta otra vez.'; });
     };
   };
   // Avance de un pedido: cada paso dice en texto si ya paso (✓), si es el actual (●) o si falta; no depende solo del color.
