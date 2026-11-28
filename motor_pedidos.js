@@ -1,4 +1,4 @@
-// GR Intelligence: pedidos del motor de alta (vX, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
+// GR Intelligence: pedidos del motor de alta (vY, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
 // construir, las contestamos dentro del portal y despues empezamos a construir».
 // - MP.formulario: al pedir una funcion, las preguntas del catalogo (las comunes del tipo de pedido y las de la funcion), los datos que
 //   le faltan a la compania y las conexiones que hace en su portal, con lo obligatorio marcado y validado junto a cada campo.
@@ -236,9 +236,11 @@
       + ((pl.pasos.length || pl.avisos.length) ? '<div class="mp-gr"><b>Lo hace Great Revenue</b>' + (pl.pasos.length ? '<ul>' + pl.pasos.map(function (x) { return '<li>' + h(x) + '</li>'; }).join('') + '</ul>' : '') + pl.avisos.map(function (x) { return '<p style="margin:6px 0 0">' + h(x) + '</p>'; }).join('') + '</div>' : '')
       + '<div class="mp-pie"><button class="mf-btn p" data-mp-enviar>Enviar pedido</button><button class="mf-btn" data-mp-cancelar>Cancelar</button><span class="mp-msg" role="status" aria-live="polite"></span></div>';
     // Borrador de un pedido que no se envio porque vencio la sesion: se vuelve a llenar.
-    var bp = MP.leerBorradorPedido();
+    // vY (ronda 24): el borrador puede llegar en o.borrador (boton Abrir) o de la pestana; al usarlo se quita su aviso.
+    var bp = o.borrador || MP.leerBorradorPedido();
     if (bp && bp.clave === o.clave) {
       MP.quitarBorradorPedido();
+      Array.prototype.forEach.call(document.querySelectorAll('[data-mp-borrador-aviso]'), function (x) { x.parentNode.removeChild(x); });
       Array.prototype.forEach.call(o.caja.querySelectorAll('[data-mp-q]'), function (q) {
         var id = q.getAttribute('data-mp-q'), v = ((q.hasAttribute('data-mp-r') ? bp.requisitos : bp.respuestas) || {})[id];
         if (v == null) return;

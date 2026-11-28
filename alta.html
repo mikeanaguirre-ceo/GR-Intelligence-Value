@@ -7,12 +7,12 @@
 <title>Portal de alta | Great Revenue Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="/portal_comun.css?v=20261127zf">
+<link rel="stylesheet" href="/portal_comun.css?v=20261127zg">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
-<script src="/portal_comun.js?v=20261127zf"></script>
-<script src="/motor_funciones.js?v=20261127zf"></script>
-<script src="/motor_pedidos.js?v=20261127zf"></script>
+<script src="/portal_comun.js?v=20261127zg"></script>
+<script src="/motor_funciones.js?v=20261127zg"></script>
+<script src="/motor_pedidos.js?v=20261127zg"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Great Revenue Intelligence</b></span><span class="quien" id="quien">Portal de alta</span></div>
@@ -128,7 +128,7 @@
     /* Pedido que no se envio porque vencio la sesion: se anuncia arriba con Abrir y Descartar (ronda 23). */
     var bp = MP.leerBorradorPedido(), avisoBp = MA.avisoBp ? '<div class="mp-aviso"><span>' + h(MA.avisoBp) + '</span></div>' : '';
     MA.avisoBp = '';
-    if (bp && bp.cia) avisoBp += '<div class="mp-aviso"><span><b>Tienes un pedido sin enviar:</b> ' + h(bp.etiqueta || 'pedido') + ' para ' + h(bp.nombre || nombreDe(bp.cia)) + '. Quedó lleno cuando venció tu sesión.</span><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="mf-btn p" data-ma-bp-abrir>Abrir</button><button class="mf-btn" data-ma-bp-quitar>Descartar</button></span></div>';
+    if (bp && bp.cia) avisoBp += '<div class="mp-aviso" data-mp-borrador-aviso><span><b>Tienes un pedido sin enviar:</b> ' + h(bp.etiqueta || 'pedido') + ' para ' + h(bp.nombre || nombreDe(bp.cia)) + '. Quedó lleno cuando venció tu sesión.</span><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="mf-btn p" data-ma-bp-abrir>Abrir</button><button class="mf-btn" data-ma-bp-quitar>Descartar</button></span></div>';
     var html;
     var barraSup = '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">'
       + (MA.cia ? '<button class="mf-volver" id="ma-volver">← Todas las compañías</button>' : '<div class="mf-tabs"><button data-ma-vista="tarjetas" class="' + (MA.vista === 'tarjetas' ? 'on' : '') + '">Por compañía</button><button data-ma-vista="tabla" class="' + (MA.vista === 'tabla' ? 'on' : '') + '">Comparar todas</button><button data-ma-vista="pedidos" class="' + (MA.vista === 'pedidos' ? 'on' : '') + '">Pedidos' + (pendientes.length ? ' (' + pendientes.length + ')' : '') + '</button></div>')
@@ -156,15 +156,20 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-mf-cia]'), function (b) { b.onclick = function () { if (!maSeguro()) return; MA.cia = b.getAttribute('data-mf-cia'); MA.abiertos = {}; pintarMotor(); irAlPanel(); }; });
     Array.prototype.forEach.call(document.querySelectorAll('[data-mf-mod]'), function (m) { m.addEventListener('toggle', function () { MA.abiertos[m.getAttribute('data-mf-mod')] = m.open; }); });
     MF.activarVer($('panel'));
-    if (document.querySelector('[data-ma-bp-quitar]')) document.querySelector('[data-ma-bp-quitar]').onclick = function () { MP.quitarBorradorPedido(); pintarMotor(); };
+    if (document.querySelector('[data-ma-bp-quitar]')) document.querySelector('[data-ma-bp-quitar]').onclick = function () { if (!maSeguro()) return; MP.quitarBorradorPedido(); pintarMotor(); };
     if (document.querySelector('[data-ma-bp-abrir]')) document.querySelector('[data-ma-bp-abrir]').onclick = function () {
-      var bp = MP.leerBorradorPedido(); if (!bp) { MA.avisoBp = 'El pedido guardado ya venció (se guarda 24 horas).'; pintarMotor(); return; }
       if (!maSeguro()) return;
-      MA.cia = bp.cia; MA.abiertos = {}; pintarMotor();
+      var bp = MP.leerBorradorPedido(); if (!bp) { MA.avisoBp = 'El pedido guardado ya venció (se guarda 24 horas).'; pintarMotor(); return; }
+      /* Se quita de la pestana antes de volver a pintar, asi el aviso no reaparece; el formulario lo recibe directo. */
+      MP.quitarBorradorPedido(); MA.cia = bp.cia; MA.abiertos = {}; pintarMotor();
       var bt = document.querySelector('[data-mf-pedir="' + bp.fid + '"][data-mf-que="' + bp.que + '"]');
-      if (!bt) { MP.quitarBorradorPedido(); MA.cia = bp.cia; MA.avisoBp = 'Ese pedido ya no se puede hacer así: la función cambió desde entonces. Revísala y pide de nuevo si hace falta.'; pintarMotor(); irAlPanel(); return; }
+      if (!bt) {
+        var abierto = ped.some(function (p) { return p.tenant === bp.cia && MP.abierto(p) && String(p.instruccion || '').indexOf('[funcion=' + bp.fid + ']') >= 0; });
+        MA.avisoBp = abierto ? 'Ya hay un pedido abierto para esa función (puede que se haya enviado desde otra pestaña): lo ves en Pedidos.' : 'Ese pedido ya no se puede hacer así: la función cambió desde entonces. Revísala y pide de nuevo si hace falta.';
+        pintarMotor(); irAlPanel(); return;
+      }
       var dt = bt.closest('details'); if (dt) dt.open = true;
-      bt.click(); var caja = document.querySelector('[data-mf-conf="' + bp.fid + '"]'); (caja || bt).scrollIntoView({ block: 'start' });
+      MA.bpAbrir = bp; bt.click(); MA.bpAbrir = null; var caja = document.querySelector('[data-mf-conf="' + bp.fid + '"]'); (caja || bt).scrollIntoView({ block: 'start' });
     };
     Array.prototype.forEach.call(document.querySelectorAll('[data-mf-pedir]'), function (b) {
       b.onclick = function () {
@@ -175,7 +180,7 @@
         if (!box || !f) return;
         var todos = document.querySelectorAll('[data-mf-pedir]');
         Array.prototype.forEach.call(todos, function (x) { x.disabled = true; });
-        MP.formulario({ caja: box, clave: MA.cia + '|' + fid + '|' + que, cia: c.nombre, f: f, estadoHoy: (MF.EST[f.estado] || [''])[0], relacionados: MP.relacionados(ped, cs, c, fid), que: que, etiqueta: b.textContent, pa: d.preguntas_accion || {},
+        MP.formulario({ caja: box, clave: MA.cia + '|' + fid + '|' + que, borrador: MA.bpAbrir || null, cia: c.nombre, f: f, estadoHoy: (MF.EST[f.estado] || [''])[0], relacionados: MP.relacionados(ped, cs, c, fid), que: que, etiqueta: b.textContent, pa: d.preguntas_accion || {},
           enviar: function (cuerpo) {
             return P.api({ accion: 'alta_pedir', sesion: ses(), cliente: MA.cia, funcion: fid, que: que, respuestas: cuerpo.respuestas, requisitos: cuerpo.requisitos })
               // Sesion vencida al enviar: lo escrito queda como borrador y el formulario se llena solo al volver a entrar.
