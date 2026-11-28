@@ -1,4 +1,4 @@
-// GR Intelligence: pedidos del motor de alta (vW, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
+// GR Intelligence: pedidos del motor de alta (vX, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
 // construir, las contestamos dentro del portal y despues empezamos a construir».
 // - MP.formulario: al pedir una funcion, las preguntas del catalogo (las comunes del tipo de pedido y las de la funcion), los datos que
 //   le faltan a la compania y las conexiones que hace en su portal, con lo obligatorio marcado y validado junto a cada campo.
@@ -48,8 +48,14 @@
   MP.borradores = {};
   // vW (ronda 22): el pedido que no se envio porque vencio la sesion se guarda en esta pestana (sessionStorage), asi sobrevive a
   // una recarga o a volver a entrar; si el navegador no deja guardar, queda en memoria.
-  MP.guardarBorradorPedido = function (b) { MP.borradorPedido = b; try { sessionStorage.setItem('mp_borrador_pedido', JSON.stringify(b)); } catch (e) {} };
-  MP.leerBorradorPedido = function () { if (MP.borradorPedido) return MP.borradorPedido; try { return JSON.parse(sessionStorage.getItem('mp_borrador_pedido') || 'null'); } catch (e) { return null; } };
+  // vX (ronda 23): el borrador lleva su fecha y vence a las 24 horas, para que no llene despues un formulario con respuestas viejas;
+  // alta.html lo anuncia al entrar con Abrir y Descartar.
+  MP.guardarBorradorPedido = function (b) { b.guardado = Date.now(); MP.borradorPedido = b; try { sessionStorage.setItem('mp_borrador_pedido', JSON.stringify(b)); } catch (e) {} };
+  MP.leerBorradorPedido = function () {
+    var b = MP.borradorPedido; if (!b) { try { b = JSON.parse(sessionStorage.getItem('mp_borrador_pedido') || 'null'); } catch (e) { b = null; } }
+    if (b && !(Date.now() - Number(b.guardado || 0) < 864e5)) { MP.quitarBorradorPedido(); return null; }
+    return b || null;
+  };
   MP.quitarBorradorPedido = function () { MP.borradorPedido = null; try { sessionStorage.removeItem('mp_borrador_pedido'); } catch (e) {} };
   // Descarta borradores de dudas que ya no esperan respuesta (se llama con cada lectura del motor).
   MP.limpiarBorradores = function (ps) {

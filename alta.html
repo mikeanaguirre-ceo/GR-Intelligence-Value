@@ -7,12 +7,12 @@
 <title>Portal de alta | Great Revenue Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="/portal_comun.css?v=20261127ze">
+<link rel="stylesheet" href="/portal_comun.css?v=20261127zf">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
-<script src="/portal_comun.js?v=20261127ze"></script>
-<script src="/motor_funciones.js?v=20261127ze"></script>
-<script src="/motor_pedidos.js?v=20261127ze"></script>
+<script src="/portal_comun.js?v=20261127zf"></script>
+<script src="/motor_funciones.js?v=20261127zf"></script>
+<script src="/motor_pedidos.js?v=20261127zf"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Great Revenue Intelligence</b></span><span class="quien" id="quien">Portal de alta</span></div>
@@ -78,7 +78,7 @@
         motorAlta(); return;
       }
       if (gr) P.aplicarMarca(gr.datos, 'Portal de alta', 'Configuración inicial de cada compañía. Cada sección se guarda por separado.');
-      pintarLista(); if (estado.sel === '__motor') motorAlta(true); else elegir(estado.sel || (d.companias[0] && d.companias[0].tenant)); // si se recarga estando en el motor, se queda en el motor
+      pintarLista(); if (estado.sel === '__motor' || (window.MP && MP.leerBorradorPedido())) motorAlta(true); else elegir(estado.sel || (d.companias[0] && d.companias[0].tenant)); // si se recarga estando en el motor, se queda en el motor
     }, function () { $('m-entrar').textContent = 'No hay conexión con el portal. Revisa tu internet y recarga la página.'; });
   }
   function pintarLista() {
@@ -125,10 +125,14 @@
     var dudasAqui = MA.cia ? conDudas.filter(function (p) { return p.tenant === MA.cia; }) : conDudas;
     var aviso = dudasAqui.length && (MA.cia || MA.vista !== 'pedidos') ? '<div class="mp-aviso"><span><b>' + (dudasAqui.length === 1 ? 'Tienes 1 pedido con dudas por contestar' : 'Tienes ' + dudasAqui.length + ' pedidos con dudas por contestar') + (MA.cia ? ' de esta compañía.' : '.') + '</b> Se construye cuando las contestes.</span><button class="mf-btn' + (MA.cia ? '' : ' p') + '" data-ma-ir-pedidos>Contestar</button></div>' : '';
     var fuera = (au.fuera_del_catalogo || []).length + (au.procesos_que_no_existen || []).length;
+    /* Pedido que no se envio porque vencio la sesion: se anuncia arriba con Abrir y Descartar (ronda 23). */
+    var bp = MP.leerBorradorPedido(), avisoBp = MA.avisoBp ? '<div class="mp-aviso"><span>' + h(MA.avisoBp) + '</span></div>' : '';
+    MA.avisoBp = '';
+    if (bp && bp.cia) avisoBp += '<div class="mp-aviso"><span><b>Tienes un pedido sin enviar:</b> ' + h(bp.etiqueta || 'pedido') + ' para ' + h(bp.nombre || nombreDe(bp.cia)) + '. Quedó lleno cuando venció tu sesión.</span><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="mf-btn p" data-ma-bp-abrir>Abrir</button><button class="mf-btn" data-ma-bp-quitar>Descartar</button></span></div>';
     var html;
     var barraSup = '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">'
       + (MA.cia ? '<button class="mf-volver" id="ma-volver">← Todas las compañías</button>' : '<div class="mf-tabs"><button data-ma-vista="tarjetas" class="' + (MA.vista === 'tarjetas' ? 'on' : '') + '">Por compañía</button><button data-ma-vista="tabla" class="' + (MA.vista === 'tabla' ? 'on' : '') + '">Comparar todas</button><button data-ma-vista="pedidos" class="' + (MA.vista === 'pedidos' ? 'on' : '') + '">Pedidos' + (pendientes.length ? ' (' + pendientes.length + ')' : '') + '</button></div>')
-      + '<button class="mf-btn" id="ma-actualizar">Actualizar</button></div>' + aviso;
+      + '<button class="mf-btn" id="ma-actualizar">Actualizar</button></div>' + avisoBp + aviso;
     if (MA.cia) {
       var c = cs.filter(function (x) { return x.tenant === MA.cia; })[0];
       if (!c) { MA.cia = ''; pintarMotor(); return; }
@@ -152,6 +156,16 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-mf-cia]'), function (b) { b.onclick = function () { if (!maSeguro()) return; MA.cia = b.getAttribute('data-mf-cia'); MA.abiertos = {}; pintarMotor(); irAlPanel(); }; });
     Array.prototype.forEach.call(document.querySelectorAll('[data-mf-mod]'), function (m) { m.addEventListener('toggle', function () { MA.abiertos[m.getAttribute('data-mf-mod')] = m.open; }); });
     MF.activarVer($('panel'));
+    if (document.querySelector('[data-ma-bp-quitar]')) document.querySelector('[data-ma-bp-quitar]').onclick = function () { MP.quitarBorradorPedido(); pintarMotor(); };
+    if (document.querySelector('[data-ma-bp-abrir]')) document.querySelector('[data-ma-bp-abrir]').onclick = function () {
+      var bp = MP.leerBorradorPedido(); if (!bp) { MA.avisoBp = 'El pedido guardado ya venció (se guarda 24 horas).'; pintarMotor(); return; }
+      if (!maSeguro()) return;
+      MA.cia = bp.cia; MA.abiertos = {}; pintarMotor();
+      var bt = document.querySelector('[data-mf-pedir="' + bp.fid + '"][data-mf-que="' + bp.que + '"]');
+      if (!bt) { MP.quitarBorradorPedido(); MA.cia = bp.cia; MA.avisoBp = 'Ese pedido ya no se puede hacer así: la función cambió desde entonces. Revísala y pide de nuevo si hace falta.'; pintarMotor(); irAlPanel(); return; }
+      var dt = bt.closest('details'); if (dt) dt.open = true;
+      bt.click(); var caja = document.querySelector('[data-mf-conf="' + bp.fid + '"]'); (caja || bt).scrollIntoView({ block: 'start' });
+    };
     Array.prototype.forEach.call(document.querySelectorAll('[data-mf-pedir]'), function (b) {
       b.onclick = function () {
         // Antes de construir: el formulario con las preguntas del catalogo y los datos que le faltan a la compania (motor_pedidos.js).
@@ -165,7 +179,7 @@
           enviar: function (cuerpo) {
             return P.api({ accion: 'alta_pedir', sesion: ses(), cliente: MA.cia, funcion: fid, que: que, respuestas: cuerpo.respuestas, requisitos: cuerpo.requisitos })
               // Sesion vencida al enviar: lo escrito queda como borrador y el formulario se llena solo al volver a entrar.
-              .then(function (r) { if (r._codigo === 401) { MP.guardarBorradorPedido({ clave: MA.cia + '|' + fid + '|' + que, respuestas: cuerpo.respuestas, requisitos: cuerpo.requisitos }); salir('Tu sesión venció y el pedido no se envió. Quedó guardado en esta pestaña: vuelve a entrar aquí, ábrelo otra vez y estará lleno.'); return { ok: false, error: 'Tu sesión venció.' }; } return r; });
+              .then(function (r) { if (r._codigo === 401) { MP.guardarBorradorPedido({ clave: MA.cia + '|' + fid + '|' + que, cia: MA.cia, fid: fid, que: que, etiqueta: b.textContent + (f.nombre ? ' «' + f.nombre + '»' : ''), nombre: c.nombre, respuestas: cuerpo.respuestas, requisitos: cuerpo.requisitos }); salir('Tu sesión venció y el pedido no se envió. Quedó guardado en esta pestaña por 24 horas: vuelve a entrar aquí y toca «Abrir».'); return { ok: false, error: 'Tu sesión venció.' }; } return r; });
           },
           alCancelar: function () { Array.prototype.forEach.call(todos, function (x) { x.disabled = false; }); },
           alTerminar: function () { motorAlta(true); } });
