@@ -7,11 +7,11 @@
 <title>Portal de la compañía | Great Revenue Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="/portal_comun.css?v=20261127z">
+<link rel="stylesheet" href="/portal_comun.css?v=20261127za">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
-<script src="/portal_comun.js?v=20261127z"></script>
-<script src="/motor_funciones.js?v=20261127z"></script>
+<script src="/portal_comun.js?v=20261127za"></script>
+<script src="/motor_funciones.js?v=20261127za"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Portal de tu compañía</b></span><span class="quien" id="quien">Entra con tu cuenta de Google</span></div>
@@ -34,7 +34,8 @@
   var estado = { companias: [], sel: null, rol: '', muestras: {} };
   var EDITABLE = false;
   // La compania viene en la ruta (/itera/portal); la forma vieja ?c=ITERA sigue sirviendo.
-  var pedida = (/^\/([a-z0-9]+)\/portal/.exec(location.pathname) || [])[1] || (/[?&]c=([A-Za-z0-9]+)/.exec(location.search) || [])[1];
+  // La compania pedida en la liga (?c=, tambien unidades como itera_aws) manda sobre la de la ruta (/itera/portal).
+  var pedida = (/[?&]c=([A-Za-z0-9_]+)/.exec(location.search) || [])[1] || (/^\/([a-z0-9]+)\/portal/.exec(location.pathname) || [])[1];
   var ses = function () { return P.sesion(LLAVE); };
   function salir(motivo) { P.sesion(LLAVE, null); $('v-portal').hidden = true; $('v-entrar').hidden = false; $('m-entrar').textContent = motivo || ''; }
 

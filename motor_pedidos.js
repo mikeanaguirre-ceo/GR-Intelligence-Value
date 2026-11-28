@@ -1,4 +1,4 @@
-// GR Intelligence: pedidos del motor de alta (vR, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
+// GR Intelligence: pedidos del motor de alta (vS, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
 // construir, las contestamos dentro del portal y despues empezamos a construir».
 // - MP.formulario: al pedir una funcion, las preguntas del catalogo (las comunes del tipo de pedido y las de la funcion), los datos que
 //   le faltan a la compania y las conexiones que hace en su portal, con lo obligatorio marcado y validado junto a cada campo.
@@ -7,6 +7,7 @@
 // vB (ronda 1 de auditoria): preguntas de seguimiento (requerida_si), conexiones aparte, letra de 14 px, avance con texto y no solo
 // color, campos con aria-required y su error ligado, una sola accion principal, fechas en palabras, colores propios por etapa,
 // textos segun el tipo de pedido y aviso cuando hay mas de 50.
+// vS (ronda 18): el aviso de pasos pausados solo manda a Reanudar donde ese boton existe.
 // vR (ronda 17): Completar no reanuda pasos pausados; borrador repintado sin interpretar «$».
 // vQ (ronda 16): pedidos relacionados tambien entre GR y su servicio de prospeccion.
 // vP (ronda 15): pasos de GR dentro de una funcion que ya aplica tambien se activan; «ya existen» solo si estan corriendo;
@@ -121,7 +122,7 @@
         // Pausado por decision: no se reanuda dentro de Completar (se pide aparte con Reanudar).
       });
       // Activar una funcion que no aplica solo la enciende para esta compania; lo que cambia de estado si afecta a otros.
-      if (t === 'agregar' && f.estado !== 'no_aplica' && pz.some(function (z) { return z.estado === 'suspendida'; })) avisos.push('Los pasos pausados por decisión siguen pausados; se reanudan aparte con Reanudar.');
+      if (t === 'agregar' && f.estado !== 'no_aplica' && pz.some(function (z) { return z.estado === 'suspendida'; })) avisos.push('Los pasos pausados por decisión siguen pausados' + (f.estado === 'lista' ? '; se reanudan aparte con Reanudar.' : '; Great Revenue los revisa contigo al terminar.'));
       // Pasos que ya existen en otra compania (p. ej. los de GR al servicio de prospeccion): se asignan; solo si estan corriendo se dice que no cambia nada.
       var asig = pz.filter(function (z) { return z.estado === 'no_aplica' && z.prestada; });
       if (asig.length) avisos.push(asig.every(function (z) { return z.prestada_lista !== false; }) ? 'Se le asignan pasos que ya existen' + (pz.some(function (z) { return z.estado === 'falta' || (f.estado === 'no_aplica' && !z.prestada); }) ? ' y se construye lo que falta' : '') + ': no cambia nada para quien ya los usa.' : 'Algunos pasos de ' + (asig[0].prestada_nombre || 'otra compañía') + ' no están corriendo hoy: Great Revenue los revisa antes de asignarlos.');
