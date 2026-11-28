@@ -17,10 +17,13 @@
     return valor;
   };
   P.api = function (cuerpo) {
-    return fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(cuerpo) })
-      .then(function (r) { return r.json().catch(function () { return { error: 'El servidor no respondió bien. Intenta otra vez en un momento.' }; }).then(function (d) { d._codigo = r.status; return d; }); })
-      // Sin conexion tambien contesta (no se queda nadie en «Enviando...»): cada pantalla muestra este error y deja reintentar.
-      .catch(function () { return { error: 'No hay conexión. Revisa tu internet e intenta otra vez.', _codigo: 0 }; });
+    // Siempre contesta: sin conexion, si tarda mas de 60 s o si el servidor no manda una respuesta valida. Cada pantalla muestra el
+    // error que llega y deja reintentar (no se queda nadie en «Enviando...»).
+    var ctl = window.AbortController ? new AbortController() : null, reloj = ctl ? setTimeout(function () { ctl.abort(); }, 60000) : null;
+    return fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(cuerpo), signal: ctl ? ctl.signal : undefined })
+      .then(function (r) { return r.json().catch(function () { return null; }).then(function (d) { if (!d || typeof d !== 'object') d = { error: 'El servidor no respondió bien. Intenta otra vez en un momento.' }; d._codigo = r.status; return d; }); })
+      .catch(function (e) { return { error: e && e.name === 'AbortError' ? 'El portal tardó demasiado en responder. Intenta otra vez.' : 'No hay conexión. Revisa tu internet e intenta otra vez.', _codigo: 0 }; })
+      .then(function (d) { if (reloj) clearTimeout(reloj); return d; });
   };
   P.google = function (contenedor, alEntrar, tema) {
     var n = 0;

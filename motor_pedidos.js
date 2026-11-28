@@ -1,4 +1,4 @@
-// GR Intelligence: pedidos del motor de alta (vO, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
+// GR Intelligence: pedidos del motor de alta (vP, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
 // construir, las contestamos dentro del portal y despues empezamos a construir».
 // - MP.formulario: al pedir una funcion, las preguntas del catalogo (las comunes del tipo de pedido y las de la funcion), los datos que
 //   le faltan a la compania y las conexiones que hace en su portal, con lo obligatorio marcado y validado junto a cada campo.
@@ -7,6 +7,8 @@
 // vB (ronda 1 de auditoria): preguntas de seguimiento (requerida_si), conexiones aparte, letra de 14 px, avance con texto y no solo
 // color, campos con aria-required y su error ligado, una sola accion principal, fechas en palabras, colores propios por etapa,
 // textos segun el tipo de pedido y aviso cuando hay mas de 50.
+// vP (ronda 15): pasos de GR dentro de una funcion que ya aplica tambien se activan; «ya existen» solo si estan corriendo;
+// «y también lo usará <compañía>».
 // vO (ronda 14): al agregar con pasos que ya existen (p. ej. los de GR al servicio de prospeccion) se dice que se asignan.
 // vN (ronda 13): «Por construir» en el avance de un pedido listo; plurales con varias unidades; confirmar antes de enviar
 // respuestas (no se pueden cambiar despues).
@@ -109,13 +111,15 @@
     if (t === 'agregar') {
       (f.faltan || []).forEach(function (x) { if (x.quien === 'GR') pasos.push(x.texto); });
       pz.forEach(function (z) {
-        if (f.estado === 'no_aplica') pasos.push('Activar: ' + z.nombre + de(z));
-        else if (z.estado === 'falta') pasos.push('Construir: ' + z.nombre + (z.se_construye_en ? ' — se construye en ' + z.se_construye_en + ' y lo usarán las dos' : de(z)));
+        if (f.estado === 'no_aplica' || z.estado === 'no_aplica') pasos.push('Activar: ' + z.nombre + de(z));
+        else if (z.estado === 'falta') pasos.push('Construir: ' + z.nombre + (z.se_construye_en ? ' — se construye en ' + z.se_construye_en + ' y también lo usará ' + cia : de(z)));
         else if (z.estado === 'apagada') pasos.push('Encender: ' + z.nombre + de(z));
         else if (z.estado === 'suspendida') pasos.push('Reanudar: ' + z.nombre + de(z));
       });
       // Activar una funcion que no aplica solo la enciende para esta compania; lo que cambia de estado si afecta a otros.
-      if (f.estado === 'no_aplica' && pz.some(function (z) { return z.prestada; })) avisos.push('Se le asignan pasos que ya existen' + (pz.every(function (z) { return z.prestada; }) ? '' : ' y se construye lo demás') + ': no cambia nada para quien ya los usa.');
+      // Pasos que ya existen en otra compania (p. ej. los de GR al servicio de prospeccion): se asignan; solo si estan corriendo se dice que no cambia nada.
+      var asig = pz.filter(function (z) { return z.estado === 'no_aplica' && z.prestada; });
+      if (asig.length) avisos.push(asig.every(function (z) { return z.prestada_lista !== false; }) ? 'Se le asignan pasos que ya existen' + (pz.some(function (z) { return z.estado === 'falta' || (f.estado === 'no_aplica' && !z.prestada); }) ? ' y se construye lo que falta' : '') + ': no cambia nada para quien ya los usa.' : 'Algunos pasos de ' + (asig[0].prestada_nombre || 'otra compañía') + ' no están corriendo hoy: Great Revenue los revisa antes de asignarlos.');
       if (f.estado !== 'no_aplica') otros(pz.filter(function (z) { return ['falta', 'apagada', 'suspendida'].indexOf(z.estado) >= 0; }));
       // Pasos por construir que una unidad usara (aun no existen).
       pz.filter(function (z) { return z.estado === 'falta' && (z.usaran || []).length; }).forEach(function (z) { avisos.push('«' + z.nombre + '» también lo ' + (z.usaran.length > 1 ? 'usarán ' : 'usará ') + lista(z.usaran) + ' cuando esté construido.'); });

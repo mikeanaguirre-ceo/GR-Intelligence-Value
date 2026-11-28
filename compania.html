@@ -7,11 +7,11 @@
 <title>Portal de la compañía | Great Revenue Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="/portal_comun.css?v=20261127w">
+<link rel="stylesheet" href="/portal_comun.css?v=20261127x">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
-<script src="/portal_comun.js?v=20261127w"></script>
-<script src="/motor_funciones.js?v=20261127w"></script>
+<script src="/portal_comun.js?v=20261127x"></script>
+<script src="/motor_funciones.js?v=20261127x"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Portal de tu compañía</b></span><span class="quien" id="quien">Entra con tu cuenta de Google</span></div>
@@ -57,9 +57,10 @@
     P.api({ accion: 'companias', sesion: ses() }).then(function (d) {
       if (d._codigo === 401 || d._codigo === 403) { salir(d.error); return; }
       // Falla del motor o sin conexion: no se cierra la sesion; se dice y se deja reintentar.
-      if (!d.companias && (d._codigo === 0 || d._codigo === 404 || d._codigo >= 500)) { avisoCarga(d.error); return; }
+      // Cualquier respuesta sin la lista de companias que no sea un rechazo de acceso es una falla: se avisa y se deja reintentar.
+      if (!Array.isArray(d.companias)) { avisoCarga(d.error); return; }
       if ($('aviso-carga')) $('aviso-carga').hidden = true;
-      if (!d.companias || !d.companias.length) { salir(d.error || 'Tu cuenta no tiene una compañía asignada.'); return; }
+      if (!d.companias.length) { salir('Tu cuenta no tiene una compañía asignada.'); return; }
       estado.companias = d.companias; estado.rol = (d.usuario || {}).rol; estado.usuario = d.usuario || {};
       $('quien').textContent = d.usuario.nombre + ' · ' + d.usuario.email;
       $('v-entrar').hidden = true; $('v-portal').hidden = false;
@@ -128,7 +129,7 @@
       var sv = google[e], completo = !!(sv && sv.correo && sv.calendario && sv.drive);
       var alta = e === yo && cx.disponible && cx.disponible.google ? ' <a class="s mini" href="' + h(conectar(c, 'google')) + '">' + (sv ? 'Completar mi Google' : 'Dar de alta mi Google') + '</a>' : '';
       var g = sv ? chips(sv) + (completo ? '' : alta) + ((adm || e === yo) ? ' <button class="s mini" data-quitar-google="' + h(e) + '">Quitar su Google</button>' : '') : (alta || '<span class="vacio">Sin conectar</span>');
-      return '<tr><td>' + h(e) + '</td><td>' + (esAdm ? 'Administra' : 'Equipo') + '</td><td>' + g + '</td><td>' + (inv[e] ? 'Enviada el ' + h(inv[e]) : '<span class="vacio">Sin enviar</span>') + '</td>'
+      return '<tr><td>' + h(e) + '</td><td>' + (esAdm ? 'Administra' : 'Equipo') + '</td><td>' + g + '</td><td>' + (inv[e] ? 'Enviada el ' + h(P.fecha(inv[e])) : '<span class="vacio">Sin enviar</span>') + '</td>'
         + (adm ? '<td class="acc"><button class="s" data-invitar="' + h(e) + '">' + (inv[e] ? 'Reenviar invitación' : 'Enviar invitación') + '</button>' + (esAdm ? '' : ' <button class="s" data-quitar="' + h(e) + '">Quitar del equipo</button>') + '</td>' : '') + '</tr>';
     }).join('');
     var cuerpo = '<p style="margin:0">Aquí está quién usa el motor de ' + h(d.marca_nombre) + '. Cada persona entra con su cuenta de Google y conecta su correo, su calendario y su Drive: así el motor envía las minutas y los seguimientos desde su propio correo y lee sus reuniones y notas.</p>'
@@ -137,7 +138,7 @@
       + (adm ? '<div class="acciones"><label style="flex:1;min-width:220px">Agregar a una persona (correo de Google)<input id="nuevo-usuario" type="email" placeholder="nombre@compania.com"' + (lleno ? ' disabled' : '') + '></label><button class="p" id="agregar"' + (lleno ? ' disabled' : '') + '>Agregar</button></div>'
         + (lleno ? '<p class="vacio">Ya usan todas las licencias. Quita a alguien o pide más licencias.</p>' : '')
         + '<div class="acciones"><label style="min-width:160px">Licencias adicionales<input id="lic-cuantas" type="number" min="1" max="50" value="1"></label><button class="s" id="lic-pedir">Pedir más licencias</button></div>'
-        + (sol.fecha ? '<p class="vacio">Pediste ' + h(sol.cuantas) + ' licencia(s) más el ' + h(sol.fecha) + '. Great Revenue ya recibió el aviso.</p>' : '') : '')
+        + (sol.fecha ? '<p class="vacio">Pediste ' + h(sol.cuantas) + ' licencia(s) más el ' + h(P.fecha(sol.fecha)) + '. Great Revenue ya recibió el aviso.</p>' : '') : '')
       + '<span class="msg" id="m-equipo"></span>';
     return tarjeta(1, 'Equipo', cuerpo + P.pedir('equipo', 'Equipo', 'Ej.: explicar a mi equipo cómo dar de alta su Google') + P.solicitudes(c.solicitudes, 'Equipo'));
   }
@@ -243,13 +244,13 @@
       if (cx.compartidas && s !== 'google') {
         var lic = ((cx.licencias || {})[s] || []);
         return '<div class="servicio"><div class="servicio-h"><b>' + titulo + '</b>' + (hay ? '<span class="chip aplicado">Conectado · compartido con ' + h(cx.compartidas) + '</span>' : '<span class="chip pendiente">' + h(cx.compartidas) + ' aún no lo conecta</span>') + '</div><p class="vacio" style="margin:0">' + texto.split('. ')[0] + '. Es la misma cuenta de ' + h(cx.compartidas) + ': lo administra ' + h(cx.compartidas) + ' y aquí no se cambia.</p>'
-          + lic.map(function (x) { return '<div class="liga">Licencia: <b>' + h(x.correo) + '</b> <span class="vacio">' + h(x.estado || '') + (x.buzon ? ' · buzón ' + h(x.buzon) : '') + (x.linkedin ? ' · LinkedIn conectado' : '') + (x.verificado ? ' · revisada ' + h(String(x.verificado).slice(0, 10)) : '') + '</span></div>'; }).join('') + '</div>';
+          + lic.map(function (x) { return '<div class="liga">Licencia: <b>' + h(x.correo) + '</b> <span class="vacio">' + h(x.estado || '') + (x.buzon ? ' · buzón ' + h(x.buzon) : '') + (x.linkedin ? ' · LinkedIn conectado' : '') + (x.verificado ? ' · revisada ' + h(P.fecha(String(x.verificado).slice(0, 10))) : '') + '</span></div>'; }).join('') + '</div>';
       }
       return '<div class="servicio"><div class="servicio-h"><b>' + titulo + '</b>' + (hay ? '<span class="chip aplicado">Conectado</span>' : '<span class="chip pendiente">Sin conectar</span>') + '</div><p class="vacio" style="margin:0">' + texto + '</p>'
         + (lista || []).map(function (x) {
           // Cuenta con la que esta conectado. Las conexiones viejas sin cuenta identificada piden volver a conectar para verla.
           var generica = /^(organizacion de zoho|cuenta de amplemarket)/i.test(String(x.quien));
-          return '<div class="liga">Conectado con: <b>' + (generica ? 'cuenta sin identificar' : h(x.quien)) + '</b> <span class="vacio">desde ' + h(x.fecha) + (generica ? ' · vuelve a conectar la misma cuenta para ver cuál es' : '') + '</span></div>';
+          return '<div class="liga">Conectado con: <b>' + (generica ? 'cuenta sin identificar' : h(x.quien)) + '</b> <span class="vacio">desde ' + h(P.fecha(x.fecha)) + (generica ? ' · vuelve a conectar la misma cuenta para ver cuál es' : '') + '</span></div>';
         }).join('')
         + (adm && hay && disp ? '<div class="acciones"><button class="s" data-quitar-servicio="' + s + '">Quitar la conexión</button></div>' : '')
         + (adm ? (disp ? '<div class="acciones"><a class="' + (hay ? 's' : 'p') + '" href="' + h(conectar(c, s)) + '">' + (hay ? 'Volver a conectar la misma cuenta' : 'Conectar') + '</a><a class="s" href="' + h(conectar(c, s, true)) + '">' + (hay ? 'Cambiar a otra cuenta' : 'Conectar con otra cuenta') + '</a></div>' + (hay ? '<p class="vacio">Si cambias a otra cuenta, la nueva reemplaza a la actual y la actual se borra del motor.</p>' : '') : '<p class="vacio">' + (hay ? 'Esta conexión la administra Great Revenue.' : 'Aún no disponible: Great Revenue lo habilita.') + '</p>') : '<p class="vacio">Lo conecta quien administra el portal.</p>') + '</div>';
