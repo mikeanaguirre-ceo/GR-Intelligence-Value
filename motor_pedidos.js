@@ -1,4 +1,4 @@
-// GR Intelligence: pedidos del motor de alta (vV, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
+// GR Intelligence: pedidos del motor de alta (vW, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
 // construir, las contestamos dentro del portal y despues empezamos a construir».
 // - MP.formulario: al pedir una funcion, las preguntas del catalogo (las comunes del tipo de pedido y las de la funcion), los datos que
 //   le faltan a la compania y las conexiones que hace en su portal, con lo obligatorio marcado y validado junto a cada campo.
@@ -46,6 +46,11 @@
   MP.fecha = function (s) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s || '')); return m ? Number(m[3]) + ' ' + MES[Number(m[2]) - 1] + ' ' + m[1] : String(s || ''); };
   // Respuestas a dudas escritas y aun no enviadas (por pedido y duda): sobreviven a Actualizar y a repintar la pagina.
   MP.borradores = {};
+  // vW (ronda 22): el pedido que no se envio porque vencio la sesion se guarda en esta pestana (sessionStorage), asi sobrevive a
+  // una recarga o a volver a entrar; si el navegador no deja guardar, queda en memoria.
+  MP.guardarBorradorPedido = function (b) { MP.borradorPedido = b; try { sessionStorage.setItem('mp_borrador_pedido', JSON.stringify(b)); } catch (e) {} };
+  MP.leerBorradorPedido = function () { if (MP.borradorPedido) return MP.borradorPedido; try { return JSON.parse(sessionStorage.getItem('mp_borrador_pedido') || 'null'); } catch (e) { return null; } };
+  MP.quitarBorradorPedido = function () { MP.borradorPedido = null; try { sessionStorage.removeItem('mp_borrador_pedido'); } catch (e) {} };
   // Descarta borradores de dudas que ya no esperan respuesta (se llama con cada lectura del motor).
   MP.limpiarBorradores = function (ps) {
     var vivos = {}; (ps || []).forEach(function (p) { if (MP.tocaContestar(p)) ((p.detalle || {}).dudas || []).forEach(function (q) { if (!q.respuesta) vivos[p.id + '|' + q.id] = 1; }); });
@@ -225,11 +230,11 @@
       + ((pl.pasos.length || pl.avisos.length) ? '<div class="mp-gr"><b>Lo hace Great Revenue</b>' + (pl.pasos.length ? '<ul>' + pl.pasos.map(function (x) { return '<li>' + h(x) + '</li>'; }).join('') + '</ul>' : '') + pl.avisos.map(function (x) { return '<p style="margin:6px 0 0">' + h(x) + '</p>'; }).join('') + '</div>' : '')
       + '<div class="mp-pie"><button class="mf-btn p" data-mp-enviar>Enviar pedido</button><button class="mf-btn" data-mp-cancelar>Cancelar</button><span class="mp-msg" role="status" aria-live="polite"></span></div>';
     // Borrador de un pedido que no se envio porque vencio la sesion: se vuelve a llenar.
-    var bp = MP.borradorPedido;
+    var bp = MP.leerBorradorPedido();
     if (bp && bp.clave === o.clave) {
-      MP.borradorPedido = null;
+      MP.quitarBorradorPedido();
       Array.prototype.forEach.call(o.caja.querySelectorAll('[data-mp-q]'), function (q) {
-        var id = q.getAttribute('data-mp-q'), v = (q.hasAttribute('data-mp-r') ? bp.requisitos : bp.respuestas)[id];
+        var id = q.getAttribute('data-mp-q'), v = ((q.hasAttribute('data-mp-r') ? bp.requisitos : bp.respuestas) || {})[id];
         if (v == null) return;
         if (q.getAttribute('data-mp-tipo') === 'opcion') Array.prototype.forEach.call(q.querySelectorAll('input'), function (i) { if (i.value === v) { i.checked = true; i.closest('label').classList.add('on'); } });
         else { var x = q.querySelector('input,textarea'); if (x) x.value = v; }
