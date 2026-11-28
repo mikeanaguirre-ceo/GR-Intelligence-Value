@@ -7,11 +7,11 @@
 <title>Portal de la compañía | Great Revenue Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="/portal_comun.css?v=20261127v">
+<link rel="stylesheet" href="/portal_comun.css?v=20261127w">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
-<script src="/portal_comun.js?v=20261127v"></script>
-<script src="/motor_funciones.js?v=20261127v"></script>
+<script src="/portal_comun.js?v=20261127w"></script>
+<script src="/motor_funciones.js?v=20261127w"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Portal de tu compañía</b></span><span class="quien" id="quien">Entra con tu cuenta de Google</span></div>
@@ -45,11 +45,20 @@
       P.sesion(LLAVE, d.sesion); $('m-entrar').textContent = ''; cargar();
     });
   });
+  // Falla al leer el portal: si el portal ya esta abierto, el aviso va arriba del portal (la pantalla de entrada esta oculta).
+  function avisoCarga(texto) {
+    var html = h(texto || 'El portal no respondió.') + ' <button class="s" style="min-height:40px" data-reintentar>Intentar otra vez</button>';
+    var caja = $('m-entrar');
+    if (!$('v-portal').hidden) { caja = $('aviso-carga'); if (!caja) { caja = document.createElement('p'); caja.id = 'aviso-carga'; caja.className = 'msg bad'; $('v-portal').insertBefore(caja, $('v-portal').firstChild); } }
+    caja.hidden = false; caja.innerHTML = html;
+    caja.querySelector('[data-reintentar]').onclick = function () { caja.innerHTML = 'Leyendo...'; cargar(); };
+  }
   function cargar() {
     P.api({ accion: 'companias', sesion: ses() }).then(function (d) {
       if (d._codigo === 401 || d._codigo === 403) { salir(d.error); return; }
       // Falla del motor o sin conexion: no se cierra la sesion; se dice y se deja reintentar.
-      if (!d.companias && (d._codigo === 0 || d._codigo >= 500)) { $('m-entrar').innerHTML = h(d.error || 'El portal no respondió.') + ' <button class="s" id="reintentar">Intentar otra vez</button>'; $('reintentar').onclick = cargar; return; }
+      if (!d.companias && (d._codigo === 0 || d._codigo === 404 || d._codigo >= 500)) { avisoCarga(d.error); return; }
+      if ($('aviso-carga')) $('aviso-carga').hidden = true;
       if (!d.companias || !d.companias.length) { salir(d.error || 'Tu cuenta no tiene una compañía asignada.'); return; }
       estado.companias = d.companias; estado.rol = (d.usuario || {}).rol; estado.usuario = d.usuario || {};
       $('quien').textContent = d.usuario.nombre + ' · ' + d.usuario.email;
@@ -96,7 +105,7 @@
     if (pestana === 'mejoras') activarMejoras(c);
     if (pestana === 'proceso') { activarNombres(c); activarReuniones(c); }
     if (pestana === 'marca') {
-      if ($('doc-completo')) $('doc-completo').onclick = function () { P.api({ accion: 'vitrina', sesion: ses(), tenant: t }).then(function (x) { if (x.html) P.abrirHtml(x.html); }); };
+      if ($('doc-completo')) $('doc-completo').onclick = function () { var b = this, m = b.nextElementSibling && b.nextElementSibling.className === 'msg doc-msg' ? b.nextElementSibling : null; if (!m) { m = document.createElement('span'); m.className = 'msg doc-msg'; b.parentNode.insertBefore(m, b.nextSibling); } b.disabled = true; m.textContent = 'Abriendo...'; P.api({ accion: 'vitrina', sesion: ses(), tenant: t }).then(function (x) { b.disabled = false; if (x.html) { m.textContent = ''; P.abrirHtml(x.html); } else { m.className = 'msg doc-msg bad'; m.textContent = x.error || 'No se pudo abrir el documento. Intenta otra vez.'; } }); };
       cargarMuestras(c);
     }
   }

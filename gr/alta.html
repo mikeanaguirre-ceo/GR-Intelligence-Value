@@ -9,7 +9,7 @@
 <body>
 <script>
 // Portal de alta de Great Revenue en su ruta: intelligence.greatrevenue.com/gr/alta.
-fetch('/alta.html', { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (h) { document.open(); document.write(h); document.close(); });
+fetch('/alta.html', { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (h) { document.open(); document.write(h); document.close(); }).catch(function () { document.body.innerHTML = '<p style="font-family:Arial;padding:24px">No se pudo abrir el portal de alta. Revisa tu internet y recarga la página.</p>'; });
 </script>
 </body>
 </html>

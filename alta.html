@@ -7,12 +7,12 @@
 <title>Portal de alta | Great Revenue Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="/portal_comun.css?v=20261127v">
+<link rel="stylesheet" href="/portal_comun.css?v=20261127w">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
-<script src="/portal_comun.js?v=20261127v"></script>
-<script src="/motor_funciones.js?v=20261127v"></script>
-<script src="/motor_pedidos.js?v=20261127v"></script>
+<script src="/portal_comun.js?v=20261127w"></script>
+<script src="/motor_funciones.js?v=20261127w"></script>
+<script src="/motor_pedidos.js?v=20261127w"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Great Revenue Intelligence</b></span><span class="quien" id="quien">Portal de alta</span></div>
@@ -49,11 +49,20 @@
     }, function () { $('m-entrar').textContent = 'No hay conexión con el portal. Revisa tu internet e intenta entrar otra vez.'; });
   }, 'filled_black');
 
+  // Falla al leer el portal: si el portal ya esta abierto, el aviso va arriba del portal (la pantalla de entrada esta oculta).
+  function avisoCarga(texto) {
+    var html = h(texto || 'El portal no respondió.') + ' <button class="s" style="min-height:40px" data-reintentar>Intentar otra vez</button>';
+    var caja = $('m-entrar');
+    if (!$('v-portal').hidden) { caja = $('aviso-carga'); if (!caja) { caja = document.createElement('p'); caja.id = 'aviso-carga'; caja.className = 'msg bad'; $('v-portal').insertBefore(caja, $('v-portal').firstChild); } }
+    caja.hidden = false; caja.innerHTML = html;
+    caja.querySelector('[data-reintentar]').onclick = function () { caja.innerHTML = 'Leyendo...'; cargar(); };
+  }
   function cargar() {
     P.api({ accion: 'companias', sesion: ses() }).then(function (d) {
       if (d._codigo === 401 || d._codigo === 403) { salir(d.error); return; }
       // Falla del motor o sin conexion: no se cierra la sesion; se dice y se deja reintentar.
-      if (!d.companias && (d._codigo === 0 || d._codigo >= 500)) { $('m-entrar').innerHTML = h(d.error || 'El portal no respondió.') + ' <button class="s" id="reintentar">Intentar otra vez</button>'; $('reintentar').onclick = cargar; return; }
+      if (!d.companias && (d._codigo === 0 || d._codigo === 404 || d._codigo >= 500)) { avisoCarga(d.error); return; }
+      if ($('aviso-carga')) $('aviso-carga').hidden = true;
       if (!d.companias || (d.usuario && d.usuario.rol !== 'gr')) { salir(d.error || 'Este es el portal de Great Revenue.'); return; }
       estado.companias = d.companias; $('v-entrar').hidden = true; $('v-portal').hidden = false;
       $('quien').textContent = d.usuario.nombre + ' · ' + d.usuario.email;
@@ -160,7 +169,7 @@
     });
     if (MA.vista === 'pedidos' && !MA.cia) MP.activarLista($('panel'), {
       responder: function (id, resp) { return P.api({ accion: 'alta_responder', sesion: ses(), id: id, respuestas: resp }).then(function (r) { if (r._codigo === 401) { salir(r.error); return { ok: false, error: r.error }; } return r; }); },
-      // Si quedan respuestas escritas en otro pedido no se recarga (se perderian); el aviso de arriba dice que se guardo.
+      // Tras enviar se vuelve a leer: lo escrito en otras dudas se conserva como borrador (MP.borradores).
       alTerminar: function () { motorAlta(true); } });
     Array.prototype.forEach.call(document.querySelectorAll('[data-ma-ir-pedidos]'), function (b) { b.onclick = function () { if (!maSeguro()) return; MA.cia = ''; MA.vista = 'pedidos'; pintarMotor(); irAlPanel(); }; });
   }
@@ -240,7 +249,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-deshacer]'), function (b) { b.onclick = function () { deshacer(c, b.getAttribute('data-deshacer')); }; });
     Array.prototype.forEach.call(document.querySelectorAll('[data-copiar]'), function (b) { b.onclick = function () { var v = b.getAttribute('data-copiar'); (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(function () { b.textContent = 'Copiada'; }, function () { b.textContent = 'Selecciona y copia'; }); }; });
     if ($('aprobar')) $('aprobar').onclick = function () { accion('aprobar', t, 'm-aprobar', 'Aprobada. Ya tiene tablero y ligas.'); };
-    if ($('doc-completo')) $('doc-completo').onclick = function () { P.msg('m-invitar', '', ''); P.api({ accion: 'vitrina', sesion: ses(), tenant: t }).then(function (d) { if (d.html) P.abrirHtml(d.html); }); };
+    if ($('doc-completo')) $('doc-completo').onclick = function () { var b = this, m = b.nextElementSibling && b.nextElementSibling.className === 'msg doc-msg' ? b.nextElementSibling : null; if (!m) { m = document.createElement('span'); m.className = 'msg doc-msg'; b.parentNode.insertBefore(m, b.nextSibling); } b.disabled = true; m.textContent = 'Abriendo...'; P.api({ accion: 'vitrina', sesion: ses(), tenant: t }).then(function (x) { b.disabled = false; if (x.html) { m.textContent = ''; P.abrirHtml(x.html); } else { m.className = 'msg doc-msg bad'; m.textContent = x.error || 'No se pudo abrir el documento. Intenta otra vez.'; } }); };
     $('subir-manual').onclick = function () { subirManual(t); };
     $('invitar').onclick = function () { invitar(c); };
     activarMejoras(c);
