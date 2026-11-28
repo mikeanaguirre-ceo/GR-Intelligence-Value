@@ -1,4 +1,4 @@
-// GR Intelligence: pedidos del motor de alta (vU, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
+// GR Intelligence: pedidos del motor de alta (vV, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
 // construir, las contestamos dentro del portal y despues empezamos a construir».
 // - MP.formulario: al pedir una funcion, las preguntas del catalogo (las comunes del tipo de pedido y las de la funcion), los datos que
 //   le faltan a la compania y las conexiones que hace en su portal, con lo obligatorio marcado y validado junto a cada campo.
@@ -7,6 +7,7 @@
 // vB (ronda 1 de auditoria): preguntas de seguimiento (requerida_si), conexiones aparte, letra de 14 px, avance con texto y no solo
 // color, campos con aria-required y su error ligado, una sola accion principal, fechas en palabras, colores propios por etapa,
 // textos segun el tipo de pedido y aviso cuando hay mas de 50.
+// vV (ronda 21): borrador del pedido si vence la sesion al enviarlo (se llena solo al volver).
 // vU (ronda 20): el formulario en camino no cuenta como pendiente; singular de pasos no corriendo.
 // vT (ronda 19): un aviso por grupo de companias que usaran pasos por construir.
 // vS (ronda 18): el aviso de pasos pausados solo manda a Reanudar donde ese boton existe.
@@ -223,6 +224,17 @@
       + (conectar.length ? '<div class="mp-gr"><b>La compañía lo conecta en su portal</b><ul>' + conectar.map(function (x) { return '<li>' + h(x.texto) + '</li>'; }).join('') + '</ul></div>' : '')
       + ((pl.pasos.length || pl.avisos.length) ? '<div class="mp-gr"><b>Lo hace Great Revenue</b>' + (pl.pasos.length ? '<ul>' + pl.pasos.map(function (x) { return '<li>' + h(x) + '</li>'; }).join('') + '</ul>' : '') + pl.avisos.map(function (x) { return '<p style="margin:6px 0 0">' + h(x) + '</p>'; }).join('') + '</div>' : '')
       + '<div class="mp-pie"><button class="mf-btn p" data-mp-enviar>Enviar pedido</button><button class="mf-btn" data-mp-cancelar>Cancelar</button><span class="mp-msg" role="status" aria-live="polite"></span></div>';
+    // Borrador de un pedido que no se envio porque vencio la sesion: se vuelve a llenar.
+    var bp = MP.borradorPedido;
+    if (bp && bp.clave === o.clave) {
+      MP.borradorPedido = null;
+      Array.prototype.forEach.call(o.caja.querySelectorAll('[data-mp-q]'), function (q) {
+        var id = q.getAttribute('data-mp-q'), v = (q.hasAttribute('data-mp-r') ? bp.requisitos : bp.respuestas)[id];
+        if (v == null) return;
+        if (q.getAttribute('data-mp-tipo') === 'opcion') Array.prototype.forEach.call(q.querySelectorAll('input'), function (i) { if (i.value === v) { i.checked = true; i.closest('label').classList.add('on'); } });
+        else { var x = q.querySelector('input,textarea'); if (x) x.value = v; }
+      });
+    }
     activarOps(o.caja);
     var bE = o.caja.querySelector('[data-mp-enviar]'), bC = o.caja.querySelector('[data-mp-cancelar]'), msg = o.caja.querySelector('.mp-msg');
     var primero = o.caja.querySelector('input,textarea'); if (primero) primero.focus({ preventScroll: true });
