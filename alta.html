@@ -7,12 +7,12 @@
 <title>Portal de alta | Great Revenue Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="/portal_comun.css?v=20261127zh">
+<link rel="stylesheet" href="/portal_comun.css?v=20261127zi">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
-<script src="/portal_comun.js?v=20261127zh"></script>
-<script src="/motor_funciones.js?v=20261127zh"></script>
-<script src="/motor_pedidos.js?v=20261127zh"></script>
+<script src="/portal_comun.js?v=20261127zi"></script>
+<script src="/motor_funciones.js?v=20261127zi"></script>
+<script src="/motor_pedidos.js?v=20261127zi"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Great Revenue Intelligence</b></span><span class="quien" id="quien">Portal de alta</span></div>
@@ -128,7 +128,8 @@
     /* Pedido que no se envio porque vencio la sesion: se anuncia arriba con Abrir y Descartar (ronda 23). */
     var bp = MP.leerBorradorPedido(), avisoBp = MA.avisoBp ? '<div class="mp-aviso"><span>' + h(MA.avisoBp) + '</span></div>' : '';
     MA.avisoBp = '';
-    if (bp && bp.cia) avisoBp += '<div class="mp-aviso" data-mp-borrador-aviso><span><b>Tienes un pedido sin enviar:</b> ' + h(bp.etiqueta || 'pedido') + ' para ' + h(bp.nombre || nombreDe(bp.cia)) + '. Quedó lleno cuando venció tu sesión.</span><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="mf-btn p" data-ma-bp-abrir>Abrir</button><button class="mf-btn" data-ma-bp-quitar>Descartar</button></span></div>';
+    var sinAbrir = bp && MA.bpSinAbrir === bp.clave, escrito = bp && (bp.textos || []).length ? '<details style="margin-top:6px"><summary>Ver lo que escribiste</summary><ul style="margin:6px 0 0">' + bp.textos.map(function (t) { return '<li>' + (t.p ? h(t.p) + ': ' : '') + '<b>' + h(t.v) + '</b></li>'; }).join('') + '</ul></details>' : '';
+    if (bp && bp.cia && !MA.ocultarBp) avisoBp += '<div class="mp-aviso" data-mp-borrador-aviso><span><b>Tienes un pedido sin enviar:</b> ' + h(bp.etiqueta || 'pedido') + ' para ' + h(bp.nombre || nombreDe(bp.cia)) + '. ' + (sinAbrir ? 'Ya no se puede enviar así; copia lo que te sirva y descártalo.' : 'Quedó lleno cuando venció tu sesión.') + escrito + '</span><span style="display:flex;gap:8px;flex-wrap:wrap">' + (sinAbrir ? '' : '<button class="mf-btn p" data-ma-bp-abrir>Abrir</button>') + '<button class="mf-btn" data-ma-bp-quitar>Descartar</button></span></div>';
     var html;
     var barraSup = '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">'
       + (MA.cia ? '<button class="mf-volver" id="ma-volver">← Todas las compañías</button>' : '<div class="mf-tabs"><button data-ma-vista="tarjetas" class="' + (MA.vista === 'tarjetas' ? 'on' : '') + '">Por compañía</button><button data-ma-vista="tabla" class="' + (MA.vista === 'tabla' ? 'on' : '') + '">Comparar todas</button><button data-ma-vista="pedidos" class="' + (MA.vista === 'pedidos' ? 'on' : '') + '">Pedidos' + (pendientes.length ? ' (' + pendientes.length + ')' : '') + '</button></div>')
@@ -160,13 +161,13 @@
     if (document.querySelector('[data-ma-bp-abrir]')) document.querySelector('[data-ma-bp-abrir]').onclick = function () {
       if (!maSeguro()) return;
       var bp = MP.leerBorradorPedido(); if (!bp) { MA.avisoBp = 'El pedido guardado ya venció (se guarda 24 horas).'; pintarMotor(); return; }
-      /* Se quita de la pestana antes de volver a pintar, asi el aviso no reaparece; el formulario lo recibe directo. */
-      MP.quitarBorradorPedido(); MA.cia = bp.cia; MA.abiertos = {}; pintarMotor();
+      /* Se pinta la compania sin el aviso; el borrador solo se quita cuando el formulario lo usa o si ya hay un pedido abierto (ronda 26). */
+      MA.ocultarBp = true; MA.cia = bp.cia; MA.abiertos = {}; pintarMotor(); MA.ocultarBp = false;
       var bt = document.querySelector('[data-mf-pedir="' + bp.fid + '"][data-mf-que="' + bp.que + '"]');
       if (!bt) {
         var abierto = ped.some(function (p) { return p.tenant === bp.cia && MP.abierto(p) && String(p.instruccion || '').indexOf('[funcion=' + bp.fid + ']') >= 0; });
-        MA.avisoBp = abierto ? 'Ya hay un pedido abierto para esa función (puede que se haya enviado desde otra pestaña): aquí abajo, en Pedidos.' : 'Ese pedido ya no se puede hacer así: la función cambió desde entonces. Revísala y pide de nuevo si hace falta.';
-        if (abierto) { MA.cia = ''; MA.vista = 'pedidos'; }
+        MA.avisoBp = abierto ? 'Ya hay un pedido abierto para esa función (puede que se haya enviado desde otra pestaña): aquí abajo, en Pedidos.' : 'Ese pedido ya no se puede hacer así: la función cambió desde entonces. Tus respuestas siguen guardadas en el aviso de abajo para que las copies.';
+        if (abierto) { MP.quitarBorradorPedido(); MA.cia = ''; MA.vista = 'pedidos'; } else MA.bpSinAbrir = bp.clave;
         pintarMotor(); irAlPanel(); return;
       }
       var dt = bt.closest('details'); if (dt) dt.open = true;
@@ -183,9 +184,9 @@
         Array.prototype.forEach.call(todos, function (x) { x.disabled = true; });
         MP.formulario({ caja: box, clave: MA.cia + '|' + fid + '|' + que, borrador: MA.bpAbrir || null, cia: c.nombre, f: f, estadoHoy: (MF.EST[f.estado] || [''])[0], relacionados: MP.relacionados(ped, cs, c, fid), que: que, etiqueta: b.textContent, pa: d.preguntas_accion || {},
           enviar: function (cuerpo) {
-            return P.api({ accion: 'alta_pedir', sesion: ses(), cliente: MA.cia, funcion: fid, que: que, respuestas: cuerpo.respuestas, requisitos: cuerpo.requisitos })
+            return P.api({ accion: 'alta_pedir', sesion: ses(), cliente: c.tenant, funcion: fid, que: que, respuestas: cuerpo.respuestas, requisitos: cuerpo.requisitos })
               // Sesion vencida al enviar: lo escrito queda como borrador y el formulario se llena solo al volver a entrar.
-              .then(function (r) { if (r._codigo === 401) { MP.guardarBorradorPedido({ clave: MA.cia + '|' + fid + '|' + que, cia: MA.cia, fid: fid, que: que, etiqueta: b.textContent + (f.nombre ? ' «' + f.nombre + '»' : ''), nombre: c.nombre, respuestas: cuerpo.respuestas, requisitos: cuerpo.requisitos }); salir('Tu sesión venció y el pedido no se envió. Quedó guardado en esta pestaña por 24 horas: vuelve a entrar aquí y toca «Abrir».'); return { ok: false, error: 'Tu sesión venció.' }; } return r; });
+              .then(function (r) { if (r._codigo === 401) { MP.guardarBorradorPedido({ clave: c.tenant + '|' + fid + '|' + que, cia: c.tenant, fid: fid, que: que, textos: MP.textosDe(box), etiqueta: b.textContent + (f.nombre ? ' «' + f.nombre + '»' : ''), nombre: c.nombre, respuestas: cuerpo.respuestas, requisitos: cuerpo.requisitos }); salir('Tu sesión venció y el pedido no se envió. Quedó guardado en esta pestaña por 24 horas: vuelve a entrar aquí y toca «Abrir».'); return { ok: false, error: 'Tu sesión venció.' }; } return r; });
           },
           alCancelar: function () { Array.prototype.forEach.call(todos, function (x) { x.disabled = false; }); },
           alTerminar: function () { motorAlta(true); } });

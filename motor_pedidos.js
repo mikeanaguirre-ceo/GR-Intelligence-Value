@@ -1,4 +1,4 @@
-// GR Intelligence: pedidos del motor de alta (vY, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
+// GR Intelligence: pedidos del motor de alta (vZ, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
 // construir, las contestamos dentro del portal y despues empezamos a construir».
 // - MP.formulario: al pedir una funcion, las preguntas del catalogo (las comunes del tipo de pedido y las de la funcion), los datos que
 //   le faltan a la compania y las conexiones que hace en su portal, con lo obligatorio marcado y validado junto a cada campo.
@@ -55,6 +55,15 @@
     var b = MP.borradorPedido; if (!b) { try { b = JSON.parse(sessionStorage.getItem('mp_borrador_pedido') || 'null'); } catch (e) { b = null; } }
     if (b && !(Date.now() - Number(b.guardado || 0) < 864e5)) { MP.quitarBorradorPedido(); return null; }
     return b || null;
+  };
+  // vZ (ronda 26): lo escrito en el formulario, con el texto de cada pregunta, para mostrarlo en el aviso del pedido guardado.
+  MP.textosDe = function (caja) {
+    var r = [];
+    Array.prototype.forEach.call((caja || document).querySelectorAll('[data-mp-q]'), function (q) {
+      var on = q.querySelector('input:checked'), x = q.querySelector('input:not([type=radio]),textarea'), v = on ? on.value : (x ? String(x.value || '').trim() : '');
+      var l = q.querySelector('.mp-lbl,label'); if (v) r.push({ p: l ? l.textContent.replace(/\*\s*$/, '').trim() : '', v: v });
+    });
+    return r;
   };
   MP.quitarBorradorPedido = function () { MP.borradorPedido = null; try { sessionStorage.removeItem('mp_borrador_pedido'); } catch (e) {} };
   // Descarta borradores de dudas que ya no esperan respuesta (se llama con cada lectura del motor).
