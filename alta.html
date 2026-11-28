@@ -7,12 +7,12 @@
 <title>Portal de alta | Great Revenue Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="/portal_comun.css?v=20261127t">
+<link rel="stylesheet" href="/portal_comun.css?v=20261127u">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="/correo_estilos.js?v=20261014c"></script>
-<script src="/portal_comun.js?v=20261127t"></script>
-<script src="/motor_funciones.js?v=20261127t"></script>
-<script src="/motor_pedidos.js?v=20261127t"></script>
+<script src="/portal_comun.js?v=20261127u"></script>
+<script src="/motor_funciones.js?v=20261127u"></script>
+<script src="/motor_pedidos.js?v=20261127u"></script>
 </head>
 <body>
 <div class="top"><span class="marca" id="logo"><b>Great Revenue Intelligence</b></span><span class="quien" id="quien">Portal de alta</span></div>
@@ -46,7 +46,7 @@
       if (!d.sesion) { $('m-entrar').textContent = d.error || 'No se pudo entrar.'; return; }
       if (d.usuario.rol !== 'gr') { $('m-entrar').innerHTML = 'Este es el portal de Great Revenue. Entra a tu portal desde la liga de tu invitación.'; return; }
       P.sesion(LLAVE, d.sesion); $('m-entrar').textContent = ''; cargar();
-    });
+    }, function () { $('m-entrar').textContent = 'No hay conexión con el portal. Revisa tu internet e intenta entrar otra vez.'; });
   }, 'filled_black');
 
   function cargar() {
@@ -65,7 +65,7 @@
       }
       if (gr) P.aplicarMarca(gr.datos, 'Portal de alta', 'Configuración inicial de cada compañía. Cada sección se guarda por separado.');
       pintarLista(); elegir(estado.sel || (d.companias[0] && d.companias[0].tenant));
-    });
+    }, function () { $('m-entrar').textContent = 'No hay conexión con el portal. Revisa tu internet y recarga la página.'; });
   }
   function pintarLista() {
     $('lista').innerHTML = '<button class="cia' + (estado.sel === '__motor' ? ' on' : '') + '" id="motor-alta"><b>Motor de alta</b><small>Funciones de todas las compañías: ver, agregar o quitar</small></button>' + estado.companias.map(function (c) {
@@ -98,7 +98,7 @@
     P.api({ accion: 'alta_funciones', sesion: ses() }).then(function (d) {
       if (d._codigo === 401) { salir(d.error); return; }
       if (!d.ok) { $('panel').innerHTML = '<div class="mf-box"><p class="msg bad">' + h(d.error || 'No se pudo leer el motor de alta.') + '</p><button class="mf-btn" id="ma-actualizar">Intentar otra vez</button></div>'; $('ma-actualizar').onclick = function () { motorAlta(true); }; return; }
-      MA.datos = d; pintarMotor();
+      MA.datos = d; if (window.MP) MP.limpiarBorradores(d.pedidos || []); pintarMotor();
     }, function () { $('panel').innerHTML = '<div class="mf-box"><p class="msg bad">No hay conexión con el motor. Revisa tu internet y toca Actualizar.</p><button class="mf-btn" id="ma-actualizar">Actualizar</button></div>'; $('ma-actualizar').onclick = function () { motorAlta(true); }; });
   }
   // En celular la lista de companias queda arriba: llevar la vista al inicio del panel, no al de la pagina.
@@ -147,7 +147,7 @@
         if (!box || !f) return;
         var todos = document.querySelectorAll('[data-mf-pedir]');
         Array.prototype.forEach.call(todos, function (x) { x.disabled = true; });
-        MP.formulario({ caja: box, cia: c.nombre, f: f, estadoHoy: (MF.EST[f.estado] || [''])[0], que: que, etiqueta: b.textContent, pa: d.preguntas_accion || {},
+        MP.formulario({ caja: box, cia: c.nombre, f: f, estadoHoy: (MF.EST[f.estado] || [''])[0], relacionados: MP.relacionados(ped, cs, c, fid), que: que, etiqueta: b.textContent, pa: d.preguntas_accion || {},
           enviar: function (cuerpo) {
             return P.api({ accion: 'alta_pedir', sesion: ses(), cliente: MA.cia, funcion: fid, que: que, respuestas: cuerpo.respuestas, requisitos: cuerpo.requisitos })
               .then(function (r) { if (r._codigo === 401) { salir(r.error); return { ok: false, error: r.error }; } return r; });

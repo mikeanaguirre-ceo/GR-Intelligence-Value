@@ -1,4 +1,7 @@
-// GR Intelligence: motor de alta (vE, 27-nov-2026: pedidos con preguntas antes de construir, ver motor_pedidos.js).
+// GR Intelligence: motor de alta (vF, 27-nov-2026: pedidos con preguntas antes de construir, ver motor_pedidos.js).
+// vF (rondas 5 a 12): sin botones en funciones fijas, sin Apagar si nada corre, Reanudar si hay un paso pausado en una funcion
+// lista, "se construirá en", letra de 14 px, botones de 40 px y Comparar todas con simbolos.
+// vE: pedidos con preguntas.
 // vD: ronda 1 de auditoria corregida. Vista ejecutiva de las funciones de cada compania:
 // - tarjetas por compania con su avance, lo que falta en corto y un boton por funcion para pedir cambios (portal de alta, solo GR);
 // - el mismo detalle sin botones en la pestana Funciones del portal de cada compania.
@@ -101,7 +104,8 @@
         var e = MF.EST[f.estado] || ['', 'mf-na'], pd = pend[f.id];
         var q = (f.faltan || []).map(function (x) { return x.texto; });
         var accion = '';
-        if (op.pedir) accion = pd ? (window.MP ? window.MP.chip(pd.estado) : '<span class="mf-chip mf-sus">Pedido</span>') : (f.fija ? [] : (ACCIONES[f.estado] || []).filter(function (x) { return x[0] !== 'apagar' || (f.piezas || []).some(function (z) { return z.estado === 'lista' && !z.a_mano && !z.ajena; }); })).map(function (a, i) { return '<button class="mf-btn" style="margin:0 0 4px 4px;min-height:40px" data-mf-pedir="' + h(f.id) + '" data-mf-que="' + a[0] + '">' + a[1] + '</button>'; }).join('');
+        if (op.pedir) accion = pd ? (window.MP ? window.MP.chip(pd.estado) : '<span class="mf-chip mf-sus">Pedido</span>') : (f.fija ? [] : (ACCIONES[f.estado] || []).filter(function (x) { return x[0] !== 'apagar' || (f.piezas || []).some(function (z) { return z.estado === 'lista' && !z.a_mano && !z.ajena; }); })
+          .concat(f.estado === 'lista' && (f.piezas || []).some(function (z) { return z.estado === 'suspendida' && !z.ajena; }) ? [['reanudar', 'Reanudar']] : [])).map(function (a, i) { return '<button class="mf-btn" style="margin:0 0 4px 4px;min-height:40px" data-mf-pedir="' + h(f.id) + '" data-mf-que="' + a[0] + '">' + a[1] + '</button>'; }).join('');
         var piezas = '<ul class="mf-pz" data-mf-pz="' + h(f.id) + '" hidden>' + (f.piezas || []).map(function (z) { return '<li>' + MF.chip(z.estado) + ' ' + h(z.nombre) + (z.prestada ? ' <span class="mf-sub">· usa ' + (z.prestada === '*' ? 'la del motor común' : 'la de ' + h(z.prestada_nombre || z.prestada)) + '</span>' : '') + (z.se_construye_en ? ' <span class="mf-sub">· se construirá en ' + h(z.se_construye_en) + '</span>' : '') + (z.motivo ? ' <span class="mf-sub">· ' + h(z.motivo) + '</span>' : '') + '</li>'; }).join('') + '</ul>';
         return '<div class="mf-fn"><span class="mf-dot ' + e[1] + '" title="' + h(e[0]) + '"></span><div><div class="t">' + h(f.nombre) + ' <span class="mf-sub">· ' + h(e[0]) + '</span></div><div class="d">' + h(f.resuelve) + '</div>'
           + (f.motivo ? '<div class="d">' + h(f.motivo) + '</div>' : '') + (f.nota ? '<div class="d">' + h(f.nota) + '</div>' : '') + (q.length && f.estado !== 'no_aplica' ? '<div class="q">Falta: ' + h(q.join(' · ')) + '</div>' : '')

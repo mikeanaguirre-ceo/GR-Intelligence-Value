@@ -1,4 +1,4 @@
-// GR Intelligence: pedidos del motor de alta (vL, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
+// GR Intelligence: pedidos del motor de alta (vM, 27-nov-2026). Mike: «que me pida los requerimientos o las dudas antes de empezar a
 // construir, las contestamos dentro del portal y despues empezamos a construir».
 // - MP.formulario: al pedir una funcion, las preguntas del catalogo (las comunes del tipo de pedido y las de la funcion), los datos que
 //   le faltan a la compania y las conexiones que hace en su portal, con lo obligatorio marcado y validado junto a cada campo.
@@ -7,6 +7,8 @@
 // vB (ronda 1 de auditoria): preguntas de seguimiento (requerida_si), conexiones aparte, letra de 14 px, avance con texto y no solo
 // color, campos con aria-required y su error ligado, una sola accion principal, fechas en palabras, colores propios por etapa,
 // textos segun el tipo de pedido y aviso cuando hay mas de 50.
+// vM (ronda 12): pedidos relacionados (principal y unidades) avisados; al Completar una funcion que ya opera, sus preguntas
+// propias son opcionales; una pregunta se oculta si su dato ya se pide (mismo_que); borradores limpios en cada lectura; numero de pedido.
 // vL (ronda 11): pasos que aun no existen en futuro (se construye en / lo usara); borradores viejos se descartan.
 // vK (ronda 10): respuestas a dudas guardadas como borrador (no se pierden al Actualizar ni si el pedido cambio); tras enviar
 // siempre se vuelve a leer; formulario enviado ya no cuenta como pendiente; "— es de" sin doble parentesis.
@@ -33,6 +35,17 @@
   MP.fecha = function (s) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s || '')); return m ? Number(m[3]) + ' ' + MES[Number(m[2]) - 1] + ' ' + m[1] : String(s || ''); };
   // Respuestas a dudas escritas y aun no enviadas (por pedido y duda): sobreviven a Actualizar y a repintar la pagina.
   MP.borradores = {};
+  // Descarta borradores de dudas que ya no esperan respuesta (se llama con cada lectura del motor).
+  MP.limpiarBorradores = function (ps) {
+    var vivos = {}; (ps || []).forEach(function (p) { if (MP.tocaContestar(p)) ((p.detalle || {}).dudas || []).forEach(function (q) { if (!q.respuesta) vivos[p.id + '|' + q.id] = 1; }); });
+    Object.keys(MP.borradores).forEach(function (k) { if (!vivos[k]) delete MP.borradores[k]; });
+  };
+  // Pedidos abiertos de la misma funcion en companias relacionadas (la principal y sus unidades): se revisan juntos.
+  MP.relacionados = function (ps, cs, c, fid) {
+    var rel = cs.filter(function (x) { return x.tenant !== c.tenant && (x.padre === c.tenant || x.tenant === c.padre); }).map(function (x) { return x.tenant; });
+    return (ps || []).filter(function (p) { return rel.indexOf(p.tenant) >= 0 && MP.abierto(p) && (p.instruccion || '').indexOf('[funcion=' + fid + ']') >= 0; })
+      .map(function (p) { return ((cs.filter(function (x) { return x.tenant === p.tenant; })[0] || {}).nombre || 'otra compañía'); });
+  };
   MP.hayBorradores = function () { return Object.keys(MP.borradores).some(function (k) { return String(MP.borradores[k] || '').trim(); }); };
   MP.css = function () {
     if (document.getElementById('mp-css')) return;
@@ -93,7 +106,7 @@
       (f.faltan || []).forEach(function (x) { if (x.quien === 'GR') pasos.push(x.texto); });
       pz.forEach(function (z) {
         if (f.estado === 'no_aplica') pasos.push('Activar: ' + z.nombre + de(z));
-        else if (z.estado === 'falta') pasos.push('Construir: ' + z.nombre + (z.se_construye_en ? ' — se construye en ' + z.se_construye_en + ' y la usarán las dos' : de(z)));
+        else if (z.estado === 'falta') pasos.push('Construir: ' + z.nombre + (z.se_construye_en ? ' — se construye en ' + z.se_construye_en + ' y lo usarán las dos' : de(z)));
         else if (z.estado === 'apagada') pasos.push('Encender: ' + z.nombre + de(z));
         else if (z.estado === 'suspendida') pasos.push('Reanudar: ' + z.nombre + de(z));
       });
@@ -123,7 +136,7 @@
         avisos.push((uno ? '«' + g.zs[0] + '» también lo ' : 'Estos ' + g.zs.length + ' pasos también los ') + (varias ? 'usan ' : 'usa ') + k + ': ' + vb[t][uno ? 0 : 1] + (varias ? ' les afecta.' : ' le afecta.') + ' Great Revenue ' + (uno ? 'lo' : 'los') + ' separa antes de tocar' + (uno ? 'lo.' : 'los.')); });
       porFuente(prest, function (uno, k, nombres) { return (uno ? 'No se ' + (t === 'apagar' ? 'apaga' : 'quita') + ' solo para ' + cia + ' porque es ' : 'No se ' + (t === 'apagar' ? 'apagan' : 'quitan') + ' solo para ' + cia + ' porque son ') + k + ': ' + nombres + '. Great Revenue te propone cómo hacerlo.'; });
       // Al quitar: pasos que aun no existen pero que una unidad espera usar desde aqui.
-      if (t === 'quitar') pz.filter(function (z) { return z.estado === 'falta' && (z.usaran || []).length; }).forEach(function (z) { avisos.push(lista(z.usaran) + ' cuenta con que «' + z.nombre + '» se construya aquí: quitarla también se la quita.'); });
+      if (t === 'quitar') pz.filter(function (z) { return z.estado === 'falta' && (z.usaran || []).length; }).forEach(function (z) { avisos.push(lista(z.usaran) + ' cuenta con que «' + z.nombre + '» se construya aquí: quitar la función también le quita ese paso.'); });
       if (!propios.length && !prest.length && !aMano.length && !avisos.length) avisos.push(t === 'quitar' ? 'No hay pasos construidos: el pedido solo la quita del plan de ' + cia + '.' : 'No hay pasos encendidos que apagar: Great Revenue revisa el estado.');
     }
     return { pasos: pasos, avisos: avisos };
@@ -171,12 +184,19 @@
   // Formulario de un pedido. o: { caja, cia (nombre), f (funcion evaluada), que, etiqueta, pa (preguntas por accion), enviar(cuerpo) -> Promise, alCancelar, alTerminar }
   MP.formulario = function (o) {
     MP.css();
-    var f = o.f, qs = MP.preguntas(o.pa, f, o.que), t = TIPO[o.que] || o.que;
+    var f = o.f, t = TIPO[o.que] || o.que;
+    var pedirK = (t === 'agregar' ? (f.pedir || []) : []).map(function (x) { return x.k; });
+    var opera = (f.piezas || []).some(function (z) { return z.estado === 'lista'; });
+    var propias = {}; (t === 'agregar' ? (f.preguntas || []) : []).forEach(function (q) { propias[q.id] = 1; });
+    // Completar una funcion que ya opera: sus preguntas propias son opcionales. Una pregunta cuyo dato ya se pide abajo, no se repite.
+    var qs = MP.preguntas(o.pa, f, o.que).filter(function (q) { return !(q.mismo_que && pedirK.indexOf(q.mismo_que) >= 0); })
+      .map(function (q) { return (o.que === 'completar' && opera && propias[q.id] && q.obligatoria) ? Object.assign({}, q, { obligatoria: false }) : q; });
     var pedir = t === 'agregar' ? (f.pedir || []) : [], conectar = t === 'agregar' ? (f.conectar || []) : [];
     var pl = MP.plan(f, t, o.cia);
     var obl = qs.some(function (q) { return q.obligatoria; });
     o.caja.className = 'mp-form'; o.caja.hidden = false; o.caja.setAttribute('role', 'form'); o.caja.setAttribute('aria-label', o.etiqueta + ' ' + f.nombre);
     o.caja.innerHTML = '<h4>' + h(o.etiqueta) + ' «' + h(f.nombre) + '» para ' + h(o.cia) + '</h4>'
+      + ((o.relacionados || []).length ? '<p class="mp-intro" style="color:#9a5b00"><b>Ya hay un pedido abierto de esta función para ' + h(o.relacionados.join(' y ')) + '.</b> Great Revenue revisa los dos juntos.</p>' : '')
       + (o.estadoHoy ? '<p class="mp-intro"><b>Hoy:</b> ' + h(o.estadoHoy) + '. Great Revenue revisa el estado al recibir el pedido.</p>' : '')
       + '<p class="mp-intro">' + h(INTRO[t] || INTRO.agregar) + (obl ? ' Lo marcado con <span class="mp-ob">*</span> es obligatorio.' : '') + '</p>'
       + (qs.length ? '<p class="mp-sec">Preguntas</p>' + qs.map(function (q) { return campo(q, 'mpq-' + f.id + '-'); }).join('') : '')
@@ -238,7 +258,7 @@
     var dudas = toca ? '<div data-mp-dudas="' + h(p.id) + '"><p class="mp-sec" style="margin:0 0 6px">' + (abiertas.length === 1 ? 'Great Revenue tiene 1 duda' : 'Great Revenue tiene ' + abiertas.length + ' dudas') + '</p>'
       + abiertas.map(function (q) { return campo({ id: q.id, texto: q.pregunta, tipo: 'texto', obligatoria: false, ayuda: q.ayuda || '' }, 'mpd-' + p.id + '-', true).replace('></textarea>', '>' + h(MP.borradores[p.id + '|' + q.id] || '') + '</textarea>'); }).join('')
       + '<div class="mp-pie" style="margin-top:8px"><button class="mf-btn' + (principal ? ' p' : '') + '" data-mp-responder="' + h(p.id) + '">Enviar respuestas</button><span class="mp-msg" role="status" aria-live="polite"></span></div></div>' : '';
-    return '<div class="mp-ped' + (toca ? ' toca' : '') + '"><div class="mp-cab"><span>' + MP.chip(p.estado) + ' <b>' + h(nombre) + '</b></span><span class="mf-sub">' + h(MP.fecha(p.fecha)) + '</span></div>'
+    return '<div class="mp-ped' + (toca ? ' toca' : '') + '"><div class="mp-cab"><span>' + MP.chip(p.estado) + ' <b>' + h(nombre) + '</b></span><span class="mf-sub">Pedido n.º ' + h(p.id) + ' · ' + h(MP.fecha(p.fecha)) + '</span></div>'
       + '<div>' + h(p.origen === 'cliente' ? 'Lo pidió la compañía: ' + (p.instruccion || '') : titulo(p)) + '</div>'
       + (repetido ? '<div class="mp-err" style="font-weight:600">Pedido repetido: ya hay otro abierto de esta función. Great Revenue descarta uno.</div>' : '')
       + (p.origen === 'cliente' ? '' : pasos(p)) + (p.respuesta ? '<div><b>Great Revenue:</b> ' + h(p.respuesta) + '</div>' : '') + dudas + resumen(p) + '</div>';
@@ -249,8 +269,7 @@
     var ps = o.pedidos || [];
     if (!ps.length) return '<p class="mf-vacio" style="margin:0">Aún no hay pedidos. Abre una compañía y usa el botón de cada función: antes de construir te pregunta lo necesario.</p>';
     // Borradores de dudas que ya no esperan respuesta (contestadas o pedido cerrado en otra pestana): se descartan.
-    var vivos = {}; ps.forEach(function (p) { if (MP.tocaContestar(p)) ((p.detalle || {}).dudas || []).forEach(function (q) { if (!q.respuesta) vivos[p.id + '|' + q.id] = 1; }); });
-    Object.keys(MP.borradores).forEach(function (k) { if (!vivos[k]) delete MP.borradores[k]; });
+    MP.limpiarBorradores(ps);
     var g = { toca: [], curso: [], cerrados: [] }, LIM = 50, vistos = {}, rep = {};
     // Dos pedidos abiertos de la misma funcion (p. ej. enviados desde dos pestanas): el mas viejo se marca como repetido.
     ps.slice().reverse().forEach(function (p) { var m = /\[funcion=([a-z0-9_]+)\]/.exec(p.instruccion || ''); if (!m || !MP.abierto(p) || p.origen === 'cliente') return; var k = p.tenant + '|' + m[1]; if (vistos[k]) rep[vistos[k]] = 1; vistos[k] = p.id; });
